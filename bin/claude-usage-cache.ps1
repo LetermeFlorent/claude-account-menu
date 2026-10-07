@@ -1,4 +1,5 @@
-$script:UsageCachePath = Join-Path $env:LOCALAPPDATA "claude-menu\usage.json"
+. (Join-Path $PSScriptRoot "claude-platform.ps1")
+$script:UsageCachePath = Get-UsageCachePath
 $script:UsageCacheTtl = 120
 
 function Read-UsageCache {

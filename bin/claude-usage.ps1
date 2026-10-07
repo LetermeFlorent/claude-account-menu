@@ -1,4 +1,5 @@
 . (Join-Path $PSScriptRoot "claude-usage-cache.ps1")
+. (Join-Path $PSScriptRoot "claude-usage-pace.ps1")
 . (Join-Path $PSScriptRoot "claude-accounts.ps1")
 
 function Get-PlanName {
@@ -9,13 +10,19 @@ function Get-PlanName {
   return $t.Substring(0, 1).ToUpper() + $t.Substring(1)
 }
 
+function Get-RetryAfter {
+  param($Response)
+  try {
+    if ($Response.Headers.RetryAfter -ne $null) { return [int]$Response.Headers.RetryAfter.Delta.TotalSeconds }
+    return $Response.Headers["Retry-After"]
+  } catch { return $null }
+}
+
 function Get-CompteUsage {
   param($Acc)
-  $Dir = Get-AccountPath $Acc
   $Label = $Acc.Label
   $out = [PSCustomObject]@{Label=$Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null}
-  $cred = $null
-  try { $cred = Get-Content -LiteralPath (Join-Path $Dir ".credentials.json") -Raw -ErrorAction Stop | ConvertFrom-Json } catch {}
+  $cred = Read-AccountCredential $Acc
   if ($cred -ne $null) { $out.Plan = Get-PlanName $cred.claudeAiOauth }
   $cached = (Read-UsageCache)[$Label]
   if ($cached -ne $null -and (Get-CacheAge $cached) -lt $script:UsageCacheTtl) { Copy-CacheEntry $cached $out; return $out }
@@ -29,6 +36,7 @@ function Get-CompteUsage {
       return $out
     }
     $h = @{"Authorization"="Bearer $tok"; "anthropic-beta"="oauth-2025-04-20"; "Accept"="application/json"}
+    $ProgressPreference = "SilentlyContinue"
     $r = Invoke-RestMethod -Uri "https://api.anthropic.com/api/oauth/usage" -Headers $h -TimeoutSec 10
     if ($r.five_hour -ne $null) {
       $out.Pct5 = [math]::Round([double]$r.five_hour.utilization)
@@ -44,7 +52,7 @@ function Get-CompteUsage {
     if ($_.Exception.Response -ne $null) { $code = [int]$_.Exception.Response.StatusCode }
     if ($code -eq 429 -and $cached -ne $null) { Copy-CacheEntry $cached $out; return $out }
     if ($code -eq 429) {
-      $wait = $_.Exception.Response.Headers["Retry-After"]
+      $wait = Get-RetryAfter $_.Exception.Response
       $out.Error = "quota inconnu, l'API de suivi refuse les appels"
       if ($wait) { $out.Error = $out.Error + " (reessai dans " + (Format-Age ([int]$wait)) + ")" }
     }
@@ -55,9 +63,10 @@ function Get-CompteUsage {
 }
 
 function Format-Reset {
-  param([string]$Iso)
-  if ([string]::IsNullOrEmpty($Iso)) { return "-" }
-  try { $dt = ([datetime]$Iso).ToLocalTime() } catch { return "-" }
+  param($Iso)
+  $at = ConvertTo-DateOffset $Iso
+  if ($at -eq $null) { return "-" }
+  $dt = $at.LocalDateTime
   $now = Get-Date
   $span = $dt - $now
   $hhmm = $dt.ToString("HH:mm")
@@ -76,9 +85,16 @@ function Format-Row {
   param($U)
   $line = $U.Label + " " + $U.Email + " " + $U.Plan + " | "
   if ($U.Error -ne $null) { return $line + $U.Error }
-  $line = $line + "5h " + $U.Pct5 + "% reset " + (Format-Reset $U.Reset5)
-  $line = $line + " | 7d " + $U.Pct7 + "% reset " + (Format-Reset $U.Reset7)
+  $line = $line + "5h " + $U.Pct5 + "% reset " + (Format-Reset $U.Reset5) + (Format-PaceSuffix "5h" $U.Pct5 $U.Reset5)
+  $line = $line + " | 7d " + $U.Pct7 + "% reset " + (Format-Reset $U.Reset7) + (Format-PaceSuffix "7d" $U.Pct7 $U.Reset7)
   return $line + (Format-Stale $U)
+}
+
+function Format-PaceSuffix {
+  param([string]$Kind, $Pct, $Reset)
+  $p = Get-UsagePace $Kind $Pct $Reset
+  if ($p -eq $null) { return "" }
+  return ", " + $p.Text
 }
 
 function Format-Stale {

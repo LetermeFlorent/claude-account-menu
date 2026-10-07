@@ -6,7 +6,7 @@ function Show-RestoreMenu {
   Write-Host ("  " + (Get-DownloadsDir)) -ForegroundColor DarkGray
   Write-Host ""
   if ($list.Count -eq 0) {
-    Write-Host "  Aucune sauvegarde claude-comptes-*.zip trouvee. Touche quelconque pour revenir." -ForegroundColor DarkGray
+    Write-Host "  Aucune sauvegarde claude-comptes-* trouvee. Touche quelconque pour revenir." -ForegroundColor DarkGray
     [void][Console]::ReadKey($true)
     return "aucune sauvegarde a restaurer"
   }

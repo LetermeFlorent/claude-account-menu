@@ -1,9 +1,8 @@
-$script:RegistryPath = Join-Path $env:USERPROFILE ".claude-accounts.json"
-$script:ClaudeExe = Join-Path $env:USERPROFILE ".local\bin\claude.exe"
-if (-not (Test-Path -LiteralPath $script:ClaudeExe)) {
-  $found = Get-Command claude -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-  if ($found) { $script:ClaudeExe = $found.Source }
-}
+. (Join-Path $PSScriptRoot "claude-platform.ps1")
+. (Join-Path $PSScriptRoot "claude-credentials.ps1")
+$script:HomeDir = Get-HomeDir
+$script:RegistryPath = Join-Path $script:HomeDir ".claude-accounts.json"
+$script:ClaudeExe = Find-ClaudeExe
 
 function Get-ClaudeVersion {
   try { $v = "" + (& $script:ClaudeExe --version 2>$null) } catch { $v = "" }
@@ -23,7 +22,7 @@ function Get-Accounts {
   $list = @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
   foreach ($n in 2..9) {
     $d = ".claude-compte" + $n
-    if (Test-Path -LiteralPath (Join-Path $env:USERPROFILE $d)) { $list += [PSCustomObject]@{ Label = "compte" + $n; Dir = $d } }
+    if (Test-Path -LiteralPath (Join-Path $script:HomeDir $d)) { $list += [PSCustomObject]@{ Label = "compte" + $n; Dir = $d } }
   }
   Save-Registry $list
   return $list
@@ -36,12 +35,12 @@ function Save-Registry {
 
 function Get-AccountPath {
   param($Acc)
-  return Join-Path $env:USERPROFILE $Acc.Dir
+  return Join-Path $script:HomeDir $Acc.Dir
 }
 
 function Get-AccountConfigFile {
   param($Acc)
-  if ($Acc.Dir -eq ".claude") { return Join-Path $env:USERPROFILE ".claude.json" }
+  if ($Acc.Dir -eq ".claude") { return Join-Path $script:HomeDir ".claude.json" }
   return Join-Path (Get-AccountPath $Acc) ".claude.json"
 }
 
@@ -52,27 +51,32 @@ function Get-AccountEmail {
   return ""
 }
 
-function Invoke-AsAccount {
-  param($Acc, [object[]]$ArgList)
+function Invoke-InAccountEnv {
+  param($Acc, [scriptblock]$Action)
   $prev = $env:CLAUDE_CONFIG_DIR
   try {
-    if ($Acc.Dir -eq ".claude") { Remove-Item Env:\CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue }
+    if ($Acc.Dir -eq ".claude") { Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue }
     else { $env:CLAUDE_CONFIG_DIR = Get-AccountPath $Acc }
-    & $script:ClaudeExe @ArgList
+    & $Action
   } finally {
-    if ($null -eq $prev) { Remove-Item Env:\CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue } else { $env:CLAUDE_CONFIG_DIR = $prev }
+    if ($null -eq $prev) { Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue } else { $env:CLAUDE_CONFIG_DIR = $prev }
   }
+}
+
+function Invoke-AsAccount {
+  param($Acc, [object[]]$ArgList)
+  Invoke-InAccountEnv $Acc { & $script:ClaudeExe @ArgList }
 }
 
 function Repair-SharedLinks {
   param($Acc, [switch]$Force)
   if ($Acc.Dir -eq ".claude") { return }
-  $main = Join-Path $env:USERPROFILE ".claude"
+  $main = Join-Path $script:HomeDir ".claude"
   $dir = Get-AccountPath $Acc
   if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
   foreach ($d in $script:SharedDirs) {
     $src = Join-Path $main $d; $dst = Join-Path $dir $d
-    if ((Test-Path -LiteralPath $src) -and -not (Test-Path -LiteralPath $dst)) { New-Item -ItemType Junction -Path $dst -Target $src | Out-Null }
+    if ((Test-Path -LiteralPath $src) -and -not (Test-Path -LiteralPath $dst)) { New-Item -ItemType (Get-DirLinkType) -Path $dst -Target $src | Out-Null }
   }
   foreach ($f in $script:SharedFiles) {
     $src = Join-Path $main $f; $dst = Join-Path $dir $f
@@ -86,12 +90,12 @@ function New-AccountSlot {
   param([string]$Label)
   $list = @(Get-Accounts)
   $n = $list.Count + 1
-  while (Test-Path -LiteralPath (Join-Path $env:USERPROFILE (".claude-compte" + $n))) { $n++ }
+  while (Test-Path -LiteralPath (Join-Path $script:HomeDir (".claude-compte" + $n))) { $n++ }
   if ([string]::IsNullOrWhiteSpace($Label)) { $Label = "compte" + $n }
   $acc = [PSCustomObject]@{ Label = $Label.Trim(); Dir = ".claude-compte" + $n }
   Repair-SharedLinks $acc
   $dir = Get-AccountPath $acc
-  $settings = Join-Path $env:USERPROFILE ".claude\settings.json"
+  $settings = [IO.Path]::Combine($script:HomeDir, ".claude", "settings.json")
   if (Test-Path -LiteralPath $settings) { Copy-Item -LiteralPath $settings -Destination $dir }
   $cfg = [PSCustomObject]@{ hasCompletedOnboarding = $true; lastOnboardingVersion = (Get-ClaudeVersion) }
   $cfg | ConvertTo-Json | Set-Content -LiteralPath (Get-AccountConfigFile $acc) -Encoding UTF8

@@ -1,0 +1,17 @@
+#!/bin/sh
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in
+    /*) self=$link ;;
+    *) self=$(dirname "$self")/$link ;;
+  esac
+done
+dir=$(cd "$(dirname "$self")" && pwd)
+if ! command -v pwsh >/dev/null 2>&1; then
+  echo "clm a besoin de PowerShell 7 (commande pwsh), introuvable dans le PATH." >&2
+  echo "macOS : brew install powershell" >&2
+  echo "Linux : https://learn.microsoft.com/powershell/scripting/install/linux-overview" >&2
+  exit 127
+fi
+exec pwsh -NoProfile -File "$dir/claude-menu.ps1" "$@"

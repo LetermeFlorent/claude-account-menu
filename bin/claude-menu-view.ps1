@@ -10,17 +10,21 @@ $script:Levels = @{
   "5h" = @(@(120, 110, 200), @(170, 90, 175), @(200, 60, 95))
   "7d" = @(@(83, 137, 119), @(185, 130, 68), @(185, 85, 85))
 }
-$script:Ink = @{ Text = @(0, 0, 0); Dim = @(120, 112, 100); Empty = @(190, 180, 165); Alert = @(185, 85, 85) }
+$script:Palettes = @{
+  "light" = @{ Text = @(0, 0, 0); Dim = @(120, 112, 100); Empty = @(190, 180, 165); Alert = @(185, 85, 85) }
+  "dark" = @{ Text = @(235, 235, 235); Dim = @(150, 150, 150); Empty = @(75, 75, 80); Alert = @(220, 100, 100) }
+}
+. (Join-Path $PSScriptRoot "claude-theme.ps1")
+. (Join-Path $PSScriptRoot "claude-usage-pace.ps1")
+. (Join-Path $PSScriptRoot "claude-menu-usage-line.ps1")
+$script:Ink = $script:Palettes[(Get-ThemeName)]
 
-$slConf = Join-Path $env:USERPROFILE ".claude\statusline.json"
+$slConf = [IO.Path]::Combine((Get-HomeDir), ".claude", "statusline.json")
 if (Test-Path -LiteralPath $slConf) {
   try {
-    $sl = Get-Content -LiteralPath $slConf -Raw | ConvertFrom-Json
+    $sl = Get-Content -LiteralPath $slConf -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($sl.gradient.'5h' -ne $null) { $script:Grad["5h"] = [double]$sl.gradient.'5h' }
     if ($sl.gradient.'7d' -ne $null) { $script:Grad["7d"] = [double]$sl.gradient.'7d' }
-    if ($sl.terminal_background -eq "dark") {
-      $script:Ink = @{ Text = @(235, 235, 235); Dim = @(150, 150, 150); Empty = @(75, 75, 80); Alert = @(220, 100, 100) }
-    }
   } catch {}
 }
 
@@ -39,9 +43,10 @@ function Get-LevelColor {
 }
 
 function Format-Left {
-  param([string]$Iso)
-  if ([string]::IsNullOrEmpty($Iso)) { return "-" }
-  try { $span = ([datetime]$Iso).ToLocalTime() - (Get-Date) } catch { return "-" }
+  param($Iso)
+  $at = ConvertTo-DateOffset $Iso
+  if ($at -eq $null) { return "-" }
+  $span = $at - [DateTimeOffset]::Now
   if ($span.TotalSeconds -le 0) { return "0m" }
   $h = [math]::Floor($span.TotalHours)
   if ($h -ge 24) { return "" + [math]::Floor($h / 24) + "j" + ($h % 24) + "h" }
@@ -72,23 +77,6 @@ function Write-Segs {
   foreach ($sg in $Segs) { $line += (Fg $sg[1] $sg[2]) + $sg[0]; $len += $sg[0].Length }
   $pad = [math]::Max(0, $script:ViewWidth - $len)
   Write-Host ($line + (" " * $pad) + $script:Esc + "[0m")
-}
-
-function Get-UsageSeg {
-  param([string]$Kind, $Pct, $Reset)
-  $bar = Get-Bar $Kind $Pct
-  $txt = Fg $script:Ink.Text $true
-  $tail = " " + ("" + [int]$Pct + "%").PadRight(4) + " " + (Format-Left $Reset).PadRight(6)
-  return @(($txt + $Kind + " " + $bar + $txt + $tail), ($Kind.Length + 1 + $script:Cells + $tail.Length))
-}
-
-function Write-UsageLine {
-  param($U)
-  $a = Get-UsageSeg "5h" $U.Pct5 $U.Reset5
-  $b = Get-UsageSeg "7d" $U.Pct7 $U.Reset7
-  $sep = (Fg $script:Ink.Text $true) + " | "
-  $pad = [math]::Max(0, $script:ViewWidth - 7 - $a[1] - 3 - $b[1])
-  Write-Host ("       " + $a[0] + $sep + $b[0] + (" " * $pad) + $script:Esc + "[0m")
 }
 
 function Get-PlanColor {

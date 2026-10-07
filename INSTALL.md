@@ -1,6 +1,6 @@
 # Installer claude-account-menu
 
-Ce guide installe la commande `clm` sur un poste Windows, de zéro jusqu'au premier lancement.
+Ce guide installe la commande `clm` sur un poste Windows, de zéro jusqu'au premier lancement. Linux et macOS ont leur propre section, plus bas : le menu y tourne sur PowerShell 7.
 
 ## Avant de commencer
 
@@ -30,6 +30,22 @@ L'installeur copie les scripts du dossier `bin` dans `%USERPROFILE%\.local\bin`,
 
 Le PATH n'est relu qu'à l'ouverture d'un terminal : fermer la fenêtre et en ouvrir une nouvelle avant de taper `clm`.
 
+## Installation sous Linux et macOS
+
+Il faut PowerShell 7, dont la commande est `pwsh`. Sous macOS, `brew install powershell` suffit. Sous Linux, la documentation de Microsoft donne la méthode pour chaque distribution : https://learn.microsoft.com/powershell/scripting/install/linux-overview. Claude Code doit être installé et connecté au moins une fois, comme sous Windows.
+
+```sh
+git clone https://github.com/LetermeFlorent/claude-account-menu.git
+cd claude-account-menu
+sh install.sh
+```
+
+`install.sh` copie les scripts et le lanceur `clm` dans `~/.local/bin`, rend `clm` exécutable et affiche la ligne `export PATH=...` à mettre dans `~/.profile`, `~/.bashrc` ou `~/.zshrc` si le dossier manque au PATH. Il ajoute ensuite le même hook `SessionStart` que sous Windows, lancé cette fois par `pwsh`, sans doublon et sans outil externe comme jq. Sans `pwsh`, il copie les fichiers et s'arrête avant le hook ; le lanceur `clm` explique alors quoi installer.
+
+Sous Linux, la sauvegarde passe par `bsdtar` s'il est présent (paquet `libarchive-tools` sur Debian et Ubuntu) et produit un `.zip` lisible sur les autres postes. Sinon GNU tar écrit un `.tar.gz`, et un `.zip` venu de Windows ou de macOS ne peut pas être restauré.
+
+Sous macOS, les jetons sont lus dans le trousseau avec la commande `security`. Au premier accès, macOS peut demander d'autoriser cette lecture.
+
 ## Premier lancement
 
 `clm` lit les dossiers de configuration déjà présents : `.claude` devient le compte 1, et chaque dossier `.claude-compte2`, `.claude-compte3` et suivants devient un compte supplémentaire. La liste est écrite dans `%USERPROFILE%\.claude-accounts.json` à la première exécution.
@@ -52,15 +68,19 @@ Le zip contient ces jetons en clair. Le transférer par un moyen sûr et le supp
 
 ## Mettre à jour
 
-Récupérer la dernière version avec `git pull` dans le dossier cloné, puis relancer `install.ps1`. Les comptes, leurs jetons et le fichier `.claude-accounts.json` ne sont pas modifiés.
+Récupérer la dernière version avec `git pull` dans le dossier cloné, puis relancer `install.ps1`, ou `install.sh` sous Linux et macOS. Les comptes, leurs jetons et le fichier `.claude-accounts.json` ne sont pas modifiés.
+
+Claude Code lui-même est mis à jour par `clm`, avec `claude update`, à chaque ouverture du menu et à chaque lancement direct. Pour sauter cette étape une fois, lancer `clm --no-update`.
 
 ## Désinstaller
 
-Retirer l'entrée `SessionStart` qui mentionne `claude-statusline-seed.ps1` du `settings.json` de chaque compte (ou remettre `settings.json.bak-seed`). Supprimer de `%USERPROFILE%\.local\bin` les fichiers `clm.cmd`, `claude-menu.cmd`, `claude-menu*.ps1`, `claude-usage*.ps1`, `claude-statusline-seed.ps1` et `claude-accounts.ps1`. Supprimer ensuite le cache des quotas dans `%LOCALAPPDATA%\claude-menu`. Les dossiers de comptes et `.claude-accounts.json` restent en place : ils appartiennent à Claude Code, pas au menu.
+Retirer l'entrée `SessionStart` qui mentionne `claude-statusline-seed.ps1` du `settings.json` de chaque compte (ou remettre `settings.json.bak-seed`). Supprimer de `%USERPROFILE%\.local\bin` (ou de `~/.local/bin`) les fichiers `clm.cmd`, `claude-menu.cmd`, `clm` et `claude-*.ps1`, sans toucher à `claude.exe` ni à `claude`, qui sont Claude Code. Supprimer ensuite le cache des quotas : `%LOCALAPPDATA%\claude-menu` sous Windows, `~/Library/Caches/claude-menu` sous macOS, `~/.cache/claude-menu` sous Linux. Les dossiers de comptes et `.claude-accounts.json` restent en place : ils appartiennent à Claude Code, pas au menu.
 
 ## En cas de problème
 
 Si `clm` n'est pas reconnu, le terminal a été ouvert avant l'installation. En ouvrir un nouveau, ou lancer directement `%USERPROFILE%\.local\bin\clm.cmd`.
+
+Si la mise à jour affiche "verification impossible", `claude update` n'a pas répondu en 20 secondes, souvent faute de réseau : le menu s'ouvre quand même avec la version installée. "telechargement bloque" signale un téléchargement figé pendant 90 secondes, et "deja en cours ailleurs" une autre session qui met déjà Claude Code à jour. `clm --no-update` ouvre le menu sans attendre.
 
 Si un compte affiche "jeton refuse" ou "jeton a rafraichir", lancer ce compte une fois avec son numéro (`clm -2` par exemple) : Claude Code renouvelle le jeton au démarrage.
 

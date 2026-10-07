@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: tests (pwsh)
+        shell: pwsh
+        run: ./tests/run.ps1
+
+      - name: tests (Windows PowerShell 5.1)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./tests/run.ps1
+
+      - name: tag de l'etat (Pester)
+        shell: pwsh
+        run: |
+          $r = Invoke-Pester -Path ./tests/StateTag.Tests.ps1 -PassThru
+          if ($r.FailedCount -gt 0) { exit 1 }
+
+      - name: scripts sh
+        if: runner.os != 'Windows'
+        run: |
+          sh -n bin/clm
+          sh -n install.sh

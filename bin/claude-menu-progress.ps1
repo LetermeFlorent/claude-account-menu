@@ -21,7 +21,7 @@ function Measure-Entries {
   $script:Sizes = @{}
   $total = [long]0
   foreach ($i in $Items) {
-    $full = Join-Path $env:USERPROFILE $i
+    $full = Join-Path $script:HomeDir $i
     if (Test-Path -LiteralPath $full) { $total += Measure-Tree (Get-Item -LiteralPath $full -Force) $i $SkipPaths }
   }
   return $total
@@ -39,27 +39,43 @@ function Read-TarLog {
   } catch { return @() }
 }
 
+function Get-TarEntries {
+  param([string]$OutLog, [string]$ErrLog)
+  $bsd = @(Read-TarLog $ErrLog | Where-Object { $_ -match "^[ax] " } | ForEach-Object { $_.Substring(2) })
+  return @(Read-TarLog $OutLog) + $bsd
+}
+
+function Get-ProgressBar {
+  param([int]$Pct)
+  $n = [math]::Max(0, [math]::Min(20, [math]::Floor($Pct / 5)))
+  return ([string][char]0x25A0) * $n + ([string][char]0x25A1) * (20 - $n)
+}
+
+function Get-WaitBar {
+  param([int]$Tick)
+  $at = [math]::Abs($Tick) % 20
+  return ([string][char]0x25A1) * $at + [string][char]0x25A0 + ([string][char]0x25A1) * (19 - $at)
+}
+
 function Write-TarProgress {
   param([string]$Label, [int]$Pct)
-  $n = [math]::Floor($Pct / 5)
-  $bar = ([string][char]0x25A0) * $n + ([string][char]0x25A1) * (20 - $n)
-  Write-Host ("`r  " + $Label + "  " + $bar + "  " + ("" + $Pct + " %").PadLeft(5) + "   ") -NoNewline
+  Write-Host ("`r  " + $Label + "  " + (Get-ProgressBar $Pct) + "  " + ("" + $Pct + " %").PadLeft(5) + "   ") -NoNewline
 }
 
 function Get-EntryWeight {
-  param([string]$Line)
-  $path = $Line.Substring(2)
-  if ($script:Sizes.ContainsKey($path)) { return $script:Sizes[$path] }
+  param([string]$Path)
+  if ($script:Sizes.ContainsKey($Path)) { return $script:Sizes[$Path] }
+  if ($script:Sizes.ContainsKey($Path + "/")) { return $script:Sizes[$Path + "/"] }
   if ($script:Sizes.Count -gt 0) { return 0 }
   return 1
 }
 
 function Wait-Tar {
-  param($Proc, [string]$Log, [long]$Total, [string]$Label)
+  param($Proc, [string]$OutLog, [string]$ErrLog, [long]$Total, [string]$Label)
   $last = -1; $seen = 0; $done = [long]0
   while (-not $Proc.HasExited) {
     Start-Sleep -Milliseconds 400
-    $lines = @(Read-TarLog $Log | Where-Object { $_ -match "^[ax] " })
+    $lines = @(Get-TarEntries $OutLog $ErrLog)
     for ($i = $seen; $i -lt $lines.Count; $i++) { $done += Get-EntryWeight $lines[$i] }
     $seen = $lines.Count
     $pct = 0

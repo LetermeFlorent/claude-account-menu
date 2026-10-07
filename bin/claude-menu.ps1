@@ -4,6 +4,7 @@
 . (Join-Path $PSScriptRoot "claude-menu-restore.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-select.ps1")
 . (Join-Path $PSScriptRoot "claude-statusline-seed.ps1")
+. (Join-Path $PSScriptRoot "claude-update.ps1")
 
 function Start-Account {
   param($Acc, $Extra)
@@ -14,9 +15,11 @@ function Start-Account {
 $direct = $null
 $only = $null
 $restoreZip = $null
+$update = $true
 $rest = @()
 foreach ($a in $args) {
   if ($a -match "^-([1-9])$") { $direct = [int]$Matches[1] - 1 }
+  elseif ($a -eq "--no-update") { $update = $false }
   elseif ($a -eq "--usage") {
     foreach ($u in Get-AllUsages) { Write-Output (Format-Row $u) }
     exit 0
@@ -39,6 +42,7 @@ if ($restoreZip) {
 if ($direct -ne $null) {
   $accs = @(Get-Accounts)
   if ($direct -ge $accs.Count) { Write-Output ("pas de compte " + ($direct + 1)); exit 1 }
+  if ($update) { $null = Update-ClaudeForAccounts $accs }
   Start-Account $accs[$direct] $rest
   exit $LASTEXITCODE
 }
@@ -52,16 +56,17 @@ function Get-DefaultIndex {
   return 0
 }
 
+$msg = @("", $script:Ink.Dim)
+if ($update) { $msg = Update-ClaudeForAccounts @(Get-Accounts) }
 Write-Host "Chargement usage..." -ForegroundColor DarkGray
 $usages = @(Get-AllUsages)
 $idx = Get-DefaultIndex $usages
 $chosen = $null
-$msg = @("", $script:Ink.Dim)
 $cursor = $true
 try {
   Clear-Host
   $top = [Console]::CursorTop
-  $cursor = [Console]::CursorVisible
+  try { $cursor = [Console]::CursorVisible } catch {}
   [Console]::CursorVisible = $false
   while ($true) {
     Show-AccountMenu $usages $idx $top
