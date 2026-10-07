@@ -1,0 +1,108 @@
+. (Join-Path $PSScriptRoot "claude-usage.ps1")
+. (Join-Path $PSScriptRoot "claude-menu-view.ps1")
+. (Join-Path $PSScriptRoot "claude-menu-save.ps1")
+. (Join-Path $PSScriptRoot "claude-menu-restore.ps1")
+. (Join-Path $PSScriptRoot "claude-menu-select.ps1")
+
+$direct = $null
+$only = $null
+$restoreZip = $null
+$rest = @()
+foreach ($a in $args) {
+  if ($a -match "^-([1-9])$") { $direct = [int]$Matches[1] - 1 }
+  elseif ($a -eq "--usage") {
+    foreach ($u in Get-AllUsages) { Write-Output (Format-Row $u) }
+    exit 0
+  }
+  elseif ($a -match "^--save(=(.+))?$") {
+    $sel = Select-ByLabel @(Get-Accounts) $Matches[2]
+    Write-Output ("sauvegarde : " + (Save-Accounts "" $sel))
+    exit 0
+  }
+  elseif ($a -match "^--only=(.+)$") { $only = $Matches[1] }
+  elseif ($a -match "^--restore=(.+)$") { $restoreZip = $Matches[1] }
+  else { $rest = $rest + $a }
+}
+
+if ($restoreZip) {
+  Write-Output (Restore-Accounts $restoreZip (Select-ByLabel @(Get-ZipAccounts $restoreZip) $only))
+  exit 0
+}
+
+if ($direct -ne $null) {
+  $accs = @(Get-Accounts)
+  if ($direct -ge $accs.Count) { Write-Output ("pas de compte " + ($direct + 1)); exit 1 }
+  Invoke-AsAccount $accs[$direct] $rest
+  exit $LASTEXITCODE
+}
+
+function Get-DefaultIndex {
+  param($Usages)
+  for ($i = 0; $i -lt $Usages.Count; $i++) {
+    $u = $Usages[$i]
+    if ($u.Error -eq $null -and [int]$u.Pct5 -lt 100 -and [int]$u.Pct7 -lt 100) { return $i }
+  }
+  return 0
+}
+
+Write-Host "Chargement usage..." -ForegroundColor DarkGray
+$usages = @(Get-AllUsages)
+$idx = Get-DefaultIndex $usages
+$chosen = $null
+$msg = @("", $script:Ink.Dim)
+$cursor = $true
+try {
+  Clear-Host
+  $top = [Console]::CursorTop
+  $cursor = [Console]::CursorVisible
+  [Console]::CursorVisible = $false
+  while ($true) {
+    Show-AccountMenu $usages $idx $top
+    Write-Segs @(, @($msg[0], $msg[1], $true))
+    $k = [Console]::ReadKey($true)
+    $redraw = $false
+    if ($k.Key -eq "UpArrow") { $idx = ($idx + $usages.Count - 1) % $usages.Count }
+    elseif ($k.Key -eq "DownArrow") { $idx = ($idx + 1) % $usages.Count }
+    elseif ($k.Key -eq "Enter") { $chosen = $idx; break }
+    elseif ($k.KeyChar -match "[1-9]" -and ([int]$k.KeyChar.ToString()) -le $usages.Count) { $chosen = [int]$k.KeyChar.ToString() - 1; break }
+    elseif ($k.KeyChar -eq "s") {
+      [Console]::CursorVisible = $true
+      try { $msg = @(("  " + (Show-SaveMenu)), $script:Levels["7d"][0]) }
+      catch { $msg = @(("  sauvegarde impossible : " + $_.Exception.Message), $script:Ink.Alert) }
+      $redraw = $true
+    }
+    elseif ($k.KeyChar -eq "r") {
+      [Console]::CursorVisible = $true
+      try { $msg = @(("  " + (Show-RestoreMenu)), $script:Levels["7d"][0]) }
+      catch { $msg = @(("  restauration impossible : " + $_.Exception.Message), $script:Ink.Alert) }
+      $redraw = $true
+    }
+    elseif ($k.KeyChar -eq "a") {
+      [Console]::CursorVisible = $true
+      try { $msg = @(("  " + (Add-Account)), $script:Levels["7d"][0]) }
+      catch { $msg = @(("  ajout impossible : " + $_.Exception.Message), $script:Ink.Alert) }
+      $redraw = $true
+    }
+    elseif ($k.Key -eq "Escape" -or $k.KeyChar -eq "q") { break }
+    if ($redraw) {
+      Clear-Host
+      Write-Host "Chargement usage..." -ForegroundColor DarkGray
+      $usages = @(Get-AllUsages)
+      $idx = [math]::Min($idx, $usages.Count - 1)
+      Clear-Host
+      $top = [Console]::CursorTop
+      [Console]::CursorVisible = $false
+    }
+  }
+} catch {
+  foreach ($u in $usages) { Write-Host (Format-Row $u) }
+  $n = Read-Host ("Numero du compte (1-" + $usages.Count + ")")
+  if ($n -match "^[1-9]$" -and [int]$n -le $usages.Count) { $chosen = [int]$n - 1 }
+} finally {
+  try { [Console]::CursorVisible = $cursor } catch {}
+}
+
+if ($chosen -eq $null) { exit 0 }
+Clear-Host
+Invoke-AsAccount $usages[$chosen].Acc $rest
+exit $LASTEXITCODE
