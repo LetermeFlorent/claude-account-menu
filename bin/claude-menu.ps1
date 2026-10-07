@@ -3,6 +3,13 @@
 . (Join-Path $PSScriptRoot "claude-menu-save.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-restore.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-select.ps1")
+. (Join-Path $PSScriptRoot "claude-statusline-seed.ps1")
+
+function Start-Account {
+  param($Acc, $Extra)
+  try { Update-StatusState $Acc } catch {}
+  Invoke-AsAccount $Acc $Extra
+}
 
 $direct = $null
 $only = $null
@@ -32,7 +39,7 @@ if ($restoreZip) {
 if ($direct -ne $null) {
   $accs = @(Get-Accounts)
   if ($direct -ge $accs.Count) { Write-Output ("pas de compte " + ($direct + 1)); exit 1 }
-  Invoke-AsAccount $accs[$direct] $rest
+  Start-Account $accs[$direct] $rest
   exit $LASTEXITCODE
 }
 
@@ -104,5 +111,5 @@ try {
 
 if ($chosen -eq $null) { exit 0 }
 Clear-Host
-Invoke-AsAccount $usages[$chosen].Acc $rest
+Start-Account $usages[$chosen].Acc $rest
 exit $LASTEXITCODE

@@ -26,7 +26,7 @@ cd claude-account-menu
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-L'installeur copie les scripts du dossier `bin` dans `%USERPROFILE%\.local\bin`, écrase les anciennes versions s'il y en a, et ajoute ce dossier au PATH de l'utilisateur quand il n'y est pas déjà. Il prévient si `tar.exe` ou Claude Code manquent. Il ne touche à aucun dossier de compte.
+L'installeur copie les scripts du dossier `bin` dans `%USERPROFILE%\.local\bin`, écrase les anciennes versions s'il y en a, et ajoute ce dossier au PATH de l'utilisateur quand il n'y est pas déjà. Il prévient si `tar.exe` ou Claude Code manquent. Il ajoute aussi, dans le `settings.json` de `.claude` et de chaque `.claude-compte*`, un hook `SessionStart` qui lance `claude-statusline-seed.ps1` : à chaque démarrage de Claude Code, les quotas 5 h et 7 j du compte courant sont écrits dans le fichier d'état de la barre d'état. Une copie `settings.json.bak-seed` est gardée avant la modification, et une seconde exécution de l'installeur n'ajoute rien en double. Aucun autre fichier de compte n'est touché.
 
 Le PATH n'est relu qu'à l'ouverture d'un terminal : fermer la fenêtre et en ouvrir une nouvelle avant de taper `clm`.
 

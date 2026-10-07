@@ -51,3 +51,7 @@ Le zip n'est pas chiffré et contient les jetons de connexion : quiconque le ré
 ## Quotas
 
 Les pourcentages viennent de l'API `api.anthropic.com/api/oauth/usage`, qui limite elle-même le nombre d'appels. Les résultats sont gardés deux minutes dans `%LOCALAPPDATA%\claude-menu\usage.json`, et le menu affiche les dernières valeurs connues quand l'API refuse.
+
+## Barre d'état à jour au lancement
+
+Quand `clm` lance un compte, il écrit d'abord les quotas 5 h et 7 j de ce compte dans le fichier d'état de la barre d'état (`%LOCALAPPDATA%\claude-statusline\state`), de sorte que les valeurs sont justes dès le premier affichage. Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `SessionStart` dans le `settings.json` de chaque compte. Si le compte n'a aucune fenêtre de 5 h ouverte, la barre garde `--%` sur 5 h jusqu'au premier message.
