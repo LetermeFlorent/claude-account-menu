@@ -50,7 +50,7 @@ Sous macOS, les jetons sont lus dans le trousseau avec la commande `security`. A
 
 `clm` lit les dossiers de configuration déjà présents : `.claude` devient le compte 1, et chaque dossier `.claude-compte2`, `.claude-compte3` et suivants devient un compte supplémentaire. La liste est écrite dans `%USERPROFILE%\.claude-accounts.json` à la première exécution.
 
-Sur un poste qui n'a qu'un seul compte, le menu n'en montre donc qu'un. Appuyer sur `a` pour en ajouter : le menu demande un nom, crée le dossier, puis ouvre la connexion dans le navigateur. Si claude.ai est déjà connecté sur un autre compte dans ce navigateur, copier le lien de connexion dans une fenêtre privée, sinon c'est l'autre compte qui sera enregistré.
+Sur un poste qui n'a qu'un seul compte, le menu n'en montre donc qu'un. Appuyer sur `a` pour en ajouter : le menu demande un nom, crée le dossier, puis ouvre la connexion dans le navigateur. Si claude.ai est déjà connecté sur un autre compte dans ce navigateur, copier le lien de connexion dans une fenêtre privée, sinon c'est l'autre compte qui sera enregistré. La touche `x` fait l'inverse : elle retire un compte du menu, et peut aussi effacer son dossier après en avoir rangé une archive dans Téléchargements.
 
 Pour vérifier que tout répond sans ouvrir le menu :
 

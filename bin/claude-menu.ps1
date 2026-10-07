@@ -3,6 +3,7 @@
 . (Join-Path $PSScriptRoot "claude-menu-save.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-restore.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-select.ps1")
+. (Join-Path $PSScriptRoot "claude-menu-remove.ps1")
 . (Join-Path $PSScriptRoot "claude-statusline-seed.ps1")
 . (Join-Path $PSScriptRoot "claude-update.ps1")
 
@@ -93,6 +94,12 @@ try {
       [Console]::CursorVisible = $true
       try { $msg = @(("  " + (Add-Account)), $script:Levels["7d"][0]) }
       catch { $msg = @(("  ajout impossible : " + $_.Exception.Message), $script:Ink.Alert) }
+      $redraw = $true
+    }
+    elseif ($k.KeyChar -eq "x") {
+      [Console]::CursorVisible = $true
+      try { $msg = @(("  " + (Show-RemoveMenu $idx)), $script:Levels["7d"][0]) }
+      catch { $msg = @(("  retrait impossible : " + $_.Exception.Message), $script:Ink.Alert) }
       $redraw = $true
     }
     elseif ($k.Key -eq "Escape" -or $k.KeyChar -eq "q") { break }

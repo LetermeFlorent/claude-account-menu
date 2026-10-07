@@ -59,3 +59,16 @@ function Read-AccountCredential {
   }
   try { return $raw | ConvertFrom-Json } catch { return $null }
 }
+
+function Remove-KeychainCredential {
+  param([string]$ConfigDir)
+  $svc = Get-KeychainService $ConfigDir
+  $acct = $script:KeychainAccount
+  $names = @($acct, ($acct + "#m"))
+  $meta = Read-KeychainItem $svc ($acct + "#m")
+  if ($meta) {
+    try { $n = [math]::Min([int](($meta | ConvertFrom-Json).n), 256) } catch { $n = 0 }
+    for ($i = 0; $i -lt $n; $i++) { $names += $acct + "#" + $i }
+  }
+  foreach ($a in $names) { try { & security delete-generic-password -a $a -s $svc 2>$null | Out-Null } catch {} }
+}

@@ -29,11 +29,18 @@ Les scripts arrivent dans `~/.local/bin`, avec le lanceur `clm`. L'installeur in
 Les flèches et Entrée lancent le compte sélectionné, les chiffres 1 à 9 lancent directement le compte correspondant. Le reste :
 
 - `a` ajoute un compte : nom, création du dossier, puis connexion dans le navigateur
+- `x` ouvre la page de retrait d'un compte
 - `s` sauvegarde les comptes cochés dans le dossier Téléchargements
 - `r` restaure tout ou partie d'une sauvegarde
 - `q` ou Échap quitte
 
 À l'ajout d'un compte, si claude.ai est déjà connecté dans le navigateur sur un autre compte, c'est cet autre compte qui sera enregistré. Ouvrir le lien de connexion dans une fenêtre privée évite le piège.
+
+## Retirer un compte
+
+La touche `x` liste les comptes. Une fois le compte choisi, deux sorties. `1` le retire du menu et laisse son dossier en place : il revient si on remet son entrée dans `.claude-accounts.json`. `2` le retire puis efface son dossier, avec connexion, historique et réglages. Avant d'effacer, le menu range une archive du compte dans Téléchargements, restaurable avec `r`, et n'efface rien si l'archive échoue.
+
+Les dossiers partagés (`skills`, `agents`, `rules` et les autres) sont des liens vers `.claude` : l'effacement retire le lien sans toucher à ce qu'il vise. Même chose pour `CLAUDE.md` et les autres fichiers liés. Sous macOS, les entrées du trousseau propres au compte partent avec lui. Le dossier `.claude` ne s'efface jamais depuis le menu, et le dernier compte restant ne peut pas être retiré.
 
 ## Ligne de commande
 

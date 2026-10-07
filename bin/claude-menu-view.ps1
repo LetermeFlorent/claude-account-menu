@@ -120,5 +120,5 @@ function Show-AccountMenu {
   Write-Segs $rule
   for ($i = 0; $i -lt $Usages.Count; $i++) { Write-AccountCard $Usages[$i] ($i + 1) ($i -eq $Idx) }
   Write-Segs $rule
-  Write-Segs @(, @("  Entree ou 1-9 lancer   a ajouter   s sauvegarder   r restaurer   q quitter", $script:Ink.Dim, $false))
+  Write-Segs @(, @("  Entree lancer  a ajouter  x retirer  s sauvegarder  r restaurer  q quitter", $script:Ink.Dim, $false))
 }
