@@ -26,7 +26,7 @@ foreach ($a in $args) {
     exit 0
   }
   elseif ($a -match "^--save(=(.+))?$") {
-    $sel = Select-ByLabel @(Get-Accounts) $Matches[2]
+    try { $sel = Select-ByLabel @(Get-Accounts) $Matches[2] } catch { Write-Output $_.Exception.Message; exit 1 }
     Write-Output ("sauvegarde : " + (Save-Accounts "" $sel))
     exit 0
   }
@@ -36,7 +36,8 @@ foreach ($a in $args) {
 }
 
 if ($restoreZip) {
-  Write-Output (Restore-Accounts $restoreZip (Select-ByLabel @(Get-ZipAccounts $restoreZip) $only))
+  try { $sel = Select-ByLabel @(Get-ZipAccounts $restoreZip) $only } catch { Write-Output $_.Exception.Message; exit 1 }
+  Write-Output (Restore-Accounts $restoreZip $sel)
   exit 0
 }
 

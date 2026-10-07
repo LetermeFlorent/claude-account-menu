@@ -95,6 +95,9 @@ function Show-RemoveMenu {
   if ($erasable) {
     Write-Segs @(, @("  2  le retirer et effacer son dossier : connexion, historique, reglages", $script:Ink.Alert, $false))
     Write-Segs @(, @("     une archive de securite est d'abord rangee dans Telechargements", $script:Ink.Dim, $false))
+    if ($script:OsName -eq "MacOS") {
+      Write-Segs @(, @("     la connexion, gardee dans le trousseau, n'est pas dans l'archive", $script:Ink.Dim, $false))
+    }
   } else {
     Write-Segs @(, @(("     le dossier " + $acc.Dir + " n'est jamais efface d'ici"), $script:Ink.Dim, $false))
   }

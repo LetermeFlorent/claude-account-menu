@@ -14,13 +14,6 @@ function ConvertTo-DateOffset {
   try { return [DateTimeOffset]::Parse($s, $script:Invariant) } catch { return $null }
 }
 
-function Format-CutTime {
-  param([DateTimeOffset]$At, [DateTimeOffset]$Now)
-  $a = $At.ToLocalTime()
-  if ($a.Date -eq $Now.ToLocalTime().Date) { return $a.ToString("HH:mm", $script:Invariant) }
-  return $a.ToString("dd/MM HH:mm", $script:Invariant)
-}
-
 function New-Pace {
   param([string]$Text, [string]$Tone)
   return [PSCustomObject]@{ Text = $Text; Tone = $Tone }
@@ -35,17 +28,13 @@ function Get-UsagePace {
   $left = ($r - $Now).TotalSeconds
   if ($left -le 0) { return $null }
   $p = [double]$Pct
-  if ($p -ge 100) { return New-Pace "coupe jusqu'au reset" "alert" }
-  $elapsed = $dur - $left
-  $part = $elapsed / $dur
-  if ($part -lt 0.10) { return New-Pace "trop tot" "dim" }
+  if ($p -ge 100) { return New-Pace "epuise" "alert" }
+  $part = ($dur - $left) / $dur
+  if ($part -lt 0.10) { return New-Pace "debut" "dim" }
+  # Pourcentage projete a la fin de la fenetre au rythme actuel
   $proj = $p / $part
-  if ($proj -lt 70) { return New-Pace "large" "ok" }
-  if ($proj -le 100) { return New-Pace "bon rythme" "dim" }
-  $unit = 3600; $suffix = "%/h"
-  if ($Kind -eq "7d") { $unit = 86400; $suffix = "%/j" }
-  $max = "max " + [int][math]::Round((100 - $p) / $left * $unit, 0, [MidpointRounding]::AwayFromZero) + $suffix
-  if ($proj -le 130) { return New-Pace ("agressif, " + $max) "warn" }
-  $cut = $Now.AddSeconds((100 - $p) / ($p / $elapsed))
-  return New-Pace ("trop, coupe vers " + (Format-CutTime $cut $Now) + ", " + $max) "alert"
+  if ($proj -lt 70) { return New-Pace "faible" "ok" }
+  if ($proj -le 100) { return New-Pace "normal" "dim" }
+  if ($proj -le 130) { return New-Pace "fort" "warn" }
+  return New-Pace "excessif" "alert"
 }

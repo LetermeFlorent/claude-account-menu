@@ -57,6 +57,9 @@ function Show-SaveMenu {
 function Select-ByLabel {
   param($Accs, [string]$Labels)
   if ([string]::IsNullOrWhiteSpace($Labels)) { return $Accs }
-  $want = $Labels -split "," | ForEach-Object { $_.Trim() }
+  $want = @($Labels -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+  # Un nom mal tape ne doit jamais retomber sur tous les comptes
+  $unknown = @($want | Where-Object { $w = $_; @($Accs | Where-Object { $_.Label -eq $w }).Count -eq 0 })
+  if ($unknown.Count -gt 0) { throw ("compte inconnu : " + ($unknown -join ", ")) }
   return @($Accs | Where-Object { $want -contains $_.Label })
 }
