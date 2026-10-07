@@ -56,7 +56,7 @@ Récupérer la dernière version avec `git pull` dans le dossier cloné, puis re
 
 ## Désinstaller
 
-Supprimer de `%USERPROFILE%\.local\bin` les fichiers `clm.cmd`, `claude-menu.cmd`, `claude-menu*.ps1`, `claude-usage*.ps1` et `claude-accounts.ps1`. Supprimer ensuite le cache des quotas dans `%LOCALAPPDATA%\claude-menu`. Les dossiers de comptes et `.claude-accounts.json` restent en place : ils appartiennent à Claude Code, pas au menu.
+Retirer l'entrée `SessionStart` qui mentionne `claude-statusline-seed.ps1` du `settings.json` de chaque compte (ou remettre `settings.json.bak-seed`). Supprimer de `%USERPROFILE%\.local\bin` les fichiers `clm.cmd`, `claude-menu.cmd`, `claude-menu*.ps1`, `claude-usage*.ps1`, `claude-statusline-seed.ps1` et `claude-accounts.ps1`. Supprimer ensuite le cache des quotas dans `%LOCALAPPDATA%\claude-menu`. Les dossiers de comptes et `.claude-accounts.json` restent en place : ils appartiennent à Claude Code, pas au menu.
 
 ## En cas de problème
 
