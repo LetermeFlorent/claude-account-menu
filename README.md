@@ -4,6 +4,8 @@ Menu en terminal pour jongler entre plusieurs comptes Claude Code sur un même p
 
 ## Installation
 
+Le guide complet, avec la vérification, la mise à jour et la désinstallation, est dans [INSTALL.md](INSTALL.md). Version courte :
+
 Il faut Windows 10 1803 ou plus récent (pour `tar.exe`), PowerShell 5.1, et Claude Code déjà installé.
 
 ```powershell
