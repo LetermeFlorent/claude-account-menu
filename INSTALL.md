@@ -103,7 +103,7 @@ Si `clm` n'est pas reconnu, le terminal a été ouvert avant l'installation. En 
 
 Si la mise à jour affiche "verification impossible", `claude update` n'a rien annoncé en 20 secondes, souvent faute de réseau : le menu s'ouvre quand même avec la version installée. "telechargement bloque" signale un téléchargement figé pendant 90 secondes, et "deja en cours ailleurs" une autre session qui met déjà Claude Code à jour. `clm --no-update` ouvre le menu sans attendre.
 
-Si un compte affiche "jeton refuse" ou "jeton a rafraichir", lancer ce compte une fois avec son numéro (`clm -2` par exemple) : Claude Code renouvelle le jeton au démarrage. "non connecte" veut dire qu'aucun jeton n'a été trouvé : lancer le compte et taper `/login`.
+Sous Windows et Linux, le menu renouvelle lui-même un jeton expiré. Si un compte affiche quand même "jeton refuse" ou "jeton a rafraichir", lancer ce compte une fois avec son numéro (`clm -2` par exemple) : Claude Code renouvelle le jeton au démarrage. "non connecte" veut dire qu'aucun jeton n'a été trouvé : lancer le compte et taper `/login`.
 
 Si un compte affiche "quota inconnu", l'API de suivi limite ses appels et aucune valeur récente n'est en cache. Attendre le délai indiqué puis rouvrir le menu. Quand le cache a des valeurs, le menu les affiche avec la mention "valeurs lues il y a".
 

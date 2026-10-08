@@ -33,7 +33,7 @@ Au démarrage, `clm` met d'abord Claude Code à jour (voir plus bas), affiche "C
 - une ligne avec son numéro, son nom, l'adresse e-mail du compte, et à droite son abonnement (`Max 20x`, `Max 5x`, `Pro`, etc.), précédé d'un badge rouge "quota 7d atteint" ou "quota 5h atteint" quand un quota est à 100 % ;
 - une ligne avec les barres 5 h et 7 j : 8 cases, le pourcentage, le temps avant remise à zéro (`2h05m`, `3j4h`, `0m`, ou `-` s'il est inconnu) et le mot qui résume le rythme d'utilisation ;
 - à la place des barres, un message d'erreur en rouge quand les quotas ne sont pas lisibles ;
-- "valeurs lues il y a ..." quand les chiffres viennent du cache depuis plus d'une minute.
+- "valeurs lues il y a ..." quand les chiffres viennent du cache depuis plus d'une minute, ou "fenetre passee depuis la derniere lecture il y a ..." quand une remise à zéro a eu lieu depuis.
 
 Les barres changent de teinte à 30 % puis à 70 %, comme la barre d'état : violet, mauve et rouge framboise pour le 5 h, vert, ocre et rouge pour le 7 j. Leur dégradé reprend `gradient.5h` et `gradient.7d` de `~/.claude/statusline.json` s'ils y sont. Le menu fait 78 colonnes de large.
 
@@ -116,7 +116,7 @@ clm --restore=<fichier> --only=compte2
 
 `-N` accepte un chiffre de 1 à 9. Un numéro sans compte affiche "pas de compte N" et sort avec le code 1. `--save=` et `--only=` prennent des noms de comptes, ceux affichés dans le menu, séparés par des virgules, sans tenir compte des majuscules. Un nom inconnu arrête la commande avec "compte inconnu : ..." et le code 1, sans rien sauvegarder ni restaurer.
 
-`--usage`, `--save` et `--restore` font leur travail et sortent aussitôt, sans menu ni mise à jour de Claude Code. `--restore` ne demande pas de confirmation, mais garde comme dans le menu une copie de l'état actuel des comptes visés. `--usage` écrit une ligne par compte, de la forme `pro moi@exemple.fr Max 5x | 5h 70% reset 18:30 (dans 2h05), fort | 7d 30% reset 12/10 09:00 (dans 4j3h), normal`, suivie de "(lu il y a ...)" quand les chiffres viennent du cache, ou du message d'erreur à la place des quotas. Il n'y a pas d'option `--help`.
+`--usage`, `--save` et `--restore` font leur travail et sortent aussitôt, sans menu ni mise à jour de Claude Code. `--restore` ne demande pas de confirmation, mais garde comme dans le menu une copie de l'état actuel des comptes visés. `--usage` écrit une ligne par compte, de la forme `pro moi@exemple.fr Max 5x | 5h 70% reset 18:30 (dans 2h05), fort | 7d 30% reset 12/10 09:00 (dans 4j3h), normal`, suivie de "(lu il y a ...)" quand les chiffres viennent du cache, ou "(fenetre passee, lu il y a ...)" quand une remise à zéro a eu lieu depuis, ou du message d'erreur à la place des quotas. Il n'y a pas d'option `--help`.
 
 ## Mise à jour de Claude Code
 
@@ -190,14 +190,14 @@ Les comptes sont rangés dans `~/.claude-accounts.json` (`%USERPROFILE%\.claude-
 
 ## Quotas
 
-Les pourcentages viennent de l'API `api.anthropic.com/api/oauth/usage`, avec le jeton du compte. Il est lu dans `.credentials.json` du dossier du compte, et sous macOS d'abord dans le trousseau, où Claude Code le range. `clm` ne renouvelle jamais un jeton et n'écrit rien dans le trousseau. Les comptes sont interrogés l'un après l'autre, avec 10 secondes au plus par appel.
+Les pourcentages viennent de l'API `api.anthropic.com/api/oauth/usage`, avec le jeton du compte. Il est lu dans `.credentials.json` du dossier du compte, et sous macOS d'abord dans le trousseau, où Claude Code le range. Sous Windows et Linux, un jeton expiré est renouvelé par `clm` lui-même avec le refresh token du compte, comme Claude Code le fait au démarrage, puis `.credentials.json` est réécrit. Le serveur peut remplacer le refresh token à cette occasion : une session Claude Code restée ouverte sur ce compte avec l'ancien peut alors redemander un `/login`. Sous macOS, `clm` ne renouvelle rien et n'écrit rien dans le trousseau. Les comptes sont interrogés l'un après l'autre, avec 10 secondes au plus par appel.
 
-Les résultats sont gardés deux minutes dans un cache, utilisé aussi par `--usage` : `%LOCALAPPDATA%\claude-menu\usage.json` sous Windows, `~/Library/Caches/claude-menu/usage.json` sous macOS et `${XDG_CACHE_HOME:-~/.cache}/claude-menu/usage.json` sous Linux. Quand l'API limite les appels, ou que le jeton a expiré, le menu affiche les dernières valeurs du cache, avec leur âge.
+Les résultats sont gardés deux minutes dans un cache, utilisé aussi par `--usage` : `%LOCALAPPDATA%\claude-menu\usage.json` sous Windows, `~/Library/Caches/claude-menu/usage.json` sous macOS et `${XDG_CACHE_HOME:-~/.cache}/claude-menu/usage.json` sous Linux. Quand l'API limite les appels, ou que le jeton a expiré sans pouvoir être renouvelé, le menu affiche les dernières valeurs du cache, avec leur âge. Une fenêtre dont la remise à zéro a eu lieu depuis cette lecture repart à 0 %, sans heure, avec la mention "fenetre passee".
 
 Un compte sans chiffres affiche l'un de ces messages :
 
 - "non connecte" : pas de jeton pour ce compte ;
-- "jeton a rafraichir, lancer le compte une fois" : le jeton a expiré et le cache est vide ;
+- "jeton a rafraichir, lancer le compte une fois" : le jeton a expiré, n'a pas pu être renouvelé, et le cache est vide ;
 - "jeton refuse, lancer le compte une fois" : l'API refuse le jeton ;
 - "quota inconnu, l'API de suivi refuse les appels (reessai dans ...)" : l'API limite les appels et le cache est vide ;
 - "API de suivi injoignable" : pas de réseau, ou une autre erreur.
@@ -232,6 +232,7 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | `~/.claude-compteN/` | dossiers des comptes ajoutés |
 | `settings.json` de chaque compte, et sa copie `settings.json.bak-seed` | hook `SessionStart`, ajouté par l'installeur |
 | cache `claude-menu/usage.json` | quotas des deux dernières minutes |
+| `.credentials.json` de chaque compte, hors macOS | jeton renouvelé quand il a expiré |
 | fichier d'état `claude-statusline/state` | quotas pour la barre d'état |
 | `claude-comptes-*.zip` ou `.tar.gz` dans Téléchargements | sauvegardes |
 
@@ -245,4 +246,4 @@ La CI lance ces tests à chaque envoi sur `main` et sur chaque pull request, sou
 
 ## Limites
 
-Les touches `1` à `9` et `-1` à `-9` ne couvrent que les neuf premiers comptes. La page de restauration ne propose que les neuf sauvegardes les plus récentes. Les quotas viennent d'une API non documentée d'Anthropic, qui peut changer ou limiter les appels. Sous macOS, les sauvegardes ne contiennent pas les jetons de connexion.
+Les touches `1` à `9` et `-1` à `-9` ne couvrent que les neuf premiers comptes. La page de restauration ne propose que les neuf sauvegardes les plus récentes. Les quotas viennent d'une API non documentée d'Anthropic, qui peut changer ou limiter les appels. Le renouvellement des jetons passe lui aussi par un point d'accès OAuth non documenté : s'il change, le menu retombe sur le cache et le message "jeton a rafraichir". Sous macOS, les sauvegardes ne contiennent pas les jetons de connexion.

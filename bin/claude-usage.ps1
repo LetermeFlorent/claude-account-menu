@@ -1,6 +1,7 @@
 . (Join-Path $PSScriptRoot "claude-usage-cache.ps1")
 . (Join-Path $PSScriptRoot "claude-usage-pace.ps1")
 . (Join-Path $PSScriptRoot "claude-accounts.ps1")
+. (Join-Path $PSScriptRoot "claude-token-refresh.ps1")
 
 function Get-PlanName {
   param($Oauth)
@@ -32,8 +33,12 @@ function Get-CompteUsage {
     if ([string]::IsNullOrEmpty($tok)) { $out.Error = "non connecte"; return $out }
     $expMs = [long]$cred.claudeAiOauth.expiresAt
     if ($expMs -gt 0 -and $expMs -lt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()) {
-      if ($cached -ne $null) { Copy-CacheEntry $cached $out } else { $out.Error = "jeton a rafraichir, lancer le compte une fois" }
-      return $out
+      $fresh = Update-AccountToken $Acc $cred
+      if ($fresh -eq $null) {
+        if ($cached -ne $null) { Copy-CacheEntry $cached $out } else { $out.Error = "jeton a rafraichir, lancer le compte une fois" }
+        return $out
+      }
+      $tok = $fresh.claudeAiOauth.accessToken
     }
     $h = @{"Authorization"="Bearer $tok"; "anthropic-beta"="oauth-2025-04-20"; "Accept"="application/json"}
     $ProgressPreference = "SilentlyContinue"
@@ -99,7 +104,7 @@ function Format-PaceSuffix {
 
 function Format-Stale {
   param($U)
-  if ($U.Expired) { return " (perime, lu il y a " + (Format-Age $U.Age) + ")" }
+  if ($U.Expired) { return " (fenetre passee, lu il y a " + (Format-Age $U.Age) + ")" }
   if ($U.Age -eq $null -or $U.Age -lt 60) { return "" }
   return " (lu il y a " + (Format-Age $U.Age) + ")"
 }

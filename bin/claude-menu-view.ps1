@@ -108,7 +108,7 @@ function Write-AccountCard {
   }
   $note = ""
   if ($U.Age -ne $null -and $U.Age -ge 60) { $note = "       valeurs lues il y a " + (Format-Age $U.Age) }
-  if ($U.Expired) { $note = "       perime, fenetre passee depuis la derniere lecture il y a " + (Format-Age $U.Age) }
+  if ($U.Expired) { $note = "       fenetre passee depuis la derniere lecture il y a " + (Format-Age $U.Age) }
   Write-Segs @(, @($note, $script:Ink.Dim, $false))
 }
 
