@@ -21,7 +21,7 @@ function Get-RetryAfter {
 function Get-CompteUsage {
   param($Acc)
   $Label = $Acc.Label
-  $out = [PSCustomObject]@{Label=$Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null}
+  $out = [PSCustomObject]@{Label=$Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null; Expired=$false}
   $cred = Read-AccountCredential $Acc
   if ($cred -ne $null) { $out.Plan = Get-PlanName $cred.claudeAiOauth }
   $cached = (Read-UsageCache)[$Label]
@@ -99,6 +99,7 @@ function Format-PaceSuffix {
 
 function Format-Stale {
   param($U)
+  if ($U.Expired) { return " (perime, lu il y a " + (Format-Age $U.Age) + ")" }
   if ($U.Age -eq $null -or $U.Age -lt 60) { return "" }
   return " (lu il y a " + (Format-Age $U.Age) + ")"
 }

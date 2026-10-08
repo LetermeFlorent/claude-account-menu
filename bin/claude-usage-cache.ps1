@@ -34,6 +34,11 @@ function Copy-CacheEntry {
   $Out.Pct5 = $Entry.Pct5; $Out.Reset5 = $Entry.Reset5
   $Out.Pct7 = $Entry.Pct7; $Out.Reset7 = $Entry.Reset7
   $Out.Age = Get-CacheAge $Entry
+  $now = [DateTimeOffset]::UtcNow
+  foreach ($k in @("5", "7")) {
+    $r = ConvertTo-DateOffset $Out.("Reset" + $k)
+    if ($r -ne $null -and $r -le $now) { $Out.("Pct" + $k) = 0; $Out.("Reset" + $k) = $null; $Out.Expired = $true }
+  }
 }
 
 function Format-Age {
