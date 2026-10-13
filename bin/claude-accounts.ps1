@@ -99,7 +99,11 @@ function Test-SameFile {
   param([string]$A, [string]$B)
   $links = @((Get-Item -LiteralPath $A -Force).Target | Where-Object { $_ })
   if ($links.Count -gt 0) { return @($links | Where-Object { (ConvertTo-PathKey $_) -eq (ConvertTo-PathKey $B) }).Count -gt 0 }
-  if ($script:OsName -eq "Windows") { return $false }
+  if ($script:OsName -eq "Windows") {
+    $drive = [IO.Path]::GetPathRoot($A).TrimEnd("\\")
+    $links = @(& fsutil hardlink list $A 2>$null | ForEach-Object { $drive + $_ })
+    return @($links | Where-Object { (ConvertTo-PathKey $_) -eq (ConvertTo-PathKey $B) }).Count -gt 0
+  }
   return (Get-FileHash -LiteralPath $A).Hash -eq (Get-FileHash -LiteralPath $B).Hash
 }
 
