@@ -3,6 +3,12 @@
 
 function Write-UpdateProgress {
   param([string]$Label, [string]$Bar, [string]$Pct, [string]$Detail)
+  if ($script:UiOn) {
+    $p = -1
+    if ($Pct -match "\d+") { $p = [int]$Matches[0] }
+    Set-UiProgress $Label $p $Detail
+    return
+  }
   $head = "  " + $Label + "  "
   $mid = ""
   if ($Pct) { $mid = "  " + $Pct }
@@ -58,10 +64,10 @@ function Invoke-ClaudeUpdate {
       }
       Show-UpdateTick $state $watch $tick
       $tick++
-      Start-Sleep -Milliseconds 250
+      Wait-Progress 250
     }
   } finally {
-    Write-Host ("`r" + (" " * ($script:ViewWidth - 1)) + "`r") -NoNewline
+    if (-not $script:UiOn) { Write-Host ("`r" + (" " * ($script:ViewWidth - 1)) + "`r") -NoNewline }
   }
   $code = -1
   if ($proc.HasExited) { $code = $proc.ExitCode }
@@ -107,7 +113,7 @@ function Update-ClaudeForAccounts {
   $parts = @(); $kinds = @()
   foreach ($g in Get-UpdateGroups $Accounts) {
     $o = Invoke-ClaudeUpdate $g.Exe $g.Accounts[0]
-    foreach ($a in $g.Accounts) { Write-Segs @(@(("  " + $a.Label + "  "), $script:Ink.Text, $true), @($o.Text, (Get-UpdateInk $o.Kind), $false)) }
+    if (-not $script:UiOn) { foreach ($a in $g.Accounts) { Write-Segs @(@(("  " + $a.Label + "  "), $script:Ink.Text, $true), @($o.Text, (Get-UpdateInk $o.Kind), $false)) } }
     $parts += Format-UpdateMessage $g.Accounts $o.Text
     $kinds += $o.Kind
   }

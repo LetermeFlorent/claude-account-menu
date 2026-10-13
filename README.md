@@ -28,16 +28,20 @@ Les deux installeurs ajoutent aussi un hook `SessionStart` aux comptes existants
 
 ## Le menu
 
-Au démarrage, `clm` met d'abord Claude Code à jour (voir plus bas), affiche "Chargement usage...", puis le menu. L'en-tête "Comptes Claude Code" porte l'heure du dernier affichage. Chaque compte occupe un bloc :
+Le menu s'ouvre tout de suite, en plein écran, pendant que la mise à jour de Claude Code (voir plus bas) et la lecture des quotas tournent en arrière-plan. Un compte dont les quotas sont dans le cache depuis moins de deux minutes s'affiche aussitôt. Les autres montrent une barre qui scintille et "lecture...", puis leurs barres se remplissent à l'arrivée des chiffres. L'en-tête "Comptes Claude Code" porte l'heure, tenue à jour. Chaque compte occupe un bloc :
 
-- une ligne avec son numéro, son nom, l'adresse e-mail du compte, et à droite son abonnement (`Max 20x`, `Max 5x`, `Pro`, etc.), précédé d'un badge rouge "quota 7d atteint" ou "quota 5h atteint" quand un quota est à 100 % ;
-- une ligne avec les barres 5 h et 7 j : 8 cases, le pourcentage, le temps avant remise à zéro (`2h05m`, `3j4h`, `0m`, ou `-` s'il est inconnu) et le mot qui résume le rythme d'utilisation ;
-- à la place des barres, un message d'erreur en rouge quand les quotas ne sont pas lisibles ;
-- "valeurs lues il y a ..." quand les chiffres viennent du cache depuis plus d'une minute, ou "fenetre passee depuis la derniere lecture il y a ..." quand une remise à zéro a eu lieu depuis.
+- une ligne avec son numéro, son nom, et à droite son abonnement (`Max 20x`, `Max 5x`, `Pro`, etc.), précédé d'un badge rouge "quota 7d atteint" ou "quota 5h atteint" quand un quota est à 100 % ;
+- l'adresse e-mail du compte, avec à droite "lu il y a ..." quand les chiffres viennent du cache depuis plus d'une minute, ou "fenetre passee, lu il y a ..." quand une remise à zéro a eu lieu depuis ;
+- une barre 5 h et une barre 7 j, chacune avec le pourcentage, le temps avant remise à zéro (`2h05m`, `3j4h`, `0m`, ou `-` s'il est inconnu) et le mot qui résume le rythme d'utilisation ;
+- à la place des barres, un message d'erreur en rouge quand les quotas ne sont pas lisibles.
 
-Les barres changent de teinte à 30 % puis à 70 %, comme la barre d'état : violet, mauve et rouge framboise pour le 5 h, vert, ocre et rouge pour le 7 j. Leur dégradé reprend `gradient.5h` et `gradient.7d` de `~/.claude/statusline.json` s'ils y sont. Le menu fait 78 colonnes de large.
+Les barres changent de teinte à 30 % puis à 70 %, comme la barre d'état : violet, mauve et rouge framboise pour le 5 h, vert, ocre et rouge pour le 7 j. Leur dégradé reprend `gradient.5h` et `gradient.7d` de `~/.claude/statusline.json` s'ils y sont.
 
-Le curseur part sur le premier compte lisible dont aucun quota n'est à 100 %, à défaut sur le premier. Les quotas ne se rafraîchissent pas seuls : ils sont relus après chaque ajout, retrait, sauvegarde ou restauration.
+Le menu suit la taille du terminal, jusqu'à 100 colonnes de large. Quand la hauteur manque pour les blocs complets, chaque compte passe sur trois lignes, nom et e-mail sur la première, les deux barres côte à côte sur la deuxième, et la liste défile, une flèche au bout du filet signalant les comptes cachés. Sous 40 colonnes, ou dans un terminal très bas, il ne reste qu'une ligne par compte, quotas en texte. Le compte sélectionné garde sa pleine intensité, les autres sont un peu atténués, et le repère glisse d'un compte à l'autre.
+
+Le curseur part sur le premier compte lisible dont aucun quota n'est à 100 %, à défaut sur le premier, et suit cette règle tant que les quotas arrivent, sauf si on l'a déjà déplacé. Les quotas sont relus deux minutes après la fin de la lecture précédente tant que le menu reste ouvert, et après chaque ajout, retrait, sauvegarde ou restauration.
+
+Les transitions durent de 120 à 400 millisecondes. Elles suivent le réglage du système (animations de Windows, "réduire les animations" de macOS, `enable-animations` de GNOME) et la variable `CLM_ANIM` passe outre : `0` les coupe, `1` les force. Sans animation, le menu s'affiche directement dans son état final.
 
 ### Touches
 
@@ -52,15 +56,15 @@ Le pied du menu rappelle les touches principales :
 | `x` | retirer un compte |
 | `s` | sauvegarder des comptes |
 | `r` | restaurer une sauvegarde |
-| `q` ou Échap | quitter |
+| `q`, Échap ou Ctrl+C | quitter |
 
-Les lettres marchent aussi en majuscules. Après une action, son résultat reste affiché sous le menu jusqu'à l'action suivante.
+Les lettres marchent aussi en majuscules. Après une action, son résultat reste affiché sous le menu jusqu'à l'action suivante. Dans les pages de sauvegarde, de restauration et de retrait, Ctrl+C annule la page puis ferme le menu. Pendant une sauvegarde ou une mise à jour, il laisse l'opération se terminer avant de fermer.
 
 ### Lancement d'un compte
 
 Claude Code démarre dans le même terminal, avec `CLAUDE_CONFIG_DIR` pointé sur le dossier du compte, ou sans cette variable pour `.claude`. Juste avant, `clm` écrit les quotas du compte dans le fichier d'état de la barre d'état. L'exécutable est `~/.local/bin/claude` (`claude.exe` sous Windows) s'il existe, sinon le premier `claude` du PATH. Les arguments de `clm` qu'il ne reconnaît pas passent à Claude Code, et le code de sortie de Claude Code devient celui de `clm`.
 
-Si le terminal ne permet pas le menu interactif, `clm` affiche la liste des comptes avec leurs quotas et demande un numéro.
+Si le terminal ne permet pas le menu interactif (entrée ou sortie redirigée, hôte autre que la console, terminal sans séquences VT), `clm` affiche la liste des comptes avec leurs quotas et demande un numéro.
 
 ## Rythme d'utilisation
 
@@ -120,9 +124,9 @@ clm --restore=<fichier> --only=compte2
 
 ## Mise à jour de Claude Code
 
-Avant d'afficher le menu, et avant un lancement direct comme `clm -2`, `clm` lance `claude update` avec l'environnement du premier compte. Tous les comptes partagent le même exécutable, donc la mise à jour ne tourne qu'une fois, et son résultat s'affiche en face de chaque compte puis reste sous le menu.
+À l'ouverture du menu, et avant un lancement direct comme `clm -2`, `clm` lance `claude update` avec l'environnement du premier compte. Tous les comptes partagent le même exécutable, donc la mise à jour ne tourne qu'une fois. Dans le menu, son résultat reste en bas jusqu'à l'action suivante. Hors menu, il s'affiche en face de chaque compte. Les touches tapées pendant la mise à jour sont traitées à la fin.
 
-Pendant l'étape, une ligne suit l'avancement. Elle indique "recherche de mise a jour" tant que `claude update` n'a rien annoncé, puis "mise a jour <version>" avec un témoin d'attente et la dernière ligne écrite par `claude update`. Pour une installation native, `clm` surveille le fichier en cours de téléchargement : la ligne passe à "telechargement <version>" avec le pourcentage et les mégaoctets reçus, puis à "installation <version>" à 100 %. La taille attendue est lue dans le manifeste publié par Anthropic, et sans elle seuls les mégaoctets s'affichent. Une installation par paquet (npm) reste sur "mise a jour <version>" jusqu'à la fin.
+Pendant l'étape, une ligne suit l'avancement, en bas du menu, avec une barre qui se remplit ou va et vient quand le pourcentage est inconnu. Elle indique "recherche de mise a jour" tant que `claude update` n'a rien annoncé, puis "mise a jour <version>" avec un témoin d'attente et la dernière ligne écrite par `claude update`. Pour une installation native, `clm` surveille le fichier en cours de téléchargement : la ligne passe à "telechargement <version>" avec le pourcentage et les mégaoctets reçus, puis à "installation <version>" à 100 %. La taille attendue est lue dans le manifeste publié par Anthropic, et sans elle seuls les mégaoctets s'affichent. Une installation par paquet (npm) reste sur "mise a jour <version>" jusqu'à la fin.
 
 Le résultat est l'un de ces messages :
 
@@ -161,7 +165,7 @@ L'archive n'est pas chiffrée et contient les jetons de connexion, sauf sous mac
 
 ### Restaurer
 
-La touche `r` liste les 9 sauvegardes `claude-comptes-*` les plus récentes du dossier Téléchargements, avec leur date et leur taille. Un chiffre choisit l'archive, toute autre touche annule. La page suivante coche les comptes présents dans l'archive, avec les mêmes touches que pour la sauvegarde. Il faut ensuite confirmer par `o`.
+La touche `r` liste les 9 sauvegardes `claude-comptes-*` les plus récentes du dossier Téléchargements, avec leur date et leur taille. Les flèches et Entrée, ou un chiffre, choisissent l'archive, Échap ou `q` revient au menu. La page suivante coche les comptes présents dans l'archive, avec les mêmes touches que pour la sauvegarde. Il faut ensuite confirmer par `o`.
 
 La restauration fait trois choses :
 
@@ -219,6 +223,8 @@ Le menu choisit sa palette au démarrage, dans cet ordre :
 
 À défaut, la palette sombre s'applique.
 
+Menu ouvert, `clm` relit le thème du système toutes les deux secondes et passe d'une palette à l'autre en fondu quand il change, fond compris. `STATUSLINE_BG` ou `terminal_background` fixent la palette et coupent ce suivi.
+
 ## Barre d'état à jour au lancement
 
 Quand `clm` lance un compte, il écrit d'abord les quotas 5 h et 7 j de ce compte dans le fichier d'état de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline), de sorte que les valeurs sont justes dès le premier affichage. Ce fichier est `%LOCALAPPDATA%\claude-statusline\state` sous Windows, `~/Library/Application Support/claude-statusline/state` sous macOS et `${XDG_STATE_HOME:-~/.local/state}/claude-statusline/state` sous Linux. Rien n'est écrit si son dossier n'existe pas, c'est-à-dire si la barre n'a jamais tourné, ni si les quotas du compte ne sont pas lisibles.
@@ -242,7 +248,7 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | fichier d'état `claude-statusline/state` | quotas pour la barre d'état |
 | `claude-comptes-*.zip` ou `.tar.gz` dans Téléchargements | sauvegardes |
 
-Il lit `USERPROFILE` puis `HOME` pour le dossier personnel, `LOCALAPPDATA` sous Windows, `XDG_CACHE_HOME`, `XDG_STATE_HOME` et `XDG_CONFIG_HOME` sous Linux, `STATUSLINE_BG` et `GTK_THEME` pour les couleurs, et `CLAUDE_CONFIG_DIR` dans le hook. Il pose ou retire lui-même `CLAUDE_CONFIG_DIR` pour lancer un compte.
+Il lit `USERPROFILE` puis `HOME` pour le dossier personnel, `LOCALAPPDATA` sous Windows, `XDG_CACHE_HOME`, `XDG_STATE_HOME` et `XDG_CONFIG_HOME` sous Linux, `STATUSLINE_BG` et `GTK_THEME` pour les couleurs, `CLM_ANIM` pour les animations, et `CLAUDE_CONFIG_DIR` dans le hook. Il pose ou retire lui-même `CLAUDE_CONFIG_DIR` pour lancer un compte.
 
 ## Tests
 

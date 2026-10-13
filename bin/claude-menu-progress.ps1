@@ -59,6 +59,7 @@ function Get-WaitBar {
 
 function Write-TarProgress {
   param([string]$Label, [int]$Pct)
+  if ($script:UiOn) { Set-UiProgress $Label $Pct; return }
   Write-Host ("`r  " + $Label + "  " + (Get-ProgressBar $Pct) + "  " + ("" + $Pct + " %").PadLeft(5) + "   ") -NoNewline
 }
 
@@ -74,7 +75,7 @@ function Wait-Tar {
   param($Proc, [string]$OutLog, [string]$ErrLog, [long]$Total, [string]$Label)
   $last = -1; $seen = 0; $done = [long]0
   while (-not $Proc.HasExited) {
-    Start-Sleep -Milliseconds 400
+    Wait-Progress 400
     $lines = @(Get-TarEntries $OutLog $ErrLog)
     for ($i = $seen; $i -lt $lines.Count; $i++) { $done += Get-EntryWeight $lines[$i] }
     $seen = $lines.Count
@@ -83,5 +84,5 @@ function Wait-Tar {
     if ($pct -ne $last) { Write-TarProgress $Label $pct; $last = $pct }
   }
   Write-TarProgress $Label 100
-  Write-Host ""
+  if (-not $script:UiOn) { Write-Host "" }
 }

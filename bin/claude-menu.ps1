@@ -7,6 +7,7 @@
 . (Join-Path $PSScriptRoot "claude-statusline-seed.ps1")
 . (Join-Path $PSScriptRoot "claude-update.ps1")
 . (Join-Path $PSScriptRoot "claude-sync.ps1")
+. (Join-Path $PSScriptRoot "claude-menu-loop.ps1")
 
 function Start-Account {
   param($Acc, $Extra)
@@ -51,80 +52,25 @@ if ($direct -ne $null) {
   exit $LASTEXITCODE
 }
 
-function Get-DefaultIndex {
-  param($Usages)
-  for ($i = 0; $i -lt $Usages.Count; $i++) {
-    $u = $Usages[$i]
-    if ($u.Error -eq $null -and [int]$u.Pct5 -lt 100 -and [int]$u.Pct7 -lt 100) { return $i }
-  }
-  return 0
-}
-
-$msg = @("", $script:Ink.Dim)
-if ($update) { $msg = Update-ClaudeForAccounts @(Get-Accounts) }
-Write-Host "Chargement usage..." -ForegroundColor DarkGray
-$usages = @(Get-AllUsages)
-$idx = Get-DefaultIndex $usages
 $chosen = $null
-$cursor = $true
-try {
-  Clear-Host
-  $top = [Console]::CursorTop
-  try { $cursor = [Console]::CursorVisible } catch {}
-  [Console]::CursorVisible = $false
-  while ($true) {
-    Show-AccountMenu $usages $idx $top
-    Write-Segs @(, @($msg[0], $msg[1], $true))
-    $k = [Console]::ReadKey($true)
-    $redraw = $false
-    if ($k.Key -eq "UpArrow") { $idx = ($idx + $usages.Count - 1) % $usages.Count }
-    elseif ($k.Key -eq "DownArrow") { $idx = ($idx + 1) % $usages.Count }
-    elseif ($k.Key -eq "Enter") { $chosen = $idx; break }
-    elseif ($k.KeyChar -match "[1-9]" -and ([int]$k.KeyChar.ToString()) -le $usages.Count) { $chosen = [int]$k.KeyChar.ToString() - 1; break }
-    elseif ($k.KeyChar -eq "s") {
-      [Console]::CursorVisible = $true
-      try { $msg = @(("  " + (Show-SaveMenu)), $script:Levels["7d"][0]) }
-      catch { $msg = @(("  sauvegarde impossible : " + $_.Exception.Message), $script:Ink.Alert) }
-      $redraw = $true
-    }
-    elseif ($k.KeyChar -eq "r") {
-      [Console]::CursorVisible = $true
-      try { $msg = @(("  " + (Show-RestoreMenu)), $script:Levels["7d"][0]) }
-      catch { $msg = @(("  restauration impossible : " + $_.Exception.Message), $script:Ink.Alert) }
-      $redraw = $true
-    }
-    elseif ($k.KeyChar -eq "a") {
-      [Console]::CursorVisible = $true
-      try { $msg = @(("  " + (Add-Account)), $script:Levels["7d"][0]) }
-      catch { $msg = @(("  ajout impossible : " + $_.Exception.Message), $script:Ink.Alert) }
-      $redraw = $true
-    }
-    elseif ($k.KeyChar -eq "x") {
-      [Console]::CursorVisible = $true
-      try { $msg = @(("  " + (Show-RemoveMenu $idx)), $script:Levels["7d"][0]) }
-      catch { $msg = @(("  retrait impossible : " + $_.Exception.Message), $script:Ink.Alert) }
-      $redraw = $true
-    }
-    elseif ($k.Key -eq "Escape" -or $k.KeyChar -eq "q") { break }
-    if ($redraw) {
-      Clear-Host
-      Write-Host "Chargement usage..." -ForegroundColor DarkGray
-      $usages = @(Get-AllUsages)
-      $idx = [math]::Min($idx, $usages.Count - 1)
-      Clear-Host
-      $top = [Console]::CursorTop
-      [Console]::CursorVisible = $false
-    }
+$fallback = -not (Test-RichTerminal)
+if (-not $fallback) {
+  try { $chosen = Invoke-AccountMenu $update }
+  catch {
+    Exit-UiScreen
+    $fallback = $true
+    Write-Host ("  interface indisponible : " + $_.Exception.Message) -ForegroundColor DarkGray
   }
-} catch {
+}
+if ($fallback) {
+  if ($update -and -not $script:MenuUpdated) { $null = Update-ClaudeForAccounts @(Get-Accounts) }
+  $usages = @(Get-AllUsages)
   foreach ($u in $usages) { Write-Host (Format-Row $u) }
   $n = Read-Host ("Numero du compte (1-" + $usages.Count + ")")
-  if ($n -match "^[1-9]$" -and [int]$n -le $usages.Count) { $chosen = [int]$n - 1 }
-} finally {
-  try { [Console]::CursorVisible = $cursor } catch {}
+  if ($n -match "^[1-9]$" -and [int]$n -le $usages.Count) { $chosen = $usages[[int]$n - 1].Acc }
 }
 
 if ($chosen -eq $null) { exit 0 }
 Clear-Host
-Start-Account $usages[$chosen].Acc $rest
+Start-Account $chosen $rest
 exit $LASTEXITCODE

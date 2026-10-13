@@ -49,3 +49,28 @@ Assert-Equal "dark" (Get-LinuxTheme "'default'" "Adwaita:dark" "") "Linux GTK_TH
 Assert-Equal "dark" (Get-LinuxTheme "" "" $kdeDark) "Linux kdeglobals sombre"
 Assert-Equal "light" (Get-LinuxTheme "'default'" "Adwaita" $kdeLight) "Linux kdeglobals clair"
 Assert-Null (Get-LinuxTheme "'prefer-light'" "" (Join-Path $script:Sandbox "absent")) "Linux sans indice"
+
+$script:probeTheme = "dark"
+$probe = { param($O, $V) $script:probeTheme }
+$w = New-ThemeWatch $script:OsName $vars 0 $probe
+$script:probeTheme = "light"
+Assert-Null (Update-ThemeWatch $w $script:OsName $vars 1000) "suivi du theme, pas avant deux secondes"
+Assert-Equal "light" (Update-ThemeWatch $w $script:OsName $vars 2500) "suivi du theme, changement vu"
+Assert-Null (Update-ThemeWatch $w $script:OsName $vars 5000) "suivi du theme, rien de neuf"
+$fixedVars = @{ USERPROFILE = $themeHome; HOME = $themeHome; STATUSLINE_BG = "sombre" }
+$w = New-ThemeWatch $script:OsName $fixedVars 0 $probe
+$script:probeTheme = "dark"
+Assert-Null (Update-ThemeWatch $w $script:OsName $fixedVars 2500) "theme impose, pas de suivi"
+
+$savedInk = $script:Ink
+$script:Ink = $script:Palettes["dark"]
+Set-UiTheme "light" 0
+Assert-True (Update-InkFade 0) "fondu du theme lance"
+Assert-Equal "12 12 12" ($script:Ink.Bg -join " ") "fondu du theme au depart"
+$null = Update-InkFade 150
+Assert-Equal "220 220 220" ($script:Ink.Bg -join " ") "fondu du theme a mi-course"
+Assert-True (Update-InkFade 300) "fondu du theme, derniere image"
+Assert-Equal "250 250 250" ($script:Ink.Bg -join " ") "fondu du theme termine"
+Assert-True (-not (Update-InkFade 400)) "fondu du theme, plus rien a dessiner"
+Assert-Equal "235 235 235" ($script:Palettes["dark"].Text -join " ") "palette d'origine intacte"
+$script:Ink = $savedInk

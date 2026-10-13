@@ -53,30 +53,22 @@ function Format-RemoveItem {
 
 function Select-OneAccount {
   param($Accs, [int]$Pos)
-  $pos = [math]::Max(0, [math]::Min($Pos, $Accs.Count - 1))
-  Clear-Host
-  $top = [Console]::CursorTop
-  while ($true) {
-    [Console]::SetCursorPosition(0, $top)
-    Write-Segs @(, @("", $script:Ink.Text, $false))
-    Write-Segs @(, @("  Retirer un compte", $script:Ink.Text, $true))
-    Write-Segs @(, @("", $script:Ink.Text, $false))
-    for ($i = 0; $i -lt $Accs.Count; $i++) {
-      $mark = "   "
-      if ($i -eq $pos) { $mark = " " + $script:Pointer + " " }
-      $ink = $script:Ink.Dim
-      if ($i -eq $pos) { $ink = $script:Ink.Text }
-      Write-Segs @(@($mark, $script:Levels["5h"][0], $true), @(("" + ($i + 1) + "  " + (Format-RemoveItem $Accs[$i])), $ink, ($i -eq $pos)))
-    }
-    Write-Segs @(, @("", $script:Ink.Text, $false))
-    Write-Segs @(, @("  Entree ou 1-9 choisir   Echap annuler", $script:Ink.Dim, $false))
-    $k = [Console]::ReadKey($true)
-    if ($k.Key -eq "UpArrow") { $pos = ($pos + $Accs.Count - 1) % $Accs.Count }
-    elseif ($k.Key -eq "DownArrow") { $pos = ($pos + 1) % $Accs.Count }
-    elseif ($k.Key -eq "Enter") { return $pos }
-    elseif ($k.KeyChar -match "[1-9]" -and ([int]$k.KeyChar.ToString()) -le $Accs.Count) { return [int]$k.KeyChar.ToString() - 1 }
-    elseif ($k.Key -eq "Escape" -or $k.KeyChar -eq "q") { return $null }
+  $items = @(foreach ($a in $Accs) { Format-RemoveItem $a })
+  return Select-OneRow "Retirer un compte" $items $Pos @("Entree ou 1-9", "choisir", "Echap", "annuler")
+}
+
+function Get-RemoveBody {
+  param($Acc, [bool]$Erasable)
+  $rows = New-Object System.Collections.Generic.List[object]
+  $rows.Add((New-TextRow "  1  le retirer du menu, son dossier reste en place" $script:Ink.Text))
+  if ($Erasable) {
+    $rows.Add((New-TextRow "  2  le retirer et effacer son dossier : connexion, historique, reglages" $script:Ink.Alert))
+    $rows.Add((New-TextRow "     une archive de securite est d'abord rangee dans Telechargements" $script:Ink.Dim))
+    if ($script:OsName -eq "MacOS") { $rows.Add((New-TextRow "     la connexion, gardee dans le trousseau, n'est pas dans l'archive" $script:Ink.Dim)) }
+  } else {
+    $rows.Add((New-TextRow ("     le dossier " + $Acc.Dir + " n'est jamais efface d'ici") $script:Ink.Dim))
   }
+  return ,$rows
 }
 
 function Show-RemoveMenu {
@@ -87,30 +79,11 @@ function Show-RemoveMenu {
   if ($p -eq $null) { return "retrait annule" }
   $acc = $accs[$p]
   $erasable = Test-ErasableDir $acc.Dir
-  Clear-Host
-  Write-Segs @(, @("", $script:Ink.Text, $false))
-  Write-Segs @(, @(("  Retirer " + $acc.Label + " (" + $acc.Dir + ")"), $script:Ink.Text, $true))
-  Write-Segs @(, @("", $script:Ink.Text, $false))
-  Write-Segs @(, @("  1  le retirer du menu, son dossier reste en place", $script:Ink.Text, $false))
-  if ($erasable) {
-    Write-Segs @(, @("  2  le retirer et effacer son dossier : connexion, historique, reglages", $script:Ink.Alert, $false))
-    Write-Segs @(, @("     une archive de securite est d'abord rangee dans Telechargements", $script:Ink.Dim, $false))
-    if ($script:OsName -eq "MacOS") {
-      Write-Segs @(, @("     la connexion, gardee dans le trousseau, n'est pas dans l'archive", $script:Ink.Dim, $false))
-    }
-  } else {
-    Write-Segs @(, @(("     le dossier " + $acc.Dir + " n'est jamais efface d'ici"), $script:Ink.Dim, $false))
-  }
-  Write-Segs @(, @("", $script:Ink.Text, $false))
-  Write-Segs @(, @("  Echap annuler", $script:Ink.Dim, $false))
+  $title = "Retirer " + $acc.Label + " (" + $acc.Dir + ")"
   while ($true) {
-    $k = [Console]::ReadKey($true)
+    $k = Read-PageKey { Get-PageRows $title (Get-RemoveBody $acc $erasable) @("Echap", "annuler") }
     if ($k.Key -eq "Escape" -or $k.KeyChar -eq "q") { return "retrait annule" }
     if ($k.KeyChar -eq "1") { return Remove-Account $acc $false }
-    if ($k.KeyChar -eq "2" -and $erasable) {
-      Write-Segs @(, @("", $script:Ink.Text, $false))
-      Write-Segs @(, @("  Sauvegarde puis effacement...", $script:Ink.Dim, $false))
-      return Remove-Account $acc $true
-    }
+    if ($k.KeyChar -eq "2" -and $erasable) { return Invoke-UiWork $title "Sauvegarde puis effacement..." { Remove-Account $acc $true } }
   }
 }

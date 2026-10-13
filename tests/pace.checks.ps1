@@ -41,7 +41,7 @@ Assert-True ((Format-Row $u) -notmatch "5h [^|]*, ") "clm --usage sans verdict q
 function Get-UsageLines {
   param($U)
   $esc = [string][char]27
-  return @(& { Write-UsageLine $U } 6>&1 | ForEach-Object { ("" + $_) -replace ($esc + "\[[0-9;]*m"), "" })
+  return @(("       " + (ConvertTo-LineText (Get-CompactUsageSegs $U 9) 999)) -replace ($esc + "\[[0-9;]*m"), "")
 }
 
 $u = [PSCustomObject]@{ Pct5 = 20; Reset5 = [DateTimeOffset]::Now.AddSeconds(9000); Pct7 = 10; Reset7 = [DateTimeOffset]::Now.AddSeconds(302400) }

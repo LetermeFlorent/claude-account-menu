@@ -1,0 +1,40 @@
+$l = Get-MenuLayout 120 40 3
+Assert-Equal "full 100 48 3 119" ($l.Mode + " " + $l.W + " " + $l.Cells + " " + $l.Visible + " " + $l.Clip) "grand terminal, cartes completes"
+$l = Get-MenuLayout 80 20 3
+Assert-Equal "compact 78 9 3 1" ($l.Mode + " " + $l.W + " " + $l.Cells + " " + $l.Visible + " " + $l.FooterRows) "terminal moyen, vue compacte"
+$l = Get-MenuLayout 80 12 3
+Assert-Equal "compact 1" ($l.Mode + " " + $l.Visible) "terminal bas, un compte visible"
+Assert-Equal "simple" (Get-MenuLayout 39 30 3).Mode "terminal etroit, vue simple"
+$l = Get-MenuLayout 9 8 3
+Assert-Equal "simple 3 8" ($l.Mode + " " + $l.Visible + " " + $l.Clip) "terminal minuscule, vue simple"
+Assert-Equal 2 (Get-MenuLayout 60 40 2).FooterRows "pied sur deux lignes sous 78 colonnes"
+
+Assert-Equal 0 (Get-ScrollTop 0 2 3 6) "defilement vers le haut"
+Assert-Equal 3 (Get-ScrollTop 5 0 3 6) "defilement vers le bas"
+Assert-Equal 1 (Get-ScrollTop 2 1 3 6) "selection visible, rien ne bouge"
+Assert-Equal 0 (Get-ScrollTop 1 4 9 3) "defilement borne"
+
+function New-TestEntry { param($Pending, $P5, $P7, $Err) @{ Pending = $Pending; U = [pscustomobject]@{ Pct5 = $P5; Pct7 = $P7; Error = $Err } } }
+$es = @((New-TestEntry $false 100 10 $null), (New-TestEntry $true $null $null $null), (New-TestEntry $false 5 5 $null))
+Assert-Equal -1 (Get-ReadyDefault $es) "attente d'un compte encore en lecture"
+Assert-Equal 1 (Get-ReadyDefault $es $false) "sans attente, premier compte non bloque"
+$es[1] = New-TestEntry $false 1 1 "panne"
+Assert-Equal 2 (Get-ReadyDefault $es) "compte en erreur saute"
+$es[2] = New-TestEntry $false 5 100 $null
+Assert-Equal 0 (Get-ReadyDefault $es) "aucun compte libre, le premier"
+
+function New-TestKey { param([char]$C, [ConsoleKey]$K, [bool]$Ctrl = $false) New-Object System.ConsoleKeyInfo $C, $K, $false, $false, $Ctrl }
+Assert-Equal "up" (Get-MenuAction (New-TestKey ([char]0) UpArrow) 3).Name "fleche haut"
+Assert-Equal "down" (Get-MenuAction (New-TestKey ([char]0) DownArrow) 3).Name "fleche bas"
+Assert-Equal "launch" (Get-MenuAction (New-TestKey ([char]13) Enter) 3).Name "Entree lance"
+Assert-Equal "quit" (Get-MenuAction (New-TestKey ([char]27) Escape) 3).Name "Echap quitte"
+Assert-Equal "quit" (Get-MenuAction (New-TestKey ([char]3) C $true) 3).Name "Ctrl+C quitte"
+Assert-Equal "quit" (Get-MenuAction (New-TestKey ([char]'Q') Q) 3).Name "q majuscule quitte"
+Assert-Equal "save" (Get-MenuAction (New-TestKey ([char]'s') S) 3).Name "s sauvegarde"
+Assert-Equal "restore" (Get-MenuAction (New-TestKey ([char]'r') R) 3).Name "r restaure"
+Assert-Equal "add" (Get-MenuAction (New-TestKey ([char]'a') A) 3).Name "a ajoute"
+Assert-Equal "remove" (Get-MenuAction (New-TestKey ([char]'x') X) 3).Name "x retire"
+$k = Get-MenuAction (New-TestKey ([char]'2') D2) 3
+Assert-Equal "pick 1" ($k.Name + " " + $k.Index) "chiffre choisit le compte"
+Assert-Equal "none" (Get-MenuAction (New-TestKey ([char]'4') D4) 3).Name "chiffre hors liste ignore"
+Assert-Equal "none" (Get-MenuAction (New-TestKey ([char]'z') Z) 3).Name "touche inconnue ignoree"
