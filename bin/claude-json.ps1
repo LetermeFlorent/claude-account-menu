@@ -40,6 +40,6 @@ function ConvertTo-JsonText {
 function Write-JsonFile {
   param([string]$Path, $Data)
   $bak = $Path + ".bak-sync"
-  if ((Test-Path -LiteralPath $Path) -and -not (Test-Path -LiteralPath $bak)) { Copy-Item -LiteralPath $Path -Destination $bak }
+  if ((Test-Path -LiteralPath $Path) -and -not (Test-Path -LiteralPath $bak)) { [IO.File]::Copy($Path, $bak) }
   [IO.File]::WriteAllText($Path, (ConvertTo-JsonText $Data) + "`n", (New-Object Text.UTF8Encoding $false))
 }

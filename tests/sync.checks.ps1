@@ -9,14 +9,14 @@ Save-Registry @($s1, $s2, $s3)
 $set1 = New-SandboxFile ".claude/settings.json" '{"model":"opus","theme":"dark","enabledPlugins":{"a":false}}'
 $set2 = New-SandboxFile ".claude-sync2/settings.json" '{"model":"sonnet","enabledPlugins":{"a":true}}'
 $set3 = New-SandboxFile ".claude-sync3/settings.json" '{"model":"haiku","enabledPlugins":{"a":false}}'
-(Get-Item -LiteralPath $set2).LastWriteTimeUtc = (Get-Date).ToUniversalTime().AddMinutes(5)
+[IO.File]::SetLastWriteTimeUtc($set2, (Get-Date).ToUniversalTime().AddMinutes(5))
 $cfg1 = New-SandboxFile ".claude.json" '{"oauthAccount":{"emailAddress":"a@x"},"mcpServers":{"ctx":{"command":"npx"}}}'
 $cfg2 = New-SandboxFile ".claude-sync2/.claude.json" '{"oauthAccount":{"emailAddress":"b@x"}}'
 $cfg3 = New-SandboxFile ".claude-sync3/.claude.json" '{"projects":{"C:/a":1,"c:/a":2}}'
-(Get-Item -LiteralPath $cfg1).LastWriteTimeUtc = (Get-Date).ToUniversalTime().AddMinutes(9)
+[IO.File]::SetLastWriteTimeUtc($cfg1, (Get-Date).ToUniversalTime().AddMinutes(9))
 $null = New-SandboxFile ".claude/statusline.json" "ancien"
 $local2 = New-SandboxFile ".claude-sync2/statusline.json" "recent"
-(Get-Item -LiteralPath $local2).LastWriteTimeUtc = (Get-Date).ToUniversalTime().AddMinutes(3)
+[IO.File]::SetLastWriteTimeUtc($local2, (Get-Date).ToUniversalTime().AddMinutes(3))
 $null = New-SandboxFile ".claude/plugins/installed_plugins.json" "{}"
 $null = New-SandboxFile ".claude-sync2/plugins/installed_plugins.json" "{}"
 
@@ -35,7 +35,7 @@ Assert-True ([bool](Get-Item -LiteralPath (Join-Path $script:Sandbox ".claude-sy
 Assert-True (Test-Path -LiteralPath (Join-Path $script:Sandbox ".claude-sync2/plugins.bak-sync")) "plugins sauvegarde"
 
 [IO.File]::WriteAllText($set3, '{"model":"haiku","enabledPlugins":{"a":"c3"}}')
-(Get-Item -LiteralPath $set3).LastWriteTimeUtc = (Get-Date).ToUniversalTime().AddMinutes(20)
+[IO.File]::SetLastWriteTimeUtc($set3, (Get-Date).ToUniversalTime().AddMinutes(20))
 Sync-Accounts
 Assert-Equal "c3" (Read-JsonFile $set1)["enabledPlugins"]["a"] "sync settings, modification suivante propagee"
 Assert-Equal "sonnet" (Read-JsonFile $set2)["model"] "sync settings, model garde au second tour"
@@ -43,7 +43,7 @@ Assert-Equal "sonnet" (Read-JsonFile $set2)["model"] "sync settings, model garde
 $fs = [IO.File]::Open($script:SyncLockPath, "OpenOrCreate", "ReadWrite", "None")
 try {
   [IO.File]::WriteAllText($set2, '{"model":"sonnet","enabledPlugins":{"a":"bloque"}}')
-  (Get-Item -LiteralPath $set2).LastWriteTimeUtc = (Get-Date).ToUniversalTime().AddMinutes(30)
+  [IO.File]::SetLastWriteTimeUtc($set2, (Get-Date).ToUniversalTime().AddMinutes(30))
   $null = Sync-Accounts 6>$null
   Assert-Equal "c3" (Read-JsonFile $set1)["enabledPlugins"]["a"] "verrou tenu, pas de sync"
 } finally { $fs.Dispose() }

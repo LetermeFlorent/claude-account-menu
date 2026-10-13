@@ -49,7 +49,7 @@ function Sync-Domain {
     $data = Read-JsonFile $p
     if ($null -eq $data) { continue }
     $shared = & $GetShared $data
-    [PSCustomObject]@{ Path = $p; Data = $data; Shared = $shared; Text = (ConvertTo-JsonText $shared); Time = (Get-Item -LiteralPath $p).LastWriteTimeUtc }
+    [PSCustomObject]@{ Path = $p; Data = $data; Shared = $shared; Text = (ConvertTo-JsonText $shared); Time = [IO.File]::GetLastWriteTimeUtc($p) }
   }
   $items = @($items)
   $base = $null

@@ -86,7 +86,7 @@ function Repair-SharedLinks {
     $src = Join-Path $main $f; $dst = Join-Path $dir $f
     if (-not (Test-Path -LiteralPath $src)) { continue }
     if ((Test-Path -LiteralPath $dst) -and ($Force -or -not (Test-SameFile $src $dst))) {
-      if (-not $Force -and (Get-Item -LiteralPath $dst).LastWriteTimeUtc -gt (Get-Item -LiteralPath $src).LastWriteTimeUtc) {
+      if (-not $Force -and [IO.File]::GetLastWriteTimeUtc($dst) -gt [IO.File]::GetLastWriteTimeUtc($src)) {
         [IO.File]::WriteAllBytes($src, [IO.File]::ReadAllBytes($dst))
       }
       Remove-Item -LiteralPath $dst -Force
@@ -97,7 +97,7 @@ function Repair-SharedLinks {
 
 function Test-SameFile {
   param([string]$A, [string]$B)
-  $links = @((Get-Item -LiteralPath $A).Target | Where-Object { $_ })
+  $links = @((Get-Item -LiteralPath $A -Force).Target | Where-Object { $_ })
   if ($links.Count -gt 0) { return @($links | Where-Object { (ConvertTo-PathKey $_) -eq (ConvertTo-PathKey $B) }).Count -gt 0 }
   if ($script:OsName -eq "Windows") { return $false }
   return (Get-FileHash -LiteralPath $A).Hash -eq (Get-FileHash -LiteralPath $B).Hash
