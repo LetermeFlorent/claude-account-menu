@@ -4,6 +4,12 @@ $dst = Join-Path $env:USERPROFILE ".local\bin"
 if (-not (Test-Path -LiteralPath $dst)) { New-Item -ItemType Directory -Path $dst | Out-Null }
 Get-ChildItem -LiteralPath $src -File | Where-Object { $_.Extension -eq ".ps1" -or $_.Extension -eq ".cmd" } | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $dst -Force }
 Write-Host ("scripts copies dans " + $dst)
+$versionFile = Join-Path $dst "clm.version"
+if (Test-Path -LiteralPath $versionFile) { Remove-Item -LiteralPath $versionFile -Force }
+if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath (Join-Path $PSScriptRoot ".git"))) {
+  $version = & git -C $PSScriptRoot log -1 --format="%H %ct"
+  if ($LASTEXITCODE -eq 0 -and $version) { [IO.File]::WriteAllText($versionFile, $version + "`n", (New-Object Text.UTF8Encoding($false))) }
+}
 
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if (($userPath -split ";") -notcontains $dst) {

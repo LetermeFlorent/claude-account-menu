@@ -1,4 +1,5 @@
 . (Join-Path $PSScriptRoot "claude-menu-archive.ps1")
+. (Join-Path $PSScriptRoot "claude-self-version.ps1")
 $script:SaveExcludes = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide", "*.lock", ".local/bin/*.exe")
 
 function Get-AccountItems {
@@ -14,7 +15,7 @@ function Get-AccountItems {
 function Get-SaveItems {
   param($Accs)
   $h = $script:HomeDir
-  $bin = Get-ChildItem -LiteralPath $PSScriptRoot -File | Where-Object { $_.Name -match "^((clm|claude-.*)\.(cmd|ps1)|clm)$" } | ForEach-Object { ".local/bin/" + $_.Name }
+  $bin = Get-ChildItem -LiteralPath $PSScriptRoot -File | Where-Object { $_.Name -match "^((clm|claude-.*)\.(cmd|ps1)|clm|clm\.version)$" } | ForEach-Object { ".local/bin/" + $_.Name }
   $names = @(Get-AccountItems $Accs) + @(".claude-accounts.json") + @($bin)
   return @($names | Where-Object { Test-Path -LiteralPath (Join-Path $h $_) })
 }
@@ -76,6 +77,7 @@ function Get-ZipAccounts {
 function Restore-Accounts {
   param([string]$Zip, $Accs = $null)
   Assert-ArchiveReadable $Zip
+  Assert-BackupVersion $Zip
   if ($Accs -eq $null) { $Accs = @(Get-ZipAccounts $Zip) }
   $current = @(Get-Accounts)
   $present = @($current | Where-Object { $d = $_.Dir; @($Accs | Where-Object { $_.Dir -eq $d }).Count -gt 0 })

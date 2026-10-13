@@ -74,7 +74,7 @@ La commande affiche une ligne par compte avec son adresse, son abonnement et ses
 
 Sur l'ancien poste, appuyer sur `s` dans le menu : tous les comptes sont déjà cochés, Entrée lance la sauvegarde. L'archive arrive dans le dossier Téléchargements, sous le nom `claude-comptes-<date>-<heure>`.
 
-Sur le nouveau poste, installer `clm` comme ci-dessus et copier l'archive dans le dossier Téléchargements. Appuyer sur `r`, qui liste les neuf sauvegardes les plus récentes de ce dossier, choisir l'archive par son numéro, cocher les comptes voulus, valider par Entrée puis confirmer par `o`. Une archive gardée ailleurs se restaure avec `clm --restore=<chemin>`. Les comptes absents du nouveau poste sont ajoutés au menu sous le nom qu'ils avaient, et les dossiers partagés sont reliés à `.claude`.
+Sur le nouveau poste, installer `clm` comme ci-dessus et copier l'archive dans le dossier Téléchargements. Appuyer sur `r`, qui liste les neuf sauvegardes les plus récentes de ce dossier, choisir l'archive par son numéro, cocher les comptes voulus, valider par Entrée puis confirmer par `o`. Une archive gardée ailleurs se restaure avec `clm --restore=<chemin>`. Si l'archive vient d'un `clm` plus récent que celui du nouveau poste, la restauration est refusée : relancer `clm`, qui se met à jour, puis recommencer. Les comptes absents du nouveau poste sont ajoutés au menu sous le nom qu'ils avaient, et les dossiers partagés sont reliés à `.claude`.
 
 Une archive faite sous Windows ou Linux contient les jetons de connexion : restaurés sur Windows ou Linux, les comptes sont utilisables tout de suite, sans nouvelle connexion. Ça ne tient que si les comptes n'ont pas servi entre la sauvegarde et la restauration : chaque renouvellement de jeton invalide celui de l'archive. Pour changer de poste sans `/login`, sauvegarder en dernier sur l'ancien poste, ne plus y lancer ni Claude Code ni `clm` (le menu renouvelle les jetons en lisant les quotas), puis restaurer sur le nouveau. Utiliser ensuite un compte sur les deux postes en parallèle finit par déconnecter l'un des deux. Une archive faite sous macOS n'en contient pas, puisqu'ils restent dans le trousseau, et le menu n'écrit jamais dans le trousseau : chaque compte restauré depuis une telle archive se reconnecte une fois, en le lançant puis en tapant `/login`.
 
@@ -82,16 +82,18 @@ L'archive n'est pas chiffrée et contient les jetons en clair. La transférer pa
 
 ## Mettre à jour
 
-Récupérer la dernière version avec `git pull` dans le dossier cloné, puis relancer `install.ps1`, ou `install.sh` sous Linux et macOS. Les comptes, leurs jetons et `.claude-accounts.json` ne sont pas modifiés, et le hook déjà en place n'est pas ajouté une seconde fois.
+`clm` se met à jour tout seul. À l'ouverture du menu, à un lancement direct comme `clm -2` et avant `clm --restore`, il compare sa version au dernier commit publié sur GitHub, installe la nouvelle s'il y en a une, puis redémarre. Le détail est dans le [README](README.md#mise-à-jour-de-clm).
 
-Claude Code lui-même est mis à jour par `clm`, avec `claude update`, à chaque ouverture du menu et à chaque lancement direct comme `clm -2`. Pour sauter cette étape une fois, lancer `clm --no-update`.
+À la main, ça reste possible : `git pull` dans le dossier cloné, puis relancer `install.ps1`, ou `install.sh` sous Linux et macOS. Les comptes, leurs jetons et `.claude-accounts.json` ne sont pas modifiés, et le hook déjà en place n'est pas ajouté une seconde fois.
+
+Claude Code lui-même est mis à jour par `clm`, avec `claude update`, à chaque ouverture du menu et à chaque lancement direct comme `clm -2`. Pour sauter les deux mises à jour une fois, lancer `clm --no-update`.
 
 ## Désinstaller
 
 La désinstallation se fait à la main, en quatre étapes :
 
 1. Retirer du `settings.json` de chaque compte l'entrée `SessionStart` qui mentionne `claude-statusline-seed.ps1`. Remettre `settings.json.bak-seed` à la place marche aussi, mais perd les réglages changés depuis l'installation. Supprimer ensuite les fichiers `settings.json.bak-seed`.
-2. Supprimer de `%USERPROFILE%\.local\bin`, ou de `~/.local/bin`, les fichiers `clm`, `clm.cmd`, `claude-menu.cmd` et `claude-*.ps1`, sans toucher à `claude.exe` ni à `claude`, qui sont Claude Code. Sous Windows, l'installeur a ajouté ce dossier au PATH de l'utilisateur : l'en retirer seulement si plus rien n'y vit, Claude Code s'y installant aussi.
+2. Supprimer de `%USERPROFILE%\.local\bin`, ou de `~/.local/bin`, les fichiers `clm`, `clm.cmd`, `clm.version`, `claude-menu.cmd` et `claude-*.ps1`, sans toucher à `claude.exe` ni à `claude`, qui sont Claude Code. Sous Windows, l'installeur a ajouté ce dossier au PATH de l'utilisateur : l'en retirer seulement si plus rien n'y vit, Claude Code s'y installant aussi.
 3. Supprimer le cache des quotas : `%LOCALAPPDATA%\claude-menu` sous Windows, `~/Library/Caches/claude-menu` sous macOS, `${XDG_CACHE_HOME:-~/.cache}/claude-menu` sous Linux.
 4. Supprimer `.claude-accounts.json` du dossier personnel, la liste des comptes propre au menu, et les archives `claude-comptes-*` du dossier Téléchargements, qui contiennent des jetons.
 

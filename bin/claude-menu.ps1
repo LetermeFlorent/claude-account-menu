@@ -6,6 +6,7 @@
 . (Join-Path $PSScriptRoot "claude-menu-remove.ps1")
 . (Join-Path $PSScriptRoot "claude-statusline-seed.ps1")
 . (Join-Path $PSScriptRoot "claude-update.ps1")
+. (Join-Path $PSScriptRoot "claude-self-update.ps1")
 . (Join-Path $PSScriptRoot "claude-sync.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-loop.ps1")
 
@@ -20,10 +21,12 @@ $direct = $null
 $only = $null
 $restoreZip = $null
 $update = $true
+$selfUpdate = $true
 $rest = @()
 foreach ($a in $args) {
   if ($a -match "^-([1-9])$") { $direct = [int]$Matches[1] - 1 }
-  elseif ($a -eq "--no-update") { $update = $false }
+  elseif ($a -eq "--no-update") { $update = $false; $selfUpdate = $false }
+  elseif ($a -eq "--updated") { $selfUpdate = $false }
   elseif ($a -eq "--usage") {
     foreach ($u in Get-AllUsages) { Write-Output (Format-Row $u) }
     exit 0
@@ -38,9 +41,13 @@ foreach ($a in $args) {
   else { $rest = $rest + $a }
 }
 
+if ($selfUpdate -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
+
 if ($restoreZip) {
-  try { $sel = Select-ByLabel @(Get-ZipAccounts $restoreZip) $only } catch { Write-Output $_.Exception.Message; exit 1 }
-  Write-Output (Restore-Accounts $restoreZip $sel)
+  try {
+    $sel = Select-ByLabel @(Get-ZipAccounts $restoreZip) $only
+    Write-Output (Restore-Accounts $restoreZip $sel)
+  } catch { Write-Output $_.Exception.Message; exit 1 }
   exit 0
 }
 

@@ -110,7 +110,7 @@ Seuls les dossiers nommés `.claude-<nom>` peuvent être effacés depuis le menu
 clm                          menu
 clm -2                       lance le compte 2 sans passer par le menu
 clm -2 --resume              les arguments non reconnus passent à Claude Code
-clm --no-update              ne cherche pas de mise à jour de Claude Code
+clm --no-update              ne cherche de mise à jour ni pour clm ni pour Claude Code
 clm --usage                  quotas de tous les comptes, une ligne par compte
 clm --save                   sauvegarde de tous les comptes
 clm --save=compte2,compte3   sauvegarde de certains comptes
@@ -121,6 +121,14 @@ clm --restore=<fichier> --only=compte2
 `-N` accepte un chiffre de 1 à 9. Un numéro sans compte affiche "pas de compte N" et sort avec le code 1. `--save=` et `--only=` prennent des noms de comptes, ceux affichés dans le menu, séparés par des virgules, sans tenir compte des majuscules. Un nom inconnu arrête la commande avec "compte inconnu : ..." et le code 1, sans rien sauvegarder ni restaurer.
 
 `--usage`, `--save` et `--restore` font leur travail et sortent aussitôt, sans menu ni mise à jour de Claude Code. `--restore` ne demande pas de confirmation, mais garde comme dans le menu une copie de l'état actuel des comptes visés. `--usage` écrit une ligne par compte, de la forme `pro moi@exemple.fr Max 5x | 5h 70% reset 18:30 (dans 2h05), fort | 7d 30% reset 12/10 09:00 (dans 4j3h), normal`, suivie de "(lu il y a ...)" quand les chiffres viennent du cache, ou "(fenetre passee, lu il y a ...)" quand une remise à zéro a eu lieu depuis, ou du message d'erreur à la place des quotas. Il n'y a pas d'option `--help`.
+
+## Mise à jour de clm
+
+Avant d'ouvrir le menu, avant un lancement direct comme `clm -2` et avant `--restore`, `clm` demande à GitHub le dernier commit de la branche `main`. S'il est plus récent que la version installée, `clm` télécharge le dépôt à ce commit, lance `install.ps1` (ou `install.sh`), puis redémarre avec les mêmes arguments. La version installée est rangée dans `clm.version`, à côté des scripts, sous la forme `<commit> <date unix>`. L'installeur l'écrit quand il tourne depuis un clone git, et l'efface sinon : une version inconnue est remplacée par la dernière au lancement suivant.
+
+GitHub a quatre secondes pour répondre. Sans réseau, ou quand l'API limite les appels, le menu s'ouvre avec la version installée, sans message. Un échec pendant l'installation s'affiche en jaune et le menu s'ouvre quand même. Une version installée plus récente que `main`, après un `install.ps1` depuis une branche de travail, n'est pas remplacée. `clm` ne se met à jour que s'il tourne depuis `.local/bin` : lancé depuis le clone, il ne touche à rien. `--no-update` saute l'étape, `--usage` et `--save` aussi.
+
+Chaque sauvegarde emporte `clm.version`. La restauration refuse une archive faite avec un `clm` plus récent que celui installé, ou quand la version installée est inconnue, avec "sauvegarde faite avec clm ..." et la marche à suivre : relancer `clm`, qui se met à jour, puis restaurer. Une archive faite avant l'arrivée de `clm.version` se restaure sans contrôle.
 
 ## Mise à jour de Claude Code
 

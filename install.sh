@@ -6,6 +6,10 @@ mkdir -p "$dst"
 cp "$src"/bin/*.ps1 "$src/bin/clm" "$dst/"
 chmod +x "$dst/clm"
 echo "scripts copies dans $dst"
+rm -f "$dst/clm.version"
+if command -v git >/dev/null 2>&1 && [ -e "$src/.git" ]; then
+  git -C "$src" log -1 --format='%H %ct' > "$dst/clm.version" || rm -f "$dst/clm.version"
+fi
 
 case ":$PATH:" in
   *":$dst:"*) ;;

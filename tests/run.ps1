@@ -44,6 +44,7 @@ try {
   . (Join-Path $bin "claude-menu-view.ps1")
   . (Join-Path $bin "claude-menu-archive.ps1")
   . (Join-Path $bin "claude-update.ps1")
+  . (Join-Path $bin "claude-self-update.ps1")
   . (Join-Path $bin "claude-statusline-seed.ps1")
   Remove-Item Env:STATUSLINE_BG
   foreach ($t in Get-ChildItem -LiteralPath $PSScriptRoot -Filter "*.checks.ps1" | Sort-Object Name) {

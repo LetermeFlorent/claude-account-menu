@@ -19,6 +19,7 @@ function Show-RestoreMenu {
   $n = Select-OneRow $title $items 0 @("Entree ou 1-9", "choisir", "Echap", "revenir") $dir
   if ($n -eq $null) { return "restauration annulee" }
   $zip = $list[$n].FullName
+  Assert-BackupVersion $zip
   $inZip = @(Get-ZipAccounts $zip)
   if ($inZip.Count -eq 0) { return "aucun compte dans " + $list[$n].Name }
   $picked = Select-Items ("Comptes a restaurer depuis " + $list[$n].Name) @($inZip | ForEach-Object { $_.Label.PadRight(12) + " " + $_.Dir })
