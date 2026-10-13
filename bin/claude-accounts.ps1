@@ -9,7 +9,7 @@ function Get-ClaudeVersion {
   if ($v -match "(\d+\.\d+\.\d+)") { return $Matches[1] }
   return "1.0.0"
 }
-$script:SharedDirs = @("agents", "commands", "hooks", "rules", "skills")
+$script:SharedDirs = @("agents", "commands", "hooks", "plugins", "rules", "skills")
 $script:SharedFiles = @("ANTI-EMPREINTE.md", "CLAUDE.md", "settings.local.json", "statusline.json")
 
 function Get-Accounts {
@@ -76,14 +76,31 @@ function Repair-SharedLinks {
   if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
   foreach ($d in $script:SharedDirs) {
     $src = Join-Path $main $d; $dst = Join-Path $dir $d
-    if ((Test-Path -LiteralPath $src) -and -not (Test-Path -LiteralPath $dst)) { New-Item -ItemType (Get-DirLinkType) -Path $dst -Target $src | Out-Null }
+    if (-not (Test-Path -LiteralPath $src)) { continue }
+    if ((Test-Path -LiteralPath $dst) -and -not (Get-Item -LiteralPath $dst -Force).LinkType) {
+      try { Rename-Item -LiteralPath $dst -NewName ($d + ".bak-sync") -ErrorAction Stop } catch { continue }
+    }
+    if (-not (Test-Path -LiteralPath $dst)) { New-Item -ItemType (Get-DirLinkType) -Path $dst -Target $src | Out-Null }
   }
   foreach ($f in $script:SharedFiles) {
     $src = Join-Path $main $f; $dst = Join-Path $dir $f
     if (-not (Test-Path -LiteralPath $src)) { continue }
-    if ($Force -and (Test-Path -LiteralPath $dst)) { Remove-Item -LiteralPath $dst -Force }
+    if ((Test-Path -LiteralPath $dst) -and ($Force -or -not (Test-SameFile $src $dst))) {
+      if (-not $Force -and (Get-Item -LiteralPath $dst).LastWriteTimeUtc -gt (Get-Item -LiteralPath $src).LastWriteTimeUtc) {
+        [IO.File]::WriteAllBytes($src, [IO.File]::ReadAllBytes($dst))
+      }
+      Remove-Item -LiteralPath $dst -Force
+    }
     if (-not (Test-Path -LiteralPath $dst)) { New-Item -ItemType HardLink -Path $dst -Target $src | Out-Null }
   }
+}
+
+function Test-SameFile {
+  param([string]$A, [string]$B)
+  $links = @((Get-Item -LiteralPath $A).Target | Where-Object { $_ })
+  if ($links.Count -gt 0) { return @($links | Where-Object { (ConvertTo-PathKey $_) -eq (ConvertTo-PathKey $B) }).Count -gt 0 }
+  if ($script:OsName -eq "Windows") { return $false }
+  return (Get-FileHash -LiteralPath $A).Hash -eq (Get-FileHash -LiteralPath $B).Hash
 }
 
 function New-AccountSlot {

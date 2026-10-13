@@ -6,10 +6,12 @@
 . (Join-Path $PSScriptRoot "claude-menu-remove.ps1")
 . (Join-Path $PSScriptRoot "claude-statusline-seed.ps1")
 . (Join-Path $PSScriptRoot "claude-update.ps1")
+. (Join-Path $PSScriptRoot "claude-sync.ps1")
 
 function Start-Account {
   param($Acc, $Extra)
   try { Update-StatusState $Acc } catch {}
+  Sync-Accounts
   Invoke-AsAccount $Acc $Extra
 }
 

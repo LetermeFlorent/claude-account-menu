@@ -173,7 +173,13 @@ Une archive placée ailleurs se restaure par `clm --restore=<chemin>`.
 
 ### Dossiers partagés
 
-Les comptes secondaires partagent avec `.claude` les dossiers `agents`, `commands`, `hooks`, `rules` et `skills`, par des jonctions sous Windows et des liens symboliques ailleurs, et les fichiers `ANTI-EMPREINTE.md`, `CLAUDE.md`, `settings.local.json` et `statusline.json` par des liens physiques. Ces liens sont créés à l'ajout d'un compte et après une restauration, seulement pour les éléments qui existent dans `.claude`. Les éléments partagés ne sont sauvegardés qu'une fois, avec `.claude`.
+Les comptes secondaires partagent avec `.claude` les dossiers `agents`, `commands`, `hooks`, `plugins`, `rules` et `skills`, par des jonctions sous Windows et des liens symboliques ailleurs, et les fichiers `ANTI-EMPREINTE.md`, `CLAUDE.md`, `settings.local.json` et `statusline.json` par des liens physiques. Ces liens sont créés à l'ajout d'un compte, après une restauration et à chaque lancement d'un compte, seulement pour les éléments qui existent dans `.claude`. Un vrai dossier déjà présent à la place d'un lien est renommé en `<nom>.bak-sync` avant d'être relié, et laissé tel quel si le renommage échoue. Claude Code remplace parfois un fichier au lieu de le réécrire, ce qui casse le lien physique : la copie la plus récente est alors gardée et le lien recréé. Les éléments partagés ne sont sauvegardés qu'une fois, avec `.claude`.
+
+### Réglages et MCP synchronisés
+
+Chaque compte garde son `settings.json` et son `.claude.json`, mais `clm` les synchronise à chaque lancement d'un compte. Dans `settings.json`, tout est commun sauf `model`, `modelSettings` et `theme`, propres à chaque compte. Dans `.claude.json`, seul `mcpServers` est commun : connexion, projets et le reste ne bougent pas.
+
+La règle est celle du dernier modifié. `.claude-sync-state.json` garde la dernière valeur commune. Parmi les comptes qui s'en écartent, celui dont le fichier est le plus récent gagne, et sa valeur est recopiée dans les autres. Avant sa première réécriture par la synchronisation, un fichier est copié en `<fichier>.bak-sync`. Un verrou, `.claude-sync.lock`, empêche deux lancements de synchroniser en même temps : au bout de 5 secondes d'attente, le second lance le compte sans synchroniser et l'indique.
 
 ## Liste des comptes
 
