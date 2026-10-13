@@ -157,7 +157,7 @@ Sont exclus, à toute profondeur, les dossiers et fichiers nommés `cache`, `pas
 
 L'archive s'appelle `claude-comptes-<date>-<heure>`. C'est un `.zip` sous Windows et macOS, et sous Linux quand `bsdtar` est installé (paquet `libarchive-tools`). Avec le seul GNU tar, Linux écrit un `.tar.gz` et ne sait pas relire un `.zip` venu d'un autre poste. Elle va dans le dossier Téléchargements : celui déclaré dans Windows (même déplacé), celui de `XDG_DOWNLOAD_DIR` sous Linux, à défaut `~/Downloads`, créé s'il manque. Une barre suit l'écriture. Des avertissements signalent des fichiers ignorés, souvent parce qu'une session Claude Code les tient ouverts.
 
-L'archive n'est pas chiffrée et contient les jetons de connexion, sauf sous macOS où ils restent dans le trousseau : quiconque la récupère peut se servir des comptes.
+L'archive n'est pas chiffrée et contient les jetons de connexion, sauf sous macOS où ils restent dans le trousseau : quiconque la récupère peut se servir des comptes. Ces jetons ne restent valables que jusqu'au prochain renouvellement : le serveur remplace le refresh token à chaque fois et invalide l'ancien. Un compte utilisé depuis la sauvegarde, par Claude Code ou par le menu qui lit ses quotas, demandera donc un `/login` une fois restauré, et la page de restauration le rappelle.
 
 ### Restaurer
 

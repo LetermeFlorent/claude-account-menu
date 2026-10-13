@@ -32,6 +32,7 @@ function Show-RestoreMenu {
   Write-Host "  Les fichiers de ces comptes seront remplaces par ceux de la sauvegarde." -ForegroundColor DarkGray
   Write-Host "  Leur etat actuel est d'abord sauvegarde dans Telechargements." -ForegroundColor DarkGray
   Write-Host "  Ferme les autres sessions Claude Code avant, sinon leurs fichiers ouverts seront ignores." -ForegroundColor DarkGray
+  Write-Host "  Une connexion utilisee ou renouvelee depuis la sauvegarde demandera un /login." -ForegroundColor DarkGray
   Write-Host "  o pour confirmer, autre touche pour annuler" -ForegroundColor DarkGray
   $c = [Console]::ReadKey($true)
   if ($c.KeyChar -ne "o") { return "restauration annulee" }
