@@ -40,6 +40,7 @@ $r = Send-DriveFile "F1" ".claude/small.txt" $f @{ m = "100"; pc = "PC" } ""
 Assert-Equal "new1" $r.Id "envoi : id rendu"
 Assert-Equal "abc" $r.Md5 "envoi : md5 rendu"
 Assert-Equal "POST" $script:Calls[0].Method "nouveau fichier : POST"
+Assert-True ($script:Calls[0].Body -is [byte[]]) "nouveau fichier : corps en octets"
 Assert-True ($script:Calls[0].Uri.StartsWith("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart")) "nouveau fichier : multipart"
 $sent = [Text.Encoding]::UTF8.GetString($script:Calls[0].Body)
 Assert-True ($sent.Contains('"parents"') -and $sent.Contains('"F1"') -and $sent.Contains('".claude/small.txt"') -and $sent.Contains('"m": "100"') -and $sent.Contains("bonjour")) "nouveau fichier : nom, dossier, proprietes et contenu"
@@ -60,6 +61,7 @@ Assert-Equal "PUT" $script:Calls[1].Method "gros fichier : contenu en PUT"
 Assert-Equal "https://upload.example/session1" $script:Calls[1].Uri "gros fichier : vers la session"
 Assert-Equal "bonjour" ([Text.Encoding]::UTF8.GetString($script:Calls[1].Body)) "gros fichier : contenu complet"
 Assert-Equal "new1" $r.Id "gros fichier : id rendu"
+Assert-True ($script:Calls[0].Body -is [byte[]] -and $script:Calls[1].Body -is [byte[]]) "gros fichier : corps en octets"
 
 $script:Calls.Clear()
 Set-DriveProps "P1" @{ ".claude" = "55" }
@@ -81,3 +83,4 @@ Save-DriveMedia "m1" $media
 Assert-Equal "media" ([IO.File]::ReadAllText($media)) "telechargement vers un nom avec crochets"
 Assert-True (-not (Test-Path -LiteralPath $script:MediaOut)) "telechargement : fichier intermediaire retire"
 . (Join-Path $bin "claude-drive-transfer.ps1")
+Assert-True ($script:Calls[0].Body -is [byte[]]) "metadonnees envoyees en octets, pas en liste de nombres"

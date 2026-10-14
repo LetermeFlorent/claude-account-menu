@@ -53,7 +53,7 @@ function ConvertFrom-DriveJson {
 
 function ConvertTo-JsonBytes {
   param($Value)
-  return [Text.Encoding]::UTF8.GetBytes((ConvertTo-JsonText $Value))
+  return ,[Text.Encoding]::UTF8.GetBytes((ConvertTo-JsonText $Value))
 }
 
 function ConvertTo-DriveQuery {
