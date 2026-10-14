@@ -78,6 +78,12 @@ if ($fallback) {
   if ($n -match "^[1-9]$" -and [int]$n -le $usages.Count) { $chosen = $usages[[int]$n - 1].Acc }
 }
 
+if ($script:MenuRestart) {
+  Clear-Host
+  if (-not (Update-Clm)) { Start-Sleep -Seconds 3 }
+  Restart-Clm $PSCommandPath $args
+}
+
 if ($null -eq $chosen) { exit 0 }
 Clear-Host
 Start-Account $chosen $rest

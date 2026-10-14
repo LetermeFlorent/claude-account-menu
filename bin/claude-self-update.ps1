@@ -8,7 +8,7 @@ function ConvertFrom-CommitJson {
   $sha = $Matches[1]
   if ($Json -notmatch '"committer"\s*:\s*\{[^{}]*"date"\s*:\s*"([^"]+)"') { return $null }
   $at = [DateTimeOffset]::Parse($Matches[1], [Globalization.CultureInfo]::InvariantCulture)
-  return [PSCustomObject]@{ Sha = $sha; Time = $at.ToUnixTimeSeconds() }
+  return [PSCustomObject]@{ Sha = $sha; Time = $at.ToUnixTimeSeconds(); Count = 0 }
 }
 
 function Invoke-GitHubGet {
@@ -24,6 +24,18 @@ function Invoke-GitHubGet {
 function Get-LatestClm {
   $r = Invoke-GitHubGet ("https://api.github.com/repos/" + $script:ClmRepo + "/commits/main") 4
   return ConvertFrom-CommitJson ("" + $r.Content)
+}
+
+function ConvertFrom-LinkCount {
+  param([string]$Link)
+  if ($Link -notmatch '[?&]page=([0-9]+)>;\s*rel="last"') { return 0 }
+  return [int]$Matches[1]
+}
+
+function Get-ClmCommitCount {
+  param([string]$Sha)
+  $r = Invoke-GitHubGet ("https://api.github.com/repos/" + $script:ClmRepo + "/commits?per_page=1&sha=" + $Sha) 4
+  return ConvertFrom-LinkCount (@($r.Headers["Link"]) -join ",")
 }
 
 function Test-ClmInstalledHere {
@@ -48,6 +60,7 @@ function Install-ClmVersion {
     Expand-Archive -LiteralPath $zip -DestinationPath $tmp
     $src = Get-ChildItem -LiteralPath $tmp -Directory | Select-Object -First 1
     Invoke-ClmInstaller $src.FullName
+    try { $Version.Count = Get-ClmCommitCount $Version.Sha } catch { $Version.Count = 0 }
     Write-ClmVersion $Version
   } finally {
     Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue

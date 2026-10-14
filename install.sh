@@ -8,7 +8,7 @@ chmod +x "$dst/clm"
 echo "scripts copies dans $dst"
 rm -f "$dst/clm.version"
 if command -v git >/dev/null 2>&1 && [ -e "$src/.git" ]; then
-  git -C "$src" log -1 --format='%H %ct' > "$dst/clm.version" || rm -f "$dst/clm.version"
+  echo "$(git -C "$src" log -1 --format='%H %ct') $(git -C "$src" rev-list --count HEAD)" > "$dst/clm.version" || rm -f "$dst/clm.version"
 fi
 
 case ":$PATH:" in

@@ -2,8 +2,8 @@ $script:ClmVersionFile = "clm.version"
 
 function ConvertFrom-ClmVersion {
   param([string]$Text)
-  if ($Text -notmatch "^\s*([0-9a-f]{7,40})\s+([0-9]+)\s*$") { return $null }
-  return [PSCustomObject]@{ Sha = $Matches[1]; Time = [long]$Matches[2] }
+  if ($Text -notmatch "^\s*([0-9a-f]{7,40})\s+([0-9]+)(\s+([0-9]+))?\s*$") { return $null }
+  return [PSCustomObject]@{ Sha = $Matches[1]; Time = [long]$Matches[2]; Count = [int]$Matches[4] }
 }
 
 function Read-ClmVersion {
@@ -15,7 +15,9 @@ function Read-ClmVersion {
 
 function Write-ClmVersion {
   param($Version, [string]$Dir = $PSScriptRoot)
-  $text = $Version.Sha + " " + $Version.Time + "`n"
+  $text = $Version.Sha + " " + $Version.Time
+  if ([int]$Version.Count -gt 0) { $text += " " + $Version.Count }
+  $text += "`n"
   [IO.File]::WriteAllText((Join-Path $Dir $script:ClmVersionFile), $text, (New-Object Text.UTF8Encoding $false))
 }
 
@@ -23,7 +25,7 @@ function Format-ClmVersion {
   param($Version)
   if ($null -eq $Version) { return "inconnue" }
   $at = [DateTimeOffset]::FromUnixTimeSeconds($Version.Time).ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-  return $Version.Sha.Substring(0, 7) + " du " + $at
+  return (Get-ClmName $Version) + " du " + $at
 }
 
 function Test-ClmOutdated {
@@ -56,9 +58,15 @@ function Assert-BackupVersion {
   if ($msg) { throw $msg }
 }
 
+function Get-ClmName {
+  param($Version)
+  if ([int]$Version.Count -gt 0) { return "v" + $Version.Count }
+  return $Version.Sha.Substring(0, 7)
+}
+
 function Get-ClmTag {
   param([string]$Dir = $PSScriptRoot)
   $v = Read-ClmVersion $Dir
   if ($null -eq $v) { return "" }
-  return "clm " + $v.Sha.Substring(0, 7)
+  return "clm " + (Get-ClmName $v)
 }

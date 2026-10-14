@@ -7,7 +7,7 @@ Write-Host ("scripts copies dans " + $dst)
 $versionFile = Join-Path $dst "clm.version"
 if (Test-Path -LiteralPath $versionFile) { Remove-Item -LiteralPath $versionFile -Force }
 if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath (Join-Path $PSScriptRoot ".git"))) {
-  $version = & git -C $PSScriptRoot log -1 --format="%H %ct"
+  $version = (& git -C $PSScriptRoot log -1 --format="%H %ct") + " " + (& git -C $PSScriptRoot rev-list --count HEAD)
   if ($LASTEXITCODE -eq 0 -and $version) { [IO.File]::WriteAllText($versionFile, $version + "`n", (New-Object Text.UTF8Encoding($false))) }
 }
 

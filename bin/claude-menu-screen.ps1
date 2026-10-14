@@ -10,8 +10,15 @@ function Get-MenuHeaderRow {
   param($State, [int]$W)
   $r = Get-HeaderRow "Comptes Claude Code" $W
   $clock = @(("  " + (Get-Date -Format "HH:mm")), $script:Ink.Dim, $false)
-  $tag = "  " + $State.Version
-  if ($State.Version -and (Get-SegsLength $r) + $tag.Length + 2 + $clock[0].Length -le $W - 2) { $r.Add(@($tag, $script:Ink.Dim, $false)) }
+  $room = $W - 4 - $clock[0].Length - (Get-SegsLength $r)
+  $tag = @(("  " + $State.Version), $script:Ink.Dim, $false)
+  if (-not $State.Version) { $tag[0] = "" }
+  $button = @()
+  if (Test-ClmUpdateReady) { $button = @(@("  ", $script:Ink.Dim, $false), @("[maj dispo]", $script:Levels["7d"][1], $true, "u")) }
+  $len = 0
+  foreach ($s in $button) { $len += $s[0].Length }
+  if ($tag[0] -and $room -ge $tag[0].Length + $len) { $r.Add($tag) }
+  if ($len -gt 0 -and $room -ge $len) { foreach ($s in $button) { $r.Add($s) } }
   Add-RightSegs $r ($W - 2) @(, $clock)
   return ,$r
 }

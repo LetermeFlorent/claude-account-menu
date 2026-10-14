@@ -1,5 +1,6 @@
 $script:MenuState = $null
 $script:MenuUpdated = $false
+$script:MenuRestart = $false
 $script:MenuFails = @{ save = "  sauvegarde impossible : "; restore = "  restauration impossible : "; add = "  ajout impossible : "; remove = "  retrait impossible : "; rename = "  renommage impossible : " }
 
 function Step-MenuFrame {
@@ -8,6 +9,7 @@ function Step-MenuFrame {
   Step-MenuLoader $st $now
   if (Update-UiTick $now $st.Busy) { $st.Dirty = $true }
   if (Update-MenuTimers $st $now) { $st.Dirty = $true }
+  if (Step-ClmCheck $script:ClmCheck $now) { $st.Dirty = $true }
   if ($st.Dirty -or (Test-MenuAnimating $st $now)) { Show-Menu $st $now; return $true }
   return $false
 }
@@ -27,6 +29,7 @@ function Stop-MenuLoader {
 function Close-AccountMenu {
   param($Idx)
   Stop-MenuLoader 1000
+  Stop-ClmCheck
   Hide-Screen
   Exit-UiScreen
   if ($null -eq $Idx) { return $null }
@@ -61,6 +64,8 @@ function Invoke-MenuCommand {
 function Invoke-AccountMenu {
   param([bool]$Update)
   $script:UiQuit = $false
+  $script:MenuRestart = $false
+  $script:ClmCheck = New-ClmCheck (Get-NowMs) (Test-ClmInstalledHere) (Read-ClmVersion)
   Enter-UiScreen
   $script:MenuState = New-MenuState @(Get-Accounts) (Get-NowMs)
   Start-MenuLoader $script:MenuState
@@ -86,6 +91,10 @@ function Invoke-AccountMenu {
     elseif ($act.Name -eq "pick") { return Close-AccountMenu $act.Index }
     elseif ($act.Name -eq "quit") { return Close-AccountMenu $null }
     elseif ($act.Name -eq "refresh") { Request-EntryRead $st $now }
+    elseif ($act.Name -eq "selfupdate") {
+      if (Test-ClmUpdateReady) { $script:MenuRestart = $true; return Close-AccountMenu $null }
+      $st.Msg = @("  aucune mise a jour de clm en attente", $script:Ink.Dim); $st.Dirty = $true
+    }
     elseif ($act.Name -ne "none") { Invoke-MenuCommand $act.Name }
     if (Step-MenuFrame) { Start-Sleep -Milliseconds 33 } else { Start-Sleep -Milliseconds 50 }
   }
