@@ -14,6 +14,8 @@ Write-ClmVersion $new $dir
 Assert-Equal ($new.Sha + " " + $new.Time) ((Read-ClmVersion $dir).Sha + " " + (Read-ClmVersion $dir).Time) "version ecrite puis relue"
 Assert-True ((Format-ClmVersion $new) -match "^bbbbbbb du \d\d/\d\d/\d{4} \d\d:\d\d$") "version affichee"
 Assert-Equal "inconnue" (Format-ClmVersion $null) "version inconnue affichee"
+Assert-Equal "clm bbbbbbb" (Get-ClmTag $dir) "version courte pour l'en-tete"
+Assert-Equal "" (Get-ClmTag (Join-Path $script:Sandbox "absent")) "pas de version, rien dans l'en-tete"
 
 Assert-True (Test-ClmOutdated $old $new) "commit plus recent sur GitHub : mise a jour"
 Assert-True (Test-ClmOutdated $null $new) "version installee inconnue : mise a jour"

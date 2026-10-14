@@ -55,3 +55,10 @@ function Assert-BackupVersion {
   $msg = Get-BackupVersionError (Read-ClmVersion) (Get-BackupVersion $Zip)
   if ($msg) { throw $msg }
 }
+
+function Get-ClmTag {
+  param([string]$Dir = $PSScriptRoot)
+  $v = Read-ClmVersion $Dir
+  if ($null -eq $v) { return "" }
+  return "clm " + $v.Sha.Substring(0, 7)
+}

@@ -18,26 +18,44 @@ function Get-AccountsText {
   return $Labels[0]
 }
 
-function Get-UpdateSeg {
+function Get-UpdateInfo {
   param($State, [double]$Now, [long]$UnixNow = 0)
-  if ($State.Busy) { return ,@("maj en pause", $script:Ink.Dim, $false) }
-  if ($null -ne $State.Loader -or $null -eq $State.NextAt) { return ,@("maj en cours", $script:Ink.Dim, $false) }
+  if ($State.Busy) { return @{ Texts = @("maj en pause", "pause"); Ink = $script:Ink.Dim } }
+  if ($null -ne $State.Loader -or $null -eq $State.NextAt) { return @{ Texts = @("maj en cours", "maj..."); Ink = $script:Ink.Dim } }
   if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
   $s = [int][math]::Max(0, [math]::Ceiling(($State.NextAt - $Now) / 1000))
   $bad = @(foreach ($e in $State.Entries) { if ($null -ne $e.U.Error) { $e.U.Label } })
-  if ($bad.Count -gt 0) { return ,@(("maj en echec (" + (Get-AccountsText $bad) + "), reessai dans " + (Format-Countdown $s)), $script:Ink.Alert, $false) }
+  if ($bad.Count -gt 0) {
+    $who = Get-AccountsText $bad; $at = Format-Countdown $s
+    return @{ Texts = @(("maj en echec (" + $who + "), reessai dans " + $at), ("echec (" + $who + "), " + $at), ("echec " + $at)); Ink = $script:Ink.Alert }
+  }
   $limited = @(foreach ($e in $State.Entries) { if ([long]$e.U.LimitedUntil -gt $UnixNow) { $e.U } })
-  if ($limited.Count -eq 0) { return ,@(("maj dans " + (Format-Countdown $s)), $script:Ink.Dim, $false) }
+  if ($limited.Count -eq 0) { $at = Format-Countdown $s; return @{ Texts = @(("maj dans " + $at), ("maj " + $at)); Ink = $script:Ink.Dim } }
   $first = ($limited | Measure-Object -Property LimitedUntil -Minimum).Minimum
-  $wait = [int][math]::Max($s, $first - $UnixNow)
+  $at = Format-Countdown ([int][math]::Max($s, $first - $UnixNow))
   $who = Get-AccountsText @($limited | ForEach-Object { $_.Label })
-  return ,@(("API limitee (" + $who + "), reessai dans " + (Format-Countdown $wait)), $script:Levels["7d"][1], $false)
+  return @{ Texts = @(("API limitee (" + $who + "), reessai dans " + $at), ("API limitee (" + $who + "), " + $at), ("limitee " + $at)); Ink = $script:Levels["7d"][1] }
+}
+
+function Get-UpdateSeg {
+  param($State, [double]$Now, [long]$UnixNow = 0)
+  $info = Get-UpdateInfo $State $Now $UnixNow
+  return ,@($info.Texts[0], $info.Ink, $false)
 }
 
 function Get-MenuHeaderRow {
-  param($State, [int]$W, [double]$Now)
+  param($State, [int]$W, [double]$Now, [long]$UnixNow = 0)
   $r = Get-HeaderRow "Comptes Claude Code" $W
-  Add-RightSegs $r ($W - 2) @((Get-UpdateSeg $State $Now), @(("  " + (Get-Date -Format "HH:mm")), $script:Ink.Dim, $false))
+  $clock = @(("  " + (Get-Date -Format "HH:mm")), $script:Ink.Dim, $false)
+  $free = $W - 4 - (Get-SegsLength $r) - $clock[0].Length
+  $tag = ""
+  if ($State.Version) { $tag = "  " + $State.Version }
+  $info = Get-UpdateInfo $State $Now $UnixNow
+  foreach ($t in $info.Texts) {
+    if ($tag -and $t.Length + $tag.Length -le $free) { $r.Add(@($tag, $script:Ink.Dim, $false)); break }
+    if ($t.Length -le $free) { break }
+  }
+  Add-RightSegs $r ($W - 2) @(@($t, $info.Ink, $false), $clock)
   return ,$r
 }
 

@@ -140,6 +140,17 @@ $st.Entries[1].U.LimitedUntil = 5250
 Assert-Equal "API limitee (b), reessai dans 4m10s" (Get-UpdateSeg $st 1000 5000)[0] "pause de l'API signalee avec le compte"
 Assert-Equal ($script:Levels["7d"][1] -join " ") ((Get-UpdateSeg $st 1000 5000)[1] -join " ") "pause en orange"
 Assert-Equal "API limitee (b), reessai dans 30s" (Get-UpdateSeg $st 1000 5240)[0] "pause finie avant la relecture"
+$st.Version = "clm abcdef1"
+$head = Get-SegsText (Get-MenuHeaderRow $st 90 1000 5000)
+Assert-True ($head -match "Comptes Claude Code  clm abcdef1 +API limitee \(b\), reessai dans 4m10s  \d\d:\d\d$") "en-tete large : version et texte complet"
+$head = Get-SegsText (Get-MenuHeaderRow $st 70 1000 5000)
+Assert-True ($head -notmatch "clm abcdef1" -and $head -match "API limitee \(b\), reessai dans 4m10s") "en-tete moyen : version retiree avant le texte"
+$head = Get-SegsText (Get-MenuHeaderRow $st 60 1000 5000)
+Assert-True ($head -match "API limitee \(b\), 4m10s  \d\d:\d\d$") "en-tete etroit : texte raccourci"
+$head = Get-SegsText (Get-MenuHeaderRow $st 46 1000 5000)
+Assert-True ($head -match " limitee 4m10s  \d\d:\d\d$") "en-tete tres etroit : texte minimal"
+Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 40 1000 5000)) -notmatch "limitee") "plus de place : seule l'heure reste"
+foreach ($w in 40, 46, 60, 70, 90) { Assert-True ((Get-SegsText (Get-MenuHeaderRow $st $w 1000 5000)).Length -le $w - 2) ("en-tete dans la largeur " + $w) }
 $st.Entries[0].U.LimitedUntil = 5100
 Assert-Equal "API limitee (2 comptes), reessai dans 1m40s" (Get-UpdateSeg $st 1000 5000)[0] "plusieurs pauses, la plus proche"
 $st.Entries[0].U.Error = "panne"
