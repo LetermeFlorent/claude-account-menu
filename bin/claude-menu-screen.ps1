@@ -6,65 +6,14 @@ function Get-MsgRow {
   return ,$r
 }
 
-function Format-Countdown {
-  param([int]$Seconds)
-  if ($Seconds -lt 60) { return "" + $Seconds + "s" }
-  return "" + [math]::Floor($Seconds / 60) + "m" + ("{0:D2}" -f ($Seconds % 60)) + "s"
-}
-
-function Get-AccountsText {
-  param($Labels)
-  if ($Labels.Count -gt 1) { return "" + $Labels.Count + " comptes" }
-  return $Labels[0]
-}
-
-function Get-UpdateInfo {
-  param($State, [double]$Now, [long]$UnixNow = 0)
-  if ($State.Busy) { return @{ Texts = @("maj en pause", "pause"); Ink = $script:Ink.Dim } }
-  if ($null -ne $State.Loader -or $null -eq $State.NextAt) { return @{ Texts = @("maj en cours", "maj..."); Ink = $script:Ink.Dim } }
-  if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
-  $s = [int][math]::Max(0, [math]::Ceiling(($State.NextAt - $Now) / 1000))
-  $bad = @(foreach ($e in $State.Entries) { if ($null -ne $e.U.Error) { $e.U.Label } })
-  if ($bad.Count -gt 0) {
-    $who = Get-AccountsText $bad; $at = Format-Countdown $s
-    return @{ Texts = @(("maj en echec (" + $who + "), reessai dans " + $at), ("echec (" + $who + "), " + $at), ("echec " + $at)); Ink = $script:Ink.Alert }
-  }
-  $limited = @(foreach ($e in $State.Entries) { if ([long]$e.U.LimitedUntil -gt $UnixNow) { $e.U } })
-  if ($limited.Count -eq 0) { $at = Format-Countdown $s; return @{ Texts = @(("maj dans " + $at), ("maj " + $at)); Ink = $script:Ink.Dim } }
-  $first = ($limited | Measure-Object -Property LimitedUntil -Minimum).Minimum
-  $at = Format-Countdown ([int][math]::Max($s, $first - $UnixNow))
-  $who = Get-AccountsText @($limited | ForEach-Object { $_.Label })
-  return @{ Texts = @(("API limitee (" + $who + "), reessai dans " + $at), ("API limitee (" + $who + "), " + $at), ("limitee " + $at)); Ink = $script:Levels["7d"][1] }
-}
-
-function Get-UpdateSeg {
-  param($State, [double]$Now, [long]$UnixNow = 0)
-  $info = Get-UpdateInfo $State $Now $UnixNow
-  return ,@($info.Texts[0], $info.Ink, $false)
-}
-
 function Get-MenuHeaderRow {
-  param($State, [int]$W, [double]$Now, [long]$UnixNow = 0)
+  param($State, [int]$W)
   $r = Get-HeaderRow "Comptes Claude Code" $W
   $clock = @(("  " + (Get-Date -Format "HH:mm")), $script:Ink.Dim, $false)
-  $free = $W - 4 - (Get-SegsLength $r) - $clock[0].Length
-  $tag = ""
-  if ($State.Version) { $tag = "  " + $State.Version }
-  $info = Get-UpdateInfo $State $Now $UnixNow
-  foreach ($t in $info.Texts) {
-    if ($tag -and $t.Length + $tag.Length -le $free) { $r.Add(@($tag, $script:Ink.Dim, $false)); break }
-    if ($t.Length -le $free) { break }
-  }
-  Add-RightSegs $r ($W - 2) @(@($t, $info.Ink, $false), $clock)
+  $tag = "  " + $State.Version
+  if ($State.Version -and (Get-SegsLength $r) + $tag.Length + 2 + $clock[0].Length -le $W - 2) { $r.Add(@($tag, $script:Ink.Dim, $false)) }
+  Add-RightSegs $r ($W - 2) @(, $clock)
   return ,$r
-}
-
-function Update-MenuHead {
-  param($State, [double]$Now)
-  $t = (Get-UpdateSeg $State $Now)[0] + (Get-Date -Format "HH:mm")
-  if ($t -ceq $State.Head) { return $false }
-  $State.Head = $t
-  return $true
 }
 
 function Get-SimpleRows {
@@ -115,7 +64,7 @@ function Get-MenuRows {
   $tip = ""
   if ($top -gt 0) { $tip = $script:UpArrow }
   Add-PlainRow $rows $fades (New-Row)
-  Add-PlainRow $rows $fades (Get-MenuHeaderRow $State $L.W $Now)
+  Add-PlainRow $rows $fades (Get-MenuHeaderRow $State $L.W)
   Add-PlainRow $rows $fades (Get-RuleRow $L.W $tip)
   Add-PlainRow $rows $fades (New-Row)
   $start = $rows.Count

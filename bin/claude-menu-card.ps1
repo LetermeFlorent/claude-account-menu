@@ -56,6 +56,12 @@ function Get-CardBody {
   return ,$rows
 }
 
+function New-TailSeg {
+  param([string]$Text, $Ink, [bool]$Bold = $false)
+  if ($Text) { $Text += "  " }
+  return ,@($Text, $Ink, $Bold)
+}
+
 function Get-CardHead {
   param($E, [int]$I, $L, [double]$W)
   $u = $E.U
@@ -64,10 +70,10 @@ function Get-CardHead {
   $end = $L.W - 2
   $mail = @(("" + $u.Email), (Get-MixedRgb $script:Ink.Dim $txt $W), ($W -gt 0.5))
   $plan = @(("" + $u.Plan), (Get-PlanColor $u.Plan), $true)
-  $badge = @("", $script:Ink.Alert, $true)
-  if ($v.Badge) { $badge[0] = $v.Badge + "  " }
-  $note = @("", $script:Ink.Dim, $false)
-  if ($v.Note) { $note[0] = $v.Note + "  " }
+  $badge = New-TailSeg $v.Badge $script:Ink.Alert $true
+  $note = New-TailSeg $v.Note $script:Ink.Dim
+  $timer = New-TailSeg "" $script:Ink.Dim
+  if ($E.Timer) { $timer = New-TailSeg $E.Timer[0] $E.Timer[1] }
   $head = New-Row
   $head.Add(@("    ", $txt, $false))
   $head.Add(@(("" + ($I + 1) + "  " + $u.Label), $txt, ($W -gt 0.5)))
@@ -76,10 +82,10 @@ function Get-CardHead {
   if ($L.Mode -eq "compact") {
     $head.Add(@("  ", $txt, $false))
     $head.Add($mail)
-    Add-RightSegs $head $end @($note, $badge, $plan)
+    Add-RightSegs $head $end @($note, $timer, $badge, $plan)
     return ,$out
   }
-  Add-RightSegs $head $end @($badge, $plan)
+  Add-RightSegs $head $end @($timer, $badge, $plan)
   $r = New-Row
   $r.Add(@("       ", $txt, $false))
   $r.Add($mail)

@@ -126,43 +126,75 @@ Set-UsageResult $st @(1, $res, $null) 3000
 Assert-True (Test-TweenRunning $st.Entries[1].T5 3100) "valeur changee, barre animee"
 Assert-True (-not (Test-TweenRunning $st.Entries[1].T7 3100)) "autre barre inchangee, immobile"
 
-$st = @{ Entries = @((New-TestCard "a" 10 10), (New-TestCard "b" 20 20)); Busy = $false; Loader = $null; NextAt = 31000 }
-Assert-Equal "maj dans 30s" (Get-UpdateSeg $st 1000 5000)[0] "compteur au depart"
-Assert-Equal "maj dans 8s" (Get-UpdateSeg $st 23500 5000)[0] "compteur arrondi a la seconde du dessus"
-Assert-Equal "maj dans 0s" (Get-UpdateSeg $st 40000 5000)[0] "compteur jamais negatif"
-$st.NextAt = 186000
-Assert-Equal "maj dans 3m05s" (Get-UpdateSeg $st 1000 5000)[0] "compteur en minutes"
-$st.NextAt = 31000
-Assert-True (Update-MenuHead $st 1000) "en-tete redessine au premier passage"
-Assert-True (-not (Update-MenuHead $st 1200)) "meme seconde, rien a redessiner"
-Assert-True (Update-MenuHead $st 2100) "seconde suivante, en-tete redessine"
-$st.Entries[1].U.LimitedUntil = 5250
-Assert-Equal "API limitee (b), reessai dans 4m10s" (Get-UpdateSeg $st 1000 5000)[0] "pause de l'API signalee avec le compte"
-Assert-Equal ($script:Levels["7d"][1] -join " ") ((Get-UpdateSeg $st 1000 5000)[1] -join " ") "pause en orange"
-Assert-Equal "API limitee (b), reessai dans 30s" (Get-UpdateSeg $st 1000 5240)[0] "pause finie avant la relecture"
+Assert-True ($st.Entries[1].NextAt -gt 3000) "compte relu, prochaine lecture planifiee"
+
+$e = New-TestCard "a" 10 10
+$e.NextAt = 31000
+Assert-Equal "maj 30s" (Get-EntryTimer $e $false 1000 5000)[0] "compteur au depart"
+Assert-Equal "maj 8s" (Get-EntryTimer $e $false 23500 5000)[0] "compteur arrondi a la seconde du dessus"
+Assert-Equal "maj 0s" (Get-EntryTimer $e $false 40000 5000)[0] "compteur jamais negatif"
+$e.NextAt = 186000
+Assert-Equal "maj 3m05s" (Get-EntryTimer $e $false 1000 5000)[0] "compteur en minutes"
+$e.U.LimitedUntil = 5250
+Assert-Equal "pause API 3m05s" (Get-EntryTimer $e $false 1000 5000)[0] "pause de l'API"
+Assert-Equal ($script:Levels["7d"][1] -join " ") ((Get-EntryTimer $e $false 1000 5000)[1] -join " ") "pause en orange"
+Assert-Equal "maj 3m05s" (Get-EntryTimer $e $false 1000 5300)[0] "pause finie"
+$e.U.Error = "panne"
+Assert-Equal "reessai 3m05s" (Get-EntryTimer $e $false 1000 5000)[0] "echec avant la pause"
+Assert-Equal ($script:Ink.Alert -join " ") ((Get-EntryTimer $e $false 1000 5000)[1] -join " ") "echec en rouge"
+$e.Pending = $true
+Assert-Equal "lecture..." (Get-EntryTimer $e $false 1000 5000)[0] "relecture en cours"
+$e.Seen = $false
+Assert-Equal "" (Get-EntryTimer $e $false 1000 5000)[0] "premiere lecture, pas de compteur"
+Assert-Equal "en pause" (Get-EntryTimer $e $true 1000 5000)[0] "relecture suspendue pendant une action"
+
+$e = New-TestCard "a" 10 10
+$at = Get-NextReadAt $e 1000 5000
+Assert-True ($at -ge 181000 -and $at -lt 206000) "relecture dans 3 min plus un alea"
+$e.Slot = 60000
+$at = Get-NextReadAt $e 1000 5000
+Assert-True ($at -ge 241000 -and $at -lt 266000) "compte decale au premier tour"
+Assert-Equal 0 $e.Slot "decalage pris une seule fois"
+$e.U.Age = 100
+$at = Get-NextReadAt $e 1000 5000
+Assert-True ($at -ge 81000 -and $at -lt 106000) "valeur du cache, relecture a son expiration"
+$e.U.LimitedUntil = 5250
+Assert-Equal 252000 (Get-NextReadAt $e 1000 5000) "pause de l'API, relecture a sa fin"
+
+$st = @{ Entries = @((New-TestCard "a" 1 1), (New-TestCard "b" 1 1), (New-TestCard "c" 1 1)); Busy = $false }
+$st.Entries[0].NextAt = 5000
+$st.Entries[2].NextAt = 9000
+Assert-Equal "0" ((Get-DueEntries $st 6000) -join ",") "seul le compte arrive a echeance est relu"
+Assert-Equal "0,2" ((Get-DueEntries $st 9000) -join ",") "comptes a echeance, compte en lecture ignore"
+
+$st = @{ Entries = @((New-TestCard "a" 1 1), (New-TestCard "b" 1 1)); Busy = $false; Clock = $null }
+$st.Entries[0].NextAt = 31000
+$st.Entries[1].NextAt = 61000
+Assert-True (Update-MenuTimers $st 1000 5000) "compteurs dessines au premier passage"
+Assert-True (-not (Update-MenuTimers $st 1200 5000)) "meme seconde, rien a redessiner"
+Assert-True (Update-MenuTimers $st 2100 5000) "seconde suivante, compteurs redessines"
+Assert-Equal "maj 29s|maj 59s" (($st.Entries | ForEach-Object { $_.Timer[0] }) -join "|") "un compteur par compte"
+
+$st = @{ Entries = @((New-TestCard "a" 1 1), (New-TestCard "b" 1 1), (New-TestCard "c" 1 1)); Busy = $false; Moved = $true; Sel = 0; Dirty = $false; LoaderIdx = @(2) }
+$q = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
+$res = [PSCustomObject]@{ Label = "c"; Email = "c@x.fr"; Plan = ""; Error = $null; Age = $null; Expired = $false; LimitedUntil = $null; Pct5 = 42; Reset5 = $null; Pct7 = 5; Reset7 = $null }
+$q.Enqueue(@(0, $res, $null))
+$st.Loader = @{ Ps = $null; Ctl = @{ Done = $true; Error = $null }; Queue = $q }
+Step-MenuLoader $st 1000
+Assert-Equal 42 $st.Entries[2].U.Pct5 "resultat range sur le compte relu"
+Assert-Equal 1 $st.Entries[0].U.Pct5 "autres comptes intacts"
+Assert-Null $st.Loader "lecture terminee"
+Assert-True ($st.Entries[2].NextAt -gt 1000) "compte relu replanifie"
+Assert-Null $st.Entries[0].NextAt "compte non relu, planning inchange"
+
 $st.Version = "clm abcdef1"
-$head = Get-SegsText (Get-MenuHeaderRow $st 90 1000 5000)
-Assert-True ($head -match "Comptes Claude Code  clm abcdef1 +API limitee \(b\), reessai dans 4m10s  \d\d:\d\d$") "en-tete large : version et texte complet"
-$head = Get-SegsText (Get-MenuHeaderRow $st 70 1000 5000)
-Assert-True ($head -notmatch "clm abcdef1" -and $head -match "API limitee \(b\), reessai dans 4m10s") "en-tete moyen : version retiree avant le texte"
-$head = Get-SegsText (Get-MenuHeaderRow $st 60 1000 5000)
-Assert-True ($head -match "API limitee \(b\), 4m10s  \d\d:\d\d$") "en-tete etroit : texte raccourci"
-$head = Get-SegsText (Get-MenuHeaderRow $st 46 1000 5000)
-Assert-True ($head -match " limitee 4m10s  \d\d:\d\d$") "en-tete tres etroit : texte minimal"
-Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 40 1000 5000)) -notmatch "limitee") "plus de place : seule l'heure reste"
-foreach ($w in 40, 46, 60, 70, 90) { Assert-True ((Get-SegsText (Get-MenuHeaderRow $st $w 1000 5000)).Length -le $w - 2) ("en-tete dans la largeur " + $w) }
-$st.Entries[0].U.LimitedUntil = 5100
-Assert-Equal "API limitee (2 comptes), reessai dans 1m40s" (Get-UpdateSeg $st 1000 5000)[0] "plusieurs pauses, la plus proche"
-$st.Entries[0].U.Error = "panne"
-Assert-Equal "maj en echec (a), reessai dans 30s" (Get-UpdateSeg $st 1000 5000)[0] "echec signale avant la pause"
-Assert-Equal ($script:Ink.Alert -join " ") ((Get-UpdateSeg $st 1000 5000)[1] -join " ") "echec en rouge"
-$st.Entries[1].U.Error = "panne"
-Assert-Equal "maj en echec (2 comptes), reessai dans 30s" (Get-UpdateSeg $st 1000 5000)[0] "plusieurs echecs comptes"
-$st.Loader = @{}
-Assert-Equal "maj en cours" (Get-UpdateSeg $st 1000)[0] "lecture en cours"
-$st.Busy = $true
-Assert-Equal "maj en pause" (Get-UpdateSeg $st 1000)[0] "relecture suspendue pendant une action"
+Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 60)) -match "Comptes Claude Code  clm abcdef1 +\d\d:\d\d$") "version dans l'en-tete"
+Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 40)) -notmatch "clm") "fenetre etroite, version retiree"
+foreach ($w in 30, 40, 60) { Assert-True ((Get-SegsText (Get-MenuHeaderRow $st $w)).Length -le $w - 2) ("en-tete dans la largeur " + $w) }
 
 $headE = @{ U = [PSCustomObject]@{ Label = "c1"; Email = "a@b"; Plan = "Pro" }; View = @{ Badge = ""; Note = "" } }
 Assert-Equal 1 (Get-CardHead $headE 0 @{ Mode = "compact"; W = 80 } 1.0).Count "en-tete compact sur une ligne"
 Assert-Equal 2 (Get-CardHead $headE 0 @{ Mode = "full"; W = 80 } 1.0).Count "en-tete complet sur deux lignes"
+$headE.Timer = @("maj 2m05s", $script:Ink.Dim, $false)
+Assert-True ((Get-SegsText (Get-CardHead $headE 0 @{ Mode = "full"; W = 80 } 1.0)[0]) -match "c1 +maj 2m05s  Pro$") "compteur du compte dans sa carte"
+Assert-True ((Get-SegsText (Get-CardHead $headE 0 @{ Mode = "compact"; W = 80 } 1.0)[0]) -match "maj 2m05s  Pro$") "compteur en vue compacte"

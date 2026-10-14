@@ -7,7 +7,7 @@ function Step-MenuFrame {
   $st = $script:MenuState
   Step-MenuLoader $st $now
   if (Update-UiTick $now $st.Busy) { $st.Dirty = $true }
-  if (Update-MenuHead $st $now) { $st.Dirty = $true }
+  if (Update-MenuTimers $st $now) { $st.Dirty = $true }
   if ($st.Dirty -or (Test-MenuAnimating $st $now)) { Show-Menu $st $now; return $true }
   return $false
 }

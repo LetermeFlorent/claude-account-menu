@@ -107,7 +107,7 @@ Si la mise à jour affiche "verification impossible", `claude update` n'a rien a
 
 Sous Windows et Linux, le menu renouvelle lui-même un jeton expiré. Si un compte affiche quand même "jeton refuse" ou "compte deconnecte", lancer ce compte une fois avec son numéro (`clm -2` par exemple) : Claude Code renouvelle le jeton au démarrage. "non connecte" veut dire qu'aucun jeton n'a été trouvé : lancer le compte et taper `/login`.
 
-Si un compte affiche "quota inconnu", l'API de suivi limite ses appels et aucune valeur récente n'est en cache. Le menu réessaie seul après le délai indiqué. Quand le cache a des valeurs, le menu les affiche avec la mention "lu il y a" et l'en-tête indique "API limitee" en orange. Rouvrir le menu ou lancer `clm --usage` pendant la pause ne relance pas d'appel.
+Si un compte affiche "quota inconnu", l'API de suivi limite ses appels et aucune valeur récente n'est en cache. Le menu réessaie seul après le délai indiqué. Quand le cache a des valeurs, le menu les affiche avec la mention "lu il y a" et le compteur du compte indique "pause API" en orange. Rouvrir le menu ou lancer `clm --usage` pendant la pause ne relance pas d'appel.
 
 `clm -N` répond "pas de compte N" quand ce numéro n'existe pas, et `--save=` ou `--only=` répondent "compte inconnu : ..." pour un nom absent de la liste. Les noms attendus sont ceux affichés dans le menu, pas ceux des dossiers.
 
