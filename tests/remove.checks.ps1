@@ -54,3 +54,12 @@ Assert-Equal ".claude" ((@(Get-Accounts) | ForEach-Object { $_.Dir }) -join "|")
 
 Remove-Item -LiteralPath $script:RegistryPath, $dir3 -Recurse -Force
 Remove-Item Function:\Save-Accounts, Function:\Remove-KeychainCredential
+
+[IO.File]::WriteAllText($script:RegistryPath, "{ pas du json")
+$accs = @(Get-Accounts)
+Assert-Equal "compte1" $accs[0].Label "registre illisible, comptes par defaut"
+$badPath = $script:RegistryPath + ".bad"
+$badText = $null
+if (Test-Path -LiteralPath $badPath) { $badText = [IO.File]::ReadAllText($badPath) }
+Assert-Equal "{ pas du json" $badText "registre illisible garde a cote"
+Remove-Item -LiteralPath $badPath, $script:RegistryPath -Force -ErrorAction SilentlyContinue

@@ -253,6 +253,7 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 |---|---|
 | `~/.local/bin/clm`, `clm.cmd`, `claude-menu.cmd`, `claude-*.ps1` | le menu, copié par l'installeur |
 | `~/.claude-accounts.json` | liste des comptes |
+| `~/.claude-accounts.json.bad` | copie d'une liste illisible, mise de côté avant d'être recréée |
 | `~/.claude-compteN/` | dossiers des comptes ajoutés |
 | `settings.json` de chaque compte, et sa copie `settings.json.bak-seed` | hook `SessionStart`, ajouté par l'installeur |
 | cache `claude-menu/usage.json` | quotas des deux dernières minutes |

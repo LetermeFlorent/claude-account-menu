@@ -17,7 +17,9 @@ function Get-Accounts {
     try {
       $data = Get-Content -LiteralPath $script:RegistryPath -Raw | ConvertFrom-Json
       return @($data | ForEach-Object { $_ })
-    } catch {}
+    } catch {
+      Copy-Item -LiteralPath $script:RegistryPath -Destination ($script:RegistryPath + ".bad") -Force
+    }
   }
   $list = @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
   foreach ($n in 2..9) {
