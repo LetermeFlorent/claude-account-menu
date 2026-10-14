@@ -64,4 +64,4 @@ Assert-Equal "new1" $r.Id "gros fichier : id rendu"
 $script:Calls.Clear()
 Set-DriveProps "P1" @{ ".claude" = "55" }
 Assert-True ($script:Calls[0].Uri.EndsWith("/files/P1") -and [Text.Encoding]::UTF8.GetString($script:Calls[0].Body).Contains('".claude": "55"')) "proprietes modifiees"
-. (Join-Path $bin "claude-drive-api.ps1")
+. (Join-Path $bin "claude-drive-transfer.ps1")

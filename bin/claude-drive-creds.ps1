@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-drive-api.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-transfer.ps1")
 $script:AwaySeconds = 12 * 3600
 $script:CredentialMarginMs = 60000
 

@@ -40,4 +40,4 @@ Remove-Item -LiteralPath $script:DriveConfigPath -Force
 $err = $null
 try { $null = Get-DriveToken } catch { $err = $_.Exception.Message }
 Assert-Equal "reconnecter le Drive : clm --drive-login" $err "sans config, demande de connexion"
-. (Join-Path $bin "claude-drive-auth.ps1")
+. (Join-Path $bin "claude-drive-login.ps1")
