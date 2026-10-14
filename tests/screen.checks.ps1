@@ -142,3 +142,7 @@ $st.Loader = @{}
 Assert-Equal "maj en cours" (Get-UpdateSeg $st 1000)[0] "lecture en cours"
 $st.Busy = $true
 Assert-Equal "maj en pause" (Get-UpdateSeg $st 1000)[0] "relecture suspendue pendant une action"
+
+$headE = @{ U = [PSCustomObject]@{ Label = "c1"; Email = "a@b"; Plan = "Pro" }; View = @{ Badge = ""; Note = "" } }
+Assert-Equal 1 (Get-CardHead $headE 0 @{ Mode = "compact"; W = 80 } 1.0).Count "en-tete compact sur une ligne"
+Assert-Equal 2 (Get-CardHead $headE 0 @{ Mode = "full"; W = 80 } 1.0).Count "en-tete complet sur deux lignes"

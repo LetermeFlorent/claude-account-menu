@@ -56,16 +56,13 @@ function Get-CardBody {
   return ,$rows
 }
 
-function Add-CardRows {
-  param($Rows, $Fades, $E, [int]$I, $L, [double]$P, [double]$Now)
-  $w = [math]::Max(0, 1 - [math]::Abs($P - $I))
-  $fade = 1 - 0.35 * (1 - $w)
-  if ($null -ne $E.In) { $fade = $fade * (Get-TweenValue $E.In $Now) }
+function Get-CardHead {
+  param($E, [int]$I, $L, [double]$W)
   $u = $E.U
   $v = $E.View
   $txt = $script:Ink.Text
   $end = $L.W - 2
-  $mail = @(("" + $u.Email), (Get-MixedRgb $script:Ink.Dim $txt $w), ($w -gt 0.5))
+  $mail = @(("" + $u.Email), (Get-MixedRgb $script:Ink.Dim $txt $W), ($W -gt 0.5))
   $plan = @(("" + $u.Plan), (Get-PlanColor $u.Plan), $true)
   $badge = @("", $script:Ink.Alert, $true)
   if ($v.Badge) { $badge[0] = $v.Badge + "  " }
@@ -73,21 +70,30 @@ function Add-CardRows {
   if ($v.Note) { $note[0] = $v.Note + "  " }
   $head = New-Row
   $head.Add(@("    ", $txt, $false))
-  $head.Add(@(("" + ($I + 1) + "  " + $u.Label), $txt, ($w -gt 0.5)))
+  $head.Add(@(("" + ($I + 1) + "  " + $u.Label), $txt, ($W -gt 0.5)))
   $out = New-Object 'System.Collections.Generic.List[object]'
   $out.Add($head)
   if ($L.Mode -eq "compact") {
     $head.Add(@("  ", $txt, $false))
     $head.Add($mail)
     Add-RightSegs $head $end @($note, $badge, $plan)
-  } else {
-    Add-RightSegs $head $end @($badge, $plan)
-    $r = New-Row
-    $r.Add(@("       ", $txt, $false))
-    $r.Add($mail)
-    Add-RightSegs $r $end @(, $note)
-    $out.Add($r)
+    return ,$out
   }
+  Add-RightSegs $head $end @($badge, $plan)
+  $r = New-Row
+  $r.Add(@("       ", $txt, $false))
+  $r.Add($mail)
+  Add-RightSegs $r $end @(, $note)
+  $out.Add($r)
+  return ,$out
+}
+
+function Add-CardRows {
+  param($Rows, $Fades, $E, [int]$I, $L, [double]$P, [double]$Now)
+  $w = [math]::Max(0, 1 - [math]::Abs($P - $I))
+  $fade = 1 - 0.35 * (1 - $w)
+  if ($null -ne $E.In) { $fade = $fade * (Get-TweenValue $E.In $Now) }
+  $out = Get-CardHead $E $I $L $w
   $out.AddRange((Get-CardBody $E $L $Now))
   $out.Add((New-Row))
   foreach ($r in $out) { $Rows.Add($r); $Fades.Add($fade) }

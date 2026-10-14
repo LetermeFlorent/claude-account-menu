@@ -54,6 +54,18 @@ function Get-SimpleRows {
   return @{ Rows = $rows; Fades = $null }
 }
 
+function Add-MenuCards {
+  param($Rows, $Fades, $State, $L, [double]$Now)
+  $h = $State.Hit
+  $p = Get-TweenValue $State.SelTween $Now
+  for ($i = $h.Top; $i -lt $h.Last; $i++) { Add-CardRows $Rows $Fades $State.Entries[$i] $i $L $p $Now }
+  $m = [int][math]::Round(($p - $h.Top) * $L.Per)
+  for ($j = 0; $j -lt $L.Per - 1; $j++) {
+    $at = $h.Start + $m + $j
+    if ($at -ge $h.Start -and $at -lt $Rows.Count) { Add-MarkSeg $Rows[$at] }
+  }
+}
+
 function Get-MenuRows {
   param($State, $L, [double]$Now)
   $n = $State.Entries.Count
@@ -74,13 +86,7 @@ function Get-MenuRows {
   Add-PlainRow $rows $fades (New-Row)
   $start = $rows.Count
   $State.Hit = @{ Start = $start; Per = $L.Per; Top = $top; Last = $last }
-  $p = Get-TweenValue $State.SelTween $Now
-  for ($i = $top; $i -lt $last; $i++) { Add-CardRows $rows $fades $State.Entries[$i] $i $L $p $Now }
-  $m = [int][math]::Round(($p - $top) * $L.Per)
-  for ($j = 0; $j -lt $L.Per - 1; $j++) {
-    $at = $start + $m + $j
-    if ($at -ge $start -and $at -lt $rows.Count) { Add-MarkSeg $rows[$at] }
-  }
+  Add-MenuCards $rows $fades $State $L $Now
   $tip = ""
   if ($last -lt $n) { $tip = $script:DownArrow }
   Add-PlainRow $rows $fades (Get-RuleRow $L.W $tip)
