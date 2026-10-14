@@ -57,7 +57,7 @@ Le pied du menu rappelle les touches principales, sur une ligne à partir de 107
 | `n` | renommer un compte |
 | `m` | relire tout de suite les quotas du compte sélectionné |
 | `u` | installer la nouvelle version de clm signalée par "[maj dispo]" et relancer le menu |
-| `y` | lancer une synchro Drive (voir "Synchronisation entre PC") |
+| `y` | lancer une synchro Drive, ou connecter le Drive si ce PC ne l'est pas (voir "Synchronisation entre PC") |
 | `s` | sauvegarder des comptes |
 | `r` | restaurer une sauvegarde |
 | `q`, Échap ou Ctrl+C | quitter |
@@ -235,6 +235,8 @@ Le même identifiant sert sur tous les PC. Le secret d'une application de bureau
 ### Connecter un PC
 
 `clm --drive-login` demande l'ID client et le secret au premier passage, ouvre le navigateur sur la page de consentement Google et attend la réponse 5 minutes. Si le navigateur ne s'ouvre pas, le lien est affiché. La connexion est rangée dans `~/.clm-drive.json`, lisible par son seul propriétaire hors Windows, avec le nom du PC, celui de la machine.
+
+Dans le menu, la touche `y` lance la même connexion tant que le PC n'est pas connecté, puis une première synchro. Sans ID client, le navigateur s'ouvre aussi sur la page des identifiants de la console Google Cloud : y créer un ID client OAuth de type Application de bureau, après avoir activé l'API Google Drive.
 
 Le premier PC envoie tout. Sur un PC qui rejoint, la première synchro prend ce qui est sur le Drive quand un fichier existe des deux côtés : un PC neuf n'écrase pas les comptes des autres avec ses réglages par défaut. L'ancienne version locale est gardée sous `<fichier>.conflit-<PC>`.
 

@@ -190,7 +190,8 @@ Auto (si `auto` vaut `true` et que le Drive est connecté) :
 
 Manuel :
 
-- touche `y` dans le menu, aussi cliquable dans le pied de page ;
+- touche `y` dans le menu, aussi cliquable dans le pied de page ; sans Drive connecté, elle lance
+  la connexion de `--drive-login` hors de l'écran du menu, puis une première synchro ;
 - `clm --sync` en ligne de commande, avec la progression affichée.
 
 ## Affichage

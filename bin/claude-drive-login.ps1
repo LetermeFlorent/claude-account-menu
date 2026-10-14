@@ -1,5 +1,6 @@
 . (Join-Path $PSScriptRoot "claude-drive-auth.ps1")
 $script:DriveLoginSeconds = 300
+$script:DriveConsoleUrl = "https://console.cloud.google.com/apis/credentials"
 
 function ConvertFrom-AuthRequest {
   param([string]$RequestLine)
@@ -56,6 +57,9 @@ function Open-Browser {
 function Read-DriveClient {
   param($Config)
   if ($Config["clientId"] -and $Config["clientSecret"]) { return }
+  Write-Host "  premiere connexion : creer un ID client OAuth Google de type Application de bureau, API Google Drive activee"
+  Write-Host ("  " + $script:DriveConsoleUrl)
+  Open-Browser $script:DriveConsoleUrl
   $Config["clientId"] = ([string](Read-Host "  client ID OAuth (Google Cloud)")).Trim()
   $Config["clientSecret"] = ([string](Read-Host "  secret client OAuth")).Trim()
   if (-not $Config["clientId"] -or -not $Config["clientSecret"]) { throw "client ID et secret requis" }

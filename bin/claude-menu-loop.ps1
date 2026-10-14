@@ -1,7 +1,7 @@
 $script:MenuState = $null
 $script:MenuUpdated = $false
 $script:MenuRestart = $false
-$script:MenuFails = @{ save = "  sauvegarde impossible : "; restore = "  restauration impossible : "; add = "  ajout impossible : "; remove = "  retrait impossible : "; rename = "  renommage impossible : " }
+$script:MenuFails = @{ save = "  sauvegarde impossible : "; restore = "  restauration impossible : "; add = "  ajout impossible : "; remove = "  retrait impossible : "; rename = "  renommage impossible : "; drivelogin = "  connexion Drive impossible : " }
 
 function Step-MenuFrame {
   $now = Get-NowMs
@@ -55,8 +55,19 @@ function Invoke-MenuPage {
   if ($Name -eq "restore") { return Show-RestoreMenu }
   if ($Name -eq "remove") { return Show-RemoveMenu $Sel }
   if ($Name -eq "rename") { return Show-RenameMenu $Sel }
+  if ($Name -eq "drivelogin") { return Connect-MenuDrive }
   Exit-UiScreen
   try { return Add-Account } finally { Enter-UiScreen }
+}
+
+function Connect-MenuDrive {
+  Exit-UiScreen
+  try { $msg = Invoke-DriveLogin } finally { Enter-UiScreen }
+  $script:DriveJob = $null
+  Open-DriveJob
+  $null = Request-DriveSync $script:DriveJob
+  $script:DriveJob.Notify = $true
+  return $msg
 }
 
 function Invoke-MenuCommand {
@@ -105,6 +116,7 @@ function Invoke-AccountMenu {
     elseif ($act.Name -eq "pick") { return Close-AccountMenu $act.Index }
     elseif ($act.Name -eq "quit") { return Close-AccountMenu $null }
     elseif ($act.Name -eq "refresh") { Request-EntryRead $st $now }
+    elseif ($act.Name -eq "drivesync" -and -not $script:DriveJob.Connected) { Invoke-MenuCommand "drivelogin" }
     elseif ($act.Name -eq "drivesync") { $st.Msg = Request-DriveSync $script:DriveJob; $st.Dirty = $true }
     elseif ($act.Name -eq "selfupdate") {
       if (Test-ClmUpdateReady) { $script:MenuRestart = $true; return Close-AccountMenu $null }
