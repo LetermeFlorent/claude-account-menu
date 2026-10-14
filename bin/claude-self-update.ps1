@@ -8,7 +8,7 @@ function ConvertFrom-CommitJson {
   $sha = $Matches[1]
   if ($Json -notmatch '"committer"\s*:\s*\{[^{}]*"date"\s*:\s*"([^"]+)"') { return $null }
   $at = [DateTimeOffset]::Parse($Matches[1], [Globalization.CultureInfo]::InvariantCulture)
-  return [PSCustomObject]@{ Sha = $sha; Time = $at.ToUnixTimeSeconds(); Count = 0 }
+  return [PSCustomObject]@{ Sha = $sha; Time = $at.ToUnixTimeSeconds(); Number = 0 }
 }
 
 function Invoke-GitHubGet {
@@ -60,7 +60,7 @@ function Install-ClmVersion {
     Expand-Archive -LiteralPath $zip -DestinationPath $tmp
     $src = Get-ChildItem -LiteralPath $tmp -Directory | Select-Object -First 1
     Invoke-ClmInstaller $src.FullName
-    try { $Version.Count = Get-ClmCommitCount $Version.Sha } catch { $Version.Count = 0 }
+    try { $Version.Number = Get-ClmCommitCount $Version.Sha } catch { $Version.Number = 0 }
     Write-ClmVersion $Version
   } finally {
     Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue

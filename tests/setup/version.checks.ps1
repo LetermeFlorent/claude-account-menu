@@ -55,8 +55,8 @@ $frenchNames = @(Get-ChildItem -Path (Join-Path $bin "*.ps1") | Select-String -P
 Assert-Equal "" ($frenchNames -join ", ") "lecteur de quotas nomme en anglais"
 
 $counted = ConvertFrom-ClmVersion ($new.Sha + " 1760090000 34`n")
-Assert-Equal 34 $counted.Count "numero de version lu"
-Assert-Equal 0 $v.Count "ancien fichier sans numero"
+Assert-Equal 34 $counted.Number "numero de version lu"
+Assert-Equal 0 $v.Number "ancien fichier sans numero"
 Write-ClmVersion $counted $dir
 Assert-Equal "clm v34" (Get-ClmTag $dir) "numero de version dans l'en-tete"
 Assert-True ((Format-ClmVersion $counted) -match "^v34 du ") "numero de version dans les messages"

@@ -3,7 +3,7 @@ $script:ClmVersionFile = "clm.version"
 function ConvertFrom-ClmVersion {
   param([string]$Text)
   if ($Text -notmatch "^\s*([0-9a-f]{7,40})\s+([0-9]+)(\s+([0-9]+))?\s*$") { return $null }
-  return [PSCustomObject]@{ Sha = $Matches[1]; Time = [long]$Matches[2]; Count = [int]$Matches[4] }
+  return [PSCustomObject]@{ Sha = $Matches[1]; Time = [long]$Matches[2]; Number = [int]$Matches[4] }
 }
 
 function Read-ClmVersion {
@@ -16,7 +16,7 @@ function Read-ClmVersion {
 function Write-ClmVersion {
   param($Version, [string]$Dir = $PSScriptRoot)
   $text = $Version.Sha + " " + $Version.Time
-  if ([int]$Version.Count -gt 0) { $text += " " + $Version.Count }
+  if ([int]$Version.Number -gt 0) { $text += " " + $Version.Number }
   $text += "`n"
   [IO.File]::WriteAllText((Join-Path $Dir $script:ClmVersionFile), $text, (New-Object Text.UTF8Encoding $false))
 }
@@ -60,7 +60,7 @@ function Assert-BackupVersion {
 
 function Get-ClmName {
   param($Version)
-  if ([int]$Version.Count -gt 0) { return "v" + $Version.Count }
+  if ([int]$Version.Number -gt 0) { return "v" + $Version.Number }
   return $Version.Sha.Substring(0, 7)
 }
 

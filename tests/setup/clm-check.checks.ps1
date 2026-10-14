@@ -5,8 +5,8 @@ function Get-HeaderText {
   return $t
 }
 
-$installed = [PSCustomObject]@{ Sha = ("a" * 40); Time = [long]100; Count = 33 }
-$newer = [PSCustomObject]@{ Sha = ("b" * 40); Time = [long]200; Count = 0 }
+$installed = [PSCustomObject]@{ Sha = ("a" * 40); Time = [long]100; Number = 33 }
+$newer = [PSCustomObject]@{ Sha = ("b" * 40); Time = [long]200; Number = 0 }
 
 function New-FakeCheckLoader {
   param($Latest, [bool]$Done = $true)

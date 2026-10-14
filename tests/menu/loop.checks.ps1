@@ -35,7 +35,7 @@ try {
   Assert-True (-not $script:UiOn) "ecran rendu en sortie"
   Assert-Null (Invoke-WithKeys @("u", [ConsoleKey]::Escape)) "u sans nouvelle version, menu garde"
   Assert-True (-not $script:MenuRestart) "u sans nouvelle version, pas de redemarrage"
-  $script:FakeLatest = [PSCustomObject]@{ Sha = ("b" * 40); Time = 2; Count = 0 }
+  $script:FakeLatest = [PSCustomObject]@{ Sha = ("b" * 40); Time = 2; Number = 0 }
   Assert-Null (Invoke-WithKeys @("u")) "u avec nouvelle version, menu ferme"
   Assert-True $script:MenuRestart "u avec nouvelle version, redemarrage demande"
 } finally {
