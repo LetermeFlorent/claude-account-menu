@@ -37,7 +37,7 @@ Le menu s'ouvre tout de suite, en plein écran, pendant que la mise à jour de C
 
 Les barres changent de teinte à 30 % puis à 70 %, comme la barre d'état : violet, mauve et rouge framboise pour le 5 h, vert, ocre et rouge pour le 7 j. Elles reprennent aussi son dessin : une suite de carrés dont la teinte s'éclaircit vers la droite sur fond sombre et fonce sur fond clair, la dernière case pleine réduite à un petit carré. À 100 %, le pourcentage prend la couleur de la barre.
 
-Le menu suit la taille du terminal, jusqu'à 100 colonnes de large. Quand la hauteur manque pour les blocs complets, chaque compte passe sur trois lignes, nom et e-mail sur la première, les deux barres côte à côte sur la deuxième, et la liste défile, une flèche au bout du filet signalant les comptes cachés. Sous 40 colonnes, ou dans un terminal très bas, il ne reste qu'une ligne par compte, quotas en texte. Le compte sélectionné garde sa pleine intensité, les autres sont un peu atténués, et le repère glisse d'un compte à l'autre.
+Le menu suit la taille du terminal, jusqu'à 105 colonnes de large. Quand la hauteur manque pour les blocs complets, chaque compte passe sur trois lignes, nom et e-mail sur la première, les deux barres côte à côte sur la deuxième, et la liste défile, une flèche au bout du filet signalant les comptes cachés. Sous 40 colonnes, ou dans un terminal très bas, il ne reste qu'une ligne par compte, quotas en texte. Le compte sélectionné garde sa pleine intensité, les autres sont un peu atténués, et le repère glisse d'un compte à l'autre.
 
 Le curseur part sur le premier compte lisible dont aucun quota n'est à 100 %, à défaut sur le premier, et suit cette règle tant que les quotas arrivent, sauf si on l'a déjà déplacé. Tant que le menu reste ouvert, chaque compte est relu pour lui seul, 3 minutes après sa lecture précédente, plus un délai pris au hasard jusqu'à 25 secondes. Au premier tour, les comptes sont en plus décalés d'une fraction des 3 minutes, un tiers par compte avec trois comptes, pour ne pas tomber sur l'API en même temps. Un compte dont les chiffres viennent du cache est relu à l'expiration du cache, et un compte en pause après un refus de l'API à la fin de sa pause (voir plus bas). Seules les barres dont la valeur a changé s'animent, et seules les lignes modifiées sont réécrites à l'écran. Ils sont aussi relus après chaque ajout, retrait, sauvegarde ou restauration.
 
@@ -45,7 +45,7 @@ Les transitions durent de 120 à 400 millisecondes. Elles suivent le réglage du
 
 ### Touches
 
-Le pied du menu rappelle les touches principales, sur une ligne à partir de 99 colonnes et sur deux en dessous :
+Le pied du menu rappelle les touches principales, sur une ligne à partir de 107 colonnes et sur deux en dessous :
 
 | Touche | Action |
 |---|---|
@@ -57,6 +57,7 @@ Le pied du menu rappelle les touches principales, sur une ligne à partir de 99 
 | `n` | renommer un compte |
 | `m` | relire tout de suite les quotas du compte sélectionné |
 | `u` | installer la nouvelle version de clm signalée par "[maj dispo]" et relancer le menu |
+| `y` | lancer une synchro Drive (voir "Synchronisation entre PC") |
 | `s` | sauvegarder des comptes |
 | `r` | restaurer une sauvegarde |
 | `q`, Échap ou Ctrl+C | quitter |
@@ -133,6 +134,10 @@ clm --save                   sauvegarde de tous les comptes
 clm --save=compte2,compte3   sauvegarde de certains comptes
 clm --restore=<fichier>      restauration de tous les comptes d'une archive
 clm --restore=<fichier> --only=compte2
+clm --drive-login            connecte ce PC à Google Drive
+clm --sync                   synchro Drive tout de suite
+clm --sync --force           même chose, au-delà du garde-fou des suppressions
+clm --sync-auto=off          coupe la synchro Drive automatique, on la remet
 ```
 
 `-N` accepte un chiffre de 1 à 9. Un numéro sans compte affiche "pas de compte N" et sort avec le code 1. `--save=` et `--only=` prennent des noms de comptes, ceux affichés dans le menu, séparés par des virgules, sans tenir compte des majuscules. Un nom inconnu arrête la commande avec "compte inconnu : ..." et le code 1, sans rien sauvegarder ni restaurer.
@@ -212,6 +217,52 @@ Chaque compte garde son `settings.json` et son `.claude.json`, mais `clm` les sy
 
 La règle est celle du dernier modifié. `.claude-sync-state.json` garde la dernière valeur commune. Parmi les comptes qui s'en écartent, celui dont le fichier est le plus récent gagne, et sa valeur est recopiée dans les autres. Avant sa première réécriture par la synchronisation, un fichier est copié en `<fichier>.bak-sync`. Un verrou, `.claude-sync.lock`, empêche deux lancements de synchroniser en même temps : au bout de 5 secondes d'attente, le second lance le compte sans synchroniser et l'indique.
 
+## Synchronisation entre PC
+
+`clm` peut garder les mêmes comptes sur plusieurs PC, Windows, macOS et Linux mélangés, en passant par un dossier `clm-sync` de Google Drive. Tout ce qu'une sauvegarde emporte y passe, jetons de connexion compris, sauf les scripts de `clm` : chaque PC se met à jour seul depuis GitHub.
+
+### Préparer Google Cloud, une seule fois
+
+Google demande une application OAuth à soi. Dans la [console Google Cloud](https://console.cloud.google.com/) :
+
+1. créer un projet, par exemple `clm-sync` ;
+2. dans "API et services", activer l'API Google Drive ;
+3. configurer l'écran de consentement en type externe, ajouter son adresse en utilisateur test, puis le passer en production. En mode test, Google retire l'accès au bout de 7 jours. La portée demandée, `drive.file`, ne donne accès qu'aux fichiers créés par `clm` et ne demande pas de validation par Google ;
+4. créer un identifiant OAuth de type "Application de bureau", et garder son ID client et son code secret.
+
+Le même identifiant sert sur tous les PC. Le secret d'une application de bureau n'en est pas vraiment un pour Google, mais il reste à ne pas publier.
+
+### Connecter un PC
+
+`clm --drive-login` demande l'ID client et le secret au premier passage, ouvre le navigateur sur la page de consentement Google et attend la réponse 5 minutes. Si le navigateur ne s'ouvre pas, le lien est affiché. La connexion est rangée dans `~/.clm-drive.json`, lisible par son seul propriétaire hors Windows, avec le nom du PC, celui de la machine.
+
+Le premier PC envoie tout. Sur un PC qui rejoint, la première synchro prend ce qui est sur le Drive quand un fichier existe des deux côtés : un PC neuf n'écrase pas les comptes des autres avec ses réglages par défaut. L'ancienne version locale est gardée sous `<fichier>.conflit-<PC>`.
+
+### Quand la synchro a lieu
+
+La synchro automatique est active dès la connexion. `clm --sync-auto=off` la coupe et `clm --sync-auto=on` la remet. Quand elle est active :
+
+- le menu lance une synchro en arrière-plan à son ouverture, sans attendre la fin pour s'afficher. Elle continue si un compte est lancé, et s'arrête quand on quitte le menu ;
+- à la fermeture de Claude Code, `clm` envoie ce qui a changé, pendant 30 secondes au plus. Ce qui reste part à la synchro suivante, et un message le dit.
+
+À la main, la touche `y` du menu, ou un clic sur l'état de la synchro dans l'en-tête, lance une synchro et affiche son résultat. `clm --sync` fait de même en ligne de commande, avec la progression, et sort avec le code 1 en cas d'erreur.
+
+L'en-tête affiche, après la version, "sync 14:32" pour la dernière synchro réussie, "sync 120/5508" pendant un transfert, "sync erreur" en couleur d'alerte, et "sync jamais" avant la première. Rien n'apparaît quand le Drive n'est pas connecté.
+
+### Ce qui est comparé
+
+Chaque PC garde dans `~/.clm-drive-state.json` l'état de sa dernière synchro, et compare à cet état le disque et le Drive. Un fichier modifié d'un seul côté est copié de l'autre, une suppression est propagée. Un fichier modifié des deux côtés est un conflit : la version la plus récente gagne et l'autre reste sur ce PC sous `<fichier>.conflit-<PC>`. Les fichiers `.conflit-*`, `.bak-sync` et `.tmp` ne sont pas synchronisés, et les exclusions de la sauvegarde s'appliquent.
+
+Plus de 20 suppressions prévues, ou plus d'un dixième des fichiers connus, bloquent la synchro avec "synchro bloquee : N suppressions prevues". Après vérification, `clm --sync --force` passe outre. Un fichier qui échoue est retenté à la synchro suivante, et trois échecs de suite arrêtent la synchro en cours. Un verrou, `~/.clm-drive.lock`, empêche deux synchros en même temps sur un PC.
+
+Les conversations de `projects/` passent telles quelles. Comme Claude Code nomme ces dossiers d'après le chemin du projet, une conversation ouverte sous Windows ne se reprend pas sous macOS : elle est copiée, mais reste à part.
+
+### Jetons de connexion
+
+Les jetons de chaque compte ont leur propre fichier sur le Drive, et le plus récent gagne toujours : un PC ne remplace pas un jeton local par un jeton qui expire plus tôt. Avant de lancer un compte, `clm` prend le jeton du Drive s'il est plus frais. Avant de renouveler un jeton expiré, il regarde d'abord si un autre PC ne l'a pas déjà fait, et envoie le nouveau jeton après un renouvellement. À la fermeture de Claude Code, le jeton part sur le Drive, même quand la synchro automatique est coupée. Sous macOS, les jetons sont lus et écrits dans le trousseau.
+
+Un compte lancé sur un PC est marqué ouvert pendant 12 heures, jusqu'à la fermeture de Claude Code. Les autres PC affichent alors "ouvert sur <PC>" sur sa carte.
+
 ## Liste des comptes
 
 Les comptes sont rangés dans `~/.claude-accounts.json` (`%USERPROFILE%\.claude-accounts.json` sous Windows), un tableau JSON dans l'ordre du menu :
@@ -274,15 +325,18 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | `.credentials.json` de chaque compte, hors macOS | jeton renouvelé quand il a expiré |
 | fichier d'état `claude-statusline/state` | quotas pour la barre d'état |
 | `claude-comptes-*.zip` ou `.tar.gz` dans Téléchargements | sauvegardes |
+| `~/.clm-drive.json` | connexion Google Drive, nom du PC, synchro automatique |
+| `~/.clm-drive-state.json` et `~/.clm-drive.lock` | état de la dernière synchro Drive, verrou |
+| `<fichier>.conflit-<PC>` | version perdante d'un conflit de synchro |
 
 Il lit `USERPROFILE` puis `HOME` pour le dossier personnel, `LOCALAPPDATA` sous Windows, `XDG_CACHE_HOME`, `XDG_STATE_HOME` et `XDG_CONFIG_HOME` sous Linux, `STATUSLINE_BG` et `GTK_THEME` pour les couleurs, `CLM_ANIM` pour les animations, et `CLAUDE_CONFIG_DIR` dans le hook. Il pose ou retire lui-même `CLAUDE_CONFIG_DIR` pour lancer un compte.
 
 ## Tests
 
-`tests/run.ps1` vérifie les fonctions sans réseau ni vrai compte, dans un dossier temporaire, et sort avec un code non nul en cas d'échec. Il charge tous les fichiers `*.checks.ps1`, rangés par domaine dans `accounts`, `menu`, `setup`, `ui` et `usage`. Il tourne avec `powershell -File tests\run.ps1` comme avec `pwsh -File tests/run.ps1`. Le calcul du suffixe de compte du fichier d'état a en plus un test Pester, `tests/StateTag.Tests.ps1`.
+`tests/run.ps1` vérifie les fonctions sans réseau ni vrai compte, dans un dossier temporaire, et sort avec un code non nul en cas d'échec. Il charge tous les fichiers `*.checks.ps1`, rangés par domaine dans `accounts`, `menu`, `setup`, `sync`, `ui` et `usage`. Ceux de `sync` simulent Google Drive en mémoire et deux PC dans des dossiers temporaires. Il tourne avec `powershell -File tests\run.ps1` comme avec `pwsh -File tests/run.ps1`. Le calcul du suffixe de compte du fichier d'état a en plus un test Pester, `tests/StateTag.Tests.ps1`.
 
 La CI lance ces tests à chaque envoi sur `main` et sur chaque pull request, sous Linux, macOS et Windows, avec PowerShell 7 partout et Windows PowerShell 5.1 en plus sous Windows. Elle vérifie aussi la syntaxe de `bin/clm` et de `install.sh`.
 
 ## Limites
 
-Les touches `1` à `9` et `-1` à `-9` ne couvrent que les neuf premiers comptes. La page de restauration ne propose que les neuf sauvegardes les plus récentes. Les quotas viennent d'une API non documentée d'Anthropic, qui peut changer ou limiter les appels. Le renouvellement des jetons passe lui aussi par un point d'accès OAuth non documenté : s'il change, le compte s'affiche "compte deconnecte". Ce point d'accès refuse les appels qui ne se présentent pas comme Claude Code : `clm` envoie donc le même en-tête `User-Agent` que lui, avec la version de Claude Code installée. Sous macOS, les sauvegardes ne contiennent pas les jetons de connexion.
+Les touches `1` à `9` et `-1` à `-9` ne couvrent que les neuf premiers comptes. La page de restauration ne propose que les neuf sauvegardes les plus récentes. Les quotas viennent d'une API non documentée d'Anthropic, qui peut changer ou limiter les appels. Le renouvellement des jetons passe lui aussi par un point d'accès OAuth non documenté : s'il change, le compte s'affiche "compte deconnecte". Ce point d'accès refuse les appels qui ne se présentent pas comme Claude Code : `clm` envoie donc le même en-tête `User-Agent` que lui, avec la version de Claude Code installée. Sous macOS, les sauvegardes ne contiennent pas les jetons de connexion. Un même compte ouvert en même temps sur deux PC peut finir déconnecté sur l'un des deux, puisque chaque Claude Code renouvelle son jeton de son côté et que le serveur invalide l'ancien : le menu prévient par "ouvert sur <PC>" sans l'empêcher.
