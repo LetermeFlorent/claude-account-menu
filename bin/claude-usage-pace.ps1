@@ -31,10 +31,9 @@ function Get-UsagePace {
   if ($p -ge 100) { return New-Pace "epuise" "alert" }
   $part = ($dur - $left) / $dur
   if ($part -lt 0.10) { return New-Pace "debut" "dim" }
-  # Pourcentage projete a la fin de la fenetre au rythme actuel
-  $proj = $p / $part
-  if ($proj -lt 70) { return New-Pace "faible" "ok" }
-  if ($proj -le 100) { return New-Pace "normal" "dim" }
-  if ($proj -le 130) { return New-Pace "fort" "warn" }
+  $projectedPct = $p / $part
+  if ($projectedPct -lt 70) { return New-Pace "faible" "ok" }
+  if ($projectedPct -le 100) { return New-Pace "normal" "dim" }
+  if ($projectedPct -le 130) { return New-Pace "fort" "warn" }
   return New-Pace "excessif" "alert"
 }

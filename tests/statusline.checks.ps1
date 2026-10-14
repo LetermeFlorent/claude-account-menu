@@ -7,7 +7,7 @@ Assert-Equal "claude" (Get-StateTag "") "tag sans dossier"
 Assert-Equal "compt_" (Get-StateTag ("/x/Compt" + [char]0x00E9)) "tag, lettre accentuee remplacee"
 Assert-Equal "a_b" (Get-StateTag ("/x/a" + [char]0xD83D + [char]0xDE00 + "b")) "tag, caractere hors BMP compte pour un"
 
-function Get-CompteUsage {
+function Get-AccountUsage {
   param($Acc)
   return [PSCustomObject]@{ Error = $null; Pct5 = 42; Reset5 = "2030-01-01T00:00:00Z"; Pct7 = 7; Reset7 = "2030-01-03T00:00:00Z" }
 }

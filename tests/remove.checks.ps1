@@ -1,6 +1,5 @@
 . (Join-Path $bin "claude-menu-remove.ps1")
 
-# Ni archive dans les vrais Telechargements, ni trousseau du poste
 $script:Archived = @()
 $script:KeychainCleared = @()
 function Save-Accounts { param([string]$Tag, $Accs) $script:Archived += @($Accs | ForEach-Object { $_.Dir }); return "archive.zip" }

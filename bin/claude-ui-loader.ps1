@@ -14,7 +14,7 @@ finally { $Ctl.Current = -1; $Ctl.Done = $true }
 '@
 
 function Start-UsageLoader {
-  param($Accounts, [string]$Source = (Join-Path $PSScriptRoot "claude-usage.ps1"), [string]$Reader = "Get-CompteUsage")
+  param($Accounts, [string]$Source = (Join-Path $PSScriptRoot "claude-usage.ps1"), [string]$Reader = "Get-AccountUsage")
   $ctl = [hashtable]::Synchronized(@{ Stop = $false; Done = $false; Current = -1; Error = $null })
   $queue = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
   $ps = [PowerShell]::Create()

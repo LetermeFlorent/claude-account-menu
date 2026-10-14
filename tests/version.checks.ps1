@@ -45,3 +45,9 @@ $withoutVersion = Join-Path $script:Sandbox ("sans-version" + $ext)
 & $script:Tar -a -c -f $withoutVersion -C $src ".claude"
 Assert-Equal $new.Sha (Get-BackupVersion $withVersion).Sha "version lue dans la sauvegarde"
 Assert-Null (Get-BackupVersion $withoutVersion) "sauvegarde d'avant les versions"
+
+$testsDir = Join-Path (Split-Path -Parent $bin) "tests"
+$commentLines = @(@(Get-ChildItem -Path (Join-Path $bin "*.ps1")) + @(Get-ChildItem -Path $testsDir -Filter "*.ps1" -Recurse) | Select-String -Pattern '^\s*#' | ForEach-Object { $_.Filename + ":" + $_.LineNumber })
+Assert-Equal "" ($commentLines -join ", ") "aucun commentaire dans bin ni tests"
+$frenchNames = @(Get-ChildItem -Path (Join-Path $bin "*.ps1") | Select-String -Pattern 'Get-CompteUsage' | ForEach-Object { $_.Filename + ":" + $_.LineNumber })
+Assert-Equal "" ($frenchNames -join ", ") "lecteur de quotas nomme en anglais"

@@ -19,7 +19,7 @@ function Get-RetryAfter {
   } catch { return $null }
 }
 
-function Get-CompteUsage {
+function Get-AccountUsage {
   param($Acc, [int]$MaxAge = $script:UsageCacheTtl)
   $Label = $Acc.Label
   $out = [PSCustomObject]@{Label=$Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null; Expired=$false}
@@ -69,7 +69,7 @@ function Get-CompteUsage {
 
 function Get-MenuUsage {
   param($Acc)
-  return Get-CompteUsage $Acc $script:MenuCacheTtl
+  return Get-AccountUsage $Acc $script:MenuCacheTtl
 }
 
 function Format-Reset {
@@ -115,5 +115,5 @@ function Format-Stale {
 }
 
 function Get-AllUsages {
-  return @(Get-Accounts | ForEach-Object { Get-CompteUsage $_ })
+  return @(Get-Accounts | ForEach-Object { Get-AccountUsage $_ })
 }

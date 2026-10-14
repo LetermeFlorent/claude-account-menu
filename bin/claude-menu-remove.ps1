@@ -2,7 +2,6 @@ function Remove-LinkOrTree {
   param([string]$Path)
   $item = Get-Item -LiteralPath $Path -Force
   if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-    # skills, agents, regles : liens vers .claude, on retire le lien sans jamais suivre sa cible
     if ($script:OsName -eq "Windows" -and $item.PSIsContainer) { [IO.Directory]::Delete($item.FullName, $false) }
     else { [IO.File]::Delete($item.FullName) }
     return
@@ -13,7 +12,6 @@ function Remove-LinkOrTree {
     return
   }
   try { [IO.File]::Delete($item.FullName); return } catch [UnauthorizedAccessException] {}
-  # Lecture seule : les attributs d'un lien dur sont partages, on ne les touche qu'en dernier recours
   $item.Attributes = [IO.FileAttributes]::Normal
   [IO.File]::Delete($item.FullName)
 }
@@ -31,7 +29,6 @@ function Remove-Account {
   $zip = $null
   if ($Erase) {
     if (-not (Test-ErasableDir $Acc.Dir)) { throw ("le dossier " + $Acc.Dir + " n'est jamais efface") }
-    # L'archive passe avant tout : si elle echoue, rien n'est touche
     if (Test-Path -LiteralPath $dir) { $zip = Save-Accounts "" @($Acc) }
   }
   Save-Registry $list
