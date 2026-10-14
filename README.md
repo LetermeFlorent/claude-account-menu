@@ -266,7 +266,7 @@ Il lit `USERPROFILE` puis `HOME` pour le dossier personnel, `LOCALAPPDATA` sous 
 
 ## Tests
 
-`tests/run.ps1` vérifie les fonctions sans réseau ni vrai compte, dans un dossier temporaire, et sort avec un code non nul en cas d'échec. Il tourne avec `powershell -File tests\run.ps1` comme avec `pwsh -File tests/run.ps1`. Le calcul du suffixe de compte du fichier d'état a en plus un test Pester, `tests/StateTag.Tests.ps1`.
+`tests/run.ps1` vérifie les fonctions sans réseau ni vrai compte, dans un dossier temporaire, et sort avec un code non nul en cas d'échec. Il charge tous les fichiers `*.checks.ps1`, rangés par domaine dans `accounts`, `menu`, `setup`, `ui` et `usage`. Il tourne avec `powershell -File tests\run.ps1` comme avec `pwsh -File tests/run.ps1`. Le calcul du suffixe de compte du fichier d'état a en plus un test Pester, `tests/StateTag.Tests.ps1`.
 
 La CI lance ces tests à chaque envoi sur `main` et sur chaque pull request, sous Linux, macOS et Windows, avec PowerShell 7 partout et Windows PowerShell 5.1 en plus sous Windows. Elle vérifie aussi la syntaxe de `bin/clm` et de `install.sh`.
 
