@@ -39,7 +39,7 @@ function Enter-UiScreen {
   $script:FadeArmed = $true
   $script:UiOn = $true
   Enable-UiMouse
-  if ($script:ThemeWatch -eq $null) { $script:ThemeWatch = New-ThemeWatch $script:OsName $null (Get-NowMs) }
+  if ($null -eq $script:ThemeWatch) { $script:ThemeWatch = New-ThemeWatch $script:OsName $null (Get-NowMs) }
 }
 
 function Exit-UiScreen {
@@ -61,7 +61,7 @@ function Update-UiTick {
     Reset-Frame
     $redraw = $true
   }
-  if (-not $Busy -and $script:ThemeWatch -ne $null) {
+  if (-not $Busy -and $null -ne $script:ThemeWatch) {
     $t = Update-ThemeWatch $script:ThemeWatch $script:OsName $null $Now
     if ($t) { Set-UiTheme $t $Now }
   }

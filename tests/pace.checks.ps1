@@ -3,7 +3,7 @@ $now = New-Object DateTimeOffset ((Get-Date).Date.AddHours(12))
 function Get-PaceText {
   param([string]$Kind, $Pct, [double]$LeftSeconds)
   $p = Get-UsagePace $Kind $Pct $now.AddSeconds($LeftSeconds) $now
-  if ($p -eq $null) { return $null }
+  if ($null -eq $p) { return $null }
   return $p.Text + " | " + $p.Tone
 }
 

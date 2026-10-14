@@ -17,13 +17,13 @@ function Show-RestoreMenu {
   }
   $items = @(foreach ($f in $list) { $f.LastWriteTime.ToString("dd/MM/yyyy HH:mm") + "  " + ("" + [math]::Round($f.Length / 1MB) + " Mo").PadLeft(7) + "  " + $f.Name })
   $n = Select-OneRow $title $items 0 @("Entree ou 1-9", "choisir", "Echap", "revenir") $dir
-  if ($n -eq $null) { return "restauration annulee" }
+  if ($null -eq $n) { return "restauration annulee" }
   $zip = $list[$n].FullName
   Assert-BackupVersion $zip
   $inZip = @(Get-ZipAccounts $zip)
   if ($inZip.Count -eq 0) { return "aucun compte dans " + $list[$n].Name }
   $picked = Select-Items ("Comptes a restaurer depuis " + $list[$n].Name) @($inZip | ForEach-Object { $_.Label.PadRight(12) + " " + $_.Dir })
-  if ($picked -eq $null) { return "restauration annulee" }
+  if ($null -eq $picked) { return "restauration annulee" }
   $accs = @($picked | ForEach-Object { $inZip[$_] })
   $ask = "Restaurer " + (@($accs | ForEach-Object { $_.Label }) -join ", ") + " ?"
   $c = Read-PageKey { Get-PageRows $ask (Get-RestoreWarn) @("o", "confirmer", "autre touche", "annuler") }

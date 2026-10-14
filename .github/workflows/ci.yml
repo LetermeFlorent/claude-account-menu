@@ -33,6 +33,15 @@ jobs:
           $r = Invoke-Pester -Path ./tests/StateTag.Tests.ps1 -PassThru
           if ($r.FailedCount -gt 0) { exit 1 }
 
+      - name: lint (PSScriptAnalyzer)
+        if: runner.os == 'Linux'
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          $r = @(foreach ($p in "bin", "tests", "install.ps1", "install-hook.ps1") { Invoke-ScriptAnalyzer -Path $p -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 })
+          $r | Format-Table -AutoSize
+          if ($r.Count -gt 0) { exit 1 }
+
       - name: scripts sh
         if: runner.os != 'Windows'
         run: |

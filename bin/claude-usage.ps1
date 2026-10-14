@@ -14,7 +14,7 @@ function Get-PlanName {
 function Get-RetryAfter {
   param($Response)
   try {
-    if ($Response.Headers.RetryAfter -ne $null) { return [int]$Response.Headers.RetryAfter.Delta.TotalSeconds }
+    if ($null -ne $Response.Headers.RetryAfter) { return [int]$Response.Headers.RetryAfter.Delta.TotalSeconds }
     return $Response.Headers["Retry-After"]
   } catch { return $null }
 }
@@ -24,17 +24,17 @@ function Get-CompteUsage {
   $Label = $Acc.Label
   $out = [PSCustomObject]@{Label=$Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null; Expired=$false}
   $cred = Read-AccountCredential $Acc
-  if ($cred -ne $null) { $out.Plan = Get-PlanName $cred.claudeAiOauth }
+  if ($null -ne $cred) { $out.Plan = Get-PlanName $cred.claudeAiOauth }
   $cached = (Read-UsageCache)[$Label]
-  if ($cached -ne $null -and (Get-CacheAge $cached) -lt $MaxAge) { Copy-CacheEntry $cached $out; return $out }
+  if ($null -ne $cached -and (Get-CacheAge $cached) -lt $MaxAge) { Copy-CacheEntry $cached $out; return $out }
   try {
-    if ($cred -eq $null) { $out.Error = "non connecte"; return $out }
+    if ($null -eq $cred) { $out.Error = "non connecte"; return $out }
     $tok = $cred.claudeAiOauth.accessToken
     if ([string]::IsNullOrEmpty($tok)) { $out.Error = "non connecte"; return $out }
     $expMs = [long]$cred.claudeAiOauth.expiresAt
     if ($expMs -gt 0 -and $expMs -lt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()) {
       $fresh = Update-AccountToken $Acc $cred
-      if ($fresh -eq $null) {
+      if ($null -eq $fresh) {
         $out.Error = "compte deconnecte, lancer le compte une fois"
         return $out
       }
@@ -43,19 +43,19 @@ function Get-CompteUsage {
     $h = @{"Authorization"="Bearer $tok"; "anthropic-beta"="oauth-2025-04-20"; "Accept"="application/json"}
     $ProgressPreference = "SilentlyContinue"
     $r = Invoke-RestMethod -Uri "https://api.anthropic.com/api/oauth/usage" -Headers $h -TimeoutSec 10
-    if ($r.five_hour -ne $null) {
+    if ($null -ne $r.five_hour) {
       $out.Pct5 = [math]::Round([double]$r.five_hour.utilization)
       $out.Reset5 = $r.five_hour.resets_at
     }
-    if ($r.seven_day -ne $null) {
+    if ($null -ne $r.seven_day) {
       $out.Pct7 = [math]::Round([double]$r.seven_day.utilization)
       $out.Reset7 = $r.seven_day.resets_at
     }
     Save-UsageEntry $Label $out
   } catch {
     $code = 0
-    if ($_.Exception.Response -ne $null) { $code = [int]$_.Exception.Response.StatusCode }
-    if ($code -eq 429 -and $cached -ne $null) { Copy-CacheEntry $cached $out; return $out }
+    if ($null -ne $_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
+    if ($code -eq 429 -and $null -ne $cached) { Copy-CacheEntry $cached $out; return $out }
     if ($code -eq 429) {
       $wait = Get-RetryAfter $_.Exception.Response
       $out.Error = "quota inconnu, l'API de suivi refuse les appels"
@@ -75,7 +75,7 @@ function Get-MenuUsage {
 function Format-Reset {
   param($Iso)
   $at = ConvertTo-DateOffset $Iso
-  if ($at -eq $null) { return "-" }
+  if ($null -eq $at) { return "-" }
   $dt = $at.LocalDateTime
   $now = Get-Date
   $span = $dt - $now
@@ -94,7 +94,7 @@ function Format-Reset {
 function Format-Row {
   param($U)
   $line = $U.Label + " " + $U.Email + " " + $U.Plan + " | "
-  if ($U.Error -ne $null) { return $line + $U.Error }
+  if ($null -ne $U.Error) { return $line + $U.Error }
   $line = $line + "5h " + $U.Pct5 + "% reset " + (Format-Reset $U.Reset5) + (Format-PaceSuffix "5h" $U.Pct5 $U.Reset5)
   $line = $line + " | 7d " + $U.Pct7 + "% reset " + (Format-Reset $U.Reset7) + (Format-PaceSuffix "7d" $U.Pct7 $U.Reset7)
   return $line + (Format-Stale $U)
@@ -103,14 +103,14 @@ function Format-Row {
 function Format-PaceSuffix {
   param([string]$Kind, $Pct, $Reset)
   $p = Get-UsagePace $Kind $Pct $Reset
-  if ($p -eq $null) { return "" }
+  if ($null -eq $p) { return "" }
   return ", " + $p.Text
 }
 
 function Format-Stale {
   param($U)
   if ($U.Expired) { return " (fenetre passee, lu il y a " + (Format-Age $U.Age) + ")" }
-  if ($U.Age -eq $null -or $U.Age -lt 60) { return "" }
+  if ($null -eq $U.Age -or $U.Age -lt 60) { return "" }
   return " (lu il y a " + (Format-Age $U.Age) + ")"
 }
 

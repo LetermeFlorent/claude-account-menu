@@ -5,7 +5,7 @@ function New-MenuEntry {
   $u = [PSCustomObject]@{ Label = $Acc.Label; Email = (Get-AccountEmail $Acc); Acc = $Acc; Plan = ""; Pct5 = $null; Reset5 = $null; Pct7 = $null; Reset7 = $null; Error = $null; Age = $null; Expired = $false }
   $e = @{ Acc = $Acc; U = $u; Pending = $true; Seen = $false; View = $null; In = $null }
   $c = $Cache[$Acc.Label]
-  if ($c -ne $null -and (Get-CacheAge $c) -lt $script:UsageCacheTtl) {
+  if ($null -ne $c -and (Get-CacheAge $c) -lt $script:UsageCacheTtl) {
     Copy-CacheEntry $c $u
     $e.Seen = $true
     $e.T5 = New-Tween 0 ([double]$u.Pct5) 400 $Now
@@ -48,7 +48,7 @@ function Move-MenuSel {
 function Set-UsageResult {
   param($State, $Res, [double]$Now)
   $e = $State.Entries[[int]$Res[0]]
-  if ($Res[2] -ne $null) { $e.U.Error = "" + $Res[2] } else { $e.U = $Res[1] }
+  if ($null -ne $Res[2]) { $e.U.Error = "" + $Res[2] } else { $e.U = $Res[1] }
   $e.Pending = $false
   $p5 = [double]$e.U.Pct5
   $p7 = [double]$e.U.Pct7
@@ -77,8 +77,8 @@ function Start-MenuLoader {
 function Step-MenuLoader {
   param($State, [double]$Now)
   $ld = $State.Loader
-  if ($ld -eq $null) {
-    if ($State.DoneAt -ne $null -and -not $State.Busy -and $Now - $State.DoneAt -ge $script:RereadMs) {
+  if ($null -eq $ld) {
+    if ($null -ne $State.DoneAt -and -not $State.Busy -and $Now - $State.DoneAt -ge $script:RereadMs) {
       foreach ($e in $State.Entries) { $e.Pending = $true }
       $State.DoneAt = $null
       Start-MenuLoader $State
@@ -91,6 +91,6 @@ function Step-MenuLoader {
   $State.Loader = $null
   $State.DoneAt = $Now
   foreach ($e in $State.Entries) {
-    if ($e.Pending -and $ld.Ctl.Error -ne $null) { $e.Pending = $false; $e.U.Error = "lecture impossible : " + $ld.Ctl.Error; Update-EntryView $e; $State.Dirty = $true }
+    if ($e.Pending -and $null -ne $ld.Ctl.Error) { $e.Pending = $false; $e.U.Error = "lecture impossible : " + $ld.Ctl.Error; Update-EntryView $e; $State.Dirty = $true }
   }
 }

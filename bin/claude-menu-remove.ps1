@@ -76,7 +76,7 @@ function Show-RemoveMenu {
   $accs = @(Get-Accounts)
   if ($accs.Count -le 1) { return "retrait impossible : c'est le dernier compte" }
   $p = Select-OneAccount $accs $Pos
-  if ($p -eq $null) { return "retrait annule" }
+  if ($null -eq $p) { return "retrait annule" }
   $acc = $accs[$p]
   $erasable = Test-ErasableDir $acc.Dir
   $title = "Retirer " + $acc.Label + " (" + $acc.Dir + ")"

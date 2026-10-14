@@ -10,7 +10,7 @@ function ConvertTo-ThemeName {
 
 function ConvertFrom-AppsUseLightTheme {
   param($Value)
-  if ($Value -eq $null) { return $null }
+  if ($null -eq $Value) { return $null }
   if ([int]$Value -eq 1) { return "light" }
   return "dark"
 }
@@ -52,13 +52,13 @@ function Get-SystemTheme {
   }
   if ($Os -eq "MacOS") {
     $r = Invoke-Captured "defaults" "read -g AppleInterfaceStyle" 3000
-    if ($r -eq $null) { return $null }
+    if ($null -eq $r) { return $null }
     return ConvertFrom-MacAppearance $r.Out $r.Code
   }
   $scheme = ""
   if (Get-Command gsettings -CommandType Application -ErrorAction SilentlyContinue) {
     $r = Invoke-Captured "gsettings" "get org.gnome.desktop.interface color-scheme" 3000
-    if ($r -ne $null -and $r.Code -eq 0) { $scheme = $r.Out }
+    if ($null -ne $r -and $r.Code -eq 0) { $scheme = $r.Out }
   }
   $kde = Join-OsPath $Os @((Get-XdgDir "XDG_CONFIG_HOME" @(".config") $Vars), "kdeglobals")
   return Get-LinuxTheme $scheme (Read-EnvVar "GTK_THEME" $Vars) $kde

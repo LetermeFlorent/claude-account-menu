@@ -98,7 +98,7 @@ function New-KeyInfo {
 
 function Get-FooterKeyAt {
   param($Rows, [int]$X, [int]$Y)
-  if ($Rows -eq $null -or $Y -lt 0 -or $Y -ge $Rows.Count) { return $null }
+  if ($null -eq $Rows -or $Y -lt 0 -or $Y -ge $Rows.Count) { return $null }
   $pos = 0
   foreach ($s in $Rows[$Y]) {
     $len = ([string]$s[0]).Length
@@ -144,6 +144,6 @@ function Read-UiInput {
     $top = 0
     try { $top = [Console]::WindowTop } catch {}
     $m = ConvertFrom-MouseEvent $ev $script:LastRows $top
-    if ($m -ne $null) { return $m }
+    if ($null -ne $m) { return $m }
   }
 }

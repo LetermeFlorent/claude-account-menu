@@ -4,7 +4,7 @@ $script:InkTo = $null
 
 function New-ThemeWatch {
   param([string]$Os = $script:OsName, $Vars = $null, [double]$Now = (Get-NowMs), [scriptblock]$Probe = $null)
-  if ($Probe -eq $null) { $Probe = { param($O, $V) Get-SystemTheme $O $V } }
+  if ($null -eq $Probe) { $Probe = { param($O, $V) Get-SystemTheme $O $V } }
   $fixed = $null -ne (ConvertTo-ThemeName (Read-EnvVar "STATUSLINE_BG" $Vars) -French)
   $last = $null
   if (-not $fixed) { try { $last = & $Probe $Os $Vars } catch {} }
@@ -25,7 +25,7 @@ function Update-ThemeWatch {
 function Set-UiTheme {
   param([string]$Name, [double]$Now)
   $to = $script:Palettes[$Name]
-  if ($to -eq $null) { return }
+  if ($null -eq $to) { return }
   $script:InkFrom = $script:Ink
   $script:InkTo = $to
   $script:InkTween = New-Tween 0 1 300 $Now
@@ -33,7 +33,7 @@ function Set-UiTheme {
 
 function Update-InkFade {
   param([double]$Now)
-  if ($script:InkTween -eq $null) { return $false }
+  if ($null -eq $script:InkTween) { return $false }
   if (-not (Test-TweenRunning $script:InkTween $Now)) {
     $script:Ink = $script:InkTo
     $script:InkTween = $null

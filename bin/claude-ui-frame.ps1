@@ -43,7 +43,7 @@ function Get-FrameUpdate {
   $e = $script:Esc
   $sb = New-Object Text.StringBuilder 4096
   $old = 0
-  if ($Prev -ne $null) { $old = $Prev.Count }
+  if ($null -ne $Prev) { $old = $Prev.Count }
   for ($i = 0; $i -lt $Lines.Count; $i++) {
     if ($i -lt $old -and $Prev[$i] -ceq $Lines[$i]) { continue }
     [void]$sb.Append($e).Append("[").Append($i + 1).Append(";1H").Append($Lines[$i]).Append($e).Append("[K")
@@ -61,7 +61,7 @@ function Write-Frame {
   $bg = $script:Ink.Bg
   for ($i = 0; $i -lt $n; $i++) {
     $f = 1.0
-    if ($Fades -ne $null) { $f = $Fades[$i] }
+    if ($null -ne $Fades) { $f = $Fades[$i] }
     $lines[$i] = ConvertTo-LineText $Rows[$i] $Max $f $bg
   }
   $u = Get-FrameUpdate $lines $script:FrameLines
@@ -73,13 +73,13 @@ function Show-UiRows {
   param($Rows, [double]$Now, $RowFades = $null)
   if ($script:FadeArmed) { $script:ScreenFade = New-Tween 0 1 150 $Now; $script:FadeArmed = $false }
   $g = 1.0
-  if ($script:ScreenFade -ne $null) { $g = Get-TweenValue $script:ScreenFade $Now }
+  if ($null -ne $script:ScreenFade) { $g = Get-TweenValue $script:ScreenFade $Now }
   $fades = $null
-  if ($g -lt 1 -or $RowFades -ne $null) {
+  if ($g -lt 1 -or $null -ne $RowFades) {
     $fades = [double[]]::new($Rows.Count)
     for ($i = 0; $i -lt $Rows.Count; $i++) {
       $f = $g
-      if ($RowFades -ne $null -and $i -lt $RowFades.Count) { $f = $f * $RowFades[$i] }
+      if ($null -ne $RowFades -and $i -lt $RowFades.Count) { $f = $f * $RowFades[$i] }
       $fades[$i] = $f
     }
   }
@@ -90,7 +90,7 @@ function Show-UiRows {
 
 function Hide-Screen {
   $rows = $script:LastRows
-  if ($rows -ne $null -and $script:MotionOn) {
+  if ($null -ne $rows -and $script:MotionOn) {
     $t = New-Tween 1 0 120 (Get-NowMs)
     $fades = [double[]]::new($rows.Count)
     while ($true) {
@@ -98,7 +98,7 @@ function Hide-Screen {
       $f = Get-TweenValue $t $now
       for ($i = 0; $i -lt $fades.Count; $i++) {
         $fades[$i] = $f
-        if ($script:LastFades -ne $null -and $i -lt $script:LastFades.Count) { $fades[$i] = $f * $script:LastFades[$i] }
+        if ($null -ne $script:LastFades -and $i -lt $script:LastFades.Count) { $fades[$i] = $f * $script:LastFades[$i] }
       }
       Write-Frame $rows $script:UiClip $fades
       if (-not (Test-TweenRunning $t $now)) { break }
@@ -113,5 +113,5 @@ function Hide-Screen {
 
 function Test-UiAnimating {
   param([double]$Now)
-  return ($script:ScreenFade -ne $null -and (Test-TweenRunning $script:ScreenFade $Now))
+  return ($null -ne $script:ScreenFade -and (Test-TweenRunning $script:ScreenFade $Now))
 }

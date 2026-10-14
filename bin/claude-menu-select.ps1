@@ -34,7 +34,7 @@ function Format-AccountItem {
 function Show-SaveMenu {
   $accs = @(Get-Accounts)
   $picked = Select-Items "Comptes a sauvegarder" @($accs | ForEach-Object { Format-AccountItem $_ })
-  if ($picked -eq $null) { return "sauvegarde annulee" }
+  if ($null -eq $picked) { return "sauvegarde annulee" }
   return Invoke-UiWork "Sauvegarde" "Sauvegarde en cours..." { "sauvegarde : " + (Save-Accounts "" @($picked | ForEach-Object { $accs[$_] })) }
 }
 

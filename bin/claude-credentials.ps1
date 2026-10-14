@@ -14,7 +14,7 @@ function Get-KeychainService {
 function Read-KeychainItem {
   param([string]$Service, [string]$Account)
   try { $v = & security find-generic-password -a $Account -w -s $Service 2>$null } catch { return $null }
-  if ($LASTEXITCODE -ne 0 -or $v -eq $null) { return $null }
+  if ($LASTEXITCODE -ne 0 -or $null -eq $v) { return $null }
   $s = (@($v) -join "`n").Trim()
   if ($s -eq "") { return $null }
   return $s
@@ -28,7 +28,7 @@ function Join-KeychainChunks {
   $b64 = ""
   for ($i = 0; $i -lt $n; $i++) {
     $c = & $ReadChunk $i
-    if ($c -eq $null) { return $null }
+    if ($null -eq $c) { return $null }
     $b64 += $c
   }
   if ($b64.Length -ne $l) { return $null }

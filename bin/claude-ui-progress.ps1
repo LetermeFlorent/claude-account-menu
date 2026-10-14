@@ -7,7 +7,7 @@ function Set-UiProgress {
   param([string]$Label, [int]$Pct, [string]$Detail = "")
   $now = Get-NowMs
   $p = $script:UiProgress
-  if ($p -eq $null -or $p.Label -ne $Label) {
+  if ($null -eq $p -or $p.Label -ne $Label) {
     $at = [math]::Max(0, $Pct)
     $script:UiProgress = @{ Label = $Label; Pct = $Pct; Detail = $Detail; Bar = (New-Tween $at $at 0 $now) }
     return
@@ -52,7 +52,7 @@ function Wait-Progress {
   $end = (Get-NowMs) + $Ms
   do {
     Receive-UiKeys
-    if ($script:UiPulse -ne $null) { & $script:UiPulse }
+    if ($null -ne $script:UiPulse) { & $script:UiPulse }
     $left = $end - (Get-NowMs)
     if ($left -gt 0) { Start-Sleep -Milliseconds ([int][math]::Min(33, $left)) }
   } while ((Get-NowMs) -lt $end)

@@ -19,7 +19,7 @@ function Get-ReleaseSize {
   $ProgressPreference = "SilentlyContinue"
   try { $m = Invoke-RestMethod -Uri ($script:ReleaseBase + "/" + $Version + "/manifest.json") -TimeoutSec 5 } catch { return [long]0 }
   $e = Get-ManifestEntry $m $plat
-  if ($e -eq $null) { return [long]0 }
+  if ($null -eq $e) { return [long]0 }
   return $e.Size
 }
 
@@ -102,7 +102,7 @@ function Receive-Lines {
   while (-not $Src.Eof -and $Src.Task.IsCompleted) {
     $l = $null
     try { $l = $Src.Task.Result } catch {}
-    if ($l -eq $null) { $Src.Eof = $true }
+    if ($null -eq $l) { $Src.Eof = $true }
     else { $out += $l; $Src.Task = $Src.Reader.ReadLineAsync() }
   }
   return $out

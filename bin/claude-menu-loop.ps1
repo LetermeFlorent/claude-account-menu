@@ -29,7 +29,7 @@ function Close-AccountMenu {
   Stop-MenuLoader 1000
   Hide-Screen
   Exit-UiScreen
-  if ($Idx -eq $null) { return $null }
+  if ($null -eq $Idx) { return $null }
   return $script:MenuState.Entries[$Idx].Acc
 }
 
@@ -75,7 +75,7 @@ function Invoke-AccountMenu {
     $k = Read-UiKey
     $act = @{ Name = "none" }
     if ($k -is [hashtable]) { $act = Get-MenuMouseAction $st $k }
-    elseif ($k -ne $null) { $act = Get-MenuAction $k $n }
+    elseif ($null -ne $k) { $act = Get-MenuAction $k $n }
     if ($script:UiQuit) { $act = @{ Name = "quit" } }
     $now = Get-NowMs
     if ($act.Name -eq "up") { Move-MenuSel $st (($st.Sel + $n - 1) % $n) $now $true }

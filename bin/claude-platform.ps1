@@ -8,7 +8,7 @@ $script:PathSeps = [char[]]"\/"
 
 function Read-EnvVar {
   param([string]$Name, $Vars = $null)
-  if ($Vars -ne $null) { return [string]$Vars[$Name] }
+  if ($null -ne $Vars) { return [string]$Vars[$Name] }
   return [string][Environment]::GetEnvironmentVariable($Name)
 }
 
@@ -105,7 +105,7 @@ function Invoke-Captured {
   try {
     try { $p.StandardInput.Close() } catch {}
     $out = $p.StandardOutput.ReadToEndAsync()
-    $err = $p.StandardError.ReadToEndAsync()
+    $null = $p.StandardError.ReadToEndAsync()
     if (-not $p.WaitForExit($TimeoutMs)) {
       try { $p.Kill() } catch {}
       return $null

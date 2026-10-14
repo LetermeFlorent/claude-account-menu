@@ -3,7 +3,7 @@ $script:Invariant = [Globalization.CultureInfo]::InvariantCulture
 
 function ConvertTo-DateOffset {
   param($Value)
-  if ($Value -eq $null) { return $null }
+  if ($null -eq $Value) { return $null }
   if ($Value -is [DateTimeOffset]) { return $Value }
   if ($Value -is [DateTime]) {
     if ($Value.Kind -eq [DateTimeKind]::Unspecified) { $Value = [DateTime]::SpecifyKind($Value, [DateTimeKind]::Local) }
@@ -21,9 +21,9 @@ function New-Pace {
 
 function Get-UsagePace {
   param([string]$Kind, $Pct, $Reset, $Now = $null)
-  if ($Now -eq $null) { $Now = [DateTimeOffset]::Now }
+  if ($null -eq $Now) { $Now = [DateTimeOffset]::Now }
   $r = ConvertTo-DateOffset $Reset
-  if ($Pct -eq $null -or "" + $Pct -eq "" -or $r -eq $null) { return $null }
+  if ($null -eq $Pct -or "" + $Pct -eq "" -or $null -eq $r) { return $null }
   $dur = $script:WindowSeconds[$Kind]
   $left = ($r - $Now).TotalSeconds
   if ($left -le 0) { return $null }

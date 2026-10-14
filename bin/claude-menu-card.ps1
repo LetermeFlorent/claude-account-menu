@@ -40,7 +40,7 @@ function Get-CardBody {
   $n = 2
   if ($L.Mode -eq "compact") { $n = 1 }
   for ($i = 0; $i -lt $n; $i++) { $r = New-Row; $r.Add(@("       ", $script:Ink.Text, $false)); $rows.Add($r) }
-  if ($u.Error -ne $null) {
+  if ($null -ne $u.Error) {
     $rows[0].Add(@(("" + $u.Error), $script:Ink.Alert, $false))
   } elseif ($E.Pending -and -not $E.Seen) {
     Add-WaitSegs $rows[0] "5h" $L.Cells $Now
@@ -60,7 +60,7 @@ function Add-CardRows {
   param($Rows, $Fades, $E, [int]$I, $L, [double]$P, [double]$Now)
   $w = [math]::Max(0, 1 - [math]::Abs($P - $I))
   $fade = 1 - 0.35 * (1 - $w)
-  if ($E.In -ne $null) { $fade = $fade * (Get-TweenValue $E.In $Now) }
+  if ($null -ne $E.In) { $fade = $fade * (Get-TweenValue $E.In $Now) }
   $u = $E.U
   $v = $E.View
   $txt = $script:Ink.Text

@@ -47,7 +47,7 @@ function Get-LevelColor {
 function Format-Left {
   param($Iso)
   $at = ConvertTo-DateOffset $Iso
-  if ($at -eq $null) { return "-" }
+  if ($null -eq $at) { return "-" }
   $span = $at - [DateTimeOffset]::Now
   if ($span.TotalSeconds -le 0) { return "0m" }
   $h = [int][math]::Floor($span.TotalHours)

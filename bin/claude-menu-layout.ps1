@@ -37,7 +37,7 @@ function Get-ReadyDefault {
     $e = $Entries[$i]
     if ($e.Pending -and $Wait) { return -1 }
     $u = $e.U
-    if ($u.Error -eq $null -and [int]$u.Pct5 -lt 100 -and [int]$u.Pct7 -lt 100) { return $i }
+    if ($null -eq $u.Error -and [int]$u.Pct5 -lt 100 -and [int]$u.Pct7 -lt 100) { return $i }
   }
   return 0
 }

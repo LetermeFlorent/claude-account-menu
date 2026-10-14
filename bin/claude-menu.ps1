@@ -51,7 +51,7 @@ if ($restoreZip) {
   exit 0
 }
 
-if ($direct -ne $null) {
+if ($null -ne $direct) {
   $accs = @(Get-Accounts)
   if ($direct -ge $accs.Count) { Write-Output ("pas de compte " + ($direct + 1)); exit 1 }
   if ($update) { $null = Update-ClaudeForAccounts $accs }
@@ -77,7 +77,7 @@ if ($fallback) {
   if ($n -match "^[1-9]$" -and [int]$n -le $usages.Count) { $chosen = $usages[[int]$n - 1].Acc }
 }
 
-if ($chosen -eq $null) { exit 0 }
+if ($null -eq $chosen) { exit 0 }
 Clear-Host
 Start-Account $chosen $rest
 exit $LASTEXITCODE

@@ -32,7 +32,7 @@ function Get-SaveExcludes {
 
 function Save-Accounts {
   param([string]$Tag = "", $Accs = $null)
-  if ($Accs -eq $null) { $Accs = @(Get-Accounts) }
+  if ($null -eq $Accs) { $Accs = @(Get-Accounts) }
   Initialize-Tar
   $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
   $name = "claude-comptes-" + $stamp
@@ -78,7 +78,7 @@ function Restore-Accounts {
   param([string]$Zip, $Accs = $null)
   Assert-ArchiveReadable $Zip
   Assert-BackupVersion $Zip
-  if ($Accs -eq $null) { $Accs = @(Get-ZipAccounts $Zip) }
+  if ($null -eq $Accs) { $Accs = @(Get-ZipAccounts $Zip) }
   $current = @(Get-Accounts)
   $present = @($current | Where-Object { $d = $_.Dir; @($Accs | Where-Object { $_.Dir -eq $d }).Count -gt 0 })
   $safety = ""

@@ -20,7 +20,7 @@ function Get-PageRows {
   $rows.Add((New-Row))
   $rows.Add((Get-RuleRow $w))
   if ($Pairs.Count -gt 0) { foreach ($r in (Get-FooterRows $Pairs $w)) { $rows.Add($r) } }
-  if ($script:UiProgress -ne $null) { $rows.Add((Get-ProgressRow $w (Get-NowMs))) }
+  if ($null -ne $script:UiProgress) { $rows.Add((Get-ProgressRow $w (Get-NowMs))) }
   return ,$rows
 }
 
@@ -32,8 +32,8 @@ function Read-PageKey {
     Show-UiRows (& $Build) $pkNow
     $pkKey = Read-UiKey
     if ($pkKey -is [hashtable]) { $pkKey = $null }
-    if ($pkKey -ne $null -and [int]$pkKey.KeyChar -ne 3) { return $pkKey }
-    if ($pkKey -ne $null -or $script:UiQuit) {
+    if ($null -ne $pkKey -and [int]$pkKey.KeyChar -ne 3) { return $pkKey }
+    if ($null -ne $pkKey -or $script:UiQuit) {
       $script:UiQuit = $true
       return New-Object System.ConsoleKeyInfo ([char]27), ([ConsoleKey]::Escape), $false, $false, $false
     }

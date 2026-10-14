@@ -1,6 +1,6 @@
 function Get-MsgRow {
   param($State, [int]$W, [double]$Now)
-  if ($script:UiProgress -ne $null) { return ,(Get-ProgressRow $W $Now) }
+  if ($null -ne $script:UiProgress) { return ,(Get-ProgressRow $W $Now) }
   $r = New-Row
   $r.Add(@($State.Msg[0], $State.Msg[1], $true))
   return ,$r
@@ -9,9 +9,9 @@ function Get-MsgRow {
 function Get-UpdateSeg {
   param($State, [double]$Now)
   if ($State.Busy) { return ,@("maj en pause", $script:Ink.Dim, $false) }
-  if ($State.Loader -ne $null -or $State.DoneAt -eq $null) { return ,@("maj en cours", $script:Ink.Dim, $false) }
+  if ($null -ne $State.Loader -or $null -eq $State.DoneAt) { return ,@("maj en cours", $script:Ink.Dim, $false) }
   $s = [int][math]::Max(0, [math]::Ceiling(($script:RereadMs - ($Now - $State.DoneAt)) / 1000))
-  $bad = @(foreach ($e in $State.Entries) { if ($e.U.Error -ne $null -or ($e.U.Age -ne $null -and $e.U.Age -ge $script:MenuCacheTtl)) { $e.U.Label } })
+  $bad = @(foreach ($e in $State.Entries) { if ($null -ne $e.U.Error -or ($null -ne $e.U.Age -and $e.U.Age -ge $script:MenuCacheTtl)) { $e.U.Label } })
   if ($bad.Count -eq 0) { return ,@(("maj dans " + $s + "s"), $script:Ink.Dim, $false) }
   $who = $bad[0]
   if ($bad.Count -gt 1) { $who = "" + $bad.Count + " comptes" }
@@ -45,7 +45,7 @@ function Get-SimpleRows {
     if ($i -eq $State.Sel) { $mark = " " + $script:Mark + " " }
     $r.Add(@($mark, $script:Levels["5h"][0], $false))
     $r.Add(@(("" + ($i + 1) + "  " + $u.Label + "  "), $script:Ink.Text, ($i -eq $State.Sel)))
-    if ($u.Error -ne $null) { $r.Add(@(("" + $u.Error), $script:Ink.Alert, $false)) }
+    if ($null -ne $u.Error) { $r.Add(@(("" + $u.Error), $script:Ink.Alert, $false)) }
     elseif ($e.Pending -and -not $e.Seen) { $r.Add(@("lecture...", $script:Ink.Dim, $false)) }
     else { $r.Add(@(("5h " + [int]$u.Pct5 + "%  7d " + [int]$u.Pct7 + "%"), $script:Ink.Dim, $false)) }
     $rows.Add($r)
@@ -92,7 +92,7 @@ function Get-MenuRows {
 function Get-EntryAt {
   param($State, [int]$Y)
   $h = $State.Hit
-  if ($h -eq $null -or $Y -lt $h.Start) { return -1 }
+  if ($null -eq $h -or $Y -lt $h.Start) { return -1 }
   $i = $h.Top + [math]::Floor(($Y - $h.Start) / $h.Per)
   if ($i -ge $h.Last) { return -1 }
   return [int]$i
@@ -116,12 +116,12 @@ function Show-Menu {
 
 function Test-MenuAnimating {
   param($State, [double]$Now)
-  if ((Test-UiAnimating $Now) -or $script:InkTween -ne $null -or (Test-TweenRunning $State.SelTween $Now)) { return $true }
-  if ($script:UiProgress -ne $null -and ($script:UiProgress.Pct -lt 0 -or (Test-TweenRunning $script:UiProgress.Bar $Now))) { return $true }
+  if ((Test-UiAnimating $Now) -or $null -ne $script:InkTween -or (Test-TweenRunning $State.SelTween $Now)) { return $true }
+  if ($null -ne $script:UiProgress -and ($script:UiProgress.Pct -lt 0 -or (Test-TweenRunning $script:UiProgress.Bar $Now))) { return $true }
   foreach ($e in $State.Entries) {
     if ($e.Pending -and -not $e.Seen -and $script:MotionOn) { return $true }
     if ((Test-TweenRunning $e.T5 $Now) -or (Test-TweenRunning $e.T7 $Now)) { return $true }
-    if ($e.In -ne $null -and (Test-TweenRunning $e.In $Now)) { return $true }
+    if ($null -ne $e.In -and (Test-TweenRunning $e.In $Now)) { return $true }
   }
   return $false
 }

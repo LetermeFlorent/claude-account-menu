@@ -3,7 +3,7 @@
 function Convert-ToEpoch {
   param($Iso)
   $at = ConvertTo-DateOffset $Iso
-  if ($at -eq $null) { return $null }
+  if ($null -eq $at) { return $null }
   return $at.ToUnixTimeSeconds()
 }
 
@@ -22,7 +22,7 @@ function Update-StatusState {
   $state = Get-StatusStatePath
   if (-not (Test-Path -LiteralPath (Split-Path $state))) { return }
   $u = Get-CompteUsage $Acc
-  if ($u.Error -ne $null) { return }
+  if ($null -ne $u.Error) { return }
   $tag = Get-StateTag (Get-AccountPath $Acc)
   $mine = "^(q5_at|q5_pct|q7_at|q7_pct|q_at)(@" + [regex]::Escape($tag) + ")? "
   $keep = @()
@@ -32,8 +32,8 @@ function Update-StatusState {
   $r5 = Convert-ToEpoch $u.Reset5
   $r7 = Convert-ToEpoch $u.Reset7
   $at = "@" + $tag + " "
-  if ($r5 -ne $null) { $keep += "q5_at" + $at + $r5; $keep += "q5_pct" + $at + [int]$u.Pct5 }
-  if ($r7 -ne $null) { $keep += "q7_at" + $at + $r7; $keep += "q7_pct" + $at + [int]$u.Pct7 }
+  if ($null -ne $r5) { $keep += "q5_at" + $at + $r5; $keep += "q5_pct" + $at + [int]$u.Pct5 }
+  if ($null -ne $r7) { $keep += "q7_at" + $at + $r7; $keep += "q7_pct" + $at + [int]$u.Pct7 }
   $keep += "q_at" + $at + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
   [IO.File]::WriteAllText($state, (($keep -join "`n") + "`n"), (New-Object Text.UTF8Encoding($false)))
 }
@@ -41,7 +41,7 @@ function Update-StatusState {
 if ($MyInvocation.InvocationName -ne ".") {
   try {
     $acc = Find-CurrentAccount
-    if ($acc -ne $null) { Update-StatusState $acc }
+    if ($null -ne $acc) { Update-StatusState $acc }
   } catch {}
   exit 0
 }

@@ -21,15 +21,15 @@ function Write-ClmVersion {
 
 function Format-ClmVersion {
   param($Version)
-  if ($Version -eq $null) { return "inconnue" }
+  if ($null -eq $Version) { return "inconnue" }
   $at = [DateTimeOffset]::FromUnixTimeSeconds($Version.Time).ToLocalTime().ToString("dd/MM/yyyy HH:mm")
   return $Version.Sha.Substring(0, 7) + " du " + $at
 }
 
 function Test-ClmOutdated {
   param($Installed, $Latest)
-  if ($Latest -eq $null) { return $false }
-  if ($Installed -eq $null) { return $true }
+  if ($null -eq $Latest) { return $false }
+  if ($null -eq $Installed) { return $true }
   return ($Latest.Sha -ne $Installed.Sha) -and ($Latest.Time -gt $Installed.Time)
 }
 
@@ -43,9 +43,9 @@ function Get-BackupVersion {
 
 function Get-BackupVersionError {
   param($Installed, $Backup)
-  if ($Backup -eq $null) { return $null }
+  if ($null -eq $Backup) { return $null }
   $hint = " : relance clm pour qu'il se mette a jour, puis restaure"
-  if ($Installed -eq $null) { return "sauvegarde faite avec clm " + (Format-ClmVersion $Backup) + ", version installee inconnue" + $hint }
+  if ($null -eq $Installed) { return "sauvegarde faite avec clm " + (Format-ClmVersion $Backup) + ", version installee inconnue" + $hint }
   if ($Backup.Time -le $Installed.Time) { return $null }
   return "sauvegarde faite avec clm " + (Format-ClmVersion $Backup) + ", plus recent que clm " + (Format-ClmVersion $Installed) + $hint
 }

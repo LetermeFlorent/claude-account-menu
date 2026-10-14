@@ -38,7 +38,7 @@ function Copy-CacheEntry {
   $now = [DateTimeOffset]::UtcNow
   foreach ($k in @("5", "7")) {
     $r = ConvertTo-DateOffset $Out.("Reset" + $k)
-    if ($r -ne $null -and $r -le $now) { $Out.("Pct" + $k) = 0; $Out.("Reset" + $k) = $null; $Out.Expired = $true }
+    if ($null -ne $r -and $r -le $now) { $Out.("Pct" + $k) = 0; $Out.("Reset" + $k) = $null; $Out.Expired = $true }
   }
 }
 

@@ -103,9 +103,9 @@ function Get-ManifestPlatform {
 
 function Get-ManifestEntry {
   param($Manifest, [string]$Platform)
-  if ($Manifest -eq $null -or $Manifest.platforms -eq $null) { return $null }
+  if ($null -eq $Manifest -or $null -eq $Manifest.platforms) { return $null }
   $e = $Manifest.platforms.$Platform
-  if ($e -eq $null) { return $null }
+  if ($null -eq $e) { return $null }
   return [PSCustomObject]@{ Size = [long]$e.size; Binary = [string]$e.binary }
 }
 

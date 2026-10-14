@@ -52,7 +52,7 @@ function Set-TweenTarget {
 
 function ConvertTo-MotionFlag {
   param([string]$Os, $Raw)
-  if ($Raw -eq $null) { return $true }
+  if ($null -eq $Raw) { return $true }
   $v = ("" + $Raw).Trim().ToLowerInvariant()
   if ($Os -eq "MacOS") { return ($v -ne "1") }
   return -not ($v -eq "false" -or $v -eq "0")
@@ -71,7 +71,7 @@ function Get-SystemMotion {
     elseif (Get-Command gsettings -CommandType Application -ErrorAction SilentlyContinue) {
       $r = Invoke-Captured "gsettings" "get org.gnome.desktop.interface enable-animations" 3000
     }
-    if ($r -eq $null -or $r.Code -ne 0) { return $true }
+    if ($null -eq $r -or $r.Code -ne 0) { return $true }
     return ConvertTo-MotionFlag $Os $r.Out
   } catch { return $true }
 }

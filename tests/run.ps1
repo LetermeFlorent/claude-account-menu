@@ -15,7 +15,7 @@ function Assert-Equal {
 
 function Assert-Null {
   param($Actual, [string]$Name)
-  if ($Actual -eq $null) { $script:Passed++; return }
+  if ($null -eq $Actual) { $script:Passed++; return }
   $script:Failed += ($Name + " : attendu null, obtenu [" + $Actual + "]")
 }
 

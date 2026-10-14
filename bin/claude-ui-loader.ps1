@@ -33,7 +33,7 @@ function Receive-UsageResults {
 
 function Close-UsageLoader {
   param($Loader)
-  if ($Loader.Ps -eq $null -or -not $Loader.Ctl.Done) { return }
+  if ($null -eq $Loader.Ps -or -not $Loader.Ctl.Done) { return }
   try { [void]$Loader.Ps.EndInvoke($Loader.Handle) } catch {}
   $Loader.Ps.Dispose()
   $Loader.Ps = $null
@@ -41,11 +41,11 @@ function Close-UsageLoader {
 
 function Stop-UsageLoader {
   param($Loader, [int]$TimeoutMs = 30000, [scriptblock]$OnWait = $null)
-  if ($Loader -eq $null) { return }
+  if ($null -eq $Loader) { return }
   $Loader.Ctl.Stop = $true
   $sw = [Diagnostics.Stopwatch]::StartNew()
   while (-not $Loader.Ctl.Done -and $sw.ElapsedMilliseconds -lt $TimeoutMs) {
-    if ($OnWait -ne $null) { & $OnWait $sw.ElapsedMilliseconds }
+    if ($null -ne $OnWait) { & $OnWait $sw.ElapsedMilliseconds }
     Start-Sleep -Milliseconds 50
   }
   Close-UsageLoader $Loader

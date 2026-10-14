@@ -35,7 +35,7 @@ function Update-AccountToken {
   try {
     $r = Invoke-RestMethod -Method Post -Uri $script:OauthTokenUrl -Body ($body | ConvertTo-Json -Compress) -ContentType "application/json" -Headers @{ "User-Agent" = (Get-OauthUserAgent) } -TimeoutSec 15
   } catch { return $null }
-  if ([string]::IsNullOrEmpty($r.access_token) -or $r.expires_in -eq $null) { return $null }
+  if ([string]::IsNullOrEmpty($r.access_token) -or $null -eq $r.expires_in) { return $null }
   $new = ConvertTo-RefreshedCredential $Cred $r ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
   try { Write-CredentialFile (Join-Path (Get-AccountPath $Acc) ".credentials.json") $new } catch { return $null }
   return $new

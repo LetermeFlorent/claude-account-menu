@@ -40,5 +40,5 @@ $ld = Start-UsageLoader @(@{ Name = "a" }) (Join-Path $script:Sandbox "absent.ps
 Wait-LoaderDone $ld
 $res = Receive-UsageResults $ld
 Close-UsageLoader $ld
-Assert-True ($ld.Ctl.Error -ne $null) "source absente signalee"
+Assert-True ($null -ne $ld.Ctl.Error) "source absente signalee"
 Assert-Equal 0 $res.Count "source absente, aucun resultat"
