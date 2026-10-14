@@ -10,12 +10,15 @@
 . (Join-Path $PSScriptRoot "claude-self-update.ps1")
 . (Join-Path $PSScriptRoot "claude-sync.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-loop.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-cli.ps1")
 
 function Start-Account {
   param($Acc, $Extra)
   try { Update-StatusState $Acc } catch {}
   Sync-Accounts
+  Sync-DriveBeforeLaunch $Acc
   Invoke-AsAccount $Acc $Extra
+  Stop-DriveSession $Acc
 }
 
 $direct = $null
@@ -43,6 +46,9 @@ foreach ($a in $args) {
 }
 
 if ($selfUpdate -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
+
+$driveCli = Get-DriveCliAction $args
+if ($null -ne $driveCli) { exit (Invoke-DriveCli $driveCli) }
 
 if ($restoreZip) {
   try {

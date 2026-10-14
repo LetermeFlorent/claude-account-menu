@@ -107,10 +107,11 @@ function Sync-DriveBeforeLaunch {
 }
 
 function Sync-DriveAfterExit {
-  param($Acc)
+  param($Acc, [long]$DeadlineMs)
   if (-not (Test-DriveConnected)) { return }
   try { Set-DrivePresence $Acc $false } catch {}
-  if (-not (Test-DriveAuto)) { return }
-  $r = Invoke-DriveSync $null ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + $script:DriveExitBudgetMs)
+  if (-not (Test-DriveAuto)) { Send-DriveCredential $Acc; return }
+  Write-Host "  synchro Drive..." -ForegroundColor DarkGray
+  $r = Invoke-DriveSync $null $DeadlineMs
   if ($r.Error -or $r.Left -gt 0) { Write-Host ("  " + (Get-DriveSyncMsg $r)) -ForegroundColor DarkYellow }
 }
