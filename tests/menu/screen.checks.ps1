@@ -187,6 +187,36 @@ Assert-Null $st.Loader "lecture terminee"
 Assert-True ($st.Entries[2].NextAt -gt 1000) "compte relu replanifie"
 Assert-Null $st.Entries[0].NextAt "compte non relu, planning inchange"
 
+$st = @{ Entries = @((New-TestCard "a" 1 1), (New-TestCard "b" 1 1 $null $true), (New-TestCard "c" 1 1)); Sel = 0; Dirty = $false; Msg = $null }
+foreach ($x in $st.Entries) { $x.Acc = [PSCustomObject]@{ Label = $x.U.Label }; $x.NextAt = 90000; $x.Force = $false }
+Request-EntryRead $st 1000 5000
+Assert-True $st.Entries[0].Force "relecture forcee demandee sur le compte choisi"
+Assert-Equal 1000 $st.Entries[0].NextAt "compte force a echeance tout de suite"
+Assert-Equal "  a : relecture demandee" $st.Msg[0] "message de relecture"
+Assert-Equal "lecture..." (Get-EntryTimer $st.Entries[0] $false 1000 5000)[0] "compte force affiche lecture"
+Assert-Equal "0" ((Get-DueEntries $st 1000) -join ",") "compte force relu au prochain passage"
+$st.Sel = 1
+Request-EntryRead $st 1000 5000
+Assert-True (-not $st.Entries[1].Force) "compte deja en lecture, rien de plus"
+Assert-Equal "  b : lecture deja en cours" $st.Msg[0] "message lecture en cours"
+$st.Sel = 2
+$st.Entries[2].U.LimitedUntil = 5125
+Request-EntryRead $st 1000 5000
+Assert-True (-not $st.Entries[2].Force) "pause API respectee"
+Assert-Equal 90000 $st.Entries[2].NextAt "pause API, planning inchange"
+Assert-Equal "  c : API en pause, reessai dans 2m05s" $st.Msg[0] "message pause API"
+
+$keptLoader = (Get-Item "function:Start-UsageLoader").ScriptBlock
+function Start-UsageLoader { param($Accounts, [string]$Source, [string]$Reader = "Get-AccountUsage") return @{ Reader = $Reader; Count = @($Accounts).Count } }
+try {
+  Start-MenuLoader $st @(0, 2)
+  Assert-Equal "Get-FreshUsage" $st.Loader.Reader "lot avec un compte force, cache de 30 s seulement"
+  Assert-Equal 2 $st.Loader.Count "lot complet relu"
+  Assert-True (-not $st.Entries[0].Force) "demande consommee au lancement"
+  Start-MenuLoader $st @(2)
+  Assert-Equal "Get-AccountUsage" $st.Loader.Reader "lot ordinaire, cache de 3 min"
+} finally { Set-Item "function:Start-UsageLoader" $keptLoader }
+
 $st.Version = "clm abcdef1"
 Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 60)) -match "Comptes Claude Code  clm abcdef1 +\d\d:\d\d$") "version dans l'en-tete"
 Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 40)) -notmatch "clm") "fenetre etroite, version retiree"

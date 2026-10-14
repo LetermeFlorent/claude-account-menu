@@ -1,6 +1,7 @@
 . (Join-Path $PSScriptRoot "claude-platform.ps1")
 $script:UsageCachePath = Get-UsageCachePath
 $script:UsageCacheTtl = 180
+$script:ForcedReadMaxAge = 30
 $script:CooldownBaseSec = 60
 $script:CooldownMaxSec = 600
 $script:RetryAfterMaxSec = 3600

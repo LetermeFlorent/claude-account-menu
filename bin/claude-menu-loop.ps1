@@ -85,6 +85,7 @@ function Invoke-AccountMenu {
     elseif ($act.Name -eq "launch") { return Close-AccountMenu $st.Sel }
     elseif ($act.Name -eq "pick") { return Close-AccountMenu $act.Index }
     elseif ($act.Name -eq "quit") { return Close-AccountMenu $null }
+    elseif ($act.Name -eq "refresh") { Request-EntryRead $st $now }
     elseif ($act.Name -ne "none") { Invoke-MenuCommand $act.Name }
     if (Step-MenuFrame) { Start-Sleep -Milliseconds 33 } else { Start-Sleep -Milliseconds 50 }
   }

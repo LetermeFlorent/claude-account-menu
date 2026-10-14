@@ -81,6 +81,11 @@ function Get-AccountUsage {
   return $out
 }
 
+function Get-FreshUsage {
+  param($Acc)
+  return Get-AccountUsage $Acc $script:ForcedReadMaxAge
+}
+
 function Format-Reset {
   param($Iso)
   $at = ConvertTo-DateOffset $Iso

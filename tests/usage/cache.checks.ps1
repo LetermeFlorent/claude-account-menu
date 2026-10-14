@@ -33,3 +33,7 @@ Assert-Equal 0 ([int]$c.Fails) "lecture reussie, refus remis a zero"
 Save-UsageCooldown "vide" 90 1
 $u = Get-AccountUsage ([PSCustomObject]@{ Label = "vide"; Dir = ".claude-vide" }) 0
 Assert-Equal "quota inconnu, l'API de suivi refuse les appels (reessai dans 1min)" $u.Error "pause sans chiffres connus"
+Save-UsageEntry "pause" ([PSCustomObject]@{ Pct5 = 9; Reset5 = $null; Pct7 = 6; Reset7 = $null })
+$u = Get-FreshUsage ([PSCustomObject]@{ Label = "pause"; Dir = ".claude-pause" })
+Assert-Equal 9 $u.Pct5 "relecture forcee d'une lecture de moins de 30 s, cache sans appel"
+Assert-True ($u.Age -lt $script:ForcedReadMaxAge) "relecture forcee, age du cache garde"

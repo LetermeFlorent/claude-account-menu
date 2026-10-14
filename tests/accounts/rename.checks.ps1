@@ -36,6 +36,7 @@ Assert-Equal "la virgule est reservee a --save= et --only=" $err "virgule refuse
 Assert-Equal "compte1|Travail|perso" ((@(Get-Accounts) | ForEach-Object { $_.Label }) -join "|") "refus sans effet sur le registre"
 
 Assert-Equal "rename" (Get-MenuAction (New-KeyInfo "n") 3).Name "n renomme"
+Assert-Equal "refresh" (Get-MenuAction (New-KeyInfo "m") 3).Name "m relit le compte"
 foreach ($p in @($script:RegistryPath, $script:UsageCachePath)) {
   if ($savedFiles.ContainsKey($p)) { [IO.File]::WriteAllBytes($p, $savedFiles[$p]) } else { Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue }
 }

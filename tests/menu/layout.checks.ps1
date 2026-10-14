@@ -8,7 +8,8 @@ Assert-Equal "simple" (Get-MenuLayout 39 30 3).Mode "terminal etroit, vue simple
 $l = Get-MenuLayout 9 8 3
 Assert-Equal "simple 3 8" ($l.Mode + " " + $l.Visible + " " + $l.Clip) "terminal minuscule, vue simple"
 Assert-Equal 2 (Get-MenuLayout 60 40 2).FooterRows "pied sur deux lignes sous 78 colonnes"
-Assert-Equal 1 (Get-MenuLayout 92 40 2).FooterRows "pied sur une ligne a partir de 90 colonnes"
+Assert-Equal 2 (Get-MenuLayout 98 40 2).FooterRows "pied sur deux lignes sous 99 colonnes"
+Assert-Equal 1 (Get-MenuLayout 99 40 2).FooterRows "pied sur une ligne a partir de 99 colonnes"
 
 Assert-Equal 0 (Get-ScrollTop 0 2 3 6) "defilement vers le haut"
 Assert-Equal 3 (Get-ScrollTop 5 0 3 6) "defilement vers le bas"

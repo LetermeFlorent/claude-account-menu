@@ -45,7 +45,7 @@ Les transitions durent de 120 à 400 millisecondes. Elles suivent le réglage du
 
 ### Touches
 
-Le pied du menu rappelle les touches principales, sur une ligne à partir de 90 colonnes et sur deux en dessous :
+Le pied du menu rappelle les touches principales, sur une ligne à partir de 99 colonnes et sur deux en dessous :
 
 | Touche | Action |
 |---|---|
@@ -55,11 +55,14 @@ Le pied du menu rappelle les touches principales, sur une ligne à partir de 90 
 | `a` | ajouter un compte |
 | `x` | retirer un compte |
 | `n` | renommer un compte |
+| `m` | relire tout de suite les quotas du compte sélectionné |
 | `s` | sauvegarder des comptes |
 | `r` | restaurer une sauvegarde |
 | `q`, Échap ou Ctrl+C | quitter |
 
 Les lettres marchent aussi en majuscules. Après une action, son résultat reste affiché sous le menu jusqu'à l'action suivante. Dans les pages de sauvegarde, de restauration et de retrait, Ctrl+C annule la page puis ferme le menu. Pendant une sauvegarde ou une mise à jour, il laisse l'opération se terminer avant de fermer.
+
+La touche `m` n'attend pas la fin du compteur "maj" : le compte sélectionné passe en "lecture..." et ses quotas sont redemandés à l'API, dès que la lecture en cours des autres comptes est finie. Deux garde-fous évitent de provoquer un refus de l'API. Un compte lu il y a moins de 30 secondes garde la valeur du cache. Un compte en "pause API" n'est pas relu, et le menu affiche le temps qui reste avant le prochain essai.
 
 ### Souris
 

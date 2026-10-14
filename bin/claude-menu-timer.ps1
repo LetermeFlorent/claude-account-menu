@@ -23,7 +23,7 @@ function Get-EntryTimer {
   param($E, [bool]$Busy, [double]$Now, [long]$UnixNow = 0)
   if ($Busy) { return ,@("en pause", $script:Ink.Dim, $false) }
   if ($E.Pending -and -not $E.Seen) { return ,@("", $script:Ink.Dim, $false) }
-  if ($E.Pending -or $null -eq $E.NextAt) { return ,@("lecture...", $script:Ink.Dim, $false) }
+  if ($E.Pending -or $E.Force -or $null -eq $E.NextAt) { return ,@("lecture...", $script:Ink.Dim, $false) }
   if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
   $at = Format-Countdown ([int][math]::Max(0, [math]::Ceiling(($E.NextAt - $Now) / 1000)))
   if ($null -ne $E.U.Error) { return ,@(("reessai " + $at), $script:Ink.Alert, $false) }

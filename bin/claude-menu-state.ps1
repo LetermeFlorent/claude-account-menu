@@ -2,7 +2,7 @@
 function New-MenuEntry {
   param($Acc, $Cache, [double]$Now)
   $u = [PSCustomObject]@{ Label = $Acc.Label; Email = (Get-AccountEmail $Acc); Acc = $Acc; Plan = ""; Pct5 = $null; Reset5 = $null; Pct7 = $null; Reset7 = $null; Error = $null; Age = $null; Expired = $false; LimitedUntil = $null }
-  $e = @{ Acc = $Acc; U = $u; Pending = $true; Seen = $false; View = $null; In = $null; NextAt = $null; Slot = 0; Timer = $null }
+  $e = @{ Acc = $Acc; U = $u; Pending = $true; Seen = $false; View = $null; In = $null; NextAt = $null; Slot = 0; Timer = $null; Force = $false }
   $c = $Cache[$Acc.Label]
   if ($null -ne $c -and (Get-CacheAge $c) -lt $script:UsageCacheTtl) {
     Copy-CacheEntry $c $u
@@ -72,9 +72,27 @@ function Start-MenuLoader {
   param($State, $Indices = $null)
   if ($null -eq $Indices) { $Indices = 0..($State.Entries.Count - 1) }
   $accs = New-Object 'System.Collections.Generic.List[object]'
-  foreach ($i in $Indices) { $e = $State.Entries[$i]; $e.Pending = $true; $e.NextAt = $null; $accs.Add($e.Acc) }
+  $reader = "Get-AccountUsage"
+  foreach ($i in $Indices) {
+    $e = $State.Entries[$i]
+    if ($e.Force) { $reader = "Get-FreshUsage" }
+    $e.Pending = $true; $e.NextAt = $null; $e.Force = $false
+    $accs.Add($e.Acc)
+  }
   $State.LoaderIdx = @($Indices)
-  $State.Loader = Start-UsageLoader $accs.ToArray()
+  $State.Loader = Start-UsageLoader $accs.ToArray() -Reader $reader
+}
+
+function Request-EntryRead {
+  param($State, [double]$Now, [long]$UnixNow = 0)
+  if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
+  $e = $State.Entries[$State.Sel]
+  $pause = [long]$e.U.LimitedUntil - $UnixNow
+  if ($e.Pending) { $text = "lecture deja en cours" }
+  elseif ($pause -gt 0) { $text = "API en pause, reessai dans " + (Format-Countdown $pause) }
+  else { $e.Force = $true; $e.NextAt = $Now; $text = "relecture demandee" }
+  $State.Msg = @(("  " + $e.Acc.Label + " : " + $text), $script:Ink.Dim)
+  $State.Dirty = $true
 }
 
 function Get-DueEntries {
