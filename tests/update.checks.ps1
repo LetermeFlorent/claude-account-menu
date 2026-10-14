@@ -87,3 +87,13 @@ Assert-Equal 1 $groups.Count "un groupe par executable"
 Assert-Equal 2 @($groups[0].Accounts).Count "deux comptes dans le groupe"
 Assert-Equal "compte1" $groups[0].Accounts[0].Label "premier compte du groupe"
 Assert-Equal "  compte1, pro : Claude Code a jour (2.1.292)" (Format-UpdateMessage $groups[0].Accounts "Claude Code a jour (2.1.292)") "message sous le menu"
+
+$run = @{ State = @{ Mode = ""; Done = $false }; Watch = $null; Killed = ""; ExitAt = -1.0 }
+$gone = [PSCustomObject]@{ HasExited = $true }
+$open = @([PSCustomObject]@{ Eof = $false }, [PSCustomObject]@{ Eof = $false })
+Assert-Equal $false (Step-UpdateRun $run $gone $open 10.0) "processus sorti, flux encore ouverts"
+Assert-Equal 10.0 $run.ExitAt "heure de sortie notee"
+Assert-Equal $true (Step-UpdateRun $run $gone $open 12.0) "flux pendants, arret apres deux secondes"
+$closed = @([PSCustomObject]@{ Eof = $true }, [PSCustomObject]@{ Eof = $true })
+$run.ExitAt = -1.0
+Assert-Equal $true (Step-UpdateRun $run $gone $closed 3.0) "processus sorti, flux fermes"

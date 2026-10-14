@@ -37,6 +37,19 @@ function Show-UpdateTick {
   Write-UpdateProgress ("telechargement " + $ver) (Get-ProgressBar $p) (("" + $p + " %").PadLeft(5)) $detail
 }
 
+function Step-UpdateRun {
+  param($Run, $Proc, $Srcs, [double]$Now)
+  if ($Proc.HasExited) {
+    if ($Run.ExitAt -lt 0) { $Run.ExitAt = $Now }
+    return (($Srcs[0].Eof -and $Srcs[1].Eof) -or $Now - $Run.ExitAt -ge 2)
+  }
+  $seen = $false; $settled = $false; $idle = 0.0
+  if ($null -ne $Run.Watch) { $seen = $Run.Watch.Seen; $settled = $Run.Watch.Settled; $idle = $Now - $Run.Watch.Changed }
+  $Run.Killed = Get-WatchAction $Now ([bool]($Run.State.Mode -or $Run.State.Done)) $seen $settled $idle
+  if ($Run.Killed) { Stop-UpdateProcess $Proc; return $true }
+  return $false
+}
+
 function Invoke-ClaudeUpdate {
   param([string]$Exe, $Acc)
   $missing = New-Outcome "failed" "Claude Code introuvable, pas de mise a jour"
@@ -46,23 +59,16 @@ function Invoke-ClaudeUpdate {
   $state = New-UpdateState
   $srcs = @((New-LineSource $proc.StandardOutput), (New-LineSource $proc.StandardError))
   $clock = [Diagnostics.Stopwatch]::StartNew()
-  $watch = $null; $killed = ""; $exitAt = -1.0; $tick = 0
+  $run = @{ State = $state; Watch = $null; Killed = ""; ExitAt = -1.0 }
+  $tick = 0
   try {
     while ($true) {
       foreach ($s in $srcs) { foreach ($l in Receive-Lines $s) { Add-UpdateLine $state $l } }
-      if ($state.Mode -eq "native" -and $null -eq $watch) { $watch = New-StagingWatch $state.Target $proc.Id $clock.Elapsed.TotalSeconds }
+      if ($state.Mode -eq "native" -and $null -eq $run.Watch) { $run.Watch = New-StagingWatch $state.Target $proc.Id $clock.Elapsed.TotalSeconds }
       $now = $clock.Elapsed.TotalSeconds
-      if ($null -ne $watch) { Update-StagingWatch $watch $now }
-      if ($proc.HasExited) {
-        if ($exitAt -lt 0) { $exitAt = $now }
-        if (($srcs[0].Eof -and $srcs[1].Eof) -or $now - $exitAt -ge 2) { break }
-      } else {
-        $seen = $false; $settled = $false; $idle = 0.0
-        if ($null -ne $watch) { $seen = $watch.Seen; $settled = $watch.Settled; $idle = $now - $watch.Changed }
-        $killed = Get-WatchAction $now ([bool]($state.Mode -or $state.Done)) $seen $settled $idle
-        if ($killed) { Stop-UpdateProcess $proc; break }
-      }
-      Show-UpdateTick $state $watch $tick
+      if ($null -ne $run.Watch) { Update-StagingWatch $run.Watch $now }
+      if (Step-UpdateRun $run $proc $srcs $now) { break }
+      Show-UpdateTick $state $run.Watch $tick
       $tick++
       Wait-Progress 250
     }
@@ -72,7 +78,7 @@ function Invoke-ClaudeUpdate {
   $code = -1
   if ($proc.HasExited) { $code = $proc.ExitCode }
   $proc.Dispose()
-  return Get-UpdateOutcome $state $code $killed
+  return Get-UpdateOutcome $state $code $run.Killed
 }
 
 function Get-AccountExe {
