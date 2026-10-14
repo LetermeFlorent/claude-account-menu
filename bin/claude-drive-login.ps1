@@ -1,6 +1,5 @@
 . (Join-Path $PSScriptRoot "claude-drive-auth.ps1")
 $script:DriveLoginSeconds = 300
-$script:DriveConsoleUrl = "https://console.cloud.google.com/apis/credentials"
 
 function ConvertFrom-AuthRequest {
   param([string]$RequestLine)
@@ -54,28 +53,16 @@ function Open-Browser {
   } catch {}
 }
 
-function Read-DriveClient {
-  param($Config)
-  if ($Config["clientId"] -and $Config["clientSecret"]) { return }
-  Write-Host "  premiere connexion : creer un ID client OAuth Google de type Application de bureau, API Google Drive activee"
-  Write-Host ("  " + $script:DriveConsoleUrl)
-  Open-Browser $script:DriveConsoleUrl
-  $Config["clientId"] = ([string](Read-Host "  client ID OAuth (Google Cloud)")).Trim()
-  $Config["clientSecret"] = ([string](Read-Host "  secret client OAuth")).Trim()
-  if (-not $Config["clientId"] -or -not $Config["clientSecret"]) { throw "client ID et secret requis" }
-}
-
 function Invoke-DriveLogin {
   $c = Read-DriveConfig
   if ($null -eq $c) { $c = @{} }
-  Read-DriveClient $c
   $pkce = New-PkcePair
   $state = [guid]::NewGuid().ToString("N")
   $listener = New-Object Net.Sockets.TcpListener([Net.IPAddress]::Loopback, 0)
   $listener.Start()
   try {
     $redirect = "http://127.0.0.1:" + $listener.LocalEndpoint.Port
-    $url = Get-DriveAuthUrl ([string]$c["clientId"]) $redirect $pkce.Challenge $state
+    $url = Get-DriveAuthUrl (Get-DriveClient $c).Id $redirect $pkce.Challenge $state
     Write-Host "  connexion Google dans le navigateur, sinon ouvrir ce lien :"
     Write-Host ("  " + $url)
     Open-Browser $url

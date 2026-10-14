@@ -31,6 +31,10 @@ Assert-Equal "neuf" (Read-DriveConfig)["accessToken"] "nouveau jeton sauve"
 Assert-Equal "r1" (Read-DriveConfig)["refreshToken"] "jeton de renouvellement garde"
 Assert-Equal "neuf" (Get-DriveToken) "jeton sauve reutilise"
 Assert-Equal 1 $script:TokenPosts.Count "un seul renouvellement"
+Save-DriveConfig @{ refreshToken = "r1"; accessToken = "vieux"; expiresAt = $now + 30000 }
+$null = Get-DriveToken
+Assert-True ($script:TokenPosts[1].Contains("client_id=" + [Uri]::EscapeDataString($script:DriveClientId)) -and $script:TokenPosts[1].Contains("client_secret=" + [Uri]::EscapeDataString($script:DriveClientSecret))) "sans client dans le reglage : client de clm"
+Assert-True ($script:DriveClientId.EndsWith(".apps.googleusercontent.com")) "client de clm fourni"
 
 function Invoke-DriveTokenPost { param([string]$Body) throw "400 invalid_grant Token has been expired or revoked" }
 $err = $null

@@ -3,6 +3,14 @@ $script:DriveAuthUrl = "https://accounts.google.com/o/oauth2/v2/auth"
 $script:DriveTokenUrl = "https://oauth2.googleapis.com/token"
 $script:DriveScope = "https://www.googleapis.com/auth/drive.file"
 $script:DriveReconnect = "reconnecter le Drive : clm --drive-login"
+$script:DriveClientId = "841970424266-pgppljvgm4sunmm9fhhggemhk976vm05.apps.googleusercontent.com"
+$script:DriveClientSecret = "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"
+
+function Get-DriveClient {
+  param($Config)
+  if ($null -ne $Config -and $Config["clientId"] -and $Config["clientSecret"]) { return @{ Id = [string]$Config["clientId"]; Secret = [string]$Config["clientSecret"] } }
+  return @{ Id = $script:DriveClientId; Secret = $script:DriveClientSecret }
+}
 
 function ConvertTo-Base64Url {
   param([byte[]]$Bytes)
@@ -46,7 +54,8 @@ function Invoke-DriveTokenPost {
 
 function Request-DriveToken {
   param($Config, $Form)
-  $all = [ordered]@{ client_id = [string]$Config["clientId"]; client_secret = [string]$Config["clientSecret"] }
+  $client = Get-DriveClient $Config
+  $all = [ordered]@{ client_id = $client.Id; client_secret = $client.Secret }
   foreach ($k in $Form.Keys) { $all[$k] = $Form[$k] }
   try { return Invoke-DriveTokenPost (ConvertTo-FormText $all) }
   catch {

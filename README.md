@@ -221,22 +221,11 @@ La règle est celle du dernier modifié. `.claude-sync-state.json` garde la dern
 
 `clm` peut garder les mêmes comptes sur plusieurs PC, Windows, macOS et Linux mélangés, en passant par un dossier `clm-sync` de Google Drive. Tout ce qu'une sauvegarde emporte y passe, jetons de connexion compris, sauf les scripts de `clm` : chaque PC se met à jour seul depuis GitHub.
 
-### Préparer Google Cloud, une seule fois
-
-Google demande une application OAuth à soi. Dans la [console Google Cloud](https://console.cloud.google.com/) :
-
-1. créer un projet, par exemple `clm-sync` ;
-2. dans "API et services", activer l'API Google Drive ;
-3. configurer l'écran de consentement en type externe, ajouter son adresse en utilisateur test, puis le passer en production. En mode test, Google retire l'accès au bout de 7 jours. La portée demandée, `drive.file`, ne donne accès qu'aux fichiers créés par `clm` et ne demande pas de validation par Google ;
-4. créer un identifiant OAuth de type "Application de bureau", et garder son ID client et son code secret.
-
-Le même identifiant sert sur tous les PC. Le secret d'une application de bureau n'en est pas vraiment un pour Google, mais il reste à ne pas publier.
-
 ### Connecter un PC
 
-`clm --drive-login` demande l'ID client et le secret au premier passage, ouvre le navigateur sur la page de consentement Google et attend la réponse 5 minutes. Si le navigateur ne s'ouvre pas, le lien est affiché. La connexion est rangée dans `~/.clm-drive.json`, lisible par son seul propriétaire hors Windows, avec le nom du PC, celui de la machine.
+Dans le menu, la touche `y` connecte le PC tant qu'il ne l'est pas : le navigateur s'ouvre sur la page Google qui demande l'accès au Drive, il suffit d'autoriser, puis une première synchro démarre. `clm --drive-login` fait la même connexion en ligne de commande. Si le navigateur ne s'ouvre pas, le lien est affiché, et la réponse est attendue 5 minutes. La connexion est rangée dans `~/.clm-drive.json`, lisible par son seul propriétaire hors Windows, avec le nom du PC, celui de la machine.
 
-Dans le menu, la touche `y` lance la même connexion tant que le PC n'est pas connecté, puis une première synchro. Sans ID client, le navigateur s'ouvre aussi sur la page des identifiants de la console Google Cloud : y créer un ID client OAuth de type Application de bureau, après avoir activé l'API Google Drive.
+`clm` passe par sa propre application Google, `clm`, de type application de bureau, déjà en production : rien à créer dans la console Google Cloud. La portée demandée, `drive.file`, ne donne accès qu'aux fichiers créés par `clm`. Le secret d'une application de bureau n'en est pas un pour Google, il est donc écrit dans `bin/claude-drive-auth.ps1`. Pour passer par une autre application, mettre `clientId` et `clientSecret` dans `~/.clm-drive.json` avant de se connecter.
 
 Le premier PC envoie tout. Sur un PC qui rejoint, la première synchro prend ce qui est sur le Drive quand un fichier existe des deux côtés : un PC neuf n'écrase pas les comptes des autres avec ses réglages par défaut. L'ancienne version locale est gardée sous `<fichier>.conflit-<PC>`.
 

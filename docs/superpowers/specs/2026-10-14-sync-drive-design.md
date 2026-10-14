@@ -24,7 +24,8 @@ lancement.
 
 Une fois par PC, `clm --drive-login` :
 
-1. demande le client ID et le secret OAuth s'ils ne sont pas déjà connus ;
+1. prend le client OAuth de clm (projet Google Cloud `clm-sync`, application de bureau en
+   production), sauf si `clientId` et `clientSecret` sont déjà dans `~/.clm-drive.json` ;
 2. ouvre le navigateur par défaut sur la page de consentement Google, avec PKCE et une
    redirection vers `http://127.0.0.1:<port libre>` ;
 3. reçoit le code sur ce port, l'échange contre un jeton d'accès et un jeton de renouvellement ;
