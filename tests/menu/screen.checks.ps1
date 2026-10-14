@@ -212,10 +212,25 @@ try {
   Start-MenuLoader $st @(0, 2)
   Assert-Equal "Get-FreshUsage" $st.Loader.Reader "lot avec un compte force, cache de 30 s seulement"
   Assert-Equal 2 $st.Loader.Count "lot complet relu"
-  Assert-True (-not $st.Entries[0].Force) "demande consommee au lancement"
+  Assert-True $st.Entries[0].Force "demande gardee jusqu'au resultat"
   Start-MenuLoader $st @(2)
   Assert-Equal "Get-AccountUsage" $st.Loader.Reader "lot ordinaire, cache de 3 min"
 } finally { Set-Item "function:Start-UsageLoader" $keptLoader }
+$st.Moved = $true
+$fresh = [PSCustomObject]@{ Label = "a"; Email = "a@x.fr"; Plan = ""; Error = $null; Age = $null; Expired = $false; LimitedUntil = $null; Pct5 = 12; Reset5 = $null; Pct7 = 4; Reset7 = $null }
+Set-UsageResult $st @(0, $fresh, $null) 2000
+Assert-True (-not $st.Entries[0].Force) "demande consommee au resultat"
+Assert-True ($st.Msg[0] -match "^  a : quotas relus a \d\d:\d\d:\d\d \(5h 12 %, 7j 4 %\)$") "resultat de la relecture annonce"
+$st.Msg = @("autre", $null)
+Set-UsageResult $st @(0, $fresh, $null) 2000
+Assert-Equal "autre" $st.Msg[0] "lecture ordinaire, message garde"
+$fresh.Age = 12
+Assert-Equal "  a : deja a jour, lu il y a 12s (5h 12 %, 7j 4 %)" (Get-ForcedReadMsg $st.Entries[0])[0] "cache de moins de 30 s annonce"
+$fresh.LimitedUntil = 5090
+Assert-Equal "  a : l'API refuse la relecture, reessai dans 1m30s" (Get-ForcedReadMsg $st.Entries[0] 5000)[0] "refus de l'API annonce"
+$fresh.LimitedUntil = $null
+$fresh.Error = "jeton expire"
+Assert-Equal "  a : relecture impossible, jeton expire" (Get-ForcedReadMsg $st.Entries[0])[0] "erreur de relecture annoncee"
 
 $st.Version = "clm abcdef1"
 Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 60)) -match "Comptes Claude Code  clm abcdef1 +\d\d:\d\d$") "version dans l'en-tete"

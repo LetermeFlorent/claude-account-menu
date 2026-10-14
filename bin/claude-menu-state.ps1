@@ -51,6 +51,7 @@ function Set-UsageResult {
   if ($null -ne $Res[2]) { $e.U.Error = "" + $Res[2] } else { $e.U = $Res[1] }
   $e.Pending = $false
   $e.NextAt = Get-NextReadAt $e $Now
+  Complete-ForcedRead $State $e
   $p5 = [double]$e.U.Pct5
   $p7 = [double]$e.U.Pct7
   if ($e.Seen) {
@@ -76,7 +77,7 @@ function Start-MenuLoader {
   foreach ($i in $Indices) {
     $e = $State.Entries[$i]
     if ($e.Force) { $reader = "Get-FreshUsage" }
-    $e.Pending = $true; $e.NextAt = $null; $e.Force = $false
+    $e.Pending = $true; $e.NextAt = $null
     $accs.Add($e.Acc)
   }
   $State.LoaderIdx = @($Indices)
@@ -122,6 +123,7 @@ function Step-MenuLoader {
     if ($null -ne $ld.Ctl.Error) { $e.U.Error = "lecture impossible : " + $ld.Ctl.Error }
     $e.Pending = $false
     $e.NextAt = Get-NextReadAt $e $Now
+    Complete-ForcedRead $State $e
     Update-EntryView $e
     $State.Dirty = $true
   }

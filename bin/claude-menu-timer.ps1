@@ -42,3 +42,22 @@ function Update-MenuTimers {
   if ($clock -cne $State.Clock) { $State.Clock = $clock; $changed = $true }
   return $changed
 }
+
+function Get-ForcedReadMsg {
+  param($E, [long]$UnixNow = 0)
+  if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
+  $head = "  " + $E.Acc.Label + " : "
+  $pause = [long]$E.U.LimitedUntil - $UnixNow
+  if ($pause -gt 0) { return ,@(($head + "l'API refuse la relecture, reessai dans " + (Format-Countdown $pause)), $script:Levels["7d"][1]) }
+  if ($E.U.Error) { return ,@(($head + "relecture impossible, " + $E.U.Error), $script:Ink.Alert) }
+  $pcts = "5h " + [int]$E.U.Pct5 + " %, 7j " + [int]$E.U.Pct7 + " %"
+  if ($null -ne $E.U.Age) { return ,@(($head + "deja a jour, lu il y a " + (Format-Age $E.U.Age) + " (" + $pcts + ")"), $script:Ink.Dim) }
+  return ,@(($head + "quotas relus a " + (Get-Date -Format "HH:mm:ss") + " (" + $pcts + ")"), $script:Levels["7d"][0])
+}
+
+function Complete-ForcedRead {
+  param($State, $E)
+  if (-not $E.Force) { return }
+  $E.Force = $false
+  $State.Msg = Get-ForcedReadMsg $E
+}

@@ -62,7 +62,7 @@ Le pied du menu rappelle les touches principales, sur une ligne à partir de 99 
 
 Les lettres marchent aussi en majuscules. Après une action, son résultat reste affiché sous le menu jusqu'à l'action suivante. Dans les pages de sauvegarde, de restauration et de retrait, Ctrl+C annule la page puis ferme le menu. Pendant une sauvegarde ou une mise à jour, il laisse l'opération se terminer avant de fermer.
 
-La touche `m` n'attend pas la fin du compteur "maj" : le compte sélectionné passe en "lecture..." et ses quotas sont redemandés à l'API, dès que la lecture en cours des autres comptes est finie. Deux garde-fous évitent de provoquer un refus de l'API. Un compte lu il y a moins de 30 secondes garde la valeur du cache. Un compte en "pause API" n'est pas relu, et le menu affiche le temps qui reste avant le prochain essai.
+La touche `m` n'attend pas la fin du compteur "maj" : le compte sélectionné passe en "lecture..." et ses quotas sont redemandés à l'API, dès que la lecture en cours des autres comptes est finie. Le résultat s'affiche sous le menu, par exemple "compte1 : quotas relus a 14:32:05 (5h 7 %, 7j 3 %)", même quand les chiffres n'ont pas bougé. Deux garde-fous évitent de provoquer un refus de l'API. Un compte lu il y a moins de 30 secondes garde la valeur du cache. Un compte en "pause API" n'est pas relu, et le menu affiche le temps qui reste avant le prochain essai.
 
 ### Souris
 
