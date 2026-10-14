@@ -6,3 +6,7 @@ Assert-Equal "Pro|perso" ((@(Select-ByLabel $accs " perso, pro ") | ForEach-Obje
 $err = $null
 try { $null = Select-ByLabel $accs "pro,prso" } catch { $err = $_.Exception.Message }
 Assert-Equal "compte inconnu : prso" $err "nom mal tape refuse"
+$err = $null
+$missing = Join-Path $script:Sandbox "absent.zip"
+try { Assert-ArchiveReadable $missing } catch { $err = $_.Exception.Message }
+Assert-Equal ("sauvegarde introuvable : " + $missing) $err "restauration d'un fichier absent refusee"

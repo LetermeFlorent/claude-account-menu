@@ -32,6 +32,7 @@ function Initialize-Tar {
 
 function Assert-ArchiveReadable {
   param([string]$Path)
+  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw ("sauvegarde introuvable : " + $Path) }
   Initialize-Tar
   if ($script:TarFlavor -eq "gnu" -and $Path -like "*.zip") {
     throw "GNU tar ne lit pas les zip : installer bsdtar (paquet libarchive-tools) pour restaurer ce fichier"
