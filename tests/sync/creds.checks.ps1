@@ -36,16 +36,38 @@ $script:Sent.Clear()
 $null = Sync-AccountCredential $acc $fold @{}
 Assert-Equal "" $script:Sent[0].Id "premier envoi du jeton : nouveau fichier"
 
-$os = $script:OsName
-$script:OsName = "MacOS"
-$script:SecCalls = New-Object 'System.Collections.Generic.List[string]'
-function security { $script:SecCalls.Add(($args -join " ")); $global:LASTEXITCODE = 0; if ($args[0] -eq "find-generic-password") { $global:LASTEXITCODE = 44 } }
-try { Write-AccountCredential $acc (New-TestCred 900 "mac") } finally { $script:OsName = $os; Remove-Item Function:\security }
-$add = @($script:SecCalls | Where-Object { $_ -like "add-generic-password*" })
-Assert-Equal 1 $add.Count "trousseau : une ecriture"
-Assert-True ($add[0].Contains("-U -a claude-code-user -s " + (Get-KeychainService (Join-Path $script:Sandbox ".claude-credtest")))) "trousseau : service du dossier du compte"
-Assert-True ($add[0].Contains('"accessToken":"mac"')) "trousseau : jeton ecrit"
-Assert-True (@($script:SecCalls | Where-Object { $_ -like "delete-generic-password*" }).Count -gt 0) "trousseau : ancien jeton retire avant"
+Write-CredentialFile $credPath (New-TestCred 100 "tenu")
+if ($script:OsName -eq "Linux") { Assert-Equal "600" ((& stat -c %a $credPath) | Out-String).Trim() "jeton lisible par son seul proprietaire" }
+$hold = [IO.File]::Open($credPath, "Open", "ReadWrite", "None")
+try { $err = ""; try { $null = Sync-AccountCredential $acc $fold $listing } catch { $err = $_.Exception.Message } } finally { $hold.Dispose() }
+Assert-Equal "jeton local illisible" $err "jeton local tenu par Claude Code : compte en echec"
+Assert-Equal "tenu" (Read-AccountCredential $acc).claudeAiOauth.accessToken "jeton local tenu : jamais remplace"
+$script:RemoteText = ((New-TestCred 300 "autre") | ConvertTo-Json -Depth 10 -Compress)
+$err = ""; try { $null = Sync-AccountCredential $acc $fold $listing } catch { $err = $_.Exception.Message }
+Assert-Equal "jeton du Drive invalide" $err "jeton du Drive d'une autre expiration : refuse"
+$script:RemoteText = '{"claudeAiOauth":{"expiresAt":200}}'
+$err = ""; try { $null = Sync-AccountCredential $acc $fold $listing } catch { $err = $_.Exception.Message }
+Assert-Equal "jeton du Drive invalide" $err "jeton du Drive sans jeton d'acces : refuse"
+$null = New-SandboxFile ".claude-credtest/.claude.json" '{"oauthAccount":{"emailAddress":"a@x.fr"}}'
+$script:RemoteText = ((New-TestCred 200 "intrus") | ConvertTo-Json -Depth 10 -Compress)
+$err = ""; try { $null = Sync-AccountCredential $acc $fold @{ ".claude-credtest.json" = @{ Id = "c1"; Exp = 200; Props = @{ exp = "200"; who = "b@y.fr" } } } } catch { $err = $_.Exception.Message }
+Assert-Equal "jeton du Drive pour une autre adresse (b@y.fr)" $err "jeton d'une autre adresse : refuse"
+Assert-Equal "tenu" (Read-AccountCredential $acc).claudeAiOauth.accessToken "jeton d'une autre adresse : jeton local garde"
+$script:Sent.Clear()
+Write-CredentialFile $credPath (New-TestCred 600 "moi")
+$null = Sync-AccountCredential $acc $fold @{}
+Assert-Equal "a@x.fr" $script:Sent[0].Props["who"] "adresse du compte envoyee avec le jeton"
+Remove-Item -LiteralPath (Join-Path $script:Sandbox ".claude-credtest/.claude.json")
+$script:RemoteText = ((New-TestCred 200 "distant") | ConvertTo-Json -Depth 10 -Compress)
+Write-CredentialFile $credPath (New-TestCred 100 "vieux")
+function Get-DriveText { param([string]$Id) Write-CredentialFile $credPath (New-TestCred 900 "claude"); return $script:RemoteText }
+$null = Sync-AccountCredential $acc $fold $listing
+Assert-Equal "claude" (Read-AccountCredential $acc).claudeAiOauth.accessToken "jeton renouvele par Claude pendant le telechargement : garde"
+function Get-DriveText { param([string]$Id) return $script:RemoteText }
+$hold = [IO.File]::Open($script:CredLockPath, "OpenOrCreate", "ReadWrite", "None")
+$script:CredLockWaitMs = 0
+try { $err = ""; try { $null = Sync-AccountCredential $acc $fold $listing } catch { $err = $_.Exception.Message } } finally { $hold.Dispose(); $script:CredLockWaitMs = 15000 }
+Assert-Equal "jetons en cours de synchro" $err "jetons synchronises sous verrou"
 
 $now = 1000000
 $pres = @{
@@ -84,24 +106,83 @@ Write-CredentialFile $credPath (New-TestCred 1000 "expire")
 $got = Update-AccountToken $acc (New-TestCred 1000 "expire")
 Assert-Equal "frais" $got.claudeAiOauth.accessToken "renouvellement : jeton valable d'un autre PC pris sans appel a Anthropic"
 Assert-True (Test-CredentialUsable $got) "jeton pris encore valable"
+function Get-DriveListing { param([string]$FolderId) if ($FolderId -eq "P") { return @{ "AUTRE-PC.json" = @{ Props = @{ ".claude-credtest" = ("" + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) } } } }; return @{} }
+$script:Renewed = 0
+function Get-OauthUserAgent { $script:Renewed++; throw "Anthropic appele" }
+Write-CredentialFile $credPath (New-TestCred 1000 "expire")
+try { $got = Update-AccountToken $acc (New-TestCred 1000 "expire") } finally { . (Join-Path $bin "claude-token-refresh.ps1") }
+Assert-Null $got "compte ouvert sur un autre PC : jamais renouvele ici"
+Assert-Equal 0 $script:Renewed "compte ouvert ailleurs : Anthropic pas appele"
 function Get-DriveFolders { throw "Drive injoignable" }
 Write-CredentialFile $credPath (New-TestCred 1000 "expire")
 Assert-Null (Receive-DriveCredential $acc) "Drive en panne : rien recu, aucune erreur"
 Remove-Item -LiteralPath $script:DriveConfigPath -Force
 . (Join-Path $bin "claude-drive-creds.ps1")
 $os = $script:OsName
+$savedUser = $env:USER
 $script:OsName = "MacOS"
+$env:USER = "florent"
 $script:Kc = @{}
-function security { $a = @($args); $global:LASTEXITCODE = 0; if ($a[0] -eq "add-generic-password") { $script:Kc[$a[3]] = $a[7] } elseif ($a[0] -eq "find-generic-password") { $v = $script:Kc[$a[2]]; if ($null -eq $v) { $global:LASTEXITCODE = 44 } else { return $v } } elseif ($a[0] -eq "delete-generic-password") { $script:Kc.Remove($a[2]) } }
-$big = New-TestCred 900 ("x" * 7000)
+$script:SecArgs = New-Object 'System.Collections.Generic.List[string]'
+$script:SecLog = New-Object 'System.Collections.Generic.List[string]'
+function security {
+  $a = @($args)
+  $global:LASTEXITCODE = 0
+  $script:SecArgs.Add(($a -join " "))
+  if ($a[0] -eq "-i") {
+    foreach ($line in @($input)) {
+      if ($line -notmatch '^add-generic-password -U -a "([^"]*)" -s "([^"]*)" -X "([0-9a-f]*)"$') { continue }
+      $hex = $Matches[3]
+      $b = New-Object byte[] ($hex.Length / 2)
+      for ($i = 0; $i -lt $b.Length; $i++) { $b[$i] = [Convert]::ToByte($hex.Substring($i * 2, 2), 16) }
+      $script:Kc[$Matches[1]] = [Text.Encoding]::UTF8.GetString($b)
+      $script:SecLog.Add("add " + $Matches[1] + " " + $Matches[2])
+    }
+    return
+  }
+  if ($a[0] -eq "find-generic-password") { $v = $script:Kc[$a[2]]; if ($null -eq $v) { $global:LASTEXITCODE = 44 } else { return $v } }
+  elseif ($a[0] -eq "delete-generic-password") { $script:SecLog.Add("delete " + $a[2]); $script:Kc.Remove($a[2]) }
+}
+function Set-KcChunks {
+  param([string]$Json)
+  $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Json))
+  $script:Kc["claude-code-user#0"] = $b64
+  $script:Kc["claude-code-user#m"] = '{"n":1,"l":' + $b64.Length + '}'
+}
 try {
-  Write-AccountCredential $acc $big
+  Write-AccountCredential $acc (New-TestCred 900 "mac")
+  $firstLog = $script:SecLog[0]
+  $mac = Read-AccountCredential $acc
+  Write-AccountCredential $acc (New-TestCred 901 ("x" * 7000))
   $back = Read-AccountCredential $acc
-  $small = @($script:Kc.Keys).Count
-  Write-AccountCredential $acc (New-TestCred 901 "court")
+  $keys = @($script:Kc.Keys).Count
+  $parts = [int]($script:Kc["claude-code-user#m"] | ConvertFrom-Json).n
+  $simpleLeft = $script:Kc.ContainsKey("claude-code-user")
+  $script:SecLog.Clear()
+  Write-AccountCredential $acc (New-TestCred 902 "court")
+  $order = @($script:SecLog)
   $after = Read-AccountCredential $acc
-} finally { $script:OsName = $os; Remove-Item Function:\security }
-Assert-Equal 5 $small "trousseau : jeton long decoupe en 4 morceaux et un index"
+  $left = @($script:Kc.Keys).Count
+  $script:Kc.Clear()
+  $script:Kc["florent"] = ((New-TestCred 100 "ancien") | ConvertTo-Json -Depth 10 -Compress)
+  Write-AccountCredential $acc (New-TestCred 903 "neuf")
+  $userKeys = (@($script:Kc.Keys) | Sort-Object) -join ","
+  $script:Kc.Clear()
+  $script:Kc["claude-code-user"] = ((New-TestCred 950 "simple") | ConvertTo-Json -Depth 10 -Compress)
+  Set-KcChunks ((New-TestCred 800 "morceaux") | ConvertTo-Json -Depth 10 -Compress)
+  $best = Read-AccountCredential $acc
+  Remove-KeychainCredential (Join-Path $script:Sandbox ".claude-credtest")
+  $cleared = @($script:Kc.Keys).Count
+} finally { $script:OsName = $os; $env:USER = $savedUser; Remove-Item Function:\security }
+Assert-Equal ("add claude-code-user " + (Get-KeychainService (Join-Path $script:Sandbox ".claude-credtest"))) $firstLog "trousseau : service du dossier du compte"
+Assert-Equal "mac" $mac.claudeAiOauth.accessToken "trousseau : jeton ecrit puis relu"
+Assert-Equal 0 @($script:SecArgs | Where-Object { $_.Contains("accessToken") -or $_.Contains("xxxxxxxx") }).Count "trousseau : jeton jamais passe en argument de commande"
 Assert-Equal ("x" * 7000) $back.claudeAiOauth.accessToken "trousseau : jeton long relu entier"
+Assert-Equal ($parts + 1) $keys "trousseau : jeton long en morceaux et un index, rien d'autre"
+Assert-True (-not $simpleLeft) "trousseau : ancien jeton court retire"
+Assert-True ($order[0] -like "add *") "trousseau : nouveau jeton ecrit avant de retirer l'ancien"
 Assert-Equal "court" $after.claudeAiOauth.accessToken "trousseau : morceaux remplaces par un jeton court"
-Assert-Equal 1 @($script:Kc.Keys).Count "trousseau : anciens morceaux retires"
+Assert-Equal 1 $left "trousseau : anciens morceaux retires"
+Assert-Equal "florent" $userKeys "trousseau : jeton ecrit sous le nom de compte deja present"
+Assert-Equal "simple" $best.claudeAiOauth.accessToken "trousseau : jeton le plus frais lu entre morceaux et element simple"
+Assert-Equal 0 $cleared "trousseau : compte retire, tous ses elements effaces"

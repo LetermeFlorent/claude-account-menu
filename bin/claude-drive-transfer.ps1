@@ -75,16 +75,45 @@ function Send-DriveText {
   return Send-DriveContent $FolderId $Name ([Text.Encoding]::UTF8.GetBytes($Text)) $Props $Id
 }
 
+function Save-DriveMedia {
+  param([string]$Id, [string]$Path)
+  $uri = $script:DriveApi + "/" + $Id + "?alt=media"
+  if (-not [WildcardPattern]::ContainsWildcardCharacters($Path)) { $null = Invoke-DriveRequest "GET" $uri $null "" $script:DriveDataTimeout $Path; return }
+  $plain = Join-Path ([IO.Path]::GetTempPath()) ("clm-" + [guid]::NewGuid().ToString("N") + ".tmp")
+  try {
+    $null = Invoke-DriveRequest "GET" $uri $null "" $script:DriveDataTimeout $plain
+    [IO.File]::Copy($plain, $Path, $true)
+  } finally { [IO.File]::Delete($plain) }
+}
+
+function Receive-DriveTemp {
+  param([string]$Id, [string]$Path)
+  $null = [IO.Directory]::CreateDirectory((Split-Path -Parent $Path))
+  $tmp = $Path + "." + [guid]::NewGuid().ToString("N") + ".tmp"
+  try { Save-DriveMedia $Id $tmp } catch { Remove-DriveTemp $tmp; throw }
+  return $tmp
+}
+
+function Remove-DriveTemp {
+  param([string]$Tmp)
+  if ([IO.File]::Exists($Tmp)) { Remove-Item -LiteralPath $Tmp -Force -ErrorAction SilentlyContinue }
+}
+
+function Install-DriveTemp {
+  param([string]$Tmp, [string]$Path, [switch]$InPlace)
+  if (-not [IO.File]::Exists($Path)) { [IO.File]::Move($Tmp, $Path); return }
+  if (-not $InPlace) { [IO.File]::Replace($Tmp, $Path, [NullString]::Value); return }
+  $src = [IO.File]::OpenRead($Tmp)
+  try {
+    $dst = [IO.File]::Open($Path, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::Read)
+    try { $src.CopyTo($dst) } finally { $dst.Dispose() }
+  } finally { $src.Dispose() }
+}
+
 function Receive-DriveFile {
   param([string]$Id, [string]$Path)
-  $dir = Split-Path -Parent $Path
-  if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-  $tmp = $Path + "." + [guid]::NewGuid().ToString("N") + ".tmp"
-  try {
-    $null = Invoke-DriveRequest "GET" ($script:DriveApi + "/" + $Id + "?alt=media") $null "" $script:DriveDataTimeout $tmp
-    if (Test-Path -LiteralPath $Path) { [IO.File]::Replace($tmp, $Path, [NullString]::Value) }
-    else { [IO.File]::Move($tmp, $Path) }
-  } finally { if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue } }
+  $tmp = Receive-DriveTemp $Id $Path
+  try { Install-DriveTemp $tmp $Path } finally { Remove-DriveTemp $tmp }
 }
 
 function Get-DriveText {

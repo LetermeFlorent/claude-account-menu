@@ -61,38 +61,6 @@ function ConvertTo-DriveQuery {
   return $Text.Replace("\", "\\").Replace("'", "\'")
 }
 
-function Find-DriveFolder {
-  param([string]$Name, [string]$Parent)
-  $q = "name='" + (ConvertTo-DriveQuery $Name) + "' and mimeType='" + $script:DriveFolderMime + "' and trashed=false and '" + (ConvertTo-DriveQuery $Parent) + "' in parents"
-  $uri = $script:DriveApi + "?q=" + [Uri]::EscapeDataString($q) + "&orderBy=createdTime&pageSize=10&fields=files(id)"
-  $r = ConvertFrom-DriveJson (Invoke-DriveRequest "GET" $uri)
-  if (@($r.files).Count -gt 0) { return [string]@($r.files)[0].id }
-  $meta = [ordered]@{ name = $Name; mimeType = $script:DriveFolderMime; parents = @($Parent) }
-  $r = ConvertFrom-DriveJson (Invoke-DriveRequest "POST" ($script:DriveApi + "?fields=id") (ConvertTo-JsonBytes $meta) $script:DriveJsonType)
-  return [string]$r.id
-}
-
-function Get-DriveFolders {
-  $c = Read-DriveConfig
-  $keys = @("Root", "Files", "Credentials", "Presence")
-  $out = @{}
-  foreach ($k in $keys) { $out[$k] = [string]$c[("folder" + $k)] }
-  if (@($keys | Where-Object { -not $out[$_] }).Count -eq 0) { return $out }
-  $out.Root = Find-DriveFolder $script:DriveFolderNames.Root "root"
-  foreach ($k in @("Files", "Credentials", "Presence")) { $out[$k] = Find-DriveFolder $script:DriveFolderNames[$k] $out.Root }
-  $c = Read-DriveConfig
-  foreach ($k in $keys) { $c[("folder" + $k)] = $out[$k] }
-  Save-DriveConfig $c
-  return $out
-}
-
-function Clear-DriveFolders {
-  $c = Read-DriveConfig
-  if ($null -eq $c) { return }
-  foreach ($k in @("Root", "Files", "Credentials", "Presence")) { $c.Remove(("folder" + $k)) }
-  Save-DriveConfig $c
-}
-
 function ConvertTo-RemoteEntry {
   param($File)
   $props = @{}
@@ -116,7 +84,7 @@ function Get-DriveListing {
       $e = ConvertTo-RemoteEntry $f
       $old = $map[$e.Name]
       if ($null -eq $old) { $map[$e.Name] = $e }
-      elseif ($e.M -gt $old.M) { $map[$e.Name] = $e; $dups.Add($old.Id) }
+      elseif ($e.M -gt $old.M -or $e.Exp -gt $old.Exp) { $map[$e.Name] = $e; $dups.Add($old.Id) }
       else { $dups.Add($e.Id) }
     }
     $token = [string]$r.nextPageToken

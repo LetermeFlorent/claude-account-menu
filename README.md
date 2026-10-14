@@ -259,9 +259,11 @@ Les conversations de `projects/` passent telles quelles. Comme Claude Code nomme
 
 ### Jetons de connexion
 
-Les jetons de chaque compte ont leur propre fichier sur le Drive, et le plus récent gagne toujours : un PC ne remplace pas un jeton local par un jeton qui expire plus tôt. Avant de lancer un compte, `clm` prend le jeton du Drive s'il est plus frais. Avant de renouveler un jeton expiré, il regarde d'abord si un autre PC ne l'a pas déjà fait, et envoie le nouveau jeton après un renouvellement. À la fermeture de Claude Code, le jeton part sur le Drive, même quand la synchro automatique est coupée. Sous macOS, les jetons sont lus et écrits dans le trousseau.
+Les jetons de chaque compte ont leur propre fichier sur le Drive, et le plus récent gagne toujours : un PC ne remplace pas un jeton local par un jeton qui expire plus tôt. Avant de lancer un compte, `clm` prend le jeton du Drive s'il est plus frais. Avant de renouveler un jeton expiré, il regarde d'abord si un autre PC ne l'a pas déjà fait, et envoie le nouveau jeton après un renouvellement. À la fermeture de Claude Code, le jeton part sur le Drive, même quand la synchro automatique est coupée. Sous macOS, les jetons sont lus et écrits dans le trousseau, par l'entrée standard de `security` pour que le jeton n'apparaisse jamais dans la liste des process.
 
-Un compte lancé sur un PC est marqué ouvert pendant 12 heures, jusqu'à la fermeture de Claude Code. Les autres PC affichent alors "ouvert sur <PC>" sur sa carte.
+Un jeton local illisible, tenu par Claude Code au moment de la synchro, n'est jamais écrasé : le compte est retenté à la synchro suivante. Chaque jeton envoyé porte l'adresse du compte, et un PC refuse le jeton d'une autre adresse, ce qui arrive quand le même dossier de compte sert à deux comptes différents sur deux PC.
+
+Un compte lancé sur un PC est marqué ouvert pendant 12 heures, jusqu'à la fermeture de Claude Code. Les autres PC affichent alors "ouvert sur <PC>" sur sa carte, et `clm` n'y renouvelle pas son jeton tant qu'il est ouvert ailleurs.
 
 ## Liste des comptes
 
@@ -278,7 +280,7 @@ Les comptes sont rangés dans `~/.claude-accounts.json` (`%USERPROFILE%\.claude-
 
 ## Quotas
 
-Les pourcentages viennent de l'API `api.anthropic.com/api/oauth/usage`, avec le jeton du compte. Il est lu dans `.credentials.json` du dossier du compte, et sous macOS d'abord dans le trousseau, où Claude Code le range. Sous Windows et Linux, un jeton expiré est renouvelé par `clm` lui-même avec le refresh token du compte, comme Claude Code le fait au démarrage, puis `.credentials.json` est réécrit. Le serveur peut remplacer le refresh token à cette occasion : une session Claude Code restée ouverte sur ce compte avec l'ancien peut alors redemander un `/login`. Sous macOS, `clm` ne renouvelle rien et n'écrit rien dans le trousseau. Les comptes sont interrogés l'un après l'autre, avec 10 secondes au plus par appel.
+Les pourcentages viennent de l'API `api.anthropic.com/api/oauth/usage`, avec le jeton du compte. Il est lu dans `.credentials.json` du dossier du compte, et sous macOS d'abord dans le trousseau, où Claude Code le range. Sous Windows et Linux, un jeton expiré est renouvelé par `clm` lui-même avec le refresh token du compte, comme Claude Code le fait au démarrage, puis `.credentials.json` est réécrit. Le serveur peut remplacer le refresh token à cette occasion : une session Claude Code restée ouverte sur ce compte avec l'ancien peut alors redemander un `/login`. Sous macOS, `clm` ne renouvelle rien, et n'écrit dans le trousseau que les jetons reçus du Drive. Les comptes sont interrogés l'un après l'autre, avec 10 secondes au plus par appel.
 
 Les résultats sont gardés trois minutes dans un cache, partagé par le menu, `--usage` et le hook de la barre d'état : `%LOCALAPPDATA%\claude-menu\usage.json` sous Windows, `~/Library/Caches/claude-menu/usage.json` sous macOS et `${XDG_CACHE_HOME:-~/.cache}/claude-menu/usage.json` sous Linux. L'API limite les appels par jeton, et une relecture trop rapprochée la fait répondre 429 pendant de longues minutes. Après un refus, le compte n'est plus interrogé pendant 1 minute, puis 2, 4, 8 et enfin 10 minutes au plus si les refus se suivent, avec quelques secondes prises au hasard en plus, ou pendant le délai `Retry-After` envoyé par l'API s'il est plus long (une heure au plus). Cette pause est notée dans le cache : une autre fenêtre `clm` ou le hook la respectent aussi. La première lecture réussie la lève. Pendant la pause, le menu affiche les dernières valeurs du cache, avec leur âge. Une fenêtre dont la remise à zéro a eu lieu depuis cette lecture repart à 0 %, sans heure, avec la mention "fenetre passee".
 
@@ -326,7 +328,7 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | fichier d'état `claude-statusline/state` | quotas pour la barre d'état |
 | `claude-comptes-*.zip` ou `.tar.gz` dans Téléchargements | sauvegardes |
 | `~/.clm-drive.json` | connexion Google Drive, nom du PC, synchro automatique |
-| `~/.clm-drive-state.json` et `~/.clm-drive.lock` | état de la dernière synchro Drive, verrou |
+| `~/.clm-drive-state.json` et `~/.clm-drive*.lock` | état de la dernière synchro Drive, verrous de la synchro, des dossiers Drive et des jetons |
 | `<fichier>.conflit-<PC>` | version perdante d'un conflit de synchro |
 
 Il lit `USERPROFILE` puis `HOME` pour le dossier personnel, `LOCALAPPDATA` sous Windows, `XDG_CACHE_HOME`, `XDG_STATE_HOME` et `XDG_CONFIG_HOME` sous Linux, `STATUSLINE_BG` et `GTK_THEME` pour les couleurs, `CLM_ANIM` pour les animations, et `CLAUDE_CONFIG_DIR` dans le hook. Il pose ou retire lui-même `CLAUDE_CONFIG_DIR` pour lancer un compte.

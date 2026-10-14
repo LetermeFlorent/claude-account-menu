@@ -65,6 +65,11 @@ une propriété par dossier de compte : l'heure de lancement, ou `0` à la ferme
 Les noms reçus du Drive sont filtrés avant tout usage : premier segment `.claude*` ou
 `.mcp.json`, ni `..`, ni `\`, ni `:`. Un fichier déposé à la main sous un autre nom est ignoré.
 
+Les ids des quatre dossiers sont gardés dans `~/.clm-drive.json` et vérifiés à chaque synchro par
+une liste des sous-dossiers de `clm-sync/`. Un dossier mis à la corbeille ou supprimé fait recréer
+l'arborescence, sous un verrou `~/.clm-drive-folders.lock`. Une nouvelle connexion au Drive oublie
+ces ids et l'heure de la dernière synchro.
+
 Chaque PC garde aussi `~/.clm-drive-state.json` : la base, c'est-à-dire pour chaque fichier le
 md5, la date et l'id Drive tels qu'ils étaient à sa dernière synchro, plus l'heure de la
 dernière synchro complète (`At`, 0 avant la première).
@@ -133,9 +138,12 @@ résolution de conflit par date.
 ## Jetons de connexion
 
 Source par OS : `.credentials.json` du compte sous Windows et Linux, trousseau sous Mac (lecture
-existante dans `claude-credentials.ps1`, écriture ajoutée avec
-`security add-generic-password -U`, découpée en morceaux comme le fait Claude Code quand le jeton
-dépasse la taille d'un élément).
+existante dans `claude-keychain.ps1`, écriture par `security -i` : les commandes passent sur
+l'entrée standard avec le jeton en hexadécimal (`-X`), pour qu'il n'apparaisse jamais dans la liste
+des process. Au-delà de 1800 octets, le jeton est découpé en morceaux pour tenir dans une ligne de
+`security -i`. Le nouvel élément est écrit sous le nom de compte déjà présent, relu, puis seulement
+les anciens éléments sont retirés. À la lecture, entre l'élément simple et les morceaux, le jeton
+dont `expiresAt` est le plus grand gagne).
 
 Sur le Drive, chaque compte a un fichier `credentials/<dossier du compte>.json` traité à part (le
 dossier plutôt que le nom affiché, qui peut changer par `n`) : pour un
@@ -146,7 +154,8 @@ Moments où le jeton est synchronisé :
 
 - avant de lancer un compte : téléchargement du jeton du compte s'il est plus frais ;
 - avant que `Update-AccountToken` renouvelle un jeton : même téléchargement, et si le jeton reçu
-  n'a pas expiré, pas de renouvellement ;
+  n'a pas expiré, pas de renouvellement, et pas de renouvellement non plus si le compte est ouvert sur
+  un autre PC depuis moins de 12 heures ;
 - après un renouvellement par clm : envoi immédiat ;
 - à la fermeture de Claude : envoi si `expiresAt` a changé, que la synchro automatique soit
   active ou non ;
@@ -154,6 +163,12 @@ Moments où le jeton est synchronisé :
 
 Le `.credentials.json` des comptes est exclu de la synchro des fichiers : il ne passe que par
 cette règle.
+
+Garde-fous des jetons : un verrou local (`~/.clm-drive-creds.lock`, 15 secondes) sérialise la
+comparaison et l'écriture, et le jeton local est relu juste avant d'être remplacé. Un
+`.credentials.json` présent mais illisible fait échouer ce compte au lieu d'être écrasé. Le jeton
+reçu doit porter un `accessToken` et l'`expiresAt` annoncé dans `exp`. Chaque envoi porte aussi
+l'adresse du compte (`who`), et un jeton d'une autre adresse n'est jamais installé.
 
 Limite connue : un même compte ouvert en même temps sur deux PC. Claude Code garde son jeton en
 mémoire et le renouvelle seul, et le serveur remplace le jeton de renouvellement à chaque usage

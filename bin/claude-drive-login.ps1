@@ -82,6 +82,7 @@ function Invoke-DriveLogin {
   $r = Request-DriveToken $c @{ grant_type = "authorization_code"; code = $res.Code; redirect_uri = $redirect; code_verifier = $pkce.Verifier }
   Set-DriveTokenResponse $c $r ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
   if ([string]::IsNullOrEmpty([string]$c["refreshToken"])) { throw "Google n'a pas rendu de jeton de renouvellement" }
+  Clear-DriveFolders $c
   Save-DriveConfig $c
   return "Drive connecte sur " + (Get-DrivePcName)
 }

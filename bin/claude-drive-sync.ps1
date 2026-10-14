@@ -8,19 +8,11 @@ $script:DriveRootPattern = '^\.(claude[^/]*|mcp\.json)$'
 
 function Invoke-WithDriveLock {
   param([scriptblock]$Action)
-  $deadline = [DateTime]::UtcNow.AddMilliseconds($script:DriveLockWaitMs)
-  while ($true) {
-    try { $fs = [IO.File]::Open($script:DriveLockPath, "OpenOrCreate", "ReadWrite", "None"); break }
-    catch {
-      if ([DateTime]::UtcNow -ge $deadline) { throw "une autre synchro Drive est en cours" }
-      Start-Sleep -Milliseconds 200
-    }
-  }
-  try { & $Action } finally { $fs.Dispose() }
+  Invoke-WithFileLock $script:DriveLockPath $script:DriveLockWaitMs "une autre synchro Drive est en cours" $Action
 }
 
 function New-SyncResult {
-  return @{ Ok = $false; Error = ""; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Total = 0; Away = @{} }
+  return @{ Ok = $false; Error = ""; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Total = 0; Away = @{}; Again = $false }
 }
 
 function Test-SafeSyncPath {
@@ -32,13 +24,34 @@ function Test-SafeSyncPath {
   return $true
 }
 
+function Test-InSyncRoots {
+  param([string]$Rel, $Roots)
+  foreach ($r in $Roots) { if ($Rel -eq $r -or $Rel.StartsWith($r + "/", [StringComparison]::Ordinal)) { return $true } }
+  return $false
+}
+
 function Select-RemoteFiles {
-  param($Listing, $Patterns)
+  param($Listing, $Patterns, $Roots)
   $out = New-PathMap
   foreach ($k in $Listing.Keys) {
-    if ((Test-SafeSyncPath $k) -and -not (Test-SyncExcluded $k $Patterns)) { $out[$k] = $Listing[$k] }
+    if ((Test-SafeSyncPath $k) -and (Test-InSyncRoots $k $Roots) -and -not (Test-SyncExcluded $k $Patterns)) { $out[$k] = $Listing[$k] }
   }
   return $out
+}
+
+function Read-SyncBase {
+  param([string]$Root, $Roots)
+  $state = Read-DriveState
+  if ($state.Root -ne $Root) { $state = @{ At = [long]0; Root = $Root; Files = (New-PathMap) } }
+  foreach ($k in @($state.Files.Keys)) { if (-not (Test-InSyncRoots $k $Roots)) { $state.Files.Remove($k) } }
+  return $state
+}
+
+function Get-RegistryMd5 {
+  param($Files)
+  $e = $Files[$script:RegistryName]
+  if ($null -eq $e) { return "" }
+  return [string]$e.Md5
 }
 
 function Assert-DeleteLimit {
@@ -63,13 +76,15 @@ function Invoke-DriveSyncPass {
   $accs = @(Get-Accounts)
   $Res.Failed += [int](Sync-DriveCredentials $folders $accs)
   $Res.Away = Get-AwayMap (Get-DriveListing $folders.Presence) $pc ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
-  $state = Read-DriveState
+  $roots = Get-SyncRoots $accs
+  $state = Read-SyncBase $folders.Root $roots
   $patterns = Get-SyncPatterns $accs
-  $local = Get-LocalFiles $script:HomeDir (Get-SyncRoots $accs) $patterns $state.Files
-  $remote = Select-RemoteFiles (Get-DriveListing $folders.Files) $patterns
-  $plan = Get-SyncPlan $local.Files $state.Files $remote $local.Skipped -Joining:($state.At -eq 0)
+  $local = Get-LocalFiles $script:HomeDir $roots $patterns $state.Files
+  $remote = Select-RemoteFiles (Get-DriveListing $folders.Files) $patterns $roots
+  $plan = Get-SyncPlan $local.Files $state.Files $remote $local.Skipped -Joining:($state.At -eq 0) -CaseFold:($script:OsName -ne "Linux")
   Assert-DeleteLimit $plan $state.Files.Count $Force
   $Res.Total = $plan.Count
+  $registry = Get-RegistryMd5 $local.Files
   $ctx = @{ Folder = $folders.Files; Pc = $pc; State = $state; Local = $local.Files; Remote = $remote; Res = $Res }
   try { Invoke-SyncPlan $ctx $plan $Ctl $DeadlineMs }
   finally {
@@ -78,14 +93,19 @@ function Invoke-DriveSyncPass {
   }
   if ($Res.Failed -gt 0) { $Res.Error = "" + $Res.Failed + " fichier(s) en echec, nouvel essai a la prochaine synchro"; return }
   $Res.Ok = $true
+  $Res.Again = (Get-RegistryMd5 $state.Files) -ne $registry
   if ($Res.Left -eq 0) { $Res.At = $state.At; Set-DriveLastSync $state.At }
 }
 
 function Invoke-DriveSync {
   param($Ctl = $null, [long]$DeadlineMs = 0, [switch]$Force)
   $res = New-SyncResult
-  try { Invoke-WithDriveLock { Invoke-DriveSyncPass $res $Ctl $DeadlineMs $Force.IsPresent } }
-  catch { $res.Ok = $false; $res.Error = $_.Exception.Message }
+  try {
+    Invoke-WithDriveLock {
+      Invoke-DriveSyncPass $res $Ctl $DeadlineMs $Force.IsPresent
+      if ($res.Ok -and $res.Again -and $res.Left -eq 0) { $res.Ok = $false; Invoke-DriveSyncPass $res $Ctl $DeadlineMs $Force.IsPresent }
+    }
+  } catch { $res.Ok = $false; $res.Error = $_.Exception.Message }
   return $res
 }
 

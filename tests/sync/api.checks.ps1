@@ -64,4 +64,20 @@ Assert-Equal "new1" $r.Id "gros fichier : id rendu"
 $script:Calls.Clear()
 Set-DriveProps "P1" @{ ".claude" = "55" }
 Assert-True ($script:Calls[0].Uri.EndsWith("/files/P1") -and [Text.Encoding]::UTF8.GetString($script:Calls[0].Body).Contains('".claude": "55"')) "proprietes modifiees"
+function Invoke-DriveRequest {
+  param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
+  if ($Method -eq "GET") { return New-FakeResponse '{"files":[{"id":"k1","name":"c.json","appProperties":{"exp":"100"}},{"id":"k2","name":"c.json","appProperties":{"exp":"200"}}]}' }
+  return New-FakeResponse "{}"
+}
+Assert-Equal "k2" (Get-DriveListing "creds")["c.json"].Id "jetons en double : expiration la plus lointaine gardee"
+function Invoke-DriveRequest {
+  param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
+  $script:MediaOut = $OutFile
+  if ([WildcardPattern]::ContainsWildcardCharacters($OutFile)) { throw "chemin pris pour un motif" }
+  [IO.File]::WriteAllText($OutFile, "media")
+}
+$media = Join-Path $script:Sandbox "notes [v2].md"
+Save-DriveMedia "m1" $media
+Assert-Equal "media" ([IO.File]::ReadAllText($media)) "telechargement vers un nom avec crochets"
+Assert-True (-not (Test-Path -LiteralPath $script:MediaOut)) "telechargement : fichier intermediaire retire"
 . (Join-Path $bin "claude-drive-transfer.ps1")

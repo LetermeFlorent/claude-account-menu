@@ -23,6 +23,7 @@ function Update-AccountToken {
     if (Test-CredentialUsable $fresh) { return $fresh }
     $Cred = $fresh
   }
+  if (Test-AccountAway $Acc) { return $null }
   $rt = "" + $Cred.claudeAiOauth.refreshToken
   if ($rt -eq "") { return $null }
   $body = @{ grant_type = "refresh_token"; refresh_token = $rt; client_id = $script:OauthClientId }

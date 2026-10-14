@@ -1,78 +1,4 @@
-$syncSaved = @($script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs)
-$script:Fake = New-PathMap
-$script:FakeSeq = 0
-$script:FailSend = @()
-$script:StopAfter = 0
-$script:StopCtl = $null
-
-function Get-FakeMd5 {
-  param([byte[]]$Bytes)
-  $md5 = [Security.Cryptography.MD5]::Create()
-  try { return -join ($md5.ComputeHash($Bytes) | ForEach-Object { $_.ToString("x2") }) } finally { $md5.Dispose() }
-}
-
-function Find-FakeName {
-  param([string]$Id)
-  foreach ($k in $script:Fake.Keys) { if ($script:Fake[$k].Id -eq $Id) { return $k } }
-  return $null
-}
-
-function Get-DriveFolders { return @{ Root = "R"; Files = "F"; Credentials = "C"; Presence = "P" } }
-function Sync-DriveCredentials { param($Folders, $Accs) return 0 }
-function Get-DriveListing {
-  param([string]$FolderId)
-  $m = New-PathMap
-  if ($FolderId -eq "F") { foreach ($k in $script:Fake.Keys) { $m[$k] = $script:Fake[$k] } }
-  return $m
-}
-function Send-DriveFile {
-  param([string]$FolderId, [string]$Name, [string]$Path, $Props, [string]$Id)
-  if ($script:FailSend -contains $Name) { throw "panne reseau" }
-  $bytes = Read-SharedBytes $Path
-  if ($Id) { $Name = Find-FakeName $Id } else { $script:FakeSeq++; $Id = "id" + $script:FakeSeq }
-  $md5 = Get-FakeMd5 $bytes
-  $script:Fake[$Name] = @{ Id = $Id; Name = $Name; Md5 = $md5; M = [long]$Props["m"]; Pc = [string]$Props["pc"]; Exp = 0; Props = $Props; Bytes = $bytes }
-  if ($script:StopAfter -gt 0) {
-    $script:StopAfter--
-    if ($script:StopAfter -eq 0) { $script:StopCtl.Stop = $true }
-  }
-  return @{ Id = $Id; Md5 = $md5 }
-}
-function Receive-DriveFile {
-  param([string]$Id, [string]$Path)
-  $dir = Split-Path -Parent $Path
-  if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-  [IO.File]::WriteAllBytes($Path, $script:Fake[(Find-FakeName $Id)].Bytes)
-}
-function Remove-DriveFile { param([string]$Id) $script:Fake.Remove((Find-FakeName $Id)) }
-
-function Use-Pc {
-  param([string]$Name)
-  $script:HomeDir = Join-Path $script:Sandbox ("pc-" + $Name)
-  if (-not (Test-Path -LiteralPath $script:HomeDir)) { New-Item -ItemType Directory -Path $script:HomeDir -Force | Out-Null }
-  $script:RegistryPath = Join-Path $script:HomeDir ".claude-accounts.json"
-  $script:DriveStatePath = Join-Path $script:HomeDir ".clm-drive-state.json"
-  $script:DriveConfigPath = Join-Path $script:HomeDir ".clm-drive.json"
-  $script:DriveLockPath = Join-Path $script:HomeDir ".clm-drive.lock"
-  Save-DriveConfig @{ refreshToken = "r"; pc = $Name }
-}
-
-function Set-PcFile {
-  param([string]$Rel, [string]$Text, [long]$M = 0)
-  $p = Join-Path $script:HomeDir $Rel
-  New-Item -ItemType Directory -Path (Split-Path -Parent $p) -Force | Out-Null
-  [IO.File]::WriteAllText($p, $Text)
-  if ($M -gt 0) { [IO.File]::SetLastWriteTimeUtc($p, [DateTimeOffset]::FromUnixTimeSeconds($M).UtcDateTime) }
-}
-
-function Get-PcText {
-  param([string]$Rel)
-  $p = Join-Path $script:HomeDir $Rel
-  if (-not (Test-Path -LiteralPath $p)) { return $null }
-  return [IO.File]::ReadAllText($p)
-}
-
-$script:DriveLockWaitMs = 0
+. (Join-Path $PSScriptRoot "fake-drive.ps1")
 Use-Pc "PCA"
 Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
 Set-PcFile ".claude/settings.json" "a1" 1700000000
@@ -202,6 +128,5 @@ Assert-Equal "une autre synchro Drive est en cours" $r.Error "verrou : deux sync
 Assert-Equal "synchro Drive : 2 envoyes, 1 recus, 0 supprimes, 1 conflits" (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 2; Down = 1; Deleted = 0; Conflicts = 1; Left = 0 }) "message de fin"
 Assert-Equal "synchro Drive : 0 envoyes, 0 recus, 0 supprimes, 0 conflits, 4 restants pour la prochaine synchro" (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Left = 4 }) "message avec reste"
 Assert-Equal "synchro Drive : panne" (Get-DriveSyncMsg @{ Ok = $false; Error = "panne" }) "message d'erreur"
-
-$script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs = $syncSaved
+Restore-FakeDrive
 . (Join-Path $bin "claude-drive-creds.ps1")

@@ -44,3 +44,21 @@ function Get-DrivePcName {
   if ($null -ne $c -and -not [string]::IsNullOrEmpty([string]$c["pc"])) { return [string]$c["pc"] }
   return [Environment]::MachineName
 }
+
+function Clear-DriveFolders {
+  param($Config)
+  foreach ($k in @("folderRoot", "folderFiles", "folderCredentials", "folderPresence", "lastSync")) { $Config.Remove($k) }
+}
+
+function Invoke-WithFileLock {
+  param([string]$Path, [int]$WaitMs, [string]$Message, [scriptblock]$Action)
+  $deadline = [DateTime]::UtcNow.AddMilliseconds($WaitMs)
+  while ($true) {
+    try { $fs = [IO.File]::Open($Path, "OpenOrCreate", "ReadWrite", "None"); break }
+    catch {
+      if ([DateTime]::UtcNow -ge $deadline) { throw $Message }
+      Start-Sleep -Milliseconds 200
+    }
+  }
+  try { & $Action } finally { $fs.Dispose() }
+}

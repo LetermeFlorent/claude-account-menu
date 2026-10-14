@@ -1,0 +1,80 @@
+$syncSaved = @($script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs)
+$script:Fake = New-PathMap
+$script:FakeSeq = 0
+$script:FailSend = @()
+$script:StopAfter = 0
+$script:StopCtl = $null
+$script:FakeRoot = "R"
+$script:OnMedia = $null
+
+function Get-FakeMd5 {
+  param([byte[]]$Bytes)
+  $md5 = [Security.Cryptography.MD5]::Create()
+  try { return -join ($md5.ComputeHash($Bytes) | ForEach-Object { $_.ToString("x2") }) } finally { $md5.Dispose() }
+}
+
+function Find-FakeName {
+  param([string]$Id)
+  foreach ($k in $script:Fake.Keys) { if ($script:Fake[$k].Id -eq $Id) { return $k } }
+  return $null
+}
+
+function Get-DriveFolders { return @{ Root = $script:FakeRoot; Files = "F"; Credentials = "C"; Presence = "P" } }
+function Sync-DriveCredentials { param($Folders, $Accs) return 0 }
+function Get-DriveListing {
+  param([string]$FolderId)
+  $m = New-PathMap
+  if ($FolderId -eq "F") { foreach ($k in $script:Fake.Keys) { $m[$k] = $script:Fake[$k] } }
+  return $m
+}
+function Send-DriveFile {
+  param([string]$FolderId, [string]$Name, [string]$Path, $Props, [string]$Id)
+  if ($script:FailSend -contains $Name) { throw "panne reseau" }
+  $bytes = Read-SharedBytes $Path
+  if ($Id) { $Name = Find-FakeName $Id } else { $script:FakeSeq++; $Id = "id" + $script:FakeSeq }
+  $md5 = Get-FakeMd5 $bytes
+  $script:Fake[$Name] = @{ Id = $Id; Name = $Name; Md5 = $md5; M = [long]$Props["m"]; Pc = [string]$Props["pc"]; Exp = 0; Props = $Props; Bytes = $bytes }
+  if ($script:StopAfter -gt 0) {
+    $script:StopAfter--
+    if ($script:StopAfter -eq 0) { $script:StopCtl.Stop = $true }
+  }
+  return @{ Id = $Id; Md5 = $md5 }
+}
+function Save-DriveMedia {
+  param([string]$Id, [string]$Path)
+  [IO.File]::WriteAllBytes($Path, $script:Fake[(Find-FakeName $Id)].Bytes)
+  if ($null -ne $script:OnMedia) { & $script:OnMedia }
+}
+function Remove-DriveFile { param([string]$Id) $script:Fake.Remove((Find-FakeName $Id)) }
+
+function Use-Pc {
+  param([string]$Name)
+  $script:HomeDir = Join-Path $script:Sandbox ("pc-" + $Name)
+  if (-not (Test-Path -LiteralPath $script:HomeDir)) { New-Item -ItemType Directory -Path $script:HomeDir -Force | Out-Null }
+  $script:RegistryPath = Join-Path $script:HomeDir ".claude-accounts.json"
+  $script:DriveStatePath = Join-Path $script:HomeDir ".clm-drive-state.json"
+  $script:DriveConfigPath = Join-Path $script:HomeDir ".clm-drive.json"
+  $script:DriveLockPath = Join-Path $script:HomeDir ".clm-drive.lock"
+  Save-DriveConfig @{ refreshToken = "r"; pc = $Name }
+}
+
+function Set-PcFile {
+  param([string]$Rel, [string]$Text, [long]$M = 0)
+  $p = Join-Path $script:HomeDir $Rel
+  New-Item -ItemType Directory -Path (Split-Path -Parent $p) -Force | Out-Null
+  [IO.File]::WriteAllText($p, $Text)
+  if ($M -gt 0) { [IO.File]::SetLastWriteTimeUtc($p, [DateTimeOffset]::FromUnixTimeSeconds($M).UtcDateTime) }
+}
+
+function Get-PcText {
+  param([string]$Rel)
+  $p = Join-Path $script:HomeDir $Rel
+  if (-not (Test-Path -LiteralPath $p)) { return $null }
+  return [IO.File]::ReadAllText($p)
+}
+
+$script:DriveLockWaitMs = 0
+
+function Restore-FakeDrive {
+  $script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs = $syncSaved
+}

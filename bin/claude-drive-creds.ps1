@@ -1,6 +1,9 @@
 . (Join-Path $PSScriptRoot "claude-drive-transfer.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-folders.ps1")
 $script:AwaySeconds = 12 * 3600
 $script:CredentialMarginMs = 60000
+$script:CredLockPath = Join-Path (Get-HomeDir) ".clm-drive-creds.lock"
+$script:CredLockWaitMs = 15000
 
 function Get-CredentialExpiry {
   param($Cred)
@@ -20,23 +23,61 @@ function Get-CredentialName {
   return $Acc.Dir + ".json"
 }
 
-function Sync-AccountCredential {
+function Read-LocalCredential {
+  param($Acc)
+  if ($script:OsName -eq "MacOS") { return Read-AccountCredential $Acc }
+  $p = Join-Path (Get-AccountPath $Acc) ".credentials.json"
+  if (-not (Test-Path -LiteralPath $p)) { return $null }
+  try { $raw = [IO.File]::ReadAllText($p) } catch { throw "jeton local illisible" }
+  try { return $raw | ConvertFrom-Json } catch { return $null }
+}
+
+function Assert-CredentialOwner {
+  param($Acc, $Remote)
+  if ($null -eq $Remote -or $null -eq $Remote.Props) { return }
+  $who = [string]$Remote.Props["who"]
+  $mine = Get-AccountEmail $Acc
+  if ($who -and $mine -and $who -ne $mine) { throw ("jeton du Drive pour une autre adresse (" + $who + ")") }
+}
+
+function Read-RemoteCredential {
+  param($Remote)
+  try { $cred = (Get-DriveText $Remote.Id) | ConvertFrom-Json } catch { throw "jeton du Drive invalide" }
+  if ($null -eq $cred -or [string]::IsNullOrEmpty([string]$cred.claudeAiOauth.accessToken)) { throw "jeton du Drive invalide" }
+  if ((Get-CredentialExpiry $cred) -ne [long]$Remote.Exp) { throw "jeton du Drive invalide" }
+  return $cred
+}
+
+function Send-LocalCredential {
+  param($Acc, $Folders, $Remote, $Local)
+  $id = ""
+  if ($null -ne $Remote) { $id = $Remote.Id }
+  $props = @{ exp = ("" + (Get-CredentialExpiry $Local)) }
+  $who = Get-AccountEmail $Acc
+  if ($who) { $props["who"] = $who }
+  $json = $Local | ConvertTo-Json -Depth 10 -Compress
+  $null = Send-DriveText $Folders.Credentials (Get-CredentialName $Acc) $json $props $id
+}
+
+function Sync-CredentialUnlocked {
   param($Acc, $Folders, $Listing)
-  $name = Get-CredentialName $Acc
-  $local = Read-AccountCredential $Acc
-  $remote = $Listing[$name]
+  $local = Read-LocalCredential $Acc
+  $remote = $Listing[(Get-CredentialName $Acc)]
+  Assert-CredentialOwner $Acc $remote
   $remoteExp = [long]0
   if ($null -ne $remote) { $remoteExp = [long]$remote.Exp }
   $pick = Select-FresherCredential (Get-CredentialExpiry $local) $remoteExp
-  if ($pick -eq "remote") {
-    Write-AccountCredential $Acc ((Get-DriveText $remote.Id) | ConvertFrom-Json)
-  } elseif ($pick -eq "local") {
-    $id = ""
-    if ($null -ne $remote) { $id = $remote.Id }
-    $json = $local | ConvertTo-Json -Depth 10 -Compress
-    $null = Send-DriveText $Folders.Credentials $name $json @{ exp = ("" + (Get-CredentialExpiry $local)) } $id
-  }
-  return $pick
+  if ($pick -eq "local") { Send-LocalCredential $Acc $Folders $remote $local }
+  if ($pick -ne "remote") { return $pick }
+  $cred = Read-RemoteCredential $remote
+  if ((Get-CredentialExpiry (Read-LocalCredential $Acc)) -ge $remoteExp) { return "same" }
+  Write-AccountCredential $Acc $cred
+  return "remote"
+}
+
+function Sync-AccountCredential {
+  param($Acc, $Folders, $Listing)
+  return Invoke-WithFileLock $script:CredLockPath $script:CredLockWaitMs "jetons en cours de synchro" { Sync-CredentialUnlocked $Acc $Folders $Listing }
 }
 
 function Sync-DriveCredentials {
@@ -95,4 +136,14 @@ function Get-AwayMap {
     }
   }
   return $map
+}
+
+function Test-AccountAway {
+  param($Acc)
+  if (-not (Test-DriveConnected)) { return $false }
+  try {
+    $f = Get-DriveFolders
+    $away = Get-AwayMap (Get-DriveListing $f.Presence) (Get-DrivePcName) ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
+    return $away.ContainsKey([string]$Acc.Dir)
+  } catch { return $false }
 }

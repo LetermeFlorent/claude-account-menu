@@ -32,9 +32,10 @@ function Test-UnderSkipped {
 }
 
 function Get-SyncPlan {
-  param($Local, $Base, $Remote, $Skipped = @(), [switch]$Joining)
+  param($Local, $Base, $Remote, $Skipped = @(), [switch]$Joining, [switch]$CaseFold)
   $paths = New-Object 'System.Collections.Generic.SortedSet[string]' ([StringComparer]::Ordinal)
   foreach ($m in @($Local, $Base, $Remote)) { foreach ($k in $m.Keys) { [void]$paths.Add($k) } }
+  if ($CaseFold) { $Skipped = @($Skipped) + @(Get-CaseCollisions $paths) }
   $first = New-Object 'System.Collections.Generic.List[object]'
   $later = New-Object 'System.Collections.Generic.List[object]'
   foreach ($p in $paths) {
@@ -51,4 +52,15 @@ function Get-SyncPlan {
 function Get-ConflictPath {
   param([string]$Path, [string]$Pc)
   return $Path + ".conflit-" + ($Pc -replace "[^A-Za-z0-9_-]", "_")
+}
+
+function Get-CaseCollisions {
+  param($Paths)
+  $seen = @{}
+  $out = New-Object 'System.Collections.Generic.List[string]'
+  foreach ($p in $Paths) {
+    $k = $p.ToLowerInvariant()
+    if ($seen.ContainsKey($k)) { $out.Add($p); $out.Add($seen[$k]) } else { $seen[$k] = $p }
+  }
+  return ,$out.ToArray()
 }

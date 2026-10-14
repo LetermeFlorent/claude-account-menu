@@ -3,6 +3,7 @@
 . (Join-Path $PSScriptRoot "claude-json.ps1")
 $script:DriveStatePath = Join-Path (Get-HomeDir) ".clm-drive-state.json"
 $script:SyncExtraExcludes = @("*.bak-sync", "*.conflit-*", ".credentials.json", "*.tmp")
+$script:RegistryName = ".claude-accounts.json"
 
 function Get-SyncPatterns {
   param($Accs)
@@ -11,7 +12,7 @@ function Get-SyncPatterns {
 
 function Get-SyncRoots {
   param($Accs)
-  return @(Get-AccountItems $Accs) + @(".claude-accounts.json")
+  return @(Get-AccountItems $Accs) + @($script:RegistryName)
 }
 
 function Test-SyncExcluded {
@@ -66,9 +67,9 @@ function Get-LocalFiles {
     $d = $stack.Pop()
     try { $items = ([IO.DirectoryInfo]$d[1]).GetFileSystemInfos() } catch { $res.Skipped.Add($d[0]); continue }
     foreach ($i in $items) {
-      if ($i.Attributes -band [IO.FileAttributes]::ReparsePoint) { continue }
       $rel = $d[0] + "/" + $i.Name
       if (Test-SyncExcluded $rel $Patterns) { continue }
+      if ($i.Attributes -band [IO.FileAttributes]::ReparsePoint) { $res.Skipped.Add($rel); continue }
       if ($i -is [IO.DirectoryInfo]) { $stack.Push(@($rel, $i.FullName)) }
       else { Add-LocalFile $res $rel $i $Base }
     }
@@ -77,10 +78,11 @@ function Get-LocalFiles {
 }
 
 function Read-DriveState {
-  $st = @{ At = [long]0; Files = (New-PathMap) }
+  $st = @{ At = [long]0; Root = ""; Files = (New-PathMap) }
   try { $data = Read-JsonFile $script:DriveStatePath } catch { $data = $null }
   if ($null -eq $data) { return $st }
   $st.At = [long]$data["at"]
+  $st.Root = [string]$data["root"]
   foreach ($v in @($data["files"])) {
     if ($null -eq $v) { continue }
     $st.Files[[string]$v["p"]] = @{ Md5 = [string]$v["md5"]; M = [long]$v["m"]; Size = [long]$v["size"]; Id = [string]$v["id"] }
@@ -96,7 +98,7 @@ function Save-DriveState {
     $v = $State.Files[$k]
     [ordered]@{ p = $k; md5 = [string]$v.Md5; m = [long]$v.M; size = [long]$v.Size; id = [string]$v.Id }
   }
-  $data = [ordered]@{ at = [long]$State.At; files = @($files) }
+  $data = [ordered]@{ at = [long]$State.At; root = [string]$State.Root; files = @($files) }
   $tmp = $script:DriveStatePath + ".tmp"
   [IO.File]::WriteAllText($tmp, (ConvertTo-JsonText $data) + "`n", (New-Object Text.UTF8Encoding $false))
   if (Test-Path -LiteralPath $script:DriveStatePath) { [IO.File]::Replace($tmp, $script:DriveStatePath, [NullString]::Value) }
