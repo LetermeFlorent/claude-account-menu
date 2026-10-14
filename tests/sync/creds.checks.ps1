@@ -57,7 +57,7 @@ $script:Sent.Clear()
 Write-CredentialFile $credPath (New-TestCred 600 "moi")
 $null = Sync-AccountCredential $acc $fold @{}
 Assert-Equal "a@x.fr" $script:Sent[0].Props["who"] "adresse du compte envoyee avec le jeton"
-Remove-Item -LiteralPath (Join-Path $script:Sandbox ".claude-credtest/.claude.json")
+Remove-Item -LiteralPath (Join-Path $script:Sandbox ".claude-credtest/.claude.json") -Force
 $script:RemoteText = ((New-TestCred 200 "distant") | ConvertTo-Json -Depth 10 -Compress)
 Write-CredentialFile $credPath (New-TestCred 100 "vieux")
 function Get-DriveText { param([string]$Id) Write-CredentialFile $credPath (New-TestCred 900 "claude"); return $script:RemoteText }
