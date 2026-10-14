@@ -72,3 +72,33 @@ function Remove-KeychainCredential {
   }
   foreach ($a in $names) { try { & security delete-generic-password -a $a -s $svc 2>$null | Out-Null } catch {} }
 }
+
+function Write-CredentialFile {
+  param([string]$Path, $Cred)
+  $tmp = $Path + "." + [guid]::NewGuid().ToString("N") + ".tmp"
+  $json = $Cred | ConvertTo-Json -Depth 10 -Compress
+  [IO.File]::WriteAllText($tmp, $json, (New-Object Text.UTF8Encoding($false)))
+  if (Test-Path -LiteralPath $Path) { [IO.File]::Replace($tmp, $Path, [NullString]::Value) }
+  else { [IO.File]::Move($tmp, $Path) }
+}
+
+function Write-KeychainCredential {
+  param([string]$ConfigDir, [string]$Json)
+  $svc = Get-KeychainService $ConfigDir
+  Remove-KeychainCredential $ConfigDir
+  & security add-generic-password -U -a $script:KeychainAccount -s $svc -w $Json 2>$null | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "trousseau : ecriture refusee" }
+}
+
+function Write-AccountCredential {
+  param($Acc, $Cred)
+  $path = Get-AccountPath $Acc
+  if ($script:OsName -eq "MacOS") {
+    $dir = $null
+    if ($Acc.Dir -ne ".claude") { $dir = $path }
+    Write-KeychainCredential $dir ($Cred | ConvertTo-Json -Depth 10 -Compress)
+    return
+  }
+  if (-not (Test-Path -LiteralPath $path)) { New-Item -ItemType Directory -Path $path -Force | Out-Null }
+  Write-CredentialFile (Join-Path $path ".credentials.json") $Cred
+}

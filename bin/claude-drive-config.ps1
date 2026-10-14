@@ -14,8 +14,11 @@ function Save-DriveConfig {
   param($Config)
   $ordered = [ordered]@{}
   foreach ($k in @($Config.Keys | Sort-Object)) { $ordered[$k] = $Config[$k] }
-  [IO.File]::WriteAllText($script:DriveConfigPath, (ConvertTo-JsonText $ordered) + "`n", (New-Object Text.UTF8Encoding $false))
-  if ($script:OsName -ne "Windows") { try { & chmod 600 $script:DriveConfigPath } catch {} }
+  $tmp = $script:DriveConfigPath + "." + [guid]::NewGuid().ToString("N") + ".tmp"
+  [IO.File]::WriteAllText($tmp, (ConvertTo-JsonText $ordered) + "`n", (New-Object Text.UTF8Encoding $false))
+  if ($script:OsName -ne "Windows") { try { & chmod 600 $tmp } catch {} }
+  if (Test-Path -LiteralPath $script:DriveConfigPath) { [IO.File]::Replace($tmp, $script:DriveConfigPath, [NullString]::Value) }
+  else { [IO.File]::Move($tmp, $script:DriveConfigPath) }
 }
 
 function Test-DriveConnected {
