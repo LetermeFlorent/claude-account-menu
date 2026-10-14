@@ -1,3 +1,5 @@
+$script:MenuMaxWidth = 105
+
 function Get-Clamped {
   param([int]$V, [int]$Min, [int]$Max)
   return [math]::Max($Min, [math]::Min($Max, $V))
@@ -6,7 +8,7 @@ function Get-Clamped {
 function Get-MenuLayout {
   param([int]$Cols, [int]$Rows, [int]$Count)
   $n = [math]::Max(1, $Count)
-  $w = Get-Clamped ($Cols - 2) 38 100
+  $w = Get-Clamped ($Cols - 2) 38 $script:MenuMaxWidth
   $foot = (Get-FooterRows $script:MenuFooter $w).Count
   $fixed = 6 + $foot
   $l = @{ W = $w; FooterRows = $foot; Clip = [math]::Max(1, $Cols - 1); Visible = $n; Cells = 0 }

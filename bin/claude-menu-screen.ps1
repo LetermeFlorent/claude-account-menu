@@ -13,11 +13,16 @@ function Get-MenuHeaderRow {
   $room = $W - 4 - $clock[0].Length - (Get-SegsLength $r)
   $tag = @(("  " + $State.Version), $script:Ink.Dim, $false)
   if (-not $State.Version) { $tag[0] = "" }
+  $drive = @()
+  $dt = Get-DriveTag $script:DriveJob
+  if ($dt[0]) { $drive = @(@("  ", $script:Ink.Dim, $false), @($dt[0], $dt[1], $false, "y")) }
   $button = @()
   if (Test-ClmUpdateReady) { $button = @(@("  ", $script:Ink.Dim, $false), @("[maj dispo]", $script:Levels["7d"][1], $true, "u")) }
-  $len = 0
-  foreach ($s in $button) { $len += $s[0].Length }
-  if ($tag[0] -and $room -ge $tag[0].Length + $len) { $r.Add($tag) }
+  $len = Get-SegsLength $button
+  $tlen = 0
+  if ($tag[0] -and $room -ge $tag[0].Length + $len) { $r.Add($tag); $tlen = $tag[0].Length }
+  $dlen = Get-SegsLength $drive
+  if ($dlen -gt 0 -and ($tlen -gt 0 -or -not $tag[0]) -and $room -ge $tlen + $dlen + $len) { foreach ($s in $drive) { $r.Add($s) } }
   if ($len -gt 0 -and $room -ge $len) { foreach ($s in $button) { $r.Add($s) } }
   Add-RightSegs $r ($W - 2) @(, $clock)
   return ,$r

@@ -10,8 +10,20 @@ function Step-MenuFrame {
   if (Update-UiTick $now $st.Busy) { $st.Dirty = $true }
   if (Update-MenuTimers $st $now) { $st.Dirty = $true }
   if (Step-ClmCheck $script:ClmCheck $now) { $st.Dirty = $true }
+  if (Step-DriveJob $script:DriveJob) { Show-DriveNotice $st }
   if ($st.Dirty -or (Test-MenuAnimating $st $now)) { Show-Menu $st $now; return $true }
   return $false
+}
+
+function Show-DriveNotice {
+  param($State)
+  $State.Dirty = $true
+  $job = $script:DriveJob
+  if ($null -eq $job.Notice) { return }
+  $ink = $script:Levels["7d"][0]
+  if ($job.Failed) { $ink = $script:Ink.Alert }
+  $State.Msg = @(("  " + $job.Notice), $ink)
+  $job.Notice = $null
 }
 
 function Stop-MenuLoader {
@@ -30,6 +42,7 @@ function Close-AccountMenu {
   param($Idx)
   Stop-MenuLoader 1000
   Stop-ClmCheck
+  if ($null -eq $Idx) { Stop-DriveJob $script:DriveJob }
   Hide-Screen
   Exit-UiScreen
   if ($null -eq $Idx) { return $null }
@@ -66,6 +79,7 @@ function Invoke-AccountMenu {
   $script:UiQuit = $false
   $script:MenuRestart = $false
   $script:ClmCheck = New-ClmCheck (Get-NowMs) (Test-ClmInstalledHere) (Read-ClmVersion)
+  Open-DriveJob
   Enter-UiScreen
   $script:MenuState = New-MenuState @(Get-Accounts) (Get-NowMs)
   Start-MenuLoader $script:MenuState
@@ -91,6 +105,7 @@ function Invoke-AccountMenu {
     elseif ($act.Name -eq "pick") { return Close-AccountMenu $act.Index }
     elseif ($act.Name -eq "quit") { return Close-AccountMenu $null }
     elseif ($act.Name -eq "refresh") { Request-EntryRead $st $now }
+    elseif ($act.Name -eq "drivesync") { $st.Msg = Request-DriveSync $script:DriveJob; $st.Dirty = $true }
     elseif ($act.Name -eq "selfupdate") {
       if (Test-ClmUpdateReady) { $script:MenuRestart = $true; return Close-AccountMenu $null }
       $st.Msg = @("  aucune mise a jour de clm en attente", $script:Ink.Dim); $st.Dirty = $true
