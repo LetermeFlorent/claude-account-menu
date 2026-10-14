@@ -6,7 +6,6 @@ function New-ThemeWatch {
   param([string]$Os = $script:OsName, $Vars = $null, [double]$Now = (Get-NowMs), [scriptblock]$Probe = $null)
   if ($Probe -eq $null) { $Probe = { param($O, $V) Get-SystemTheme $O $V } }
   $fixed = $null -ne (ConvertTo-ThemeName (Read-EnvVar "STATUSLINE_BG" $Vars) -French)
-  if (-not $fixed) { $fixed = $null -ne (Get-ConfigTheme (Get-HomeDir $Vars)) }
   $last = $null
   if (-not $fixed) { try { $last = & $Probe $Os $Vars } catch {} }
   return @{ Fixed = $fixed; Last = $last; Next = $Now + 2000; Probe = $Probe }

@@ -7,8 +7,8 @@ $script:Levels = @{
   "7d" = @(@(83, 137, 119), @(185, 130, 68), @(185, 85, 85))
 }
 $script:Palettes = @{
-  "light" = @{ Text = @(0, 0, 0); Dim = @(120, 112, 100); Empty = @(190, 180, 165); Alert = @(185, 85, 85); Bg = @(250, 250, 250) }
-  "dark" = @{ Text = @(235, 235, 235); Dim = @(150, 150, 150); Empty = @(75, 75, 80); Alert = @(220, 100, 100); Bg = @(12, 12, 12) }
+  "light" = @{ Text = @(0, 0, 0); Dim = @(120, 112, 100); Empty = @(190, 180, 165); Cell = @(190, 180, 165); Alert = @(185, 85, 85); Bg = @(250, 250, 250) }
+  "dark" = @{ Text = @(232, 234, 237); Dim = @(150, 150, 150); Empty = @(75, 75, 80); Cell = @(226, 229, 234); Alert = @(220, 100, 100); Bg = @(12, 12, 12) }
 }
 . (Join-Path $PSScriptRoot "claude-theme.ps1")
 . (Join-Path $PSScriptRoot "claude-usage-pace.ps1")
@@ -28,15 +28,6 @@ $script:Palettes = @{
 . (Join-Path $PSScriptRoot "claude-ui-progress.ps1")
 . (Join-Path $PSScriptRoot "claude-ui-page.ps1")
 $script:Ink = $script:Palettes[(Get-ThemeName)]
-
-$slConf = [IO.Path]::Combine((Get-HomeDir), ".claude", "statusline.json")
-if (Test-Path -LiteralPath $slConf) {
-  try {
-    $sl = Get-Content -LiteralPath $slConf -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($sl.gradient.'5h' -ne $null) { $script:Grad["5h"] = [double]$sl.gradient.'5h' }
-    if ($sl.gradient.'7d' -ne $null) { $script:Grad["7d"] = [double]$sl.gradient.'7d' }
-  } catch {}
-}
 
 function Fg {
   param($Rgb, [bool]$Bold = $false)
@@ -58,8 +49,9 @@ function Format-Left {
   if ($at -eq $null) { return "-" }
   $span = $at - [DateTimeOffset]::Now
   if ($span.TotalSeconds -le 0) { return "0m" }
-  $h = [math]::Floor($span.TotalHours)
-  if ($h -ge 24) { return "" + [math]::Floor($h / 24) + "j" + ($h % 24) + "h" }
+  $h = [int][math]::Floor($span.TotalHours)
+  if ($h -lt 1) { return "" + $span.Minutes + "m" }
+  if ($h -ge 24) { return "" + [math]::Floor($h / 24) + "d" + ("{0:D2}" -f ($h % 24)) + "h" }
   return "" + $h + "h" + ("{0:D2}" -f $span.Minutes) + "m"
 }
 

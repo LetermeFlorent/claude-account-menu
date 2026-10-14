@@ -33,7 +33,11 @@ function Add-UsageSegs {
   if ($Wide) { $gap = "  " }
   $Segs.Add(@(($Kind + " "), $txt, $true))
   Add-BarSegs $Segs $Kind $v (Get-BarBase $Kind $Tween $Now) $C
-  $Segs.Add(@(($gap + ("" + [int][math]::Round($v) + "%").PadLeft(4) + $gap + $Left.PadRight(6)), $txt, $true))
+  $pct = [int][math]::Round($v)
+  $pctInk = $txt
+  if ($pct -ge 100) { $pctInk = $Segs[$Segs.Count - 1][1] }
+  $Segs.Add(@(($gap + ("" + $pct + "%").PadLeft(4)), $pctInk, $true))
+  $Segs.Add(@(($gap + $Left.PadRight(6)), $txt, $true))
   $word = ""
   $ink = $script:Ink.Dim
   if ($Pace -ne $null) { $word = $Pace.Text; $ink = Get-PaceInk $Pace.Tone }

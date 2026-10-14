@@ -32,10 +32,10 @@ Le menu s'ouvre tout de suite, en plein écran, pendant que la mise à jour de C
 
 - une ligne avec son numéro, son nom, et à droite son abonnement (`Max 20x`, `Max 5x`, `Pro`, etc.), précédé d'un badge rouge "quota 7d atteint" ou "quota 5h atteint" quand un quota est à 100 % ;
 - l'adresse e-mail du compte, avec à droite "lu il y a ..." quand les chiffres viennent du cache depuis plus d'une minute, ou "fenetre passee, lu il y a ..." quand une remise à zéro a eu lieu depuis ;
-- une barre 5 h et une barre 7 j, chacune avec le pourcentage, le temps avant remise à zéro (`2h05m`, `3j4h`, `0m`, ou `-` s'il est inconnu) et le mot qui résume le rythme d'utilisation ;
+- une barre 5 h et une barre 7 j, chacune avec le pourcentage, le temps avant remise à zéro (`45m`, `2h05m`, `3d04h`, `0m`, ou `-` s'il est inconnu) et le mot qui résume le rythme d'utilisation ;
 - à la place des barres, un message d'erreur en rouge quand les quotas ne sont pas lisibles.
 
-Les barres changent de teinte à 30 % puis à 70 %, comme la barre d'état : violet, mauve et rouge framboise pour le 5 h, vert, ocre et rouge pour le 7 j. Leur dégradé reprend `gradient.5h` et `gradient.7d` de `~/.claude/statusline.json` s'ils y sont.
+Les barres changent de teinte à 30 % puis à 70 %, comme la barre d'état : violet, mauve et rouge framboise pour le 5 h, vert, ocre et rouge pour le 7 j. Elles reprennent aussi son dessin : une suite de carrés dont la teinte s'éclaircit vers la droite sur fond sombre et fonce sur fond clair, la dernière case pleine réduite à un petit carré. À 100 %, le pourcentage prend la couleur de la barre.
 
 Le menu suit la taille du terminal, jusqu'à 100 colonnes de large. Quand la hauteur manque pour les blocs complets, chaque compte passe sur trois lignes, nom et e-mail sur la première, les deux barres côte à côte sur la deuxième, et la liste défile, une flèche au bout du filet signalant les comptes cachés. Sous 40 colonnes, ou dans un terminal très bas, il ne reste qu'une ligne par compte, quotas en texte. Le compte sélectionné garde sa pleine intensité, les autres sont un peu atténués, et le repère glisse d'un compte à l'autre.
 
@@ -225,13 +225,11 @@ Un compte sans chiffres affiche l'un de ces messages :
 Le menu choisit sa palette au démarrage, dans cet ordre :
 
 1. la variable `STATUSLINE_BG` (`light`, `clair`, `dark` ou `sombre`) ;
-2. `terminal_background` dans `~/.claude/statusline.json` quand il vaut `light` ou `dark` ;
-3. la réponse de `~/.claude/bin/statusline --theme` si la [barre d'état](https://github.com/LetermeFlorent/claude-statusline) est installée, qui sait lire les réglages du terminal ;
-4. le thème du système : sous Windows le réglage des applications, sous macOS l'apparence (`defaults read -g AppleInterfaceStyle`), sous Linux `gsettings` (`color-scheme`), puis `GTK_THEME`, puis les couleurs de KDE (`kdeglobals`).
+2. le thème du système : sous Windows le réglage des applications, sous macOS l'apparence (`defaults read -g AppleInterfaceStyle`), sous Linux `gsettings` (`color-scheme`), puis `GTK_THEME`, puis les couleurs de KDE (`kdeglobals`).
 
-À défaut, la palette sombre s'applique.
+À défaut, la palette sombre s'applique. `clm` ne lit ni `~/.claude/statusline.json` ni le programme de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline) : ses couleurs sont celles de la barre, recopiées dans le menu.
 
-Menu ouvert, `clm` relit le thème du système toutes les deux secondes et passe d'une palette à l'autre en fondu quand il change, fond compris. `STATUSLINE_BG` ou `terminal_background` fixent la palette et coupent ce suivi.
+Menu ouvert, `clm` relit le thème du système toutes les deux secondes et passe d'une palette à l'autre en fondu quand il change, fond compris. Seule `STATUSLINE_BG` fixe la palette et coupe ce suivi.
 
 ## Barre d'état à jour au lancement
 

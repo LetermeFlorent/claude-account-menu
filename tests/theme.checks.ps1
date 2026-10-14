@@ -9,32 +9,14 @@ Assert-Null (ConvertTo-ThemeName "auto") "auto declenche la detection"
 $vars["STATUSLINE_BG"] = "Light"
 Assert-Equal "light" (Get-ThemeName $script:OsName $vars) "etape 1, variable d'environnement"
 $vars["STATUSLINE_BG"] = "rouge"
-$null = New-SandboxFile "theme-home/.claude/statusline.json" '{"terminal_background":"DARK","gradient":{"5h":0.5}}'
-Assert-Equal "dark" (Get-ThemeName $script:OsName $vars) "etape 2, statusline.json"
-$null = New-SandboxFile "theme-home/.claude/statusline.json" '{"terminal_background":"Light"}'
-Assert-Equal "light" (Get-ThemeName $script:OsName $vars) "etape 2, casse ignoree"
+$system = Get-SystemTheme $script:OsName $vars
+if (-not $system) { $system = "dark" }
+Assert-Equal $system (Get-ThemeName $script:OsName $vars) "valeur inconnue, theme du systeme"
 $vars.Remove("STATUSLINE_BG")
-$null = New-SandboxFile "theme-home/.claude/statusline.json" '{"terminal_background":"auto"}'
-Assert-Null (Get-ConfigTheme $themeHome) "auto dans statusline.json"
-Assert-True (@("light", "dark") -contains (Get-ThemeName $script:OsName $vars)) "auto, detection jusqu'au systeme"
-
-if ($script:OsName -eq "Windows") {
-  $fake = @{ ok = "@echo light`r`n@exit /b 0`r`n"; old = "@echo usage: statusline`r`n@exit /b 2`r`n"; junk = "@echo bleu`r`n@exit /b 0`r`n" }
-  $ext = ".cmd"
-} else {
-  $fake = @{ ok = "#!/bin/sh`necho light`nexit 0`n"; old = "#!/bin/sh`necho usage: statusline`nexit 2`n"; junk = "#!/bin/sh`necho bleu`nexit 0`n" }
-  $ext = ".sh"
-}
-foreach ($k in @("ok", "old", "junk")) {
-  $p = New-SandboxFile ("theme-bin/" + $k + $ext) $fake[$k]
-  if ($script:OsName -ne "Windows") { & chmod +x $p }
-}
-Assert-Equal "light" (Get-BinaryTheme (Join-Path $script:Sandbox ("theme-bin/ok" + $ext))) "etape 3, binaire --theme"
-Assert-Null (Get-BinaryTheme (Join-Path $script:Sandbox ("theme-bin/old" + $ext))) "etape 3, ancien binaire code 2"
-Assert-Null (Get-BinaryTheme (Join-Path $script:Sandbox ("theme-bin/junk" + $ext))) "etape 3, sortie inattendue"
-Assert-Null (Get-BinaryTheme (Join-Path $script:Sandbox "theme-bin/absent")) "etape 3, binaire absent"
-Assert-Equal "/home/u/.claude/bin/statusline" (Get-StatuslineBinary "/home/u" "Linux") "chemin du binaire Unix"
-Assert-Equal "C:\Users\u\.claude\bin\statusline.exe" (Get-StatuslineBinary "C:\Users\u" "Windows") "chemin du binaire Windows"
+$null = New-SandboxFile "theme-home/.claude/statusline.json" '{"terminal_background":"Light"}'
+Assert-Equal $system (Get-ThemeName $script:OsName $vars) "statusline.json ignore"
+Assert-True (-not (New-ThemeWatch $script:OsName $vars 0 { "dark" }).Fixed) "statusline.json ne fige pas le theme"
+Assert-True (-not (Get-Command Get-BinaryTheme -ErrorAction SilentlyContinue)) "binaire de la barre jamais lance"
 
 Assert-Equal "light" (ConvertFrom-AppsUseLightTheme 1) "Windows AppsUseLightTheme 1"
 Assert-Equal "dark" (ConvertFrom-AppsUseLightTheme 0) "Windows AppsUseLightTheme 0"
@@ -72,5 +54,5 @@ Assert-Equal "220 220 220" ($script:Ink.Bg -join " ") "fondu du theme a mi-cours
 Assert-True (Update-InkFade 300) "fondu du theme, derniere image"
 Assert-Equal "250 250 250" ($script:Ink.Bg -join " ") "fondu du theme termine"
 Assert-True (-not (Update-InkFade 400)) "fondu du theme, plus rien a dessiner"
-Assert-Equal "235 235 235" ($script:Palettes["dark"].Text -join " ") "palette d'origine intacte"
+Assert-Equal "232 234 237" ($script:Palettes["dark"].Text -join " ") "palette d'origine intacte"
 $script:Ink = $savedInk

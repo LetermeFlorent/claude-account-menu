@@ -5,22 +5,50 @@ function Get-SegsText {
   return $t
 }
 
-function Get-GlyphCount {
-  param([string]$Text, [string]$Glyph)
-  return ($Text.Length - $Text.Replace($Glyph, "").Length)
+function Get-InkCount {
+  param($Segs, $Rgb)
+  $n = 0
+  foreach ($s in $Segs) { if (($s[1] -join " ") -eq ($Rgb -join " ")) { $n += $s[0].Length } }
+  return $n
 }
 
 $segs = New-Row
 Add-BarSegs $segs "5h" 50 @(120, 110, 200) 20
 $t = Get-SegsText $segs
-Assert-Equal "10 10" ("" + (Get-GlyphCount $t $script:BarFull) + " " + (Get-GlyphCount $t $script:BarEmpty)) "barre a moitie pleine"
-Assert-Equal "120 110 200" ($segs[0][1] -join " ") "premiere bande a la couleur du niveau"
+Assert-Equal (($script:BarFull * 9) + $script:BarHalf + ($script:BarEmpty * 10)) $t "barre a moitie pleine, derniere case reduite"
+Assert-Equal 10 (Get-InkCount $segs $script:Ink.Cell) "cases vides a la couleur des cases"
+Assert-Equal "120 110 200" ($segs[0][1] -join " ") "premiere case a la couleur du niveau"
+Assert-Equal "143 134 209" ($segs[9][1] -join " ") "derniere case eclaircie sur fond sombre"
+$savedInk = $script:Ink
+$script:Ink = $script:Palettes["light"]
+$segs = New-Row
+Add-BarSegs $segs "5h" 50 @(120, 110, 200) 20
+Assert-Equal "97 89 162" ($segs[9][1] -join " ") "derniere case foncee sur fond clair"
+$script:Ink = $savedInk
 $segs = New-Row
 Add-BarSegs $segs "7d" 0 @(1, 1, 1) 20
 Assert-Equal ($script:BarEmpty * 20) (Get-SegsText $segs) "barre vide"
+Assert-Equal 20 (Get-InkCount $segs $script:Ink.Cell) "barre vide, toutes les cases vides"
 $segs = New-Row
 Add-BarSegs $segs "7d" 150 @(1, 1, 1) 20
-Assert-Equal ($script:BarFull * 20) (Get-SegsText $segs) "barre bornee"
+Assert-Equal (($script:BarFull * 19) + $script:BarHalf) (Get-SegsText $segs) "barre bornee"
+Assert-Equal 4 (Get-BarCount 51 8) "remplissage au demi-carre pres"
+Assert-Equal 1 (Get-BarCount 0.5 8) "valeur non nulle, une case au moins"
+Assert-Equal 0 (Get-BarCount 0 8) "valeur nulle, aucune case"
+$segs = New-Row
+Add-UsageSegs $segs "7d" (New-Tween 100 100 0 0) "3d07h" $null 8 0 $true
+$pct = @($segs | Where-Object { $_[0] -match "100%" })[0]
+$lastCell = @($segs | Where-Object { $_[0] -eq $script:BarHalf })[0]
+Assert-Equal ($lastCell[1] -join " ") ($pct[1] -join " ") "chiffre a la couleur de la barre a 100 %"
+$segs = New-Row
+Add-UsageSegs $segs "7d" (New-Tween 40 40 0 0) "3d07h" $null 8 0 $true
+$pct = @($segs | Where-Object { $_[0] -match "40%" })[0]
+Assert-Equal ($script:Ink.Text -join " ") ($pct[1] -join " ") "chiffre a la couleur du texte sous 100 %"
+Assert-Equal "45m" (Format-Left ([DateTimeOffset]::Now.AddMinutes(45).AddSeconds(30))) "moins d'une heure en minutes"
+Assert-Equal "3h29m" (Format-Left ([DateTimeOffset]::Now.AddHours(3).AddMinutes(29).AddSeconds(30))) "heures et minutes"
+Assert-Equal "3d07h" (Format-Left ([DateTimeOffset]::Now.AddDays(3).AddHours(7).AddMinutes(10))) "jours et heures"
+Assert-Equal "0m" (Format-Left ([DateTimeOffset]::Now.AddSeconds(-5))) "remise a zero passee"
+Assert-Equal "-" (Format-Left $null) "remise a zero inconnue"
 $segs = New-Row
 Add-ShimmerSegs $segs 20 600
 Assert-Equal 20 (Get-SegsText $segs).Length "scintillement sur toute la barre"
@@ -29,7 +57,8 @@ Add-ProgressSegs $segs -1 20 400
 Assert-Equal 20 (Get-SegsText $segs).Length "progression sans pourcentage sur toute la barre"
 $segs = New-Row
 Add-ProgressSegs $segs 25 20 0
-Assert-Equal 5 (Get-GlyphCount (Get-SegsText $segs) $script:BarFull) "progression a un quart"
+Assert-Equal 5 (Get-InkCount $segs $script:Levels["7d"][0]) "progression a un quart"
+Assert-Equal (($script:BarFull * 4) + $script:BarHalf + ($script:BarEmpty * 15)) (Get-SegsText $segs) "progression terminee par une case reduite"
 $tw = New-Tween 0 80 400 0
 Assert-Equal "120 110 200" ((Get-BarBase "5h" $tw 0) -join " ") "couleur au depart de l'animation"
 Assert-Equal "200 60 95" ((Get-BarBase "5h" $tw 400) -join " ") "couleur a l'arrivee"

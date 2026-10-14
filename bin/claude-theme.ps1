@@ -8,30 +8,6 @@ function ConvertTo-ThemeName {
   return $null
 }
 
-function Get-ConfigTheme {
-  param([string]$HomeDir)
-  $f = [IO.Path]::Combine($HomeDir, ".claude", "statusline.json")
-  if (-not (Test-Path -LiteralPath $f)) { return $null }
-  try { return ConvertTo-ThemeName (Get-Content -LiteralPath $f -Raw -Encoding UTF8 | ConvertFrom-Json).terminal_background } catch { return $null }
-}
-
-function Get-StatuslineBinary {
-  param([string]$HomeDir, [string]$Os = $script:OsName)
-  $name = "statusline"
-  if ($Os -eq "Windows") { $name = "statusline.exe" }
-  return Join-OsPath $Os @($HomeDir, ".claude", "bin", $name)
-}
-
-function Get-BinaryTheme {
-  param([string]$Path)
-  if (-not (Test-Path -LiteralPath $Path)) { return $null }
-  $r = Invoke-Captured $Path "--theme" 3000
-  if ($r -eq $null -or $r.Code -ne 0) { return $null }
-  $v = ("" + $r.Out).Trim()
-  if ($v -match "^(light|dark)$") { return $v.ToLower() }
-  return $null
-}
-
 function ConvertFrom-AppsUseLightTheme {
   param($Value)
   if ($Value -eq $null) { return $null }
@@ -91,11 +67,6 @@ function Get-SystemTheme {
 function Get-ThemeName {
   param([string]$Os = $script:OsName, $Vars = $null)
   $t = ConvertTo-ThemeName (Read-EnvVar "STATUSLINE_BG" $Vars) -French
-  if ($t) { return $t }
-  $h = Get-HomeDir $Vars
-  $t = Get-ConfigTheme $h
-  if ($t) { return $t }
-  $t = Get-BinaryTheme (Get-StatuslineBinary $h $Os)
   if ($t) { return $t }
   $t = Get-SystemTheme $Os $Vars
   if ($t) { return $t }
