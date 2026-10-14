@@ -65,7 +65,7 @@ Assert-Equal "200 60 95" ((Get-BarBase "5h" $tw 400) -join " ") "couleur a l'arr
 
 function New-TestCard {
   param([string]$Label, $P5, $P7, $Err = $null, [bool]$Pending = $false)
-  $u = [PSCustomObject]@{ Label = $Label; Email = ($Label + "@exemple.fr"); Plan = "Max 5x"; Error = $Err; Age = $null; Expired = $false
+  $u = [PSCustomObject]@{ Label = $Label; Email = ($Label + "@exemple.fr"); Plan = "Max 5x"; Error = $Err; Age = $null; Expired = $false; LimitedUntil = $null
     Pct5 = $P5; Reset5 = [DateTimeOffset]::Now.AddHours(2); Pct7 = $P7; Reset7 = [DateTimeOffset]::Now.AddDays(3) }
   $e = @{ U = $u; Pending = $Pending; Seen = (-not $Pending); In = $null; View = $null; T5 = (New-Tween ([double]$P5) ([double]$P5) 0 0); T7 = (New-Tween ([double]$P7) ([double]$P7) 0 0) }
   Update-EntryView $e
@@ -126,18 +126,27 @@ Set-UsageResult $st @(1, $res, $null) 3000
 Assert-True (Test-TweenRunning $st.Entries[1].T5 3100) "valeur changee, barre animee"
 Assert-True (-not (Test-TweenRunning $st.Entries[1].T7 3100)) "autre barre inchangee, immobile"
 
-$st = @{ Entries = @((New-TestCard "a" 10 10), (New-TestCard "b" 20 20)); Busy = $false; Loader = $null; DoneAt = 1000 }
-Assert-Equal "maj dans 30s" (Get-UpdateSeg $st 1000)[0] "compteur au depart"
-Assert-Equal "maj dans 8s" (Get-UpdateSeg $st 23500)[0] "compteur arrondi a la seconde du dessus"
-Assert-Equal "maj dans 0s" (Get-UpdateSeg $st 40000)[0] "compteur jamais negatif"
+$st = @{ Entries = @((New-TestCard "a" 10 10), (New-TestCard "b" 20 20)); Busy = $false; Loader = $null; NextAt = 31000 }
+Assert-Equal "maj dans 30s" (Get-UpdateSeg $st 1000 5000)[0] "compteur au depart"
+Assert-Equal "maj dans 8s" (Get-UpdateSeg $st 23500 5000)[0] "compteur arrondi a la seconde du dessus"
+Assert-Equal "maj dans 0s" (Get-UpdateSeg $st 40000 5000)[0] "compteur jamais negatif"
+$st.NextAt = 186000
+Assert-Equal "maj dans 3m05s" (Get-UpdateSeg $st 1000 5000)[0] "compteur en minutes"
+$st.NextAt = 31000
 Assert-True (Update-MenuHead $st 1000) "en-tete redessine au premier passage"
 Assert-True (-not (Update-MenuHead $st 1200)) "meme seconde, rien a redessiner"
 Assert-True (Update-MenuHead $st 2100) "seconde suivante, en-tete redessine"
-$st.Entries[1].U.Age = 300
-Assert-Equal "maj en echec (b), reessai dans 30s" (Get-UpdateSeg $st 1000)[0] "echec signale avec le compte"
-Assert-Equal ($script:Ink.Alert -join " ") ((Get-UpdateSeg $st 1000)[1] -join " ") "echec en rouge"
+$st.Entries[1].U.LimitedUntil = 5250
+Assert-Equal "API limitee (b), reessai dans 4m10s" (Get-UpdateSeg $st 1000 5000)[0] "pause de l'API signalee avec le compte"
+Assert-Equal ($script:Levels["7d"][1] -join " ") ((Get-UpdateSeg $st 1000 5000)[1] -join " ") "pause en orange"
+Assert-Equal "API limitee (b), reessai dans 30s" (Get-UpdateSeg $st 1000 5240)[0] "pause finie avant la relecture"
+$st.Entries[0].U.LimitedUntil = 5100
+Assert-Equal "API limitee (2 comptes), reessai dans 1m40s" (Get-UpdateSeg $st 1000 5000)[0] "plusieurs pauses, la plus proche"
 $st.Entries[0].U.Error = "panne"
-Assert-Equal "maj en echec (2 comptes), reessai dans 30s" (Get-UpdateSeg $st 1000)[0] "plusieurs echecs comptes"
+Assert-Equal "maj en echec (a), reessai dans 30s" (Get-UpdateSeg $st 1000 5000)[0] "echec signale avant la pause"
+Assert-Equal ($script:Ink.Alert -join " ") ((Get-UpdateSeg $st 1000 5000)[1] -join " ") "echec en rouge"
+$st.Entries[1].U.Error = "panne"
+Assert-Equal "maj en echec (2 comptes), reessai dans 30s" (Get-UpdateSeg $st 1000 5000)[0] "plusieurs echecs comptes"
 $st.Loader = @{}
 Assert-Equal "maj en cours" (Get-UpdateSeg $st 1000)[0] "lecture en cours"
 $st.Busy = $true

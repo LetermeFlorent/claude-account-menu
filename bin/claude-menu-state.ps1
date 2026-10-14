@@ -1,8 +1,9 @@
-$script:RereadMs = 30000
+$script:RereadMs = 180000
+$script:RereadJitterMs = 25000
 
 function New-MenuEntry {
   param($Acc, $Cache, [double]$Now)
-  $u = [PSCustomObject]@{ Label = $Acc.Label; Email = (Get-AccountEmail $Acc); Acc = $Acc; Plan = ""; Pct5 = $null; Reset5 = $null; Pct7 = $null; Reset7 = $null; Error = $null; Age = $null; Expired = $false }
+  $u = [PSCustomObject]@{ Label = $Acc.Label; Email = (Get-AccountEmail $Acc); Acc = $Acc; Plan = ""; Pct5 = $null; Reset5 = $null; Pct7 = $null; Reset7 = $null; Error = $null; Age = $null; Expired = $false; LimitedUntil = $null }
   $e = @{ Acc = $Acc; U = $u; Pending = $true; Seen = $false; View = $null; In = $null }
   $c = $Cache[$Acc.Label]
   if ($null -ne $c -and (Get-CacheAge $c) -lt $script:UsageCacheTtl) {
@@ -32,7 +33,7 @@ function New-MenuState {
   $Sel = [math]::Max(0, [math]::Min($Sel, $entries.Count - 1))
   return @{
     Entries = $entries; Sel = $Sel; SelTween = (New-Tween $Sel $Sel 0 $Now); Moved = $moved; Top = 0
-    Msg = @("", $script:Ink.Dim); Busy = $false; Dirty = $true; Loader = $null; DoneAt = $null; Head = $null
+    Msg = @("", $script:Ink.Dim); Busy = $false; Dirty = $true; Loader = $null; NextAt = $null; Head = $null
   }
 }
 
@@ -71,16 +72,16 @@ function Start-MenuLoader {
   param($State)
   $accs = New-Object 'System.Collections.Generic.List[object]'
   foreach ($e in $State.Entries) { $accs.Add($e.Acc) }
-  $State.Loader = Start-UsageLoader $accs.ToArray() -Reader "Get-MenuUsage"
+  $State.Loader = Start-UsageLoader $accs.ToArray()
 }
 
 function Step-MenuLoader {
   param($State, [double]$Now)
   $ld = $State.Loader
   if ($null -eq $ld) {
-    if ($null -ne $State.DoneAt -and -not $State.Busy -and $Now - $State.DoneAt -ge $script:RereadMs) {
+    if ($null -ne $State.NextAt -and -not $State.Busy -and $Now -ge $State.NextAt) {
       foreach ($e in $State.Entries) { $e.Pending = $true }
-      $State.DoneAt = $null
+      $State.NextAt = $null
       Start-MenuLoader $State
     }
     return
@@ -89,7 +90,7 @@ function Step-MenuLoader {
   if (-not $ld.Ctl.Done -or -not $ld.Queue.IsEmpty) { return }
   Close-UsageLoader $ld
   $State.Loader = $null
-  $State.DoneAt = $Now
+  $State.NextAt = $Now + $script:RereadMs + (Get-Random -Maximum $script:RereadJitterMs)
   foreach ($e in $State.Entries) {
     if ($e.Pending -and $null -ne $ld.Ctl.Error) { $e.Pending = $false; $e.U.Error = "lecture impossible : " + $ld.Ctl.Error; Update-EntryView $e; $State.Dirty = $true }
   }

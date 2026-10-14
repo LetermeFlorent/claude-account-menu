@@ -28,7 +28,7 @@ Les deux installeurs ajoutent aussi un hook `SessionStart` aux comptes existants
 
 ## Le menu
 
-Le menu s'ouvre tout de suite, en plein écran, pendant que la mise à jour de Claude Code (voir plus bas) et la lecture des quotas tournent en arrière-plan. Un compte dont les quotas sont dans le cache depuis moins de deux minutes s'affiche aussitôt. Les autres montrent une barre qui scintille et "lecture...", puis leurs barres se remplissent à l'arrivée des chiffres. L'en-tête "Comptes Claude Code" porte l'heure, tenue à jour, et juste avant elle l'état de la relecture des quotas : "maj dans 12s" compte les secondes jusqu'à la prochaine, "maj en cours" s'affiche pendant la lecture, "maj en pause" pendant une mise à jour de Claude Code. Quand un compte n'a pas pu être relu, le compteur passe en rouge, "maj en echec (compte2), reessai dans 30s", ou avec le nombre de comptes s'ils sont plusieurs. Chaque compte occupe un bloc :
+Le menu s'ouvre tout de suite, en plein écran, pendant que la mise à jour de Claude Code (voir plus bas) et la lecture des quotas tournent en arrière-plan. Un compte dont les quotas sont dans le cache depuis moins de trois minutes s'affiche aussitôt. Les autres montrent une barre qui scintille et "lecture...", puis leurs barres se remplissent à l'arrivée des chiffres. L'en-tête "Comptes Claude Code" porte l'heure, tenue à jour, et juste avant elle l'état de la relecture des quotas : "maj dans 12s" compte les secondes jusqu'à la prochaine, "maj en cours" s'affiche pendant la lecture, "maj en pause" pendant une mise à jour de Claude Code. Quand l'API de suivi a refusé de relire un compte, le compteur passe en orange, "API limitee (compte2), reessai dans 4m10s", et les barres gardent les dernières valeurs connues. Quand un compte n'a pas pu être relu pour une autre raison, il passe en rouge, "maj en echec (compte2), reessai dans 2m55s". S'ils sont plusieurs, le nombre de comptes remplace le nom. Chaque compte occupe un bloc :
 
 - une ligne avec son numéro, son nom, et à droite son abonnement (`Max 20x`, `Max 5x`, `Pro`, etc.), précédé d'un badge rouge "quota 7d atteint" ou "quota 5h atteint" quand un quota est à 100 % ;
 - l'adresse e-mail du compte, avec à droite "lu il y a ..." quand les chiffres viennent du cache depuis plus d'une minute, ou "fenetre passee, lu il y a ..." quand une remise à zéro a eu lieu depuis ;
@@ -39,7 +39,7 @@ Les barres changent de teinte à 30 % puis à 70 %, comme la barre d'état : vio
 
 Le menu suit la taille du terminal, jusqu'à 100 colonnes de large. Quand la hauteur manque pour les blocs complets, chaque compte passe sur trois lignes, nom et e-mail sur la première, les deux barres côte à côte sur la deuxième, et la liste défile, une flèche au bout du filet signalant les comptes cachés. Sous 40 colonnes, ou dans un terminal très bas, il ne reste qu'une ligne par compte, quotas en texte. Le compte sélectionné garde sa pleine intensité, les autres sont un peu atténués, et le repère glisse d'un compte à l'autre.
 
-Le curseur part sur le premier compte lisible dont aucun quota n'est à 100 %, à défaut sur le premier, et suit cette règle tant que les quotas arrivent, sauf si on l'a déjà déplacé. Les quotas sont relus 30 secondes après la fin de la lecture précédente tant que le menu reste ouvert, sans passer par le cache de deux minutes. Seules les barres dont la valeur a changé s'animent, et seules les lignes modifiées sont réécrites à l'écran. Ils sont aussi relus après chaque ajout, retrait, sauvegarde ou restauration.
+Le curseur part sur le premier compte lisible dont aucun quota n'est à 100 %, à défaut sur le premier, et suit cette règle tant que les quotas arrivent, sauf si on l'a déjà déplacé. Tant que le menu reste ouvert, les quotas sont relus 3 minutes après la fin de la lecture précédente, plus un délai pris au hasard jusqu'à 25 secondes, pour que plusieurs fenêtres ne tombent pas sur l'API au même instant. Un compte en pause après un refus de l'API n'est pas interrogé (voir plus bas). Seules les barres dont la valeur a changé s'animent, et seules les lignes modifiées sont réécrites à l'écran. Ils sont aussi relus après chaque ajout, retrait, sauvegarde ou restauration.
 
 Les transitions durent de 120 à 400 millisecondes. Elles suivent le réglage du système (animations de Windows, "réduire les animations" de macOS, `enable-animations` de GNOME) et la variable `CLM_ANIM` passe outre : `0` les coupe, `1` les force. Sans animation, le menu s'affiche directement dans son état final.
 
@@ -216,14 +216,14 @@ Les comptes sont rangés dans `~/.claude-accounts.json` (`%USERPROFILE%\.claude-
 
 Les pourcentages viennent de l'API `api.anthropic.com/api/oauth/usage`, avec le jeton du compte. Il est lu dans `.credentials.json` du dossier du compte, et sous macOS d'abord dans le trousseau, où Claude Code le range. Sous Windows et Linux, un jeton expiré est renouvelé par `clm` lui-même avec le refresh token du compte, comme Claude Code le fait au démarrage, puis `.credentials.json` est réécrit. Le serveur peut remplacer le refresh token à cette occasion : une session Claude Code restée ouverte sur ce compte avec l'ancien peut alors redemander un `/login`. Sous macOS, `clm` ne renouvelle rien et n'écrit rien dans le trousseau. Les comptes sont interrogés l'un après l'autre, avec 10 secondes au plus par appel.
 
-Les résultats sont gardés deux minutes dans un cache, utilisé aussi par `--usage` : `%LOCALAPPDATA%\claude-menu\usage.json` sous Windows, `~/Library/Caches/claude-menu/usage.json` sous macOS et `${XDG_CACHE_HOME:-~/.cache}/claude-menu/usage.json` sous Linux. Quand l'API limite les appels, le menu affiche les dernières valeurs du cache, avec leur âge. Une fenêtre dont la remise à zéro a eu lieu depuis cette lecture repart à 0 %, sans heure, avec la mention "fenetre passee".
+Les résultats sont gardés trois minutes dans un cache, partagé par le menu, `--usage` et le hook de la barre d'état : `%LOCALAPPDATA%\claude-menu\usage.json` sous Windows, `~/Library/Caches/claude-menu/usage.json` sous macOS et `${XDG_CACHE_HOME:-~/.cache}/claude-menu/usage.json` sous Linux. L'API limite les appels par jeton, et une relecture trop rapprochée la fait répondre 429 pendant de longues minutes. Après un refus, le compte n'est plus interrogé pendant 1 minute, puis 2, 4, 8 et enfin 10 minutes au plus si les refus se suivent, avec quelques secondes prises au hasard en plus, ou pendant le délai `Retry-After` envoyé par l'API s'il est plus long (une heure au plus). Cette pause est notée dans le cache : une autre fenêtre `clm` ou le hook la respectent aussi. La première lecture réussie la lève. Pendant la pause, le menu affiche les dernières valeurs du cache, avec leur âge. Une fenêtre dont la remise à zéro a eu lieu depuis cette lecture repart à 0 %, sans heure, avec la mention "fenetre passee".
 
 Un compte sans chiffres affiche l'un de ces messages :
 
 - "non connecte" : pas de jeton pour ce compte ;
 - "compte deconnecte, lancer le compte une fois" : le jeton a expiré et n'a pas pu être renouvelé. Le cache n'est pas montré dans ce cas, ses chiffres seraient périmés ;
 - "jeton refuse, lancer le compte une fois" : l'API refuse le jeton ;
-- "quota inconnu, l'API de suivi refuse les appels (reessai dans ...)" : l'API limite les appels et le cache est vide ;
+- "quota inconnu, l'API de suivi refuse les appels (reessai dans ...)" : l'API limite les appels et le cache n'a aucune valeur pour ce compte ;
 - "API de suivi injoignable" : pas de réseau, ou une autre erreur.
 
 ## Couleurs claires ou sombres
@@ -256,7 +256,7 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | `~/.claude-accounts.json.bad` | copie d'une liste illisible, mise de côté avant d'être recréée |
 | `~/.claude-compteN/` | dossiers des comptes ajoutés |
 | `settings.json` de chaque compte, et sa copie `settings.json.bak-seed` | hook `SessionStart`, ajouté par l'installeur |
-| cache `claude-menu/usage.json` | quotas des deux dernières minutes |
+| cache `claude-menu/usage.json` | derniers quotas lus et pauses après un refus de l'API |
 | `claude-menu/clm-conin-*.dll`, sous Windows | lecteur de la souris, compilé une fois |
 | `.credentials.json` de chaque compte, hors macOS | jeton renouvelé quand il a expiré |
 | fichier d'état `claude-statusline/state` | quotas pour la barre d'état |

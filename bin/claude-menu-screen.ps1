@@ -6,16 +6,32 @@ function Get-MsgRow {
   return ,$r
 }
 
+function Format-Countdown {
+  param([int]$Seconds)
+  if ($Seconds -lt 60) { return "" + $Seconds + "s" }
+  return "" + [math]::Floor($Seconds / 60) + "m" + ("{0:D2}" -f ($Seconds % 60)) + "s"
+}
+
+function Get-AccountsText {
+  param($Labels)
+  if ($Labels.Count -gt 1) { return "" + $Labels.Count + " comptes" }
+  return $Labels[0]
+}
+
 function Get-UpdateSeg {
-  param($State, [double]$Now)
+  param($State, [double]$Now, [long]$UnixNow = 0)
   if ($State.Busy) { return ,@("maj en pause", $script:Ink.Dim, $false) }
-  if ($null -ne $State.Loader -or $null -eq $State.DoneAt) { return ,@("maj en cours", $script:Ink.Dim, $false) }
-  $s = [int][math]::Max(0, [math]::Ceiling(($script:RereadMs - ($Now - $State.DoneAt)) / 1000))
-  $bad = @(foreach ($e in $State.Entries) { if ($null -ne $e.U.Error -or ($null -ne $e.U.Age -and $e.U.Age -ge $script:MenuCacheTtl)) { $e.U.Label } })
-  if ($bad.Count -eq 0) { return ,@(("maj dans " + $s + "s"), $script:Ink.Dim, $false) }
-  $who = $bad[0]
-  if ($bad.Count -gt 1) { $who = "" + $bad.Count + " comptes" }
-  return ,@(("maj en echec (" + $who + "), reessai dans " + $s + "s"), $script:Ink.Alert, $false)
+  if ($null -ne $State.Loader -or $null -eq $State.NextAt) { return ,@("maj en cours", $script:Ink.Dim, $false) }
+  if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
+  $s = [int][math]::Max(0, [math]::Ceiling(($State.NextAt - $Now) / 1000))
+  $bad = @(foreach ($e in $State.Entries) { if ($null -ne $e.U.Error) { $e.U.Label } })
+  if ($bad.Count -gt 0) { return ,@(("maj en echec (" + (Get-AccountsText $bad) + "), reessai dans " + (Format-Countdown $s)), $script:Ink.Alert, $false) }
+  $limited = @(foreach ($e in $State.Entries) { if ([long]$e.U.LimitedUntil -gt $UnixNow) { $e.U } })
+  if ($limited.Count -eq 0) { return ,@(("maj dans " + (Format-Countdown $s)), $script:Ink.Dim, $false) }
+  $first = ($limited | Measure-Object -Property LimitedUntil -Minimum).Minimum
+  $wait = [int][math]::Max($s, $first - $UnixNow)
+  $who = Get-AccountsText @($limited | ForEach-Object { $_.Label })
+  return ,@(("API limitee (" + $who + "), reessai dans " + (Format-Countdown $wait)), $script:Levels["7d"][1], $false)
 }
 
 function Get-MenuHeaderRow {

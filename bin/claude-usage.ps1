@@ -15,8 +15,8 @@ function Get-RetryAfter {
   param($Response)
   try {
     if ($null -ne $Response.Headers.RetryAfter) { return [int]$Response.Headers.RetryAfter.Delta.TotalSeconds }
-    return $Response.Headers["Retry-After"]
-  } catch { return $null }
+    return [int]$Response.Headers["Retry-After"]
+  } catch { return 0 }
 }
 
 function Get-UsageToken {
@@ -34,20 +34,36 @@ function Get-UsageErrorText {
   $code = 0
   if ($null -ne $Response) { $code = [int]$Response.StatusCode }
   if ($code -eq 401) { return "jeton refuse, lancer le compte une fois" }
-  if ($code -ne 429) { return "API de suivi injoignable" }
-  $text = "quota inconnu, l'API de suivi refuse les appels"
-  $wait = Get-RetryAfter $Response
-  if ($wait) { $text = $text + " (reessai dans " + (Format-Age ([int]$wait)) + ")" }
-  return $text
+  return "API de suivi injoignable"
+}
+
+function Set-UsageLimited {
+  param($Out, $Entry, [int]$Seconds)
+  if ($null -ne $Entry -and [long]$Entry.At -gt 0) {
+    Copy-CacheEntry $Entry $Out
+    $Out.LimitedUntil = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() + $Seconds
+    return
+  }
+  $Out.Error = "quota inconnu, l'API de suivi refuse les appels (reessai dans " + (Format-Age $Seconds) + ")"
+}
+
+function Register-UsageRefusal {
+  param($Out, $Entry, $Response)
+  $fails = 1 + [int]$Entry.Fails
+  $wait = Get-CooldownSeconds $fails (Get-RetryAfter $Response) (Get-Random -Maximum ($fails * 5 + 1))
+  Save-UsageCooldown $Out.Label $wait $fails
+  Set-UsageLimited $Out $Entry $wait
 }
 
 function Get-AccountUsage {
   param($Acc, [int]$MaxAge = $script:UsageCacheTtl)
-  $out = [PSCustomObject]@{Label=$Acc.Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null; Expired=$false}
+  $out = [PSCustomObject]@{Label=$Acc.Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null; Expired=$false; LimitedUntil=$null}
   $cred = Read-AccountCredential $Acc
   if ($null -ne $cred) { $out.Plan = Get-PlanName $cred.claudeAiOauth }
   $cached = (Read-UsageCache)[$Acc.Label]
   if ($null -ne $cached -and (Get-CacheAge $cached) -lt $MaxAge) { Copy-CacheEntry $cached $out; return $out }
+  $left = Get-CooldownLeft $cached
+  if ($left -gt 0) { Set-UsageLimited $out $cached $left; return $out }
   try {
     $tok = Get-UsageToken $Acc $cred
     if ($tok.Error) { $out.Error = $tok.Error; return $out }
@@ -59,15 +75,10 @@ function Get-AccountUsage {
     Save-UsageEntry $Acc.Label $out
   } catch {
     $resp = $_.Exception.Response
-    if ($null -ne $resp -and [int]$resp.StatusCode -eq 429 -and $null -ne $cached) { Copy-CacheEntry $cached $out; return $out }
+    if ($null -ne $resp -and [int]$resp.StatusCode -eq 429) { Register-UsageRefusal $out $cached $resp; return $out }
     $out.Error = Get-UsageErrorText $resp
   }
   return $out
-}
-
-function Get-MenuUsage {
-  param($Acc)
-  return Get-AccountUsage $Acc $script:MenuCacheTtl
 }
 
 function Format-Reset {
