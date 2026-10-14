@@ -43,3 +43,9 @@ function Write-JsonFile {
   if ((Test-Path -LiteralPath $Path) -and -not (Test-Path -LiteralPath $bak)) { [IO.File]::Copy($Path, $bak) }
   [IO.File]::WriteAllText($Path, (ConvertTo-JsonText $Data) + "`n", (New-Object Text.UTF8Encoding $false))
 }
+
+function New-PathMap {
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseLiteralInitializerForHashtable", "", Justification = "case-sensitive paths")]
+  param()
+  return [Collections.Hashtable]::new([StringComparer]::Ordinal)
+}

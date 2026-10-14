@@ -42,7 +42,9 @@ function Sync-AccountCredential {
 function Sync-DriveCredentials {
   param($Folders, $Accs)
   $listing = Get-DriveListing $Folders.Credentials
-  foreach ($a in $Accs) { $null = Sync-AccountCredential $a $Folders $listing }
+  $failed = 0
+  foreach ($a in $Accs) { try { $null = Sync-AccountCredential $a $Folders $listing } catch { $failed++ } }
+  return $failed
 }
 
 function Sync-OneCredential {

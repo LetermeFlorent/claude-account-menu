@@ -13,6 +13,10 @@ Assert-Equal "adopt" (Get-PathAction (New-L "b") $null (New-R "b")) "meme conten
 Assert-Equal "keep-local" (Get-PathAction (New-L "b" 50) (New-B "a") (New-R "c" 40)) "conflit gagne par le local plus recent"
 Assert-Equal "keep-remote" (Get-PathAction (New-L "b" 30) (New-B "a") (New-R "c" 40)) "conflit gagne par le distant plus recent"
 Assert-Equal "keep-local" (Get-PathAction (New-L "b" 50) $null (New-R "c" 40)) "conflit sans base, le plus recent gagne"
+Assert-Equal "keep-remote" (Get-PathAction (New-L "b" 50) $null (New-R "c" 40) -Joining) "premier passage du PC : le Drive gagne, le local garde en copie"
+Assert-Equal "keep-local" (Get-PathAction (New-L "b" 50) (New-B "a") (New-R "c" 40) -Joining) "premier passage, fichier deja connu : le plus recent gagne"
+$jp = Get-SyncPlan @{ "x" = (New-L "b" 50) } @{} @{ "x" = (New-R "c" 40) } @() -Joining
+Assert-Equal "keep-remote" $jp[0].Kind "plan du premier passage : le Drive gagne"
 Assert-Equal "delete-remote" (Get-PathAction $null (New-B "a") (New-R "a")) "supprime ici, supprime sur le Drive"
 Assert-Equal "download" (Get-PathAction $null (New-B "a") (New-R "b")) "supprime ici mais modifie ailleurs, recu"
 Assert-Equal "delete-local" (Get-PathAction (New-L "a") (New-B "a") $null) "supprime ailleurs, supprime ici"

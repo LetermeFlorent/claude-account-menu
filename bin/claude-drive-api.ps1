@@ -110,7 +110,7 @@ function ConvertTo-RemoteEntry {
 
 function Get-DriveListing {
   param([string]$FolderId)
-  $map = New-Object Collections.Hashtable ([StringComparer]::Ordinal)
+  $map = New-PathMap
   $dups = New-Object 'System.Collections.Generic.List[string]'
   $q = [Uri]::EscapeDataString("'" + (ConvertTo-DriveQuery $FolderId) + "' in parents and trashed=false")
   $fields = [Uri]::EscapeDataString("nextPageToken,files(id,name,md5Checksum,appProperties)")

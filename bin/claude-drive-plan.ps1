@@ -1,5 +1,5 @@
 function Get-PathAction {
-  param($L, $B, $R)
+  param($L, $B, $R, [switch]$Joining)
   if ($null -eq $L -and $null -eq $R) {
     if ($null -ne $B) { return "forget" }
     return $null
@@ -20,6 +20,7 @@ function Get-PathAction {
   }
   if (-not $localChanged) { return "download" }
   if (-not $remoteChanged) { return "upload" }
+  if ($Joining -and $null -eq $B) { return "keep-remote" }
   if ([long]$L.M -ge [long]$R.M) { return "keep-local" }
   return "keep-remote"
 }
@@ -31,14 +32,14 @@ function Test-UnderSkipped {
 }
 
 function Get-SyncPlan {
-  param($Local, $Base, $Remote, $Skipped = @())
+  param($Local, $Base, $Remote, $Skipped = @(), [switch]$Joining)
   $paths = New-Object 'System.Collections.Generic.SortedSet[string]' ([StringComparer]::Ordinal)
   foreach ($m in @($Local, $Base, $Remote)) { foreach ($k in $m.Keys) { [void]$paths.Add($k) } }
   $first = New-Object 'System.Collections.Generic.List[object]'
   $later = New-Object 'System.Collections.Generic.List[object]'
   foreach ($p in $paths) {
     if (Test-UnderSkipped $p $Skipped) { continue }
-    $kind = Get-PathAction $Local[$p] $Base[$p] $Remote[$p]
+    $kind = Get-PathAction $Local[$p] $Base[$p] $Remote[$p] -Joining:$Joining
     if ($null -eq $kind) { continue }
     $a = @{ Kind = $kind; Path = $p }
     if ($p.Contains("/projects/")) { $later.Add($a) } else { $first.Add($a) }

@@ -1,4 +1,4 @@
-function New-FakeResponse {
+﻿function New-FakeResponse {
   param([string]$Json, $Headers = @{})
   return [PSCustomObject]@{ RawContentStream = (New-Object IO.MemoryStream(, [Text.Encoding]::UTF8.GetBytes($Json))); Headers = $Headers }
 }

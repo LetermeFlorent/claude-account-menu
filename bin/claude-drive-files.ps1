@@ -4,10 +4,6 @@
 $script:DriveStatePath = Join-Path (Get-HomeDir) ".clm-drive-state.json"
 $script:SyncExtraExcludes = @("*.bak-sync", "*.conflit-*", ".credentials.json", "*.tmp")
 
-function New-PathMap {
-  return New-Object Collections.Hashtable ([StringComparer]::Ordinal)
-}
-
 function Get-SyncPatterns {
   param($Accs)
   return @(Get-SaveExcludes $Accs) + $script:SyncExtraExcludes
