@@ -1,5 +1,6 @@
 $script:KeychainAccount = "claude-code-user"
 $script:KeychainChunkSize = 1800
+$script:KeychainWaitMs = 15000
 
 function Get-KeychainService {
   param([string]$ConfigDir)
@@ -86,6 +87,25 @@ function Remove-KeychainItems {
   foreach ($a in $Accounts) { try { & security delete-generic-password -a $a -s $Service 2>$null | Out-Null } catch {} }
 }
 
+function Invoke-SecurityBatch {
+  param([string[]]$Lines)
+  $psi = New-Object Diagnostics.ProcessStartInfo "security", "-i"
+  $psi.UseShellExecute = $false
+  $psi.RedirectStandardInput = $true
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $p = [Diagnostics.Process]::Start($psi)
+  try {
+    $null = $p.StandardOutput.ReadToEndAsync()
+    $null = $p.StandardError.ReadToEndAsync()
+    foreach ($l in $Lines) { $p.StandardInput.WriteLine($l) }
+    $p.StandardInput.Close()
+    if ($p.WaitForExit($script:KeychainWaitMs)) { return }
+    try { $p.Kill() } catch {}
+    throw "trousseau : security ne repond pas"
+  } finally { $p.Dispose() }
+}
+
 function Write-KeychainCredential {
   param([string]$ConfigDir, [string]$Json)
   $svc = Get-KeychainService $ConfigDir
@@ -107,7 +127,7 @@ function Write-KeychainCredential {
     $lines += ConvertTo-KeychainLine $svc ($acct + "#m") ('{"n":' + $n + ',"l":' + $b64.Length + '}')
     $stale += $acct
   }
-  $lines | & security -i 2>$null | Out-Null
+  Invoke-SecurityBatch $lines
   if ((Read-KeychainCredential $ConfigDir) -ne $Json) { throw "trousseau : ecriture refusee" }
   for ($i = $n; $i -lt $old; $i++) { $stale += $acct + "#" + $i }
   Remove-KeychainItems $svc $stale

@@ -1,3 +1,5 @@
+$credOs = $script:OsName
+if ($credOs -eq "MacOS") { $script:OsName = "Linux" }
 function New-TestCred { param([long]$Exp, [string]$Tok = "t") return ('{"claudeAiOauth":{"accessToken":"' + $Tok + '","refreshToken":"r","expiresAt":' + $Exp + ',"scopes":["user:inference"]}}' | ConvertFrom-Json) }
 $acc = [PSCustomObject]@{ Label = "ct"; Dir = ".claude-credtest" }
 $credPath = Join-Path $script:Sandbox ".claude-credtest/.credentials.json"
@@ -37,7 +39,7 @@ $null = Sync-AccountCredential $acc $fold @{}
 Assert-Equal "" $script:Sent[0].Id "premier envoi du jeton : nouveau fichier"
 
 Write-CredentialFile $credPath (New-TestCred 100 "tenu")
-if ($script:OsName -eq "Linux") { Assert-Equal "600" ((& stat -c %a $credPath) | Out-String).Trim() "jeton lisible par son seul proprietaire" }
+if ($credOs -ne "Windows") { Assert-Equal "-rw-------" (Get-Item -LiteralPath $credPath -Force).UnixMode "jeton lisible par son seul proprietaire" }
 $hold = [IO.File]::Open($credPath, "Open", "ReadWrite", "None")
 try { $err = ""; try { $null = Sync-AccountCredential $acc $fold $listing } catch { $err = $_.Exception.Message } } finally { $hold.Dispose() }
 Assert-Equal "jeton local illisible" $err "jeton local tenu par Claude Code : compte en echec"
@@ -125,21 +127,21 @@ $env:USER = "florent"
 $script:Kc = @{}
 $script:SecArgs = New-Object 'System.Collections.Generic.List[string]'
 $script:SecLog = New-Object 'System.Collections.Generic.List[string]'
+function Invoke-SecurityBatch {
+  param([string[]]$Lines)
+  foreach ($line in $Lines) {
+    if ($line -notmatch '^add-generic-password -U -a "([^"]*)" -s "([^"]*)" -X "([0-9a-f]*)"$') { continue }
+    $hex = $Matches[3]
+    $b = New-Object byte[] ($hex.Length / 2)
+    for ($i = 0; $i -lt $b.Length; $i++) { $b[$i] = [Convert]::ToByte($hex.Substring($i * 2, 2), 16) }
+    $script:Kc[$Matches[1]] = [Text.Encoding]::UTF8.GetString($b)
+    $script:SecLog.Add("add " + $Matches[1] + " " + $Matches[2])
+  }
+}
 function security {
   $a = @($args)
   $global:LASTEXITCODE = 0
   $script:SecArgs.Add(($a -join " "))
-  if ($a[0] -eq "-i") {
-    foreach ($line in @($input)) {
-      if ($line -notmatch '^add-generic-password -U -a "([^"]*)" -s "([^"]*)" -X "([0-9a-f]*)"$') { continue }
-      $hex = $Matches[3]
-      $b = New-Object byte[] ($hex.Length / 2)
-      for ($i = 0; $i -lt $b.Length; $i++) { $b[$i] = [Convert]::ToByte($hex.Substring($i * 2, 2), 16) }
-      $script:Kc[$Matches[1]] = [Text.Encoding]::UTF8.GetString($b)
-      $script:SecLog.Add("add " + $Matches[1] + " " + $Matches[2])
-    }
-    return
-  }
   if ($a[0] -eq "find-generic-password") { $v = $script:Kc[$a[2]]; if ($null -eq $v) { $global:LASTEXITCODE = 44 } else { return $v } }
   elseif ($a[0] -eq "delete-generic-password") { $script:SecLog.Add("delete " + $a[2]); $script:Kc.Remove($a[2]) }
 }
@@ -173,7 +175,7 @@ try {
   $best = Read-AccountCredential $acc
   Remove-KeychainCredential (Join-Path $script:Sandbox ".claude-credtest")
   $cleared = @($script:Kc.Keys).Count
-} finally { $script:OsName = $os; $env:USER = $savedUser; Remove-Item Function:\security }
+} finally { $script:OsName = $os; $env:USER = $savedUser; Remove-Item Function:\security; . (Join-Path $bin "claude-keychain.ps1") }
 Assert-Equal ("add claude-code-user " + (Get-KeychainService (Join-Path $script:Sandbox ".claude-credtest"))) $firstLog "trousseau : service du dossier du compte"
 Assert-Equal "mac" $mac.claudeAiOauth.accessToken "trousseau : jeton ecrit puis relu"
 Assert-Equal 0 @($script:SecArgs | Where-Object { $_.Contains("accessToken") -or $_.Contains("xxxxxxxx") }).Count "trousseau : jeton jamais passe en argument de commande"
@@ -186,3 +188,4 @@ Assert-Equal 1 $left "trousseau : anciens morceaux retires"
 Assert-Equal "florent" $userKeys "trousseau : jeton ecrit sous le nom de compte deja present"
 Assert-Equal "simple" $best.claudeAiOauth.accessToken "trousseau : jeton le plus frais lu entre morceaux et element simple"
 Assert-Equal 0 $cleared "trousseau : compte retire, tous ses elements effaces"
+$script:OsName = $credOs
