@@ -1,4 +1,5 @@
 $script:KeychainAccount = "claude-code-user"
+$script:KeychainChunkSize = 3000
 
 function Get-KeychainService {
   param([string]$ConfigDir)
@@ -82,12 +83,25 @@ function Write-CredentialFile {
   else { [IO.File]::Move($tmp, $Path) }
 }
 
+function Add-KeychainItem {
+  param([string]$Service, [string]$Account, [string]$Value)
+  & security add-generic-password -U -a $Account -s $Service -w $Value 2>$null | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "trousseau : ecriture refusee" }
+}
+
 function Write-KeychainCredential {
   param([string]$ConfigDir, [string]$Json)
   $svc = Get-KeychainService $ConfigDir
+  $acct = $script:KeychainAccount
   Remove-KeychainCredential $ConfigDir
-  & security add-generic-password -U -a $script:KeychainAccount -s $svc -w $Json 2>$null | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw "trousseau : ecriture refusee" }
+  if ($Json.Length -le $script:KeychainChunkSize) { Add-KeychainItem $svc $acct $Json; return }
+  $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Json))
+  $n = [int][math]::Ceiling($b64.Length / $script:KeychainChunkSize)
+  for ($i = 0; $i -lt $n; $i++) {
+    $start = $i * $script:KeychainChunkSize
+    Add-KeychainItem $svc ($acct + "#" + $i) $b64.Substring($start, [math]::Min($script:KeychainChunkSize, $b64.Length - $start))
+  }
+  Add-KeychainItem $svc ($acct + "#m") ('{"n":' + $n + ',"l":' + $b64.Length + '}')
 }
 
 function Write-AccountCredential {

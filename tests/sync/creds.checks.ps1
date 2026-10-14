@@ -89,3 +89,19 @@ Write-CredentialFile $credPath (New-TestCred 1000 "expire")
 Assert-Null (Receive-DriveCredential $acc) "Drive en panne : rien recu, aucune erreur"
 Remove-Item -LiteralPath $script:DriveConfigPath -Force
 . (Join-Path $bin "claude-drive-creds.ps1")
+$os = $script:OsName
+$script:OsName = "MacOS"
+$script:Kc = @{}
+function security { $a = @($args); $global:LASTEXITCODE = 0; if ($a[0] -eq "add-generic-password") { $script:Kc[$a[3]] = $a[7] } elseif ($a[0] -eq "find-generic-password") { $v = $script:Kc[$a[2]]; if ($null -eq $v) { $global:LASTEXITCODE = 44 } else { return $v } } elseif ($a[0] -eq "delete-generic-password") { $script:Kc.Remove($a[2]) } }
+$big = New-TestCred 900 ("x" * 7000)
+try {
+  Write-AccountCredential $acc $big
+  $back = Read-AccountCredential $acc
+  $small = @($script:Kc.Keys).Count
+  Write-AccountCredential $acc (New-TestCred 901 "court")
+  $after = Read-AccountCredential $acc
+} finally { $script:OsName = $os; Remove-Item Function:\security }
+Assert-Equal 5 $small "trousseau : jeton long decoupe en 4 morceaux et un index"
+Assert-Equal ("x" * 7000) $back.claudeAiOauth.accessToken "trousseau : jeton long relu entier"
+Assert-Equal "court" $after.claudeAiOauth.accessToken "trousseau : morceaux remplaces par un jeton court"
+Assert-Equal 1 @($script:Kc.Keys).Count "trousseau : anciens morceaux retires"
