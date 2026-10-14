@@ -125,3 +125,20 @@ $res.Pct5 = 20
 Set-UsageResult $st @(1, $res, $null) 3000
 Assert-True (Test-TweenRunning $st.Entries[1].T5 3100) "valeur changee, barre animee"
 Assert-True (-not (Test-TweenRunning $st.Entries[1].T7 3100)) "autre barre inchangee, immobile"
+
+$st = @{ Entries = @((New-TestCard "a" 10 10), (New-TestCard "b" 20 20)); Busy = $false; Loader = $null; DoneAt = 1000 }
+Assert-Equal "maj dans 30s" (Get-UpdateSeg $st 1000)[0] "compteur au depart"
+Assert-Equal "maj dans 8s" (Get-UpdateSeg $st 23500)[0] "compteur arrondi a la seconde du dessus"
+Assert-Equal "maj dans 0s" (Get-UpdateSeg $st 40000)[0] "compteur jamais negatif"
+Assert-True (Update-MenuHead $st 1000) "en-tete redessine au premier passage"
+Assert-True (-not (Update-MenuHead $st 1200)) "meme seconde, rien a redessiner"
+Assert-True (Update-MenuHead $st 2100) "seconde suivante, en-tete redessine"
+$st.Entries[1].U.Age = 300
+Assert-Equal "maj en echec (b), reessai dans 30s" (Get-UpdateSeg $st 1000)[0] "echec signale avec le compte"
+Assert-Equal ($script:Ink.Alert -join " ") ((Get-UpdateSeg $st 1000)[1] -join " ") "echec en rouge"
+$st.Entries[0].U.Error = "panne"
+Assert-Equal "maj en echec (2 comptes), reessai dans 30s" (Get-UpdateSeg $st 1000)[0] "plusieurs echecs comptes"
+$st.Loader = @{}
+Assert-Equal "maj en cours" (Get-UpdateSeg $st 1000)[0] "lecture en cours"
+$st.Busy = $true
+Assert-Equal "maj en pause" (Get-UpdateSeg $st 1000)[0] "relecture suspendue pendant une action"

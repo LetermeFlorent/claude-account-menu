@@ -7,6 +7,7 @@ function Step-MenuFrame {
   $st = $script:MenuState
   Step-MenuLoader $st $now
   if (Update-UiTick $now $st.Busy) { $st.Dirty = $true }
+  if (Update-MenuHead $st $now) { $st.Dirty = $true }
   if ($st.Dirty -or (Test-MenuAnimating $st $now)) { Show-Menu $st $now; return $true }
   return $false
 }
@@ -73,11 +74,13 @@ function Invoke-AccountMenu {
     $n = $st.Entries.Count
     $k = Read-UiKey
     $act = @{ Name = "none" }
-    if ($k -ne $null) { $act = Get-MenuAction $k $n }
+    if ($k -is [hashtable]) { $act = Get-MenuMouseAction $st $k }
+    elseif ($k -ne $null) { $act = Get-MenuAction $k $n }
     if ($script:UiQuit) { $act = @{ Name = "quit" } }
     $now = Get-NowMs
     if ($act.Name -eq "up") { Move-MenuSel $st (($st.Sel + $n - 1) % $n) $now $true }
     elseif ($act.Name -eq "down") { Move-MenuSel $st (($st.Sel + 1) % $n) $now $true }
+    elseif ($act.Name -eq "select") { Move-MenuSel $st $act.Index $now $true }
     elseif ($act.Name -eq "launch") { return Close-AccountMenu $st.Sel }
     elseif ($act.Name -eq "pick") { return Close-AccountMenu $act.Index }
     elseif ($act.Name -eq "quit") { return Close-AccountMenu $null }

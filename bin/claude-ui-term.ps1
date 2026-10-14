@@ -38,12 +38,14 @@ function Enter-UiScreen {
   $script:LastRows = $null
   $script:FadeArmed = $true
   $script:UiOn = $true
+  Enable-UiMouse
   if ($script:ThemeWatch -eq $null) { $script:ThemeWatch = New-ThemeWatch $script:OsName $null (Get-NowMs) }
 }
 
 function Exit-UiScreen {
   if (-not $script:UiOn) { return }
   $script:UiOn = $false
+  Disable-UiMouse
   $e = $script:Esc
   Write-Ui ($e + "[0m" + $e + "[?2026l" + $e + "[?25h" + $e + "[?1049l")
   try { [Console]::TreatControlCAsInput = $script:UiCtrlC } catch {}

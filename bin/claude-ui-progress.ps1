@@ -34,16 +34,15 @@ function Get-ProgressRow {
 
 function Receive-UiKeys {
   try {
-    while ([Console]::KeyAvailable) {
-      $k = [Console]::ReadKey($true)
-      if ([int]$k.KeyChar -eq 3) { $script:UiQuit = $true } else { $script:UiKeys.Enqueue($k) }
+    while ($null -ne ($k = Read-UiInput)) {
+      if ($k -is [ConsoleKeyInfo] -and [int]$k.KeyChar -eq 3) { $script:UiQuit = $true } else { $script:UiKeys.Enqueue($k) }
     }
   } catch {}
 }
 
 function Read-UiKey {
   if ($script:UiKeys.Count -gt 0) { return $script:UiKeys.Dequeue() }
-  try { if ([Console]::KeyAvailable) { return [Console]::ReadKey($true) } } catch {}
+  try { return Read-UiInput } catch {}
   return $null
 }
 

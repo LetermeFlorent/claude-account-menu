@@ -94,7 +94,7 @@ La désinstallation se fait à la main, en quatre étapes :
 
 1. Retirer du `settings.json` de chaque compte l'entrée `SessionStart` qui mentionne `claude-statusline-seed.ps1`. Remettre `settings.json.bak-seed` à la place marche aussi, mais perd les réglages changés depuis l'installation. Supprimer ensuite les fichiers `settings.json.bak-seed`.
 2. Supprimer de `%USERPROFILE%\.local\bin`, ou de `~/.local/bin`, les fichiers `clm`, `clm.cmd`, `clm.version`, `claude-menu.cmd` et `claude-*.ps1`, sans toucher à `claude.exe` ni à `claude`, qui sont Claude Code. Sous Windows, l'installeur a ajouté ce dossier au PATH de l'utilisateur : l'en retirer seulement si plus rien n'y vit, Claude Code s'y installant aussi.
-3. Supprimer le cache des quotas : `%LOCALAPPDATA%\claude-menu` sous Windows, `~/Library/Caches/claude-menu` sous macOS, `${XDG_CACHE_HOME:-~/.cache}/claude-menu` sous Linux.
+3. Supprimer le cache des quotas : `%LOCALAPPDATA%\claude-menu` sous Windows, qui garde aussi le lecteur de la souris `clm-conin-*.dll`, `~/Library/Caches/claude-menu` sous macOS, `${XDG_CACHE_HOME:-~/.cache}/claude-menu` sous Linux.
 4. Supprimer `.claude-accounts.json` du dossier personnel, la liste des comptes propre au menu, et les archives `claude-comptes-*` du dossier Téléchargements, qui contiennent des jetons.
 
 Les dossiers de comptes (`.claude`, `.claude-compte2`, etc.) restent en place : ils appartiennent à Claude Code, qui continue de les utiliser avec `CLAUDE_CONFIG_DIR`. Les clés écrites dans le fichier d'état de la barre d'état restent aussi, sans effet une fois périmées.

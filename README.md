@@ -28,7 +28,7 @@ Les deux installeurs ajoutent aussi un hook `SessionStart` aux comptes existants
 
 ## Le menu
 
-Le menu s'ouvre tout de suite, en plein écran, pendant que la mise à jour de Claude Code (voir plus bas) et la lecture des quotas tournent en arrière-plan. Un compte dont les quotas sont dans le cache depuis moins de deux minutes s'affiche aussitôt. Les autres montrent une barre qui scintille et "lecture...", puis leurs barres se remplissent à l'arrivée des chiffres. L'en-tête "Comptes Claude Code" porte l'heure, tenue à jour. Chaque compte occupe un bloc :
+Le menu s'ouvre tout de suite, en plein écran, pendant que la mise à jour de Claude Code (voir plus bas) et la lecture des quotas tournent en arrière-plan. Un compte dont les quotas sont dans le cache depuis moins de deux minutes s'affiche aussitôt. Les autres montrent une barre qui scintille et "lecture...", puis leurs barres se remplissent à l'arrivée des chiffres. L'en-tête "Comptes Claude Code" porte l'heure, tenue à jour, et juste avant elle l'état de la relecture des quotas : "maj dans 12s" compte les secondes jusqu'à la prochaine, "maj en cours" s'affiche pendant la lecture, "maj en pause" pendant une mise à jour de Claude Code. Quand un compte n'a pas pu être relu, le compteur passe en rouge, "maj en echec (compte2), reessai dans 30s", ou avec le nombre de comptes s'ils sont plusieurs. Chaque compte occupe un bloc :
 
 - une ligne avec son numéro, son nom, et à droite son abonnement (`Max 20x`, `Max 5x`, `Pro`, etc.), précédé d'un badge rouge "quota 7d atteint" ou "quota 5h atteint" quand un quota est à 100 % ;
 - l'adresse e-mail du compte, avec à droite "lu il y a ..." quand les chiffres viennent du cache depuis plus d'une minute, ou "fenetre passee, lu il y a ..." quand une remise à zéro a eu lieu depuis ;
@@ -59,6 +59,12 @@ Le pied du menu rappelle les touches principales :
 | `q`, Échap ou Ctrl+C | quitter |
 
 Les lettres marchent aussi en majuscules. Après une action, son résultat reste affiché sous le menu jusqu'à l'action suivante. Dans les pages de sauvegarde, de restauration et de retrait, Ctrl+C annule la page puis ferme le menu. Pendant une sauvegarde ou une mise à jour, il laisse l'opération se terminer avant de fermer.
+
+### Souris
+
+Sous Windows, le menu lit aussi la souris. Un clic sur un compte le sélectionne, un double clic sur le compte déjà sélectionné le lance. La molette déplace le curseur. Un clic sur une touche du pied de page, ou sur son libellé, fait comme la touche. Dans les pages de sauvegarde, de restauration et de retrait, seuls la molette et le pied de page répondent.
+
+Pour recevoir les clics, le menu coupe le mode d'édition rapide de la console tant qu'il est ouvert, puis le rétablit en sortant. Sélectionner du texte demande alors Maj et un glisser dans Windows Terminal. Le lecteur de la souris est compilé au premier lancement, puis gardé dans `%LOCALAPPDATA%\claude-menu`. Sous macOS et Linux, seul le clavier compte.
 
 ### Lancement d'un compte
 
@@ -250,6 +256,7 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | `~/.claude-compteN/` | dossiers des comptes ajoutés |
 | `settings.json` de chaque compte, et sa copie `settings.json.bak-seed` | hook `SessionStart`, ajouté par l'installeur |
 | cache `claude-menu/usage.json` | quotas des deux dernières minutes |
+| `claude-menu/clm-conin-*.dll`, sous Windows | lecteur de la souris, compilé une fois |
 | `.credentials.json` de chaque compte, hors macOS | jeton renouvelé quand il a expiré |
 | fichier d'état `claude-statusline/state` | quotas pour la barre d'état |
 | `claude-comptes-*.zip` ou `.tar.gz` dans Téléchargements | sauvegardes |

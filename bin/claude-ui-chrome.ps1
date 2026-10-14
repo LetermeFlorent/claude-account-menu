@@ -27,8 +27,8 @@ function Get-FooterRows {
   for ($i = 0; $i + 1 -lt $Pairs.Count; $i += 2) {
     $piece = 3 + $Pairs[$i].Length + $Pairs[$i + 1].Length
     if ($len -gt 0 -and $len + $piece -gt $W - 2) { $rows.Add($r); $r = New-Row; $len = 0 }
-    $r.Add(@(("  " + $Pairs[$i]), $script:Ink.Text, $false))
-    $r.Add(@((" " + $Pairs[$i + 1]), $script:Ink.Dim, $false))
+    $r.Add(@(("  " + $Pairs[$i]), $script:Ink.Text, $false, $Pairs[$i]))
+    $r.Add(@((" " + $Pairs[$i + 1]), $script:Ink.Dim, $false, $Pairs[$i]))
     $len += $piece
   }
   $rows.Add($r)

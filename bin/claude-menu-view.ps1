@@ -26,6 +26,7 @@ $script:Palettes = @{
 . (Join-Path $PSScriptRoot "claude-menu-state.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-screen.ps1")
 . (Join-Path $PSScriptRoot "claude-ui-progress.ps1")
+. (Join-Path $PSScriptRoot "claude-ui-mouse.ps1")
 . (Join-Path $PSScriptRoot "claude-ui-page.ps1")
 $script:Ink = $script:Palettes[(Get-ThemeName)]
 
