@@ -49,9 +49,9 @@ function Format-RemoveItem {
 }
 
 function Select-OneAccount {
-  param($Accs, [int]$Pos)
+  param($Accs, [int]$Pos, [string]$Title)
   $items = @(foreach ($a in $Accs) { Format-RemoveItem $a })
-  return Select-OneRow "Retirer un compte" $items $Pos @("Entree ou 1-9", "choisir", "Echap", "annuler")
+  return Select-OneRow $Title $items $Pos @("Entree ou 1-9", "choisir", "Echap", "annuler")
 }
 
 function Get-RemoveBody {
@@ -72,7 +72,7 @@ function Show-RemoveMenu {
   param([int]$Pos)
   $accs = @(Get-Accounts)
   if ($accs.Count -le 1) { return "retrait impossible : c'est le dernier compte" }
-  $p = Select-OneAccount $accs $Pos
+  $p = Select-OneAccount $accs $Pos "Retirer un compte"
   if ($null -eq $p) { return "retrait annule" }
   $acc = $accs[$p]
   $erasable = Test-ErasableDir $acc.Dir

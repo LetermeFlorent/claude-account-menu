@@ -1,13 +1,14 @@
 $l = Get-MenuLayout 120 40 3
 Assert-Equal "full 100 48 3 119" ($l.Mode + " " + $l.W + " " + $l.Cells + " " + $l.Visible + " " + $l.Clip) "grand terminal, cartes completes"
 $l = Get-MenuLayout 80 20 3
-Assert-Equal "compact 78 9 3 1" ($l.Mode + " " + $l.W + " " + $l.Cells + " " + $l.Visible + " " + $l.FooterRows) "terminal moyen, vue compacte"
+Assert-Equal "compact 78 9 3 2" ($l.Mode + " " + $l.W + " " + $l.Cells + " " + $l.Visible + " " + $l.FooterRows) "terminal moyen, vue compacte"
 $l = Get-MenuLayout 80 12 3
 Assert-Equal "compact 1" ($l.Mode + " " + $l.Visible) "terminal bas, un compte visible"
 Assert-Equal "simple" (Get-MenuLayout 39 30 3).Mode "terminal etroit, vue simple"
 $l = Get-MenuLayout 9 8 3
 Assert-Equal "simple 3 8" ($l.Mode + " " + $l.Visible + " " + $l.Clip) "terminal minuscule, vue simple"
 Assert-Equal 2 (Get-MenuLayout 60 40 2).FooterRows "pied sur deux lignes sous 78 colonnes"
+Assert-Equal 1 (Get-MenuLayout 92 40 2).FooterRows "pied sur une ligne a partir de 90 colonnes"
 
 Assert-Equal 0 (Get-ScrollTop 0 2 3 6) "defilement vers le haut"
 Assert-Equal 3 (Get-ScrollTop 5 0 3 6) "defilement vers le bas"

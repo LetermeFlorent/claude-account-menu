@@ -1,6 +1,6 @@
 # claude-account-menu
 
-Menu en terminal pour jongler entre plusieurs comptes Claude Code sur un même poste, sous Windows, Linux ou macOS. Chaque compte vit dans son propre dossier de configuration (`.claude`, `.claude-compte2`, etc.), et `clm` lance Claude Code sur celui qu'on choisit, avec le quota 5 h et 7 j de chacun affiché à côté. Il sert aussi à ajouter, retirer, sauvegarder et restaurer des comptes, et met Claude Code à jour avant chaque lancement.
+Menu en terminal pour jongler entre plusieurs comptes Claude Code sur un même poste, sous Windows, Linux ou macOS. Chaque compte vit dans son propre dossier de configuration (`.claude`, `.claude-compte2`, etc.), et `clm` lance Claude Code sur celui qu'on choisit, avec le quota 5 h et 7 j de chacun affiché à côté. Il sert aussi à ajouter, retirer, renommer, sauvegarder et restaurer des comptes, et met Claude Code à jour avant chaque lancement.
 
 ## Installation
 
@@ -45,7 +45,7 @@ Les transitions durent de 120 à 400 millisecondes. Elles suivent le réglage du
 
 ### Touches
 
-Le pied du menu rappelle les touches principales :
+Le pied du menu rappelle les touches principales, sur une ligne à partir de 90 colonnes et sur deux en dessous :
 
 | Touche | Action |
 |---|---|
@@ -54,6 +54,7 @@ Le pied du menu rappelle les touches principales :
 | `1` à `9` | lancer directement le compte de ce numéro |
 | `a` | ajouter un compte |
 | `x` | retirer un compte |
+| `n` | renommer un compte |
 | `s` | sauvegarder des comptes |
 | `r` | restaurer une sauvegarde |
 | `q`, Échap ou Ctrl+C | quitter |
@@ -97,7 +98,7 @@ La touche `a` demande un nom (Entrée garde le nom par défaut `compteN`, `q` an
 4. enregistre le compte dans `.claude-accounts.json` ;
 5. lance `claude auth login`, qui ouvre la connexion dans le navigateur.
 
-Si claude.ai est déjà connecté dans le navigateur sur un autre compte, c'est cet autre compte qui sera enregistré. Ouvrir le lien de connexion dans une fenêtre privée évite le piège. Une connexion abandonnée laisse le compte dans le menu avec le message "cree, mais non connecte" : il suffit de le lancer et de faire `/login`. Le menu ne vérifie pas que le nom est unique, et deux comptes du même nom se confondent dans le cache des quotas et dans `--save=`.
+Si claude.ai est déjà connecté dans le navigateur sur un autre compte, c'est cet autre compte qui sera enregistré. Ouvrir le lien de connexion dans une fenêtre privée évite le piège. Une connexion abandonnée laisse le compte dans le menu avec le message "cree, mais non connecte" : il suffit de le lancer et de faire `/login`. Le menu ne vérifie pas que le nom est unique, et deux comptes du même nom se confondent dans le cache des quotas et dans `--save=` : la touche `n` permet d'en renommer un.
 
 ## Retirer un compte
 
@@ -109,6 +110,12 @@ La touche `x` ouvre une page qui liste les comptes, curseur sur celui du menu. O
 Les dossiers et fichiers partagés sont des liens vers `.claude` : l'effacement retire le lien sans toucher à ce qu'il vise. Sous macOS, les entrées du trousseau propres au compte sont supprimées aussi. Elles ne sont pas dans l'archive, donc un compte restauré devra se reconnecter, et la page le rappelle.
 
 Seuls les dossiers nommés `.claude-<nom>` peuvent être effacés depuis le menu. Pour `.claude` et tout autre dossier, la page n'offre que `1`. Le dernier compte restant ne peut pas être retiré. Si l'effacement échoue en route, par exemple sur un fichier ouvert par une session Claude Code, le compte est déjà retiré du menu et le message indique ce qui reste. Le cache des quotas et les clés du compte dans le fichier d'état de la barre ne sont pas nettoyés.
+
+## Renommer un compte
+
+La touche `n` ouvre la même liste que le retrait, curseur sur le compte du menu. Après le choix, le menu laisse la place à une question, "Nouveau nom", et Entrée sans rien taper annule. Seul le nom affiché change, dans `.claude-accounts.json` : le dossier, la connexion et l'adresse e-mail restent les mêmes. Les quotas en cache suivent le nouveau nom, sans nouvelle lecture.
+
+Le nouveau nom est refusé s'il est vide, s'il contient une virgule, qui sépare les noms dans `--save=` et `--only=`, ou s'il est déjà pris par un autre compte, sans tenir compte de la casse. Changer seulement la casse d'un nom est permis.
 
 ## Ligne de commande
 

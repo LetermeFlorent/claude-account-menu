@@ -44,6 +44,16 @@ function Save-UsageCooldown {
   Write-UsageCache $map
 }
 
+function Rename-UsageEntry {
+  param([string]$Old, [string]$New)
+  $map = Read-UsageCache
+  if (-not $map.ContainsKey($Old)) { return }
+  $entry = $map[$Old]
+  $map.Remove($Old)
+  $map[$New] = $entry
+  Write-UsageCache $map
+}
+
 function Get-CooldownSeconds {
   param([int]$Fails, [int]$RetryAfter, [int]$Jitter)
   $back = [math]::Min($script:CooldownMaxSec, $script:CooldownBaseSec * [math]::Pow(2, $Fails - 1)) + $Jitter

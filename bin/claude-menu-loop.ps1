@@ -1,6 +1,6 @@
 $script:MenuState = $null
 $script:MenuUpdated = $false
-$script:MenuFails = @{ save = "  sauvegarde impossible : "; restore = "  restauration impossible : "; add = "  ajout impossible : "; remove = "  retrait impossible : " }
+$script:MenuFails = @{ save = "  sauvegarde impossible : "; restore = "  restauration impossible : "; add = "  ajout impossible : "; remove = "  retrait impossible : "; rename = "  renommage impossible : " }
 
 function Step-MenuFrame {
   $now = Get-NowMs
@@ -38,6 +38,7 @@ function Invoke-MenuPage {
   if ($Name -eq "save") { return Show-SaveMenu }
   if ($Name -eq "restore") { return Show-RestoreMenu }
   if ($Name -eq "remove") { return Show-RemoveMenu $Sel }
+  if ($Name -eq "rename") { return Show-RenameMenu $Sel }
   Exit-UiScreen
   try { return Add-Account } finally { Enter-UiScreen }
 }

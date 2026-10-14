@@ -1,6 +1,6 @@
 $script:UpArrow = [string][char]0x2191
 $script:DownArrow = [string][char]0x2193
-$script:MenuFooter = @("Entree", "lancer", "a", "ajouter", "x", "retirer", "s", "sauvegarder", "r", "restaurer", "q", "quitter")
+$script:MenuFooter = @("Entree", "lancer", "a", "ajouter", "x", "retirer", "n", "renommer", "s", "sauvegarder", "r", "restaurer", "q", "quitter")
 
 function Get-HeaderRow {
   param([string]$Title, [int]$W, [string]$Right = "")
