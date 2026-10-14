@@ -19,50 +19,48 @@ function Get-RetryAfter {
   } catch { return $null }
 }
 
+function Get-UsageToken {
+  param($Acc, $Cred)
+  if ($null -eq $Cred -or [string]::IsNullOrEmpty($Cred.claudeAiOauth.accessToken)) { return @{ Error = "non connecte" } }
+  $expMs = [long]$Cred.claudeAiOauth.expiresAt
+  if ($expMs -le 0 -or $expMs -ge [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()) { return @{ Token = $Cred.claudeAiOauth.accessToken } }
+  $fresh = Update-AccountToken $Acc $Cred
+  if ($null -eq $fresh) { return @{ Error = "compte deconnecte, lancer le compte une fois" } }
+  return @{ Token = $fresh.claudeAiOauth.accessToken }
+}
+
+function Get-UsageErrorText {
+  param($Response)
+  $code = 0
+  if ($null -ne $Response) { $code = [int]$Response.StatusCode }
+  if ($code -eq 401) { return "jeton refuse, lancer le compte une fois" }
+  if ($code -ne 429) { return "API de suivi injoignable" }
+  $text = "quota inconnu, l'API de suivi refuse les appels"
+  $wait = Get-RetryAfter $Response
+  if ($wait) { $text = $text + " (reessai dans " + (Format-Age ([int]$wait)) + ")" }
+  return $text
+}
+
 function Get-AccountUsage {
   param($Acc, [int]$MaxAge = $script:UsageCacheTtl)
-  $Label = $Acc.Label
-  $out = [PSCustomObject]@{Label=$Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null; Expired=$false}
+  $out = [PSCustomObject]@{Label=$Acc.Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null; Expired=$false}
   $cred = Read-AccountCredential $Acc
   if ($null -ne $cred) { $out.Plan = Get-PlanName $cred.claudeAiOauth }
-  $cached = (Read-UsageCache)[$Label]
+  $cached = (Read-UsageCache)[$Acc.Label]
   if ($null -ne $cached -and (Get-CacheAge $cached) -lt $MaxAge) { Copy-CacheEntry $cached $out; return $out }
   try {
-    if ($null -eq $cred) { $out.Error = "non connecte"; return $out }
-    $tok = $cred.claudeAiOauth.accessToken
-    if ([string]::IsNullOrEmpty($tok)) { $out.Error = "non connecte"; return $out }
-    $expMs = [long]$cred.claudeAiOauth.expiresAt
-    if ($expMs -gt 0 -and $expMs -lt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()) {
-      $fresh = Update-AccountToken $Acc $cred
-      if ($null -eq $fresh) {
-        $out.Error = "compte deconnecte, lancer le compte une fois"
-        return $out
-      }
-      $tok = $fresh.claudeAiOauth.accessToken
-    }
-    $h = @{"Authorization"="Bearer $tok"; "anthropic-beta"="oauth-2025-04-20"; "Accept"="application/json"}
+    $tok = Get-UsageToken $Acc $cred
+    if ($tok.Error) { $out.Error = $tok.Error; return $out }
+    $h = @{"Authorization"="Bearer " + $tok.Token; "anthropic-beta"="oauth-2025-04-20"; "Accept"="application/json"}
     $ProgressPreference = "SilentlyContinue"
     $r = Invoke-RestMethod -Uri "https://api.anthropic.com/api/oauth/usage" -Headers $h -TimeoutSec 10
-    if ($null -ne $r.five_hour) {
-      $out.Pct5 = [math]::Round([double]$r.five_hour.utilization)
-      $out.Reset5 = $r.five_hour.resets_at
-    }
-    if ($null -ne $r.seven_day) {
-      $out.Pct7 = [math]::Round([double]$r.seven_day.utilization)
-      $out.Reset7 = $r.seven_day.resets_at
-    }
-    Save-UsageEntry $Label $out
+    if ($null -ne $r.five_hour) { $out.Pct5 = [math]::Round([double]$r.five_hour.utilization); $out.Reset5 = $r.five_hour.resets_at }
+    if ($null -ne $r.seven_day) { $out.Pct7 = [math]::Round([double]$r.seven_day.utilization); $out.Reset7 = $r.seven_day.resets_at }
+    Save-UsageEntry $Acc.Label $out
   } catch {
-    $code = 0
-    if ($null -ne $_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
-    if ($code -eq 429 -and $null -ne $cached) { Copy-CacheEntry $cached $out; return $out }
-    if ($code -eq 429) {
-      $wait = Get-RetryAfter $_.Exception.Response
-      $out.Error = "quota inconnu, l'API de suivi refuse les appels"
-      if ($wait) { $out.Error = $out.Error + " (reessai dans " + (Format-Age ([int]$wait)) + ")" }
-    }
-    elseif ($code -eq 401) { $out.Error = "jeton refuse, lancer le compte une fois" }
-    else { $out.Error = "API de suivi injoignable" }
+    $resp = $_.Exception.Response
+    if ($null -ne $resp -and [int]$resp.StatusCode -eq 429 -and $null -ne $cached) { Copy-CacheEntry $cached $out; return $out }
+    $out.Error = Get-UsageErrorText $resp
   }
   return $out
 }
