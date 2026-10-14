@@ -120,3 +120,8 @@ $st.Sel = 0
 $st.Moved = $true
 Set-UsageResult $st @(1, $res, $null) 2000
 Assert-Equal 0 $st.Sel "choix de l'utilisateur garde"
+Assert-True (-not (Test-TweenRunning $st.Entries[1].T5 2000)) "valeur inchangee, barre immobile"
+$res.Pct5 = 20
+Set-UsageResult $st @(1, $res, $null) 3000
+Assert-True (Test-TweenRunning $st.Entries[1].T5 3100) "valeur changee, barre animee"
+Assert-True (-not (Test-TweenRunning $st.Entries[1].T7 3100)) "autre barre inchangee, immobile"

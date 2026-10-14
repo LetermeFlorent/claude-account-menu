@@ -1,4 +1,4 @@
-$script:RereadMs = 120000
+$script:RereadMs = 30000
 
 function New-MenuEntry {
   param($Acc, $Cache, [double]$Now)
@@ -53,8 +53,8 @@ function Set-UsageResult {
   $p5 = [double]$e.U.Pct5
   $p7 = [double]$e.U.Pct7
   if ($e.Seen) {
-    Set-TweenTarget $e.T5 $p5 300 $Now
-    Set-TweenTarget $e.T7 $p7 300 $Now
+    if ($e.T5.To -ne $p5) { Set-TweenTarget $e.T5 $p5 300 $Now }
+    if ($e.T7.To -ne $p7) { Set-TweenTarget $e.T7 $p7 300 $Now }
   } else {
     $e.T5 = New-Tween 0 $p5 400 $Now
     $e.T7 = New-Tween 0 $p7 400 $Now
@@ -71,7 +71,7 @@ function Start-MenuLoader {
   param($State)
   $accs = New-Object 'System.Collections.Generic.List[object]'
   foreach ($e in $State.Entries) { $accs.Add($e.Acc) }
-  $State.Loader = Start-UsageLoader $accs.ToArray()
+  $State.Loader = Start-UsageLoader $accs.ToArray() -Reader "Get-MenuUsage"
 }
 
 function Step-MenuLoader {

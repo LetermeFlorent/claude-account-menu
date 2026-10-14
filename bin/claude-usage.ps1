@@ -20,13 +20,13 @@ function Get-RetryAfter {
 }
 
 function Get-CompteUsage {
-  param($Acc)
+  param($Acc, [int]$MaxAge = $script:UsageCacheTtl)
   $Label = $Acc.Label
   $out = [PSCustomObject]@{Label=$Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null; Expired=$false}
   $cred = Read-AccountCredential $Acc
   if ($cred -ne $null) { $out.Plan = Get-PlanName $cred.claudeAiOauth }
   $cached = (Read-UsageCache)[$Label]
-  if ($cached -ne $null -and (Get-CacheAge $cached) -lt $script:UsageCacheTtl) { Copy-CacheEntry $cached $out; return $out }
+  if ($cached -ne $null -and (Get-CacheAge $cached) -lt $MaxAge) { Copy-CacheEntry $cached $out; return $out }
   try {
     if ($cred -eq $null) { $out.Error = "non connecte"; return $out }
     $tok = $cred.claudeAiOauth.accessToken
@@ -65,6 +65,11 @@ function Get-CompteUsage {
     else { $out.Error = "API de suivi injoignable" }
   }
   return $out
+}
+
+function Get-MenuUsage {
+  param($Acc)
+  return Get-CompteUsage $Acc $script:MenuCacheTtl
 }
 
 function Format-Reset {

@@ -1,6 +1,7 @@
 . (Join-Path $PSScriptRoot "claude-platform.ps1")
 $script:UsageCachePath = Get-UsageCachePath
 $script:UsageCacheTtl = 120
+$script:MenuCacheTtl = 25
 
 function Read-UsageCache {
   if (-not (Test-Path -LiteralPath $script:UsageCachePath)) { return @{} }
