@@ -10,6 +10,10 @@ function ConvertTo-RefreshedCredential {
   return $Cred
 }
 
+function Get-OauthUserAgent {
+  return "claude-cli/" + (Get-ClaudeVersion) + " (external, cli)"
+}
+
 function Write-CredentialFile {
   param([string]$Path, $Cred)
   $tmp = $Path + "." + [guid]::NewGuid().ToString("N") + ".tmp"
@@ -29,7 +33,7 @@ function Update-AccountToken {
   if ($scopes -ne "") { $body.scope = $scopes }
   $ProgressPreference = "SilentlyContinue"
   try {
-    $r = Invoke-RestMethod -Method Post -Uri $script:OauthTokenUrl -Body ($body | ConvertTo-Json -Compress) -ContentType "application/json" -TimeoutSec 15
+    $r = Invoke-RestMethod -Method Post -Uri $script:OauthTokenUrl -Body ($body | ConvertTo-Json -Compress) -ContentType "application/json" -Headers @{ "User-Agent" = (Get-OauthUserAgent) } -TimeoutSec 15
   } catch { return $null }
   if ([string]::IsNullOrEmpty($r.access_token) -or $r.expires_in -eq $null) { return $null }
   $new = ConvertTo-RefreshedCredential $Cred $r ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())

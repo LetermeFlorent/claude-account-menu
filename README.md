@@ -210,12 +210,12 @@ Les comptes sont rangés dans `~/.claude-accounts.json` (`%USERPROFILE%\.claude-
 
 Les pourcentages viennent de l'API `api.anthropic.com/api/oauth/usage`, avec le jeton du compte. Il est lu dans `.credentials.json` du dossier du compte, et sous macOS d'abord dans le trousseau, où Claude Code le range. Sous Windows et Linux, un jeton expiré est renouvelé par `clm` lui-même avec le refresh token du compte, comme Claude Code le fait au démarrage, puis `.credentials.json` est réécrit. Le serveur peut remplacer le refresh token à cette occasion : une session Claude Code restée ouverte sur ce compte avec l'ancien peut alors redemander un `/login`. Sous macOS, `clm` ne renouvelle rien et n'écrit rien dans le trousseau. Les comptes sont interrogés l'un après l'autre, avec 10 secondes au plus par appel.
 
-Les résultats sont gardés deux minutes dans un cache, utilisé aussi par `--usage` : `%LOCALAPPDATA%\claude-menu\usage.json` sous Windows, `~/Library/Caches/claude-menu/usage.json` sous macOS et `${XDG_CACHE_HOME:-~/.cache}/claude-menu/usage.json` sous Linux. Quand l'API limite les appels, ou que le jeton a expiré sans pouvoir être renouvelé, le menu affiche les dernières valeurs du cache, avec leur âge. Une fenêtre dont la remise à zéro a eu lieu depuis cette lecture repart à 0 %, sans heure, avec la mention "fenetre passee".
+Les résultats sont gardés deux minutes dans un cache, utilisé aussi par `--usage` : `%LOCALAPPDATA%\claude-menu\usage.json` sous Windows, `~/Library/Caches/claude-menu/usage.json` sous macOS et `${XDG_CACHE_HOME:-~/.cache}/claude-menu/usage.json` sous Linux. Quand l'API limite les appels, le menu affiche les dernières valeurs du cache, avec leur âge. Une fenêtre dont la remise à zéro a eu lieu depuis cette lecture repart à 0 %, sans heure, avec la mention "fenetre passee".
 
 Un compte sans chiffres affiche l'un de ces messages :
 
 - "non connecte" : pas de jeton pour ce compte ;
-- "jeton a rafraichir, lancer le compte une fois" : le jeton a expiré, n'a pas pu être renouvelé, et le cache est vide ;
+- "compte deconnecte, lancer le compte une fois" : le jeton a expiré et n'a pas pu être renouvelé. Le cache n'est pas montré dans ce cas, ses chiffres seraient périmés ;
 - "jeton refuse, lancer le compte une fois" : l'API refuse le jeton ;
 - "quota inconnu, l'API de suivi refuse les appels (reessai dans ...)" : l'API limite les appels et le cache est vide ;
 - "API de suivi injoignable" : pas de réseau, ou une autre erreur.
@@ -264,4 +264,4 @@ La CI lance ces tests à chaque envoi sur `main` et sur chaque pull request, sou
 
 ## Limites
 
-Les touches `1` à `9` et `-1` à `-9` ne couvrent que les neuf premiers comptes. La page de restauration ne propose que les neuf sauvegardes les plus récentes. Les quotas viennent d'une API non documentée d'Anthropic, qui peut changer ou limiter les appels. Le renouvellement des jetons passe lui aussi par un point d'accès OAuth non documenté : s'il change, le menu retombe sur le cache et le message "jeton a rafraichir". Sous macOS, les sauvegardes ne contiennent pas les jetons de connexion.
+Les touches `1` à `9` et `-1` à `-9` ne couvrent que les neuf premiers comptes. La page de restauration ne propose que les neuf sauvegardes les plus récentes. Les quotas viennent d'une API non documentée d'Anthropic, qui peut changer ou limiter les appels. Le renouvellement des jetons passe lui aussi par un point d'accès OAuth non documenté : s'il change, le compte s'affiche "compte deconnecte". Ce point d'accès refuse les appels qui ne se présentent pas comme Claude Code : `clm` envoie donc le même en-tête `User-Agent` que lui, avec la version de Claude Code installée. Sous macOS, les sauvegardes ne contiennent pas les jetons de connexion.

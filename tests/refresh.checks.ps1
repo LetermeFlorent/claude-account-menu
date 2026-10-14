@@ -21,3 +21,4 @@ $script:OsName = $os
 
 $same = ConvertTo-RefreshedCredential $cred ([PSCustomObject]@{ access_token = "x"; expires_in = 60 }) 0
 Assert-Equal "r2" $same.claudeAiOauth.refreshToken "refresh token garde sans rotation"
+Assert-True ((Get-OauthUserAgent) -match "^claude-cli/\d+\.\d+\.\d+ \(external, cli\)$") "renouvellement presente comme Claude Code"

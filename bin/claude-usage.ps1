@@ -35,7 +35,7 @@ function Get-CompteUsage {
     if ($expMs -gt 0 -and $expMs -lt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()) {
       $fresh = Update-AccountToken $Acc $cred
       if ($fresh -eq $null) {
-        if ($cached -ne $null) { Copy-CacheEntry $cached $out } else { $out.Error = "jeton a rafraichir, lancer le compte une fois" }
+        $out.Error = "compte deconnecte, lancer le compte une fois"
         return $out
       }
       $tok = $fresh.claudeAiOauth.accessToken
