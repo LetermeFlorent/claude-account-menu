@@ -6,6 +6,7 @@ $script:StopAfter = 0
 $script:StopCtl = $null
 $script:FakeRoot = "R"
 $script:OnMedia = $null
+$script:OnSend = $null
 
 function Get-FakeMd5 {
   param([byte[]]$Bytes)
@@ -34,6 +35,7 @@ function Get-DriveListing {
 }
 function Send-DriveContent {
   param([string]$FolderId, [string]$Name, [byte[]]$Bytes, $Props, [string]$Id)
+  if ($null -ne $script:OnSend) { & $script:OnSend $Name }
   if ($script:FailSend -contains $Name) { throw "panne reseau" }
   if ($Id) { $Name = Find-FakeName $Id } else { $script:FakeSeq++; $Id = "id" + $script:FakeSeq }
   $md5 = Get-FakeMd5 $Bytes

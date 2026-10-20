@@ -1,3 +1,5 @@
+$script:BaseOnlyKinds = @("adopt", "forget")
+
 function Get-PathAction {
   param($L, $B, $R, [switch]$Joining)
   if ($null -eq $L -and $null -eq $R) {
@@ -36,6 +38,7 @@ function Get-SyncPlan {
   $paths = New-Object 'System.Collections.Generic.SortedSet[string]' ([StringComparer]::Ordinal)
   foreach ($m in @($Local, $Base, $Remote)) { foreach ($k in $m.Keys) { [void]$paths.Add($k) } }
   if ($CaseFold) { $Skipped = @($Skipped) + @(Get-CaseCollisions $paths) }
+  $quick = New-Object 'System.Collections.Generic.List[object]'
   $first = New-Object 'System.Collections.Generic.List[object]'
   $later = New-Object 'System.Collections.Generic.List[object]'
   foreach ($p in $paths) {
@@ -43,10 +46,13 @@ function Get-SyncPlan {
     $kind = Get-PathAction $Local[$p] $Base[$p] $Remote[$p] -Joining:$Joining
     if ($null -eq $kind) { continue }
     $a = @{ Kind = $kind; Path = $p }
-    if ($p.Contains("/projects/")) { $later.Add($a) } else { $first.Add($a) }
+    if ($script:BaseOnlyKinds -contains $kind) { $quick.Add($a) }
+    elseif ($p.Contains("/projects/")) { $later.Add($a) }
+    else { $first.Add($a) }
   }
-  $first.AddRange($later)
-  return ,$first.ToArray()
+  $quick.AddRange($first)
+  $quick.AddRange($later)
+  return ,$quick.ToArray()
 }
 
 function Get-ConflictPath {

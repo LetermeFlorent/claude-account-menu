@@ -2,7 +2,6 @@
 . (Join-Path $PSScriptRoot "claude-menu-save.ps1")
 . (Join-Path $PSScriptRoot "claude-json.ps1")
 . (Join-Path $PSScriptRoot "claude-machine-settings.ps1")
-$script:DriveStatePath = Join-Path (Get-HomeDir) ".clm-drive-state.json"
 $script:SyncExtraExcludes = @("*.bak-sync", "*.conflit-*", ".credentials.json", "*.tmp")
 $script:RegistryName = ".claude-accounts.json"
 
@@ -72,9 +71,15 @@ function Add-LocalFile {
   $Result.Files[$Rel] = @{ Md5 = $md5; M = $m; Size = $Info.Length; Full = $Info.FullName }
 }
 
+function Test-SyncStop {
+  param($Ctl, [long]$DeadlineMs)
+  if ($null -ne $Ctl -and $Ctl.Stop) { return $true }
+  return $DeadlineMs -gt 0 -and [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() -ge $DeadlineMs
+}
+
 function Get-LocalFiles {
-  param([string]$Root, $Roots, $Patterns, $Base)
-  $res = @{ Files = (New-PathMap); Skipped = (New-Object 'System.Collections.Generic.List[string]') }
+  param([string]$Root, $Roots, $Patterns, $Base, $Ctl = $null, [long]$DeadlineMs = 0)
+  $res = @{ Files = (New-PathMap); Skipped = (New-Object 'System.Collections.Generic.List[string]'); Stopped = $false }
   $stack = New-Object Collections.Stack
   foreach ($r in $Roots) {
     if (Test-SyncExcluded $r $Patterns) { continue }
@@ -83,6 +88,7 @@ function Get-LocalFiles {
     elseif ([IO.Directory]::Exists($full)) { $stack.Push(@($r, $full)) }
   }
   while ($stack.Count -gt 0) {
+    if (Test-SyncStop $Ctl $DeadlineMs) { $res.Stopped = $true; break }
     $d = $stack.Pop()
     try { $items = ([IO.DirectoryInfo]$d[1]).GetFileSystemInfos() } catch { $res.Skipped.Add($d[0]); continue }
     foreach ($i in $items) {
@@ -94,32 +100,4 @@ function Get-LocalFiles {
     }
   }
   return $res
-}
-
-function Read-DriveState {
-  $st = @{ At = [long]0; Root = ""; Files = (New-PathMap) }
-  try { $data = Read-JsonFile $script:DriveStatePath } catch { $data = $null }
-  if ($null -eq $data) { return $st }
-  $st.At = [long]$data["at"]
-  $st.Root = [string]$data["root"]
-  foreach ($v in @($data["files"])) {
-    if ($null -eq $v) { continue }
-    $st.Files[[string]$v["p"]] = @{ Md5 = [string]$v["md5"]; M = [long]$v["m"]; Size = [long]$v["size"]; Id = [string]$v["id"] }
-  }
-  return $st
-}
-
-function Save-DriveState {
-  param($State)
-  $keys = [string[]]@($State.Files.Keys)
-  [Array]::Sort($keys, [StringComparer]::Ordinal)
-  $files = foreach ($k in $keys) {
-    $v = $State.Files[$k]
-    [ordered]@{ p = $k; md5 = [string]$v.Md5; m = [long]$v.M; size = [long]$v.Size; id = [string]$v.Id }
-  }
-  $data = [ordered]@{ at = [long]$State.At; root = [string]$State.Root; files = @($files) }
-  $tmp = $script:DriveStatePath + ".tmp"
-  [IO.File]::WriteAllText($tmp, (ConvertTo-JsonText $data) + "`n", (New-Object Text.UTF8Encoding $false))
-  if (Test-Path -LiteralPath $script:DriveStatePath) { [IO.File]::Replace($tmp, $script:DriveStatePath, [NullString]::Value) }
-  else { [IO.File]::Move($tmp, $script:DriveStatePath) }
 }

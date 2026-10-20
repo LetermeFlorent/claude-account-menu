@@ -1,18 +1,22 @@
 . (Join-Path $PSScriptRoot "claude-drive-files.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-state.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-plan.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-transfer.ps1")
 $script:DriveFailLimit = 3
 $script:DriveEchoEvery = 25
+$script:DriveSaveEveryMs = 60000
 
 function Get-SyncLocalPath {
   param([string]$Rel)
   return Join-Path $script:HomeDir ($Rel.Replace("/", [IO.Path]::DirectorySeparatorChar))
 }
 
-function Test-SyncStop {
-  param($Ctl, [long]$DeadlineMs)
-  if ($null -ne $Ctl -and $Ctl.Stop) { return $true }
-  return $DeadlineMs -gt 0 -and [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() -ge $DeadlineMs
+function Save-SyncCheckpoint {
+  param($Ctx, [bool]$Now)
+  $t = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+  if (-not $Now -and $t - [long]$Ctx.SavedAt -lt $script:DriveSaveEveryMs) { return }
+  Save-DriveState $Ctx.State
+  $Ctx.SavedAt = $t
 }
 
 function Set-SyncProgress {
@@ -116,8 +120,13 @@ function Invoke-SyncPlan {
   $done = 0
   $fails = 0
   $later = 0
+  $baseOnly = $false
+  $Ctx.SavedAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
   foreach ($a in $Plan) {
     if (Test-SyncStop $Ctl $DeadlineMs) { break }
+    $afterBaseOnly = $baseOnly
+    $baseOnly = $script:BaseOnlyKinds -contains $a.Kind
+    Save-SyncCheckpoint $Ctx ($afterBaseOnly -and -not $baseOnly)
     $done++
     try {
       if (-not (Invoke-SyncAction $Ctx $a)) { $later++ }

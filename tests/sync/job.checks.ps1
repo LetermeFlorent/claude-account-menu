@@ -56,6 +56,14 @@ Assert-True (-not $job.Failed) "synchro reussie : erreur effacee"
 $job.Loader = New-FakeDriveLoader $null $true "panne"
 $null = Step-DriveJob $job
 Assert-True $job.Failed "exception dans la tache : erreur"
+$waitJob = New-DriveJob $true $at
+$waitJob.Ctl = @{ Stop = $false; Progress = "" }
+$waitJob.Loader = New-FakeDriveLoader @{ Ok = $false; Error = "une autre synchro Drive est en cours"; Busy = $true; At = 0 }
+$null = Step-DriveJob $waitJob
+Assert-True (-not $waitJob.Failed) "synchro prise par une autre fenetre : pas une erreur"
+Assert-Equal "sync attente" (Get-DriveTag $waitJob)[0] "synchro prise par une autre fenetre : en attente"
+Assert-Equal $script:Ink.Dim (Get-DriveTag $waitJob)[1] "attente en couleur discrete"
+Assert-Null $waitJob.Notice "attente automatique : pas de message"
 
 $script:Started = 0
 $keptLoader = (Get-Item "function:Start-UsageLoader").ScriptBlock
@@ -71,6 +79,10 @@ try {
   Assert-True ([object]::ReferenceEquals($job.Ctl, @($script:LoaderArgs[0])[0])) "tache : controle partage pour l'arret"
   Assert-Equal "  synchro Drive deja en cours" (Request-DriveSync $job)[0] "touche y pendant une synchro"
   Assert-Equal 1 $script:Started "touche y pendant une synchro : rien de plus"
+  Assert-True (-not (Step-DriveJob $waitJob ($waitJob.RetryAt - 1))) "attente : pas de nouvel essai avant le delai"
+  Assert-True (Step-DriveJob $waitJob $waitJob.RetryAt) "attente : nouvel essai apres le delai"
+  Assert-Equal 2 $script:Started "attente : synchro relancee"
+  Assert-Equal "sync..." (Get-DriveTag $waitJob)[0] "nouvel essai en cours"
 } finally { Set-Item "function:Start-UsageLoader" $keptLoader }
 $job.Loader.Ctl.Done = $true
 Stop-DriveJob $job

@@ -89,9 +89,13 @@ foreach ($i in 1..3) { Set-PcFile (".claude/tard/t" + $i + ".md") ("t" + $i) }
 $before = [long](Read-DriveConfig)["lastSync"]
 $r = Invoke-DriveSync $null 1
 Assert-True $r.Ok "echeance depassee : pas une erreur"
-Assert-Equal 3 $r.Left "echeance depassee : tout reste a faire"
+Assert-True $r.Stopped "echeance depassee : analyse interrompue"
+Assert-Equal 0 $r.Up "echeance depassee : rien envoye"
 Assert-Equal 0 $r.At "echeance depassee : synchro pas complete"
 Assert-Equal $before ([long](Read-DriveConfig)["lastSync"]) "echeance depassee : derniere synchro inchangee"
+Assert-Equal "synchro Drive : interrompue pendant l'analyse, reprise a la prochaine synchro" (Get-DriveSyncMsg $r) "echeance depassee : message"
+$r = Invoke-DriveSync ([hashtable]::Synchronized(@{ Stop = $true; Progress = "" }))
+Assert-True ($r.Stopped -and $r.Up -eq 0) "arret demande avant la fin de l'analyse : rien envoye"
 
 $script:FailSend = @(".claude/tard/t1.md")
 $r = Invoke-DriveSync
@@ -124,6 +128,7 @@ if ($script:OsName -eq "Windows") {
 $lock = [IO.File]::Open($script:DriveLockPath, "OpenOrCreate", "ReadWrite", "None")
 try { $r = Invoke-DriveSync } finally { $lock.Dispose() }
 Assert-Equal "une autre synchro Drive est en cours" $r.Error "verrou : deux synchros jamais en meme temps"
+Assert-True $r.Busy "verrou pris ailleurs : synchro en attente"
 
 Assert-Equal "synchro Drive : 2 envoyes, 1 recus, 0 supprimes, 1 conflits" (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 2; Down = 1; Deleted = 0; Conflicts = 1; Left = 0 }) "message de fin"
 Assert-Equal "synchro Drive : 0 envoyes, 0 recus, 0 supprimes, 0 conflits, 4 restants pour la prochaine synchro" (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Left = 4 }) "message avec reste"

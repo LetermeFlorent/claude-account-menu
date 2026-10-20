@@ -10,8 +10,11 @@ function Read-JsonFile {
   return $s.DeserializeObject($raw)
 }
 
+$script:PlainJsonText = [regex]'^[^\x00-\x1f"\\]*\z'
+
 function ConvertTo-JsonString {
   param([string]$Text)
+  if ($script:PlainJsonText.IsMatch($Text)) { return '"' + $Text + '"' }
   $t = $Text.Replace('\', '\\').Replace('"', '\"').Replace("`n", '\n').Replace("`r", '\r').Replace("`t", '\t')
   $t = [regex]::Replace($t, '[\x00-\x1f]', { param($m) '\u{0:x4}' -f [int][char]$m.Value })
   return '"' + $t + '"'

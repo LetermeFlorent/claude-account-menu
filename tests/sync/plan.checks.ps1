@@ -37,6 +37,12 @@ $plan = Get-SyncPlan $local $base $remote @(".claude/locked", ".claude/busy.json
 Assert-True (@($plan | Where-Object { $_.Path -like ".claude/locked*" -or $_.Path -eq ".claude/busy.json" }).Count -eq 0) "dossier ou fichier illisible : aucune action"
 Assert-Equal 3 $plan.Count "le reste du plan garde"
 
+$local = New-PathMap; $base = New-PathMap; $remote = New-PathMap
+$local[".claude/a.md"] = New-L "n"
+$local[".claude/z.md"] = New-L "s"; $remote[".claude/z.md"] = New-R "s"
+$base[".claude/parti.md"] = New-B "g"
+Assert-Equal "forget,adopt,upload" ((Get-SyncPlan $local $base $remote | ForEach-Object { $_.Kind }) -join ",") "adoptions et oublis en tete du plan"
+
 Assert-Equal ".claude/settings.json.conflit-MAC" (Get-ConflictPath ".claude/settings.json" "MAC") "nom de la copie de conflit"
 Assert-Equal "a.md.conflit-PC_BUREAU_" (Get-ConflictPath "a.md" "PC BUREAU!") "nom du PC nettoye dans la copie"
 Assert-True (Test-SyncExcluded "a.md.conflit-MAC" (Get-SyncPatterns @())) "copie de conflit jamais synchronisee"

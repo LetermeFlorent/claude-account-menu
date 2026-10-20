@@ -40,15 +40,23 @@ if ($script:OsName -eq "Windows") {
   Assert-True ($res4.Skipped -contains ".claude-compte2/notes.md") "fichier verrouille marque illisible"
 }
 
+$res5 = Get-LocalFiles $fh $roots $patterns (New-PathMap) @{ Stop = $true }
+Assert-True $res5.Stopped "arret demande : analyse interrompue"
+Assert-True (-not $res5.Files.ContainsKey(".claude/settings.json")) "arret demande : dossiers non parcourus"
+Assert-Equal '"ab\n"' (ConvertTo-JsonString "ab`n") "retour a la ligne final echappe"
+Assert-Equal '"a\"b\\c"' (ConvertTo-JsonString 'a"b\c') "guillemet et barre oblique inverse echappes"
+
 $st = Read-DriveState
 Assert-Equal 0 $st.Files.Count "etat absent, base vide"
 $st.Files[".claude/A.md"] = @{ Md5 = "m1"; M = 5; Size = 3; Id = "i1" }
 $st.Files[".claude/a.md"] = @{ Md5 = "m2"; M = 6; Size = 4; Id = "i2" }
+$st.Files['.claude/q"x\y.md'] = @{ Md5 = "m3"; M = 7; Size = 5; Id = "i3" }
 $st.At = 77
 Save-DriveState $st
 $st2 = Read-DriveState
-Assert-Equal 2 $st2.Files.Count "etat relu, casse distinguee"
+Assert-Equal 3 $st2.Files.Count "etat relu, casse distinguee"
 Assert-Equal "i2" $st2.Files[".claude/a.md"].Id "id relu"
+Assert-Equal "i3" $st2.Files['.claude/q"x\y.md'].Id "chemin avec guillemet et barre oblique inverse relu"
 Assert-Equal 6 $st2.Files[".claude/a.md"].M "date relue"
 Assert-Equal 77 $st2.At "date de synchro relue"
 Remove-Item -LiteralPath $script:DriveStatePath -Force

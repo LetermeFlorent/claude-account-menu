@@ -1,10 +1,11 @@
 . (Join-Path $PSScriptRoot "claude-drive-sync.ps1")
 $script:DriveJob = $null
 $script:DriveQuitWaitMs = 2000
+$script:DriveRetryMs = 60000
 
 function New-DriveJob {
   param([bool]$Connected, [long]$Last)
-  return @{ Loader = $null; Ctl = $null; Connected = $Connected; Last = $Last; Failed = $false; Away = @{}; Seen = ""; Notify = $false; Notice = $null }
+  return @{ Loader = $null; Ctl = $null; Connected = $Connected; Last = $Last; Failed = $false; Busy = $false; RetryAt = [long]0; Away = @{}; Seen = ""; Notify = $false; Notice = $null }
 }
 
 function Get-DriveLastSync {
@@ -36,7 +37,9 @@ function Complete-DriveJob {
   if ($res.Count -gt 0) { $r = $res[0][1]; if ($res[0][2]) { $err = $res[0][2] } }
   if ($r -isnot [hashtable]) { $r = @{ Ok = $false; Error = ("" + $err) } }
   if (-not $r.Error -and -not $r.Ok) { $r.Error = "synchro interrompue" }
-  $Job.Failed = [bool]$r.Error
+  $Job.Busy = [bool]$r.Busy
+  $Job.RetryAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + $script:DriveRetryMs
+  $Job.Failed = [bool]$r.Error -and -not $Job.Busy
   if ([long]$r.At -gt 0) { $Job.Last = [long]$r.At }
   if ($null -ne $r.Away) { $Job.Away = $r.Away }
   if ($Job.Notify -or $Job.Failed) { $Job.Notice = Get-DriveSyncMsg $r }
@@ -44,7 +47,9 @@ function Complete-DriveJob {
 }
 
 function Step-DriveJob {
-  param($Job)
+  param($Job, [long]$NowMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
+  if ($null -eq $Job) { return $false }
+  if ($null -eq $Job.Loader -and $Job.Busy -and $NowMs -ge $Job.RetryAt) { Start-DriveJob $Job; return $true }
   if (-not (Test-DriveJobRunning $Job)) { return $false }
   if ($Job.Loader.Ctl.Done) { Complete-DriveJob $Job; return $true }
   $p = "" + $Job.Ctl.Progress
@@ -69,6 +74,7 @@ function Get-DriveTag {
     if ($p) { return @(("sync " + $p), $script:Ink.Dim) }
     return @("sync...", $script:Ink.Dim)
   }
+  if ($Job.Busy) { return @("sync attente", $script:Ink.Dim) }
   if ($Job.Failed) { return @("sync erreur", $script:Ink.Alert) }
   if ($Job.Last -gt 0) { return @(("sync " + [DateTimeOffset]::FromUnixTimeSeconds($Job.Last).LocalDateTime.ToString("HH:mm")), $script:Ink.Dim) }
   return @("sync jamais", $script:Ink.Dim)

@@ -5,14 +5,15 @@ $script:DriveLockWaitMs = 5000
 $script:DriveDeleteLimit = 20
 $script:DriveExitBudgetMs = 30000
 $script:DriveRootPattern = '^\.(claude[^/]*|mcp\.json)$'
+$script:DriveBusyText = "une autre synchro Drive est en cours"
 
 function Invoke-WithDriveLock {
   param([scriptblock]$Action)
-  Invoke-WithFileLock $script:DriveLockPath $script:DriveLockWaitMs "une autre synchro Drive est en cours" $Action
+  Invoke-WithFileLock $script:DriveLockPath $script:DriveLockWaitMs $script:DriveBusyText $Action
 }
 
 function New-SyncResult {
-  return @{ Ok = $false; Error = ""; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Total = 0; Away = @{}; Again = $false }
+  return @{ Ok = $false; Error = ""; Busy = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Total = 0; Away = @{}; Again = $false }
 }
 
 function Test-SafeSyncPath {
@@ -79,7 +80,8 @@ function Invoke-DriveSyncPass {
   $roots = Get-SyncRoots $accs
   $state = Read-SyncBase $folders.Root $roots
   $patterns = Get-SyncPatterns $accs
-  $local = Get-LocalFiles $script:HomeDir $roots $patterns $state.Files
+  $local = Get-LocalFiles $script:HomeDir $roots $patterns $state.Files $Ctl $DeadlineMs
+  if ($local.Stopped) { $Res.Ok = $true; $Res.Stopped = $true; return }
   $remote = Select-RemoteFiles (Get-DriveListing $folders.Files) $patterns $roots
   $plan = Get-SyncPlan $local.Files $state.Files $remote $local.Skipped -Joining:($state.At -eq 0) -CaseFold:($script:OsName -ne "Linux")
   Assert-DeleteLimit $plan $state.Files.Count $Force
@@ -105,13 +107,14 @@ function Invoke-DriveSync {
       Invoke-DriveSyncPass $res $Ctl $DeadlineMs $Force.IsPresent
       if ($res.Ok -and $res.Again -and $res.Left -eq 0) { $res.Ok = $false; Invoke-DriveSyncPass $res $Ctl $DeadlineMs $Force.IsPresent }
     }
-  } catch { $res.Ok = $false; $res.Error = $_.Exception.Message }
+  } catch { $res.Ok = $false; $res.Error = $_.Exception.Message; $res.Busy = $res.Error -eq $script:DriveBusyText }
   return $res
 }
 
 function Get-DriveSyncMsg {
   param($Result)
   if ($Result.Error) { return "synchro Drive : " + $Result.Error }
+  if ($Result.Stopped) { return "synchro Drive : interrompue pendant l'analyse, reprise a la prochaine synchro" }
   $t = "synchro Drive : " + $Result.Up + " envoyes, " + $Result.Down + " recus, " + $Result.Deleted + " supprimes, " + $Result.Conflicts + " conflits"
   if ($Result.Left -gt 0) { $t += ", " + $Result.Left + " restants pour la prochaine synchro" }
   return $t
@@ -133,5 +136,5 @@ function Sync-DriveAfterExit {
   if (-not (Test-DriveAuto)) { Send-DriveCredential $Acc; return }
   Write-Host "  synchro Drive..." -ForegroundColor DarkGray
   $r = Invoke-DriveSync $null $DeadlineMs
-  if ($r.Error -or $r.Left -gt 0) { Write-Host ("  " + (Get-DriveSyncMsg $r)) -ForegroundColor DarkYellow }
+  if ($r.Error -or $r.Left -gt 0 -or $r.Stopped) { Write-Host ("  " + (Get-DriveSyncMsg $r)) -ForegroundColor DarkYellow }
 }
