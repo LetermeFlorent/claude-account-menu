@@ -47,13 +47,13 @@ function Invoke-StartupScreens {
     if ($clm.Updated) { $script:ClmUpdated = -not $script:UiQuit; return $false }
   }
   $script:ClmCheck = New-ClmCheck (Get-NowMs) (Test-ClmInstalledHere) (Read-ClmVersion)
-  Open-DriveJob
   $script:MenuState = New-MenuState @(Get-Accounts) (Get-NowMs)
   Start-MenuLoader $script:MenuState
   if ($Update -and -not $script:UiQuit) {
     $script:MenuState.Msg = Invoke-ClaudeStartupUpdate
     $script:MenuUpdated = $true
   }
+  if (-not $script:UiQuit) { Open-DriveJob }
   $script:MenuState.Msg = Add-ClmFailure $script:MenuState.Msg $clm.Error
   return $true
 }

@@ -1,7 +1,7 @@
 . (Join-Path $bin "claude-menu-loop.ps1")
 . (Join-Path $bin "claude-menu-startup.ps1")
 
-$startupMocked = @("Enter-UiScreen", "Exit-UiScreen", "Hide-Screen", "Show-Menu", "Show-WorkPage", "Start-MenuLoader", "Get-Accounts", "Update-UiTick", "New-ClmCheck", "Start-UsageLoader", "Wait-Progress", "Test-ClmInstalledHere", "Invoke-UiWork", "Invoke-UiLoader", "Update-ClaudeForAccounts")
+$startupMocked = @("Enter-UiScreen", "Exit-UiScreen", "Hide-Screen", "Show-Menu", "Show-WorkPage", "Start-MenuLoader", "Get-Accounts", "Update-UiTick", "New-ClmCheck", "Start-UsageLoader", "Wait-Progress", "Test-ClmInstalledHere", "Invoke-UiWork", "Invoke-UiLoader", "Update-ClaudeForAccounts", "Open-DriveJob")
 $startupKept = @{}
 foreach ($n in $startupMocked) { $startupKept[$n] = (Get-Item ("function:" + $n)).ScriptBlock }
 
@@ -16,6 +16,7 @@ function Invoke-Startup {
   param([bool]$Update, [bool]$SelfUpdate)
   $script:Screens = @()
   $script:Loads = @()
+  $script:SyncAfter = $null
   $script:DriveJob = New-DriveJob $false 0
   $script:UiKeys.Clear()
   foreach ($k in @([ConsoleKey]::DownArrow, [ConsoleKey]::Escape)) { $script:UiKeys.Enqueue((New-Object System.ConsoleKeyInfo ([char]0), $k, $false, $false, $false)) }
@@ -65,6 +66,7 @@ try {
     if ($script:FakeInstallError) { throw $script:FakeInstallError }
   }
   function Update-ClaudeForAccounts { param($Accounts) $script:ClaudeAccounts = @($Accounts).Count; return @("  a, b, c : deja a jour", $script:Ink.Dim) }
+  function Open-DriveJob { $script:SyncAfter = "apres [" + ($script:Screens -join "|") + "]" }
 
   $script:FakeInstalled = $true
   $script:FakeLatest = $null
@@ -72,6 +74,7 @@ try {
   $script:QuitOnFind = $false
   Assert-Null (Invoke-Startup $true $true) "demarrage : Echap quitte le menu"
   Assert-Equal "Mise a jour de clm|Mise a jour de Claude Code|menu" ($script:Screens -join "|") "demarrage : clm, puis Claude Code, puis les comptes"
+  Assert-Equal "apres [Mise a jour de clm|Mise a jour de Claude Code]" $script:SyncAfter "demarrage : synchro Drive lancee une fois Claude Code a jour"
   Assert-Equal "Find-ClmUpdate" ($script:Loads -join "|") "demarrage : clm a jour, rien installe"
   Assert-Equal 3 $script:ClaudeAccounts "demarrage : Claude Code mis a jour pour tous les comptes"
   Assert-Equal "  a, b, c : deja a jour" $script:MenuState.Msg[0] "demarrage : resultat de Claude Code affiche dans le menu"
@@ -81,6 +84,7 @@ try {
   $script:FakeLatest = [PSCustomObject]@{ Sha = ("c" * 40); Time = 5; Number = 0 }
   Assert-Null (Invoke-Startup $true $true) "nouvelle version de clm : menu jamais ouvert"
   Assert-Equal "Mise a jour de clm" ($script:Screens -join "|") "nouvelle version de clm : ni Claude Code ni comptes avant le redemarrage"
+  Assert-Null $script:SyncAfter "nouvelle version de clm : synchro Drive pas lancee avant le redemarrage"
   Assert-Equal "Find-ClmUpdate|Install-ClmVersion" ($script:Loads -join "|") "nouvelle version de clm : installee"
   Assert-Equal ("c" * 40) $script:InstallItem.Sha "nouvelle version de clm : celle trouvee"
   Assert-True ($script:WorkPage.Text -like "nouvelle version de clm (ccccccc du *)") "nouvelle version de clm : affichee"
@@ -100,6 +104,7 @@ try {
   Assert-Null (Invoke-Startup $true $true) "Ctrl+C pendant la recherche : sortie"
   Assert-Equal "Find-ClmUpdate" ($script:Loads -join "|") "Ctrl+C pendant la recherche : rien installe"
   Assert-Equal "Mise a jour de clm" ($script:Screens -join "|") "Ctrl+C pendant la recherche : ni Claude Code ni comptes"
+  Assert-Null $script:SyncAfter "Ctrl+C pendant la recherche : synchro Drive jamais lancee"
   Assert-True (-not $script:ClmUpdated) "Ctrl+C pendant la recherche : pas de redemarrage"
   $script:QuitOnFind = $false
   $script:FakeLatest = $null
@@ -109,6 +114,7 @@ try {
   $script:FakeInstalled = $false
   $null = Invoke-Startup $false $true
   Assert-Equal "menu" ($script:Screens -join "|") "clm hors de son dossier d'installation, sans mise a jour : comptes directement"
+  Assert-Equal "apres []" $script:SyncAfter "sans mise a jour : synchro Drive lancee des l'ouverture du menu"
   Assert-Equal 0 $script:Loads.Count "clm hors de son dossier d'installation : aucune recherche"
 } finally {
   foreach ($n in $startupMocked) { Set-Item -Path ("function:" + $n) -Value $startupKept[$n] }

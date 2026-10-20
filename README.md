@@ -235,7 +235,7 @@ Le premier PC envoie tout. Sur un PC qui rejoint, la première synchro prend ce 
 
 La synchro automatique est active dès la connexion. `clm --sync-auto=off` la coupe et `clm --sync-auto=on` la remet. Quand elle est active :
 
-- le menu lance une synchro en arrière-plan à son ouverture, sans attendre la fin pour s'afficher. Elle continue si un compte est lancé, et s'arrête quand on quitte le menu ;
+- le menu lance une synchro en arrière-plan à son ouverture, après les écrans de mise à jour de clm et de Claude Code pour ne pas tourner en même temps qu'eux, et s'affiche sans attendre qu'elle finisse. Elle continue si un compte est lancé, et s'arrête quand on quitte le menu. Un Ctrl+C pendant ces écrans ferme `clm` sans la lancer ;
 - à la fermeture de Claude Code, `clm` envoie ce qui a changé, pendant 30 secondes au plus. Ce qui reste part à la synchro suivante, et un message le dit.
 
 À la main, la touche `y` du menu, ou un clic sur l'état de la synchro dans l'en-tête, lance une synchro et affiche son résultat. `clm --sync` fait de même en ligne de commande, avec la progression, et sort avec le code 1 en cas d'erreur.
