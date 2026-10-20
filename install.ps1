@@ -24,7 +24,5 @@ $claude = Join-Path $dst "claude.exe"
 if (-not (Test-Path -LiteralPath $claude) -and -not (Get-Command claude -ErrorAction SilentlyContinue)) {
   Write-Host "Claude Code introuvable : installe-le d'abord, puis relance clm" -ForegroundColor Yellow
 }
-$seed = (Join-Path $dst "claude-statusline-seed.ps1").Replace("\", "/")
-$hookCmd = 'powershell -NoProfile -ExecutionPolicy Bypass -File "' + $seed + '"'
-& (Join-Path $PSScriptRoot "install-hook.ps1") -HookCommand $hookCmd
+& (Join-Path $PSScriptRoot "install-hook.ps1")
 Write-Host "termine, lance clm"

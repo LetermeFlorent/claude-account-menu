@@ -65,11 +65,6 @@ function Send-DriveContent {
   return Send-DriveResumable $meta $Bytes $Id
 }
 
-function Send-DriveFile {
-  param([string]$FolderId, [string]$Name, [string]$Path, $Props, [string]$Id)
-  return Send-DriveContent $FolderId $Name (Read-SharedBytes $Path) $Props $Id
-}
-
 function Send-DriveText {
   param([string]$FolderId, [string]$Name, [string]$Text, $Props, [string]$Id)
   return Send-DriveContent $FolderId $Name ([Text.Encoding]::UTF8.GetBytes($Text)) $Props $Id

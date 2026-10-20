@@ -13,6 +13,11 @@ function Get-FakeMd5 {
   try { return -join ($md5.ComputeHash($Bytes) | ForEach-Object { $_.ToString("x2") }) } finally { $md5.Dispose() }
 }
 
+function Get-FakeText {
+  param([string]$Name)
+  return [Text.Encoding]::UTF8.GetString($script:Fake[$Name].Bytes)
+}
+
 function Find-FakeName {
   param([string]$Id)
   foreach ($k in $script:Fake.Keys) { if ($script:Fake[$k].Id -eq $Id) { return $k } }
@@ -27,13 +32,12 @@ function Get-DriveListing {
   if ($FolderId -eq "F") { foreach ($k in $script:Fake.Keys) { $m[$k] = $script:Fake[$k] } }
   return $m
 }
-function Send-DriveFile {
-  param([string]$FolderId, [string]$Name, [string]$Path, $Props, [string]$Id)
+function Send-DriveContent {
+  param([string]$FolderId, [string]$Name, [byte[]]$Bytes, $Props, [string]$Id)
   if ($script:FailSend -contains $Name) { throw "panne reseau" }
-  $bytes = Read-SharedBytes $Path
   if ($Id) { $Name = Find-FakeName $Id } else { $script:FakeSeq++; $Id = "id" + $script:FakeSeq }
-  $md5 = Get-FakeMd5 $bytes
-  $script:Fake[$Name] = @{ Id = $Id; Name = $Name; Md5 = $md5; M = [long]$Props["m"]; Pc = [string]$Props["pc"]; Exp = 0; Props = $Props; Bytes = $bytes }
+  $md5 = Get-FakeMd5 $Bytes
+  $script:Fake[$Name] = @{ Id = $Id; Name = $Name; Md5 = $md5; M = [long]$Props["m"]; Pc = [string]$Props["pc"]; Exp = 0; Props = $Props; Bytes = $Bytes }
   if ($script:StopAfter -gt 0) {
     $script:StopAfter--
     if ($script:StopAfter -eq 0) { $script:StopCtl.Stop = $true }

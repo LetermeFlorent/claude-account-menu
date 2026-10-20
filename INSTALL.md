@@ -31,10 +31,12 @@ L'installeur copie les fichiers `.ps1` et `.cmd` du dossier `bin` dans `%USERPRO
 Il ajoute ensuite un hook `SessionStart` dans le `settings.json` de `.claude` et de chaque dossier `.claude-compte*` du dossier personnel qui en a un. À chaque démarrage de Claude Code, ce hook écrit les quotas 5 h et 7 j du compte dans le fichier d'état de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline), avec cette commande :
 
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -File "C:/Users/<utilisateur>/.local/bin/claude-statusline-seed.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME/.local/bin/claude-statusline-seed.ps1"
 ```
 
-Un `settings.json` qui contient déjà le hook n'est pas touché, donc une seconde installation n'ajoute rien en double. Les autres reçoivent d'abord une copie `settings.json.bak-seed`, puis sont réécrits par PowerShell : les valeurs restent les mêmes, la mise en forme change. Un `settings.json` qui n'est pas du JSON valide arrête l'installeur à cet endroit, une fois les scripts copiés : le corriger puis relancer. Aucun autre fichier de compte n'est modifié.
+Claude Code passe cette commande à Git Bash, ou à PowerShell quand Git Bash manque, et l'un comme l'autre remplace `$HOME` par le dossier personnel : la même ligne sert sur tous les PC, quel que soit le nom d'utilisateur.
+
+Un `settings.json` qui contient déjà ce hook n'est pas touché, donc une seconde installation n'ajoute rien en double. Les autres reçoivent d'abord une copie `settings.json.bak-seed`. Quand la commande du hook y est périmée, par exemple un chemin complet `C:/Users/<utilisateur>/...` laissé par une ancienne version ou reçu d'un autre PC, seule cette commande change. Sinon l'installeur ajoute le hook et PowerShell réécrit le fichier : les valeurs restent les mêmes, la mise en forme change. Un `settings.json` qui n'est pas du JSON valide arrête l'installeur à cet endroit, une fois les scripts copiés : le corriger puis relancer. Aucun autre fichier de compte n'est modifié.
 
 Le PATH n'est relu qu'à l'ouverture d'un terminal : fermer la fenêtre et en ouvrir une nouvelle avant de taper `clm`.
 
@@ -48,7 +50,7 @@ cd claude-account-menu
 sh install.sh
 ```
 
-`install.sh` copie les fichiers `.ps1` et le lanceur `clm` dans `~/.local/bin` et rend `clm` exécutable. Si ce dossier manque au PATH, il affiche la ligne `export PATH=...` à mettre dans `~/.profile`, `~/.bashrc` ou `~/.zshrc`. Il prévient si Claude Code est introuvable. Il ajoute enfin le même hook que sous Windows, lancé cette fois par `pwsh -NoProfile -File`, avec les mêmes règles.
+`install.sh` copie les fichiers `.ps1` et le lanceur `clm` dans `~/.local/bin` et rend `clm` exécutable. Si ce dossier manque au PATH, il affiche la ligne `export PATH=...` à mettre dans `~/.profile`, `~/.bashrc` ou `~/.zshrc`. Il prévient si Claude Code est introuvable. Il ajoute enfin le même hook que sous Windows, avec la commande `pwsh -NoProfile -File "$HOME/.local/bin/claude-statusline-seed.ps1"` et les mêmes règles.
 
 Sans `pwsh`, `install.sh` copie les fichiers, indique quoi installer et s'arrête avec le code 1 avant le hook : le relancer une fois PowerShell 7 en place. Le lanceur `clm` vérifie lui aussi la présence de `pwsh`, et sans elle affiche les liens d'installation et sort avec le code 127.
 
@@ -84,7 +86,7 @@ L'archive n'est pas chiffrée et contient les jetons en clair. La transférer pa
 
 `clm` se met à jour tout seul. À l'ouverture du menu, à un lancement direct comme `clm -2` et avant `clm --restore`, il compare sa version au dernier commit publié sur GitHub, installe la nouvelle s'il y en a une, puis redémarre. Quand une version sort pendant que le menu est ouvert, un bouton "[maj dispo]" apparaît à côté du numéro de version, "clm v34" : un clic dessus, ou la touche `u`, l'installe et relance `clm`. Le détail est dans le [README](README.md#mise-à-jour-de-clm).
 
-À la main, ça reste possible : `git pull` dans le dossier cloné, puis relancer `install.ps1`, ou `install.sh` sous Linux et macOS. Les comptes, leurs jetons et `.claude-accounts.json` ne sont pas modifiés, et le hook déjà en place n'est pas ajouté une seconde fois.
+À la main, ça reste possible : `git pull` dans le dossier cloné, puis relancer `install.ps1`, ou `install.sh` sous Linux et macOS. Les comptes, leurs jetons et `.claude-accounts.json` ne sont pas modifiés, et le hook déjà en place n'est pas ajouté une seconde fois. Comme chaque mise à jour, automatique ou à la main, repasse par l'installeur, une commande de hook périmée est corrigée à cette occasion.
 
 Claude Code lui-même est mis à jour par `clm`, avec `claude update`, à chaque ouverture du menu et à chaque lancement direct comme `clm -2`. Pour sauter les deux mises à jour une fois, lancer `clm --no-update`.
 
@@ -116,3 +118,5 @@ Si la sauvegarde signale des avertissements, ou si la restauration annonce des f
 Sous Linux, "GNU tar ne lit pas les zip" demande d'installer `bsdtar` (paquet `libarchive-tools`) pour restaurer un `.zip` venu d'un autre poste.
 
 Si la barre d'état n'a pas ses quotas au lancement d'un compte avec `claude`, vérifier que le `settings.json` de ce compte contient le hook, et que son dossier figure dans `.claude-accounts.json` : le hook ne fait rien pour un dossier absent de la liste.
+
+Si la barre d'état a disparu d'un PC après une synchro Drive ou une restauration, son `settings.json` n'a plus d'entrée `statusLine`. `clm` garde celle du PC mais n'en crée pas : c'est le cas d'un PC où la barre n'a pas encore été installée, ou d'un PC qui avait encore un ancien `clm` quand il a reçu les réglages. Relancer sur ce PC l'installeur de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline) la remet.

@@ -34,9 +34,9 @@ $trash = @($script:Calls | Where-Object { $_.Method -eq "PATCH" })
 Assert-Equal 1 $trash.Count "un doublon mis a la corbeille"
 Assert-True ($trash[0].Uri.EndsWith("/files/i1") -and [Text.Encoding]::UTF8.GetString($trash[0].Body).Contains('"trashed": true')) "le doublon le plus ancien part a la corbeille"
 
-$f = New-SandboxFile "up/small.txt" "bonjour"
+$f = [Text.Encoding]::UTF8.GetBytes("bonjour")
 $script:Calls.Clear()
-$r = Send-DriveFile "F1" ".claude/small.txt" $f @{ m = "100"; pc = "PC" } ""
+$r = Send-DriveContent "F1" ".claude/small.txt" $f @{ m = "100"; pc = "PC" } ""
 Assert-Equal "new1" $r.Id "envoi : id rendu"
 Assert-Equal "abc" $r.Md5 "envoi : md5 rendu"
 Assert-Equal "POST" $script:Calls[0].Method "nouveau fichier : POST"
@@ -45,14 +45,14 @@ Assert-True ($script:Calls[0].Uri.StartsWith("https://www.googleapis.com/upload/
 $sent = [Text.Encoding]::UTF8.GetString($script:Calls[0].Body)
 Assert-True ($sent.Contains('"parents"') -and $sent.Contains('"F1"') -and $sent.Contains('".claude/small.txt"') -and $sent.Contains('"m": "100"') -and $sent.Contains("bonjour")) "nouveau fichier : nom, dossier, proprietes et contenu"
 $script:Calls.Clear()
-$null = Send-DriveFile "F1" ".claude/small.txt" $f @{ m = "101"; pc = "PC" } "ID9"
+$null = Send-DriveContent "F1" ".claude/small.txt" $f @{ m = "101"; pc = "PC" } "ID9"
 Assert-Equal "PATCH" $script:Calls[0].Method "fichier existant : PATCH"
 Assert-True ($script:Calls[0].Uri.StartsWith("https://www.googleapis.com/upload/drive/v3/files/ID9?uploadType=multipart")) "fichier existant : par id"
 Assert-True (-not [Text.Encoding]::UTF8.GetString($script:Calls[0].Body).Contains('"parents"')) "fichier existant : dossier inchange"
 $saved = $script:DriveSimpleMax
 $script:DriveSimpleMax = 3
 $script:Calls.Clear()
-$r = Send-DriveFile "F1" ".claude/big.txt" $f @{ m = "100"; pc = "PC" } ""
+$r = Send-DriveContent "F1" ".claude/big.txt" $f @{ m = "100"; pc = "PC" } ""
 $script:DriveSimpleMax = $saved
 Assert-Equal 2 $script:Calls.Count "gros fichier : session puis contenu"
 Assert-True ($script:Calls[0].Uri.Contains("uploadType=resumable")) "gros fichier : envoi resumable"

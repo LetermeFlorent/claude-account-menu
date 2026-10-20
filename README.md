@@ -202,7 +202,7 @@ La touche `r` liste les 9 sauvegardes `claude-comptes-*` les plus récentes du d
 La restauration fait trois choses :
 
 1. Elle copie l'état actuel des comptes visés déjà présents sur le poste dans une archive `claude-comptes-avant-restauration-*`. Un compte qui n'existe pas encore n'a rien à copier.
-2. Elle extrait les dossiers des comptes choisis, plus `.claude.json` et `.mcp.json` si `.claude` en fait partie. Les fichiers de l'archive remplacent ceux du poste, et les fichiers du poste absents de l'archive restent en place. La liste des comptes et les scripts de l'archive ne sont pas extraits.
+2. Elle extrait les dossiers des comptes choisis, plus `.claude.json` et `.mcp.json` si `.claude` en fait partie. Les fichiers de l'archive remplacent ceux du poste, et les fichiers du poste absents de l'archive restent en place. La liste des comptes et les scripts de l'archive ne sont pas extraits. Le `settings.json` de chaque compte garde l'entrée `statusLine` du poste, qui désigne le programme de la barre d'état sur ce PC, ou celle de `.claude` pour un compte qui n'y existait pas encore, et la commande du hook de la barre d'état y prend la forme du système du poste.
 3. Elle ajoute à la liste des comptes ceux qui n'y étaient pas, sous le nom qu'ils avaient dans l'archive, puis recrée les liens partagés de tous les comptes.
 
 Une archive placée ailleurs se restaure par `clm --restore=<chemin>`.
@@ -245,6 +245,8 @@ L'en-tête affiche, après la version, "sync 14:32" pour la dernière synchro r�
 Chaque PC garde dans `~/.clm-drive-state.json` l'état de sa dernière synchro, et compare à cet état le disque et le Drive. Un fichier modifié d'un seul côté est copié de l'autre, une suppression est propagée. Un fichier modifié des deux côtés est un conflit : la version la plus récente gagne et l'autre reste sur ce PC sous `<fichier>.conflit-<PC>`. Les fichiers `.conflit-*`, `.bak-sync` et `.tmp` ne sont pas synchronisés, et les exclusions de la sauvegarde s'appliquent.
 
 Plus de 20 suppressions prévues, ou plus d'un dixième des fichiers connus, bloquent la synchro avec "synchro bloquee : N suppressions prevues". Après vérification, `clm --sync --force` passe outre. Un fichier qui échoue est retenté à la synchro suivante, et trois échecs de suite arrêtent la synchro en cours. Un verrou, `~/.clm-drive.lock`, empêche deux synchros en même temps sur un PC.
+
+Le `settings.json` de chaque compte garde deux réglages propres au PC. Son entrée `statusLine`, qui désigne le programme de la barre d'état sur ce PC, ne part pas sur le Drive : à la réception, `clm` remet celle que le PC avait déjà, ou à défaut celle de `.claude`. La commande du hook de la barre d'état part sous la forme de Windows, et chaque PC la reçoit sous la forme de son système. Un PC où la barre n'a pas encore été installée reçoit donc des réglages sans barre d'état : y lancer l'installeur de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline). Un `settings.json` envoyé par un ancien `clm`, `statusLine` compris, est nettoyé à la réception puis renvoyé une fois sous la forme commune.
 
 Les conversations de `projects/` passent telles quelles. Comme Claude Code nomme ces dossiers d'après le chemin du projet, une conversation ouverte sous Windows ne se reprend pas sous macOS : elle est copiée, mais reste à part.
 
@@ -300,7 +302,7 @@ Quand `clm` lance un compte, il écrit d'abord les quotas 5 h et 7 j de ce compt
 
 Chaque compte y a ses propres clés, suffixées par le nom de son dossier : `q5_at@claude-compte2` (heure de remise à zéro), `q5_pct@claude-compte2` (pourcentage), de même pour `q7_`, et `q_at@claude-compte2` (heure de l'écriture). Le script ne réécrit que les clés du compte lancé, retire les anciennes clés sans suffixe, et garde le reste du fichier.
 
-Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `SessionStart` (déclencheur `startup`, délai 15 secondes) dans le `settings.json` de `.claude` et de chaque `.claude-compte*` qui en a un. Les dossiers sont trouvés par leur nom, sans lire la liste des comptes, et un compte ajouté plus tard par `a` reçoit le hook avec la copie du `settings.json` de `.claude`. Un fichier qui contient déjà le hook n'est pas touché. Les autres sont d'abord copiés en `settings.json.bak-seed`, puis réécrits par PowerShell : les valeurs restent, la mise en forme change. Ce hook lance `claude-statusline-seed.ps1`, qui reconnaît le compte par `CLAUDE_CONFIG_DIR` et ne fait rien pour un dossier absent de la liste des comptes. Si le compte n'a aucune fenêtre de 5 h ouverte, la barre garde `--%` sur 5 h jusqu'au premier message.
+Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `SessionStart` (déclencheur `startup`, délai 15 secondes) dans le `settings.json` de `.claude` et de chaque `.claude-compte*` qui en a un. Sa commande est `powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME/.local/bin/claude-statusline-seed.ps1"` sous Windows et `pwsh -NoProfile -File "$HOME/.local/bin/claude-statusline-seed.ps1"` ailleurs. Claude Code la passe à un shell, `sh` sous Linux et macOS, Git Bash ou à défaut PowerShell sous Windows, qui remplace `$HOME` par le dossier personnel du PC. Les dossiers sont trouvés par leur nom, sans lire la liste des comptes, et un compte ajouté plus tard par `a` reçoit le hook avec la copie du `settings.json` de `.claude`. Un fichier qui contient déjà le hook n'est pas touché. Les autres sont d'abord copiés en `settings.json.bak-seed`. Une commande périmée, comme un chemin complet venu d'un autre PC, y est remplacée par celle du PC sans rien changer d'autre. Un fichier sans hook est réécrit par PowerShell : les valeurs restent, la mise en forme change. Chaque mise à jour de `clm` relance l'installeur, et donc cette vérification. Ce hook lance `claude-statusline-seed.ps1`, qui reconnaît le compte par `CLAUDE_CONFIG_DIR` et ne fait rien pour un dossier absent de la liste des comptes. Si le compte n'a aucune fenêtre de 5 h ouverte, la barre garde `--%` sur 5 h jusqu'au premier message.
 
 ## Fichiers et variables
 
@@ -312,7 +314,7 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | `~/.claude-accounts.json` | liste des comptes |
 | `~/.claude-accounts.json.bad` | copie d'une liste illisible, mise de côté avant d'être recréée |
 | `~/.claude-compteN/` | dossiers des comptes ajoutés |
-| `settings.json` de chaque compte, et sa copie `settings.json.bak-seed` | hook `SessionStart`, ajouté par l'installeur |
+| `settings.json` de chaque compte, et sa copie `settings.json.bak-seed` | hook `SessionStart`, ajouté ou corrigé par l'installeur |
 | cache `claude-menu/usage.json` | derniers quotas lus et pauses après un refus de l'API |
 | `claude-menu/clm-conin-*.dll`, sous Windows | lecteur de la souris, compilé une fois |
 | `.credentials.json` de chaque compte, hors macOS | jeton renouvelé quand il a expiré |
@@ -326,7 +328,7 @@ Il lit `USERPROFILE` puis `HOME` pour le dossier personnel, `LOCALAPPDATA` sous 
 
 ## Tests
 
-`tests/run.ps1` vérifie les fonctions sans réseau ni vrai compte, dans un dossier temporaire, et sort avec un code non nul en cas d'échec. Il charge tous les fichiers `*.checks.ps1`, rangés par domaine dans `accounts`, `menu`, `setup`, `sync`, `ui` et `usage`. Ceux de `sync` simulent Google Drive en mémoire et deux PC dans des dossiers temporaires. Il tourne avec `powershell -File tests\run.ps1` comme avec `pwsh -File tests/run.ps1`. Le calcul du suffixe de compte du fichier d'état a en plus un test Pester, `tests/StateTag.Tests.ps1`.
+`tests/run.ps1` vérifie les fonctions sans réseau ni vrai compte, dans un dossier temporaire, et sort avec un code non nul en cas d'échec. Il charge tous les fichiers `*.checks.ps1`, rangés par domaine dans `accounts`, `machine`, `menu`, `setup`, `sync`, `ui` et `usage`. Ceux de `sync`, comme `machine/drive.checks.ps1`, simulent Google Drive en mémoire et deux PC dans des dossiers temporaires. Il tourne avec `powershell -File tests\run.ps1` comme avec `pwsh -File tests/run.ps1`. Le calcul du suffixe de compte du fichier d'état a en plus un test Pester, `tests/StateTag.Tests.ps1`.
 
 La CI lance ces tests à chaque envoi sur `main` et sur chaque pull request, sous Linux, macOS et Windows, avec PowerShell 7 partout et Windows PowerShell 5.1 en plus sous Windows. Elle vérifie aussi la syntaxe de `bin/clm` et de `install.sh`.
 

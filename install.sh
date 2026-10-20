@@ -29,5 +29,5 @@ if ! command -v pwsh >/dev/null 2>&1; then
   echo "pwsh introuvable : installe PowerShell 7 (voir INSTALL.md), puis relance ce script pour le hook de la barre d'etat"
   exit 1
 fi
-pwsh -NoProfile -File "$src/install-hook.ps1" -HookCommand "pwsh -NoProfile -File \"$dst/claude-statusline-seed.ps1\""
+pwsh -NoProfile -File "$src/install-hook.ps1"
 echo "termine, lance clm"

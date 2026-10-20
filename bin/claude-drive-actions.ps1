@@ -33,7 +33,7 @@ function Send-SyncFile {
   $L = $Ctx.Local[$Rel]
   $id = ""
   if ($null -ne $Ctx.Remote[$Rel]) { $id = $Ctx.Remote[$Rel].Id }
-  $r = Send-DriveFile $Ctx.Folder $Rel $L.Full @{ m = ("" + $L.M); pc = $Ctx.Pc } $id
+  $r = Send-DriveContent $Ctx.Folder $Rel (Get-SyncBytes $Rel $L.Full) @{ m = ("" + $L.M); pc = $Ctx.Pc } $id
   $md5 = $r.Md5
   if (-not $md5) { $md5 = $L.Md5 }
   $Ctx.State.Files[$Rel] = @{ Md5 = $md5; M = $L.M; Size = $L.Size; Id = $r.Id }
@@ -60,6 +60,7 @@ function Receive-SyncFile {
   $tmp = Receive-DriveTemp $R.Id $path
   try {
     if (-not (Test-LocalAsScanned $Ctx $Rel)) { return $false }
+    if (Test-MachineSettingsPath $Rel) { Update-MachineSettingsFile $tmp (Read-MachineSettings $path (Get-SyncLocalPath ".claude/settings.json")) }
     Install-DriveTemp $tmp $path -InPlace:(Test-SharedFilePath $Rel)
   } finally { Remove-DriveTemp $tmp }
   if ([long]$R.M -gt 0) { [IO.File]::SetLastWriteTimeUtc($path, [DateTimeOffset]::FromUnixTimeSeconds([long]$R.M).UtcDateTime) }

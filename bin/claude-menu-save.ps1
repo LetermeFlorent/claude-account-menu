@@ -1,5 +1,6 @@
 . (Join-Path $PSScriptRoot "claude-menu-archive.ps1")
 . (Join-Path $PSScriptRoot "claude-self-version.ps1")
+. (Join-Path $PSScriptRoot "claude-machine-settings.ps1")
 $script:SaveExcludes = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide", "*.lock", ".local/bin/*.exe")
 
 function Get-AccountItems {
@@ -88,7 +89,9 @@ function Restore-Accounts {
   $items = @(Get-AccountItems $Accs | Where-Object { $top -contains $_ })
   $total = @($entries | Where-Object { $items -contains $_ }).Count
   $script:Sizes = @{}
+  $machine = Get-MachineSnapshot @($Accs | ForEach-Object { Join-Path (Get-AccountPath $_) "settings.json" }) (Join-Path (Join-Path $script:HomeDir ".claude") "settings.json")
   $warn = Invoke-Tar (@("-x", "-f", $Zip, "-C", $script:HomeDir) + $items) $total "restauration"
+  Restore-MachineSnapshot $machine
   $added = @($Accs | Where-Object { $d = $_.Dir; @($current | Where-Object { $_.Dir -eq $d }).Count -eq 0 })
   if ($added.Count -gt 0) { Save-Registry (@($current) + $added) }
   foreach ($acc in Get-Accounts) { Repair-SharedLinks $acc -Force }

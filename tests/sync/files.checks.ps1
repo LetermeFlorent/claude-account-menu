@@ -17,12 +17,15 @@ $md5 = [Security.Cryptography.MD5]::Create()
 $hex = -join ($md5.ComputeHash([Text.Encoding]::UTF8.GetBytes("contenu .claude/settings.json")) | ForEach-Object { $_.ToString("x2") })
 Assert-Equal $hex $e.Md5 "MD5 identique au calcul de Drive"
 
+$n = $res.Files[".claude-compte2/notes.md"]
 $base = New-PathMap
+$base[".claude-compte2/notes.md"] = @{ Md5 = "cafe"; M = $n.M; Size = $n.Size; Id = "i" }
 $base[".claude/settings.json"] = @{ Md5 = "cafe"; M = $e.M; Size = $e.Size; Id = "i" }
 $res2 = Get-LocalFiles $fh $roots $patterns $base
-Assert-Equal "cafe" $res2.Files[".claude/settings.json"].Md5 "taille et date inchangees, MD5 repris de la base"
-$base[".claude/settings.json"].M = $e.M - 5
-Assert-Equal $e.Md5 (Get-LocalFiles $fh $roots $patterns $base).Files[".claude/settings.json"].Md5 "date changee, MD5 recalcule"
+Assert-Equal "cafe" $res2.Files[".claude-compte2/notes.md"].Md5 "taille et date inchangees, MD5 repris de la base"
+Assert-Equal $e.Md5 $res2.Files[".claude/settings.json"].Md5 "reglages d'un compte : MD5 toujours recalcule"
+$base[".claude-compte2/notes.md"].M = $n.M - 5
+Assert-Equal $n.Md5 (Get-LocalFiles $fh $roots $patterns $base).Files[".claude-compte2/notes.md"].Md5 "date changee, MD5 recalcule"
 
 New-Item -ItemType Directory -Path (Join-Path $fh "cible") -Force | Out-Null
 $null = New-SandboxFile "pc-files/cible/dedans.md" "x"
