@@ -86,5 +86,5 @@ function Invoke-UiWork {
   $script:WorkPage = @{ Title = $Title; Text = $Text }
   $script:UiPulse = { Show-WorkPage }
   Show-WorkPage
-  try { return (& $Work) } finally { $script:UiPulse = $null; $script:UiProgress = $null }
+  try { return (& $Work) } finally { $script:UiPulse = $null; $script:UiProgress = $null; $script:UiKeys.Clear() }
 }

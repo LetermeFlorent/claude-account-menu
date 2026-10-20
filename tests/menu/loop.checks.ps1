@@ -1,4 +1,5 @@
 . (Join-Path $bin "claude-menu-loop.ps1")
+. (Join-Path $bin "claude-menu-startup.ps1")
 
 $mocked = @("Enter-UiScreen", "Exit-UiScreen", "Hide-Screen", "Show-Menu", "Start-MenuLoader", "Get-Accounts", "Update-UiTick", "New-ClmCheck")
 $kept = @{}

@@ -67,11 +67,17 @@ function Install-ClmVersion {
   }
 }
 
+function Find-ClmUpdate {
+  $latest = Get-LatestClm
+  if (-not (Test-ClmOutdated (Read-ClmVersion) $latest)) { return $null }
+  return $latest
+}
+
 function Update-Clm {
   if (-not (Test-ClmInstalledHere)) { return $false }
   $latest = $null
-  try { $latest = Get-LatestClm } catch { return $false }
-  if (-not (Test-ClmOutdated (Read-ClmVersion) $latest)) { return $false }
+  try { $latest = Find-ClmUpdate } catch { return $false }
+  if ($null -eq $latest) { return $false }
   Write-Host ("  nouvelle version de clm (" + (Format-ClmVersion $latest) + "), installation...") -ForegroundColor DarkGray
   try { Install-ClmVersion $latest }
   catch {

@@ -10,6 +10,7 @@
 . (Join-Path $PSScriptRoot "claude-self-update.ps1")
 . (Join-Path $PSScriptRoot "claude-sync.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-loop.ps1")
+. (Join-Path $PSScriptRoot "claude-menu-startup.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-cli.ps1")
 
 function Start-Account {
@@ -45,9 +46,9 @@ foreach ($a in $args) {
   else { $rest = $rest + $a }
 }
 
-if ($selfUpdate -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
-
 $driveCli = Get-DriveCliAction $args
+$menuMode = $null -eq $driveCli -and -not $restoreZip -and $null -eq $direct -and (Test-RichTerminal)
+if ($selfUpdate -and -not $menuMode -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
 if ($null -ne $driveCli) { exit (Invoke-DriveCli $driveCli) }
 
 if ($restoreZip) {
@@ -67,16 +68,21 @@ if ($null -ne $direct) {
 }
 
 $chosen = $null
-$fallback = -not (Test-RichTerminal)
-if (-not $fallback) {
-  try { $chosen = Invoke-AccountMenu $update }
+$fallback = -not $menuMode
+if ($menuMode) {
+  try { $chosen = Invoke-AccountMenu $update $selfUpdate }
   catch {
     Exit-UiScreen
     $fallback = $true
     Write-Host ("  interface indisponible : " + $_.Exception.Message) -ForegroundColor DarkGray
   }
 }
+if ($script:ClmUpdated) {
+  Write-Host "  clm mis a jour, redemarrage" -ForegroundColor DarkGray
+  Restart-Clm $PSCommandPath $args
+}
 if ($fallback) {
+  if ($selfUpdate -and $menuMode -and -not $script:ClmChecked -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
   if ($update -and -not $script:MenuUpdated) { $null = Update-ClaudeForAccounts @(Get-Accounts) }
   $usages = @(Get-AllUsages)
   foreach ($u in $usages) { Write-Host (Format-Row $u) }

@@ -86,20 +86,14 @@ function Invoke-MenuCommand {
 }
 
 function Invoke-AccountMenu {
-  param([bool]$Update)
+  param([bool]$Update, [bool]$SelfUpdate = $false)
   $script:UiQuit = $false
   $script:MenuRestart = $false
-  $script:ClmCheck = New-ClmCheck (Get-NowMs) (Test-ClmInstalledHere) (Read-ClmVersion)
-  Open-DriveJob
+  $script:ClmUpdated = $false
   Enter-UiScreen
-  $script:MenuState = New-MenuState @(Get-Accounts) (Get-NowMs)
-  Start-MenuLoader $script:MenuState
-  if ($Update) {
-    $script:MenuState.Busy = $true
-    $script:UiPulse = { $null = Step-MenuFrame }
-    try { $script:MenuState.Msg = Update-ClaudeForAccounts @(Get-Accounts) }
-    finally { $script:UiPulse = $null; $script:UiProgress = $null; $script:MenuState.Busy = $false; $script:MenuState.Dirty = $true; $script:MenuUpdated = $true }
-  }
+  $open = Invoke-StartupScreens $Update $SelfUpdate
+  Hide-Screen
+  if (-not $open) { Exit-UiScreen; return $null }
   while ($true) {
     $st = $script:MenuState
     $n = $st.Entries.Count
