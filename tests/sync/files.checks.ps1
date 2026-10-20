@@ -1,5 +1,5 @@
 $fh = Join-Path $script:Sandbox "pc-files"
-foreach ($rel in @(".claude/settings.json", ".claude/cache/x.bin", ".claude/plugins/cache/p.js", ".claude/a.lock", ".claude/x.json.conflit-MAC", ".claude/.credentials.json", ".claude/settings.json.bak-sync", ".claude/w.json.ab12.tmp", ".claude-compte2/skills/s.md", ".claude-compte2/notes.md", ".claude-compte2/CLAUDE.md", ".claude/projects/C--x/a b.jsonl", ".claude.json", ".claude-accounts.json", ".autre/hors.md")) {
+foreach ($rel in @(".claude/settings.json", ".claude/cache/x.bin", ".claude/plugins/cache/p.js", ".claude/a.lock", ".claude/x.json.conflit-MAC", ".claude/.credentials.json", ".claude/settings.json.bak-sync", ".claude/w.json.ab12.tmp", ".claude/outils/chrome-bidi/profils/c/Cookies", ".claude-compte2/skills/s.md", ".claude-compte2/notes.md", ".claude-compte2/CLAUDE.md", ".claude/projects/C--x/a b.jsonl", ".claude.json", ".claude-accounts.json", ".autre/hors.md")) {
   $null = New-SandboxFile ("pc-files/" + $rel) ("contenu " + $rel)
 }
 $accs = @([PSCustomObject]@{ Label = "a"; Dir = ".claude" }, [PSCustomObject]@{ Label = "b"; Dir = ".claude-compte2" })

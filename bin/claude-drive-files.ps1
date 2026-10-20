@@ -2,7 +2,7 @@
 . (Join-Path $PSScriptRoot "claude-menu-save.ps1")
 . (Join-Path $PSScriptRoot "claude-json.ps1")
 . (Join-Path $PSScriptRoot "claude-machine-settings.ps1")
-$script:SyncExtraExcludes = @("*.bak-sync", "*.conflit-*", ".credentials.json", "*.tmp")
+$script:SyncExtraExcludes = @("*.bak-sync", "*.conflit-*", ".credentials.json", "*.tmp", "*/chrome-bidi/profils")
 $script:RegistryName = ".claude-accounts.json"
 
 function Get-SyncPatterns {

@@ -118,6 +118,19 @@ Assert-Equal 0 $r.Total "noms Drive hors perimetre ignores"
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:Sandbox "evil.md"))) "chemin qui remonte jamais ecrit"
 $script:Fake.Remove("../evil.md"); $script:Fake.Remove(".autre/x.md"); $script:Fake.Remove(".claude/cache/y.bin")
 
+$chromeFile = ".claude/outils/chrome-bidi/profils/c/Cookies"
+$script:Fake[$chromeFile] = @{ Id = "chrome"; Name = $chromeFile; Md5 = "x"; M = 0; Pc = "X"; Bytes = [byte[]]@(65) }
+Set-PcFile ".claude/outils/chrome-bidi/profils/c/Local State" "pc"
+$st = Read-DriveState
+$st.Files[$chromeFile] = @{ Md5 = "x"; M = 0; Size = 1; Id = "chrome" }
+Save-DriveState $st
+$r = Invoke-DriveSync
+Assert-Equal "1 0 0 0" (@($r.Total, $r.Up, $r.Down, $r.Deleted) -join " ") "profil Chrome : oublie de la base, rien envoye, recu ni supprime"
+Assert-True (-not (Read-DriveState).Files.ContainsKey($chromeFile)) "profil Chrome : retire de la base"
+Assert-True $script:Fake.ContainsKey($chromeFile) "profil Chrome : copie du Drive laissee en place"
+Assert-Equal "pc" (Get-PcText ".claude/outils/chrome-bidi/profils/c/Local State") "profil Chrome : copie locale gardee"
+$script:Fake.Remove($chromeFile)
+
 if ($script:OsName -eq "Windows") {
   $fs = [IO.File]::Open((Join-Path $script:HomeDir ".claude/settings.json"), "Open", "ReadWrite", "None")
   try { $r = Invoke-DriveSync } finally { $fs.Dispose() }

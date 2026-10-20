@@ -46,3 +46,5 @@ Assert-Equal "forget,adopt,upload" ((Get-SyncPlan $local $base $remote | ForEach
 Assert-Equal ".claude/settings.json.conflit-MAC" (Get-ConflictPath ".claude/settings.json" "MAC") "nom de la copie de conflit"
 Assert-Equal "a.md.conflit-PC_BUREAU_" (Get-ConflictPath "a.md" "PC BUREAU!") "nom du PC nettoye dans la copie"
 Assert-True (Test-SyncExcluded "a.md.conflit-MAC" (Get-SyncPatterns @())) "copie de conflit jamais synchronisee"
+Assert-True (Test-SyncExcluded ".claude/outils/chrome-bidi/profils/comptes/Default/Cookies" (Get-SyncPatterns @())) "profil Chrome jamais synchronise"
+Assert-True (-not (Test-SyncExcluded ".claude/outils/chrome-bidi/lancer.ps1" (Get-SyncPatterns @()))) "outil chrome-bidi synchronise hors profils"
