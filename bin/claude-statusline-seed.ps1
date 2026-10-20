@@ -34,7 +34,7 @@ function Update-StatusState {
   $at = "@" + $tag + " "
   if ($null -ne $r5) { $keep += "q5_at" + $at + $r5; $keep += "q5_pct" + $at + [int]$u.Pct5 }
   if ($null -ne $r7) { $keep += "q7_at" + $at + $r7; $keep += "q7_pct" + $at + [int]$u.Pct7 }
-  $keep += "q_at" + $at + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+  $keep += "q_at" + $at + ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [long]$u.Age)
   [IO.File]::WriteAllText($state, (($keep -join "`n") + "`n"), (New-Object Text.UTF8Encoding($false)))
 }
 

@@ -3,7 +3,7 @@ function New-MenuEntry {
   param($Acc, $Cache, [double]$Now)
   $u = [PSCustomObject]@{ Label = $Acc.Label; Email = (Get-AccountEmail $Acc); Acc = $Acc; Plan = ""; Pct5 = $null; Reset5 = $null; Pct7 = $null; Reset7 = $null; Error = $null; Age = $null; Expired = $false; LimitedUntil = $null }
   $e = @{ Acc = $Acc; U = $u; Pending = $true; Seen = $false; View = $null; In = $null; NextAt = $null; Slot = 0; Timer = $null; Force = $false }
-  $c = $Cache[$Acc.Label]
+  $c = Get-KnownUsage $Acc $Cache
   if ($null -ne $c -and (Get-CacheAge $c) -lt $script:UsageCacheTtl) {
     Copy-CacheEntry $c $u
     $e.Seen = $true

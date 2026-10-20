@@ -2,6 +2,7 @@
 . (Join-Path $PSScriptRoot "claude-usage-pace.ps1")
 . (Join-Path $PSScriptRoot "claude-accounts.ps1")
 . (Join-Path $PSScriptRoot "claude-token-refresh.ps1")
+. (Join-Path $PSScriptRoot "claude-usage-bar.ps1")
 
 function Get-PlanName {
   param($Oauth)
@@ -60,10 +61,10 @@ function Get-AccountUsage {
   $out = [PSCustomObject]@{Label=$Acc.Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null; Expired=$false; LimitedUntil=$null}
   $cred = Read-AccountCredential $Acc
   if ($null -ne $cred) { $out.Plan = Get-PlanName $cred.claudeAiOauth }
-  $cached = (Read-UsageCache)[$Acc.Label]
-  if ($null -ne $cached -and (Get-CacheAge $cached) -lt $MaxAge) { Copy-CacheEntry $cached $out; return $out }
-  $left = Get-CooldownLeft $cached
-  if ($left -gt 0) { Set-UsageLimited $out $cached $left; return $out }
+  $known = Get-KnownUsage $Acc (Read-UsageCache)
+  if ($null -ne $known -and (Get-CacheAge $known) -lt $MaxAge) { Copy-CacheEntry $known $out; return $out }
+  $left = Get-CooldownLeft $known
+  if ($left -gt 0) { Set-UsageLimited $out $known $left; return $out }
   try {
     $tok = Get-UsageToken $Acc $cred
     if ($tok.Error) { $out.Error = $tok.Error; return $out }
@@ -75,7 +76,7 @@ function Get-AccountUsage {
     Save-UsageEntry $Acc.Label $out
   } catch {
     $resp = $_.Exception.Response
-    if ($null -ne $resp -and [int]$resp.StatusCode -eq 429) { Register-UsageRefusal $out $cached $resp; return $out }
+    if ($null -ne $resp -and [int]$resp.StatusCode -eq 429) { Register-UsageRefusal $out $known $resp; return $out }
     $out.Error = Get-UsageErrorText $resp
   }
   return $out

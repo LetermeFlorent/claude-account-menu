@@ -7,9 +7,10 @@ Assert-Equal "claude" (Get-StateTag "") "tag sans dossier"
 Assert-Equal "compt_" (Get-StateTag ("/x/Compt" + [char]0x00E9)) "tag, lettre accentuee remplacee"
 Assert-Equal "a_b" (Get-StateTag ("/x/a" + [char]0xD83D + [char]0xDE00 + "b")) "tag, caractere hors BMP compte pour un"
 
+$statusAge = $null
 function Get-AccountUsage {
   param($Acc)
-  return [PSCustomObject]@{ Error = $null; Pct5 = 42; Reset5 = "2030-01-01T00:00:00Z"; Pct7 = 7; Reset7 = "2030-01-03T00:00:00Z" }
+  return [PSCustomObject]@{ Error = $null; Pct5 = 42; Reset5 = "2030-01-01T00:00:00Z"; Pct7 = 7; Reset7 = "2030-01-03T00:00:00Z"; Age = $statusAge }
 }
 
 $statePath = Get-StatusStatePath
@@ -37,3 +38,8 @@ $lines = @([IO.File]::ReadAllText($statePath).TrimEnd("`n").Split("`n"))
 Assert-True ($lines -contains "q5_pct@claude-compte2 42") "second compte ecrit sous son tag"
 Assert-True (-not ($lines -contains "q5_at@claude-compte2 111")) "ancienne valeur du second compte remplacee"
 Assert-True ($lines -contains "q5_pct@claude 42") "premier compte intact"
+$statusAge = 100
+Update-StatusState ([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
+$statusAge = $null
+$qAt = [long]((@([IO.File]::ReadAllText($statePath).TrimEnd("`n").Split("`n")) -match "^q_at@claude \d+$")[0].Split(" ")[1])
+Assert-True ([math]::Abs([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - 100 - $qAt) -le 2) "q_at recule de l'age du cache : une lecture ancienne ne parait pas neuve"
