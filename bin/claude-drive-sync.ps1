@@ -1,5 +1,6 @@
 . (Join-Path $PSScriptRoot "claude-drive-actions.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-creds.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-leftovers.ps1")
 $script:DriveLockPath = Join-Path (Get-HomeDir) ".clm-drive.lock"
 $script:DriveLockWaitMs = 5000
 $script:DriveDeleteLimit = 20
@@ -82,7 +83,8 @@ function Invoke-DriveSyncPass {
   $patterns = Get-SyncPatterns $accs
   $local = Get-LocalFiles $script:HomeDir $roots $patterns $state.Files $Ctl $DeadlineMs
   if ($local.Stopped) { $Res.Ok = $true; $Res.Stopped = $true; return }
-  $remote = Select-RemoteFiles (Get-DriveListing $folders.Files) $patterns $roots
+  $listing = Get-DriveListing $folders.Files
+  $remote = Select-RemoteFiles $listing $patterns $roots
   $plan = Get-SyncPlan $local.Files $state.Files $remote $local.Skipped -Joining:($state.At -eq 0) -CaseFold:($script:OsName -ne "Linux")
   Assert-DeleteLimit $plan $state.Files.Count $Force
   $Res.Total = $plan.Count
@@ -94,6 +96,7 @@ function Invoke-DriveSyncPass {
     Save-DriveState $state
   }
   if ($Res.Failed -gt 0) { $Res.Error = "" + $Res.Failed + " fichier(s) en echec, nouvel essai a la prochaine synchro"; return }
+  if ($Res.Left -eq 0) { $Res.Deleted += Remove-OwnLeftovers $listing $pc $Ctl $DeadlineMs }
   $Res.Ok = $true
   $Res.Again = (Get-RegistryMd5 $state.Files) -ne $registry
   if ($Res.Left -eq 0) { $Res.At = $state.At; Set-DriveLastSync $state.At }

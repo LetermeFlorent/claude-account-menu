@@ -127,7 +127,7 @@ Save-DriveState $st
 $r = Invoke-DriveSync
 Assert-Equal "1 0 0 0" (@($r.Total, $r.Up, $r.Down, $r.Deleted) -join " ") "profil Chrome : oublie de la base, rien envoye, recu ni supprime"
 Assert-True (-not (Read-DriveState).Files.ContainsKey($chromeFile)) "profil Chrome : retire de la base"
-Assert-True $script:Fake.ContainsKey($chromeFile) "profil Chrome : copie du Drive laissee en place"
+Assert-True $script:Fake.ContainsKey($chromeFile) "profil Chrome d'un autre PC : laisse sur le Drive"
 Assert-Equal "pc" (Get-PcText ".claude/outils/chrome-bidi/profils/c/Local State") "profil Chrome : copie locale gardee"
 $script:Fake.Remove($chromeFile)
 

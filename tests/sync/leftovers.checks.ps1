@@ -1,0 +1,19 @@
+. (Join-Path $PSScriptRoot "fake-drive.ps1")
+Use-Pc "PCL"
+Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
+$null = Invoke-DriveSync
+$own = ".claude/outils/chrome-bidi/profils/c/Cookies"
+$other = ".claude/outils/chrome-bidi/profils/c/History"
+$script:Fake[$own] = @{ Id = "own"; Name = $own; Md5 = "x"; M = 0; Pc = "PCL"; Bytes = [byte[]]@(65) }
+$script:Fake[$other] = @{ Id = "other"; Name = $other; Md5 = "x"; M = 0; Pc = "PCM"; Bytes = [byte[]]@(65) }
+Set-PcFile $own "local"
+Assert-Equal 0 (Remove-OwnLeftovers (Get-DriveListing "F") "PCL" @{ Stop = $true } 0) "arret demande : rien retire du Drive"
+$r = Invoke-DriveSync
+Assert-Equal 1 $r.Deleted "profil Chrome envoye par ce PC : retire du Drive"
+Assert-True (-not $script:Fake.ContainsKey($own)) "profil Chrome de ce PC : mis a la corbeille du Drive"
+Assert-True $script:Fake.ContainsKey($other) "profil Chrome d'un autre PC : laisse a ce PC"
+Assert-Equal "local" (Get-PcText $own) "profil Chrome : copie locale gardee"
+Assert-Equal 0 (Invoke-DriveSync).Deleted "profil Chrome : retire une seule fois"
+$script:Fake.Remove($other)
+Restore-FakeDrive
+. (Join-Path $bin "claude-drive-creds.ps1")
