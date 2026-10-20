@@ -79,6 +79,10 @@ $st = @{ Entries = @((New-ViewEntry "a"), (New-ViewEntry "b"), (New-ViewEntry "c
 $script:Startup = $su
 try {
   $f = Get-MenuRows $st (Get-MenuLayout 120 40 3 (Get-StartupRowCount $su)) 0
+  Assert-Equal "8 0 0" ("" + $st.Hit.Start + " " + $st.Hit.Top + " " + $st.Hit.Last) "mises a jour en cours : aucun compte affiche"
+  Assert-Equal -1 (Get-EntryAt $st 8) "mises a jour en cours : clic sans compte"
+  $su.Index = $su.Steps.Count
+  $f = Get-MenuRows $st (Get-MenuLayout 120 40 3 (Get-StartupRowCount $su)) 0
   $texts = @(foreach ($r in $f.Rows) { Get-ViewText $r })
   Assert-True ($texts[4].StartsWith("  clm  ")) "menu : barres sous le titre"
   Assert-Equal 8 $st.Hit.Start "menu : comptes decales sous les barres"

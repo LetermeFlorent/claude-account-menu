@@ -114,3 +114,27 @@ function Invoke-Captured {
     return [PSCustomObject]@{ Code = $p.ExitCode; Out = $out.Result }
   } finally { $p.Dispose() }
 }
+
+$script:NetworkHosts = @("api.anthropic.com", "github.com")
+$script:NetworkPort = 443
+$script:NetworkTimeoutMs = 3000
+$script:OfflineText = "pas de reseau : clm a besoin d'internet pour mettre a jour clm, Claude Code et Drive"
+
+function Test-Network {
+  $clients = @()
+  $tasks = @()
+  try {
+    foreach ($h in $script:NetworkHosts) {
+      $c = New-Object System.Net.Sockets.TcpClient
+      $clients += $c
+      try { $tasks += $c.ConnectAsync($h, $script:NetworkPort) } catch { continue }
+    }
+    $end = [DateTime]::UtcNow.AddMilliseconds($script:NetworkTimeoutMs)
+    while ($tasks.Count -gt 0 -and [DateTime]::UtcNow -lt $end) {
+      if (@($tasks | Where-Object { $_.Status -eq "RanToCompletion" }).Count -gt 0) { return $true }
+      if (@($tasks | Where-Object { -not $_.IsCompleted }).Count -eq 0) { return $false }
+      Start-Sleep -Milliseconds 20
+    }
+    return $false
+  } finally { foreach ($c in $clients) { $c.Close() } }
+}

@@ -1,9 +1,16 @@
 $script:SkipNames = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide")
+$script:SkipConversations = @("projects/*.jsonl", "projects/*/subagents", "projects/*/tool-results")
 $script:Sizes = @{}
+
+function Test-Conversation {
+  param([string]$Rel)
+  foreach ($p in $script:SkipConversations) { if ($Rel -like ("*/" + $p)) { return $true } }
+  return $false
+}
 
 function Measure-Tree {
   param([IO.FileSystemInfo]$Node, [string]$Rel, [string[]]$SkipPaths)
-  if ($script:SkipNames -contains $Node.Name -or $Node.Name -like "*.lock" -or $SkipPaths -contains $Rel) { return 0 }
+  if ($script:SkipNames -contains $Node.Name -or $Node.Name -like "*.lock" -or $SkipPaths -contains $Rel -or (Test-Conversation $Rel)) { return 0 }
   if (-not ($Node -is [IO.DirectoryInfo])) {
     $len = [long]$Node.Length + 1
     $script:Sizes[$Rel] = $len

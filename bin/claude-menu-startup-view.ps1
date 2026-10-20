@@ -7,6 +7,11 @@ function Get-StartupRowCount {
   return $Su.Steps.Count + 1
 }
 
+function Test-AccountsWaiting {
+  param($Su)
+  return (Get-StartupRowCount $Su) -gt 0 -and (Test-StartupBlocking $Su)
+}
+
 function Get-StartupTextInk {
   param($Step)
   if ($Step.Kind -eq "failed") { return $script:Ink.Alert }

@@ -22,6 +22,19 @@ function Start-Account {
   Stop-DriveSession $Acc
 }
 
+function Assert-Online {
+  if (Test-Network) { return }
+  Write-Output ("  " + $script:OfflineText)
+  exit 1
+}
+
+function Invoke-TextStartup {
+  param([bool]$Update, [bool]$Drive)
+  if ($Update) { Update-ClaudeForAccounts @(Get-Accounts) }
+  if ($Drive -and (Test-DriveAuto)) { $null = Invoke-DriveCliSync $false }
+  Assert-Online
+}
+
 $direct = $null
 $only = $null
 $restoreZip = $null
@@ -48,6 +61,7 @@ foreach ($a in $args) {
 
 $driveCli = Get-DriveCliAction $args
 $menuMode = $null -eq $driveCli -and -not $restoreZip -and $null -eq $direct -and (Test-RichTerminal)
+if ($null -eq $driveCli -and -not $restoreZip) { Assert-Online }
 if ($selfUpdate -and -not $menuMode -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
 if ($null -ne $driveCli) { exit (Invoke-DriveCli $driveCli) }
 
@@ -62,7 +76,7 @@ if ($restoreZip) {
 if ($null -ne $direct) {
   $accs = @(Get-Accounts)
   if ($direct -ge $accs.Count) { Write-Output ("pas de compte " + ($direct + 1)); exit 1 }
-  if ($update) { Update-ClaudeForAccounts $accs }
+  Invoke-TextStartup $update $true
   Start-Account $accs[$direct] $rest
   exit $LASTEXITCODE
 }
@@ -77,13 +91,17 @@ if ($menuMode) {
     Write-Host ("  interface indisponible : " + $_.Exception.Message) -ForegroundColor DarkGray
   }
 }
+if ($script:MenuOffline) {
+  Write-Output ("  " + $script:OfflineText)
+  exit 1
+}
 if ($script:ClmUpdated) {
   Write-Host "  clm mis a jour, redemarrage" -ForegroundColor DarkGray
   Restart-Clm $PSCommandPath $args
 }
 if ($fallback) {
   if ($selfUpdate -and $menuMode -and -not $script:ClmChecked -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
-  if ($update -and -not $script:MenuUpdated) { Update-ClaudeForAccounts @(Get-Accounts) }
+  Invoke-TextStartup ($update -and -not $script:MenuUpdated) (-not $script:DriveChecked)
   $usages = @(Get-AllUsages)
   foreach ($u in $usages) { Write-Host (Format-Row $u) }
   $n = Read-Host ("Numero du compte (1-" + $usages.Count + ")")

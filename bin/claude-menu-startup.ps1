@@ -1,9 +1,10 @@
 . (Join-Path $PSScriptRoot "claude-menu-startup-steps.ps1")
 $script:ClmUpdated = $false
 $script:ClmChecked = $false
+$script:DriveChecked = $false
 $script:Startup = $null
 $script:StartupLabels = @{ clm = "clm"; claude = "Claude Code"; drive = "Drive" }
-$script:StartupFree = @("none", "up", "down", "select", "refresh")
+$script:StartupFree = @("none", "refresh")
 $script:StartupHoldMs = 1500
 $script:StartupFadeMs = 300
 
@@ -19,7 +20,7 @@ function New-Startup {
   $steps = New-Object 'System.Collections.Generic.List[object]'
   $prev = ""
   foreach ($n in @($Names)) { $steps.Add((New-StartupStep $n $prev)); $prev = $n }
-  return @{ Steps = $steps; Index = 0; Launch = -1; Quit = $false; Exit = $null; EndAt = $null; Fade = $null; Hidden = ($steps.Count -eq 0); ClmError = "" }
+  return @{ Steps = $steps; Index = 0; Quit = $false; Exit = $null; EndAt = $null; Fade = $null; Hidden = ($steps.Count -eq 0); ClmError = "" }
 }
 
 function Get-StartupNames {
@@ -43,8 +44,7 @@ function Open-MenuSession {
 
 function Test-StartupBlocking {
   param($Su)
-  for ($i = $Su.Index; $i -lt $Su.Steps.Count; $i++) { if ($Su.Steps[$i].Name -ne "drive") { return $true } }
-  return $false
+  return $null -ne $Su -and $Su.Index -lt $Su.Steps.Count
 }
 
 function Step-Startup {
@@ -56,6 +56,7 @@ function Step-Startup {
   $changed = Invoke-StartupWork $Su $step $State $Now
   if ($step.State -ne "done") { return $changed }
   $Su.Index++
+  if ($step.Kind -eq "failed" -and -not (Test-Network)) { $Su.Exit = @{ Name = "offline" }; return $true }
   Set-StartupExit $Su
   return $true
 }
@@ -73,10 +74,7 @@ function Step-StartupEnd {
 function Set-StartupExit {
   param($Su)
   if ($null -ne $Su.Exit -or (Test-StartupBlocking $Su)) { return }
-  if ($Su.Quit) { $Su.Exit = @{ Name = "quit" }; return }
-  if ($Su.Launch -lt 0) { return }
-  if ($Su.Index -lt $Su.Steps.Count) { Start-DriveJob $script:DriveJob }
-  $Su.Exit = @{ Name = "pick"; Index = $Su.Launch }
+  if ($Su.Quit) { $Su.Exit = @{ Name = "quit" } }
 }
 
 function Get-StartupGate {
@@ -84,27 +82,14 @@ function Get-StartupGate {
   if ($null -eq $Su) { return $Act }
   if ($null -ne $Su.Exit) { return $Su.Exit }
   if (-not (Test-StartupBlocking $Su) -or $script:StartupFree -contains $Act.Name) { return $Act }
-  if ($Act.Name -eq "launch" -or $Act.Name -eq "pick") { return Set-StartupLaunch $Su $Act $State }
-  $text = "  disponible a la fin de la mise a jour"
+  $text = "  comptes affiches a la fin des mises a jour"
   if ($Act.Name -eq "quit") {
     $Su.Quit = $true
-    $Su.Launch = -1
     $text = "  arret demande, fin de la mise a jour en cours..."
   }
   $State.Msg = @($text, $script:Ink.Dim)
   $State.Dirty = $true
   return @{ Name = "none" }
-}
-
-function Set-StartupLaunch {
-  param($Su, $Act, $State)
-  $i = $State.Sel
-  if ($Act.Name -eq "pick") { $i = $Act.Index }
-  $Su.Launch = $i
-  $Su.Quit = $false
-  $State.Msg = @(("  " + $State.Entries[$i].Acc.Label + " : lancement a la fin de la mise a jour"), $script:Ink.Dim)
-  $State.Dirty = $true
-  return @{ Name = "select"; Index = $i }
 }
 
 function Add-ClmFailure {

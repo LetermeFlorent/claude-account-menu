@@ -54,6 +54,7 @@ function Get-SimpleRows {
 function Add-MenuCards {
   param($Rows, $Fades, $State, $L, [double]$Now)
   $h = $State.Hit
+  if ($h.Last -le $h.Top) { return }
   $p = Get-TweenValue $State.SelTween $Now
   for ($i = $h.Top; $i -lt $h.Last; $i++) { Add-CardRows $Rows $Fades $State.Entries[$i] $i $L $p $Now }
   $m = [int][math]::Round(($p - $h.Top) * $L.Per)
@@ -69,6 +70,7 @@ function Get-MenuRows {
   $State.Top = Get-ScrollTop $State.Sel $State.Top $L.Visible $n
   $top = $State.Top
   $last = [math]::Min($n, $top + $L.Visible)
+  if (Test-AccountsWaiting $script:Startup) { $last = $top }
   if ($L.Mode -eq "simple") {
     $State.Hit = @{ Start = 1; Per = 1; Top = $top; Last = $last }
     return Get-SimpleRows $State $L $top $last $Now
@@ -86,7 +88,7 @@ function Get-MenuRows {
   $State.Hit = @{ Start = $start; Per = $L.Per; Top = $top; Last = $last }
   Add-MenuCards $rows $fades $State $L $Now
   $tip = ""
-  if ($last -lt $n) { $tip = $script:DownArrow }
+  if ($last -lt $n -and $last -gt $top) { $tip = $script:DownArrow }
   Add-PlainRow $rows $fades (Get-RuleRow $L.W $tip)
   foreach ($r in (Get-FooterRows $script:MenuFooter $L.W)) { Add-PlainRow $rows $fades $r }
   Add-PlainRow $rows $fades (Get-MsgRow $State $L.W $Now)

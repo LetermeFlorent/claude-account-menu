@@ -57,3 +57,19 @@ Assert-Null (Join-KeychainChunks '{"n":2,"l":11}' { param($k) $chunks[$k] }) "tr
 Assert-Null (Join-KeychainChunks '{"n":0,"l":12}' { param($k) $chunks[$k] }) "trousseau, n nul"
 Assert-Null (Join-KeychainChunks '{"n":3,"l":12}' { param($k) $chunks[$k] }) "trousseau, morceau manquant"
 Assert-Null (Join-KeychainChunks 'pas du json' { param($k) $chunks[$k] }) "trousseau, meta illisible"
+
+$keptHosts = $script:NetworkHosts
+$keptPort = $script:NetworkPort
+$listener = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Loopback), 0
+$listener.Start()
+try {
+  $script:NetworkHosts = @("127.0.0.1")
+  $script:NetworkPort = $listener.LocalEndpoint.Port
+  Assert-True (Test-Network) "reseau : connexion etablie"
+  $listener.Stop()
+  Assert-True (-not (Test-Network)) "reseau : aucune reponse, clm ne s'ouvre pas"
+} finally { $listener.Stop(); $script:NetworkHosts = $keptHosts; $script:NetworkPort = $keptPort }
+Assert-True (Test-Conversation ".claude/projects/p/s.jsonl") "sauvegarde : conversation exclue"
+Assert-True (Test-Conversation ".claude/projects/p/s/subagents") "sauvegarde : sous-agents exclus"
+Assert-True (-not (Test-Conversation ".claude/projects/p/memory/MEMORY.md")) "sauvegarde : memoires gardees"
+Assert-True (-not (Test-Conversation ".claude/history.jsonl")) "sauvegarde : historique des invites garde"

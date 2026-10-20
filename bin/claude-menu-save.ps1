@@ -1,7 +1,7 @@
 . (Join-Path $PSScriptRoot "claude-menu-archive.ps1")
 . (Join-Path $PSScriptRoot "claude-self-version.ps1")
 . (Join-Path $PSScriptRoot "claude-machine-settings.ps1")
-$script:SaveExcludes = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide", "*.lock", ".local/bin/*.exe")
+$script:SaveExcludes = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide", "*.lock", ".local/bin/*.exe") + $script:SkipConversations
 
 function Get-AccountItems {
   param($Accs)

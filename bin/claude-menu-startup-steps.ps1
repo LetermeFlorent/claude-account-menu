@@ -114,6 +114,7 @@ function Step-DriveStartup {
   param($Step, [double]$Now)
   $job = $script:DriveJob
   if ($Step.State -eq "wait") {
+    $script:DriveChecked = $true
     Start-DriveJob $job
     $Step.State = "run"
     $null = Set-StartupProgress $Step -1 "preparation" $Now

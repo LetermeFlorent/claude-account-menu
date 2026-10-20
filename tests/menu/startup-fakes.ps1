@@ -1,7 +1,7 @@
 . (Join-Path $bin "claude-menu-loop.ps1")
 . (Join-Path $bin "claude-menu-startup.ps1")
 
-$startupMocked = @("Start-UsageLoader", "Start-ClaudeUpdate", "Step-ClaudeUpdate", "Get-Accounts", "Test-ClmInstalledHere", "Test-DriveConnected", "Test-DriveAuto", "Get-DriveLastSync", "Start-DriveJob", "New-ClmCheck", "Start-MenuLoader")
+$startupMocked = @("Start-UsageLoader", "Start-ClaudeUpdate", "Step-ClaudeUpdate", "Get-Accounts", "Test-ClmInstalledHere", "Test-DriveConnected", "Test-DriveAuto", "Get-DriveLastSync", "Start-DriveJob", "New-ClmCheck", "Start-MenuLoader", "Test-Network")
 $startupKept = @{}
 foreach ($n in $startupMocked) { $f = Get-Item ("function:" + $n) -ErrorAction SilentlyContinue; if ($f) { $startupKept[$n] = $f.ScriptBlock } }
 
@@ -79,6 +79,8 @@ function Test-DriveAuto { return $script:FakeAuto }
 function Get-DriveLastSync { return [long]0 }
 function New-ClmCheck { return @{ Loader = $null; NextAt = $null; Installed = $null; Latest = $null } }
 function Start-MenuLoader { param($State) $script:MenuLoads++ }
+function Test-Network { return $script:FakeOnline }
+$script:FakeOnline = $true
 
 $script:FakeLatest = $null
 $script:FakeFindError = $null

@@ -101,6 +101,7 @@ function Invoke-AccountMenu {
   param([bool]$Update, [bool]$SelfUpdate = $false)
   $script:UiQuit = $false
   $script:MenuRestart = $false
+  $script:MenuOffline = $false
   $script:ClmUpdated = $false
   Enter-UiScreen
   Open-MenuSession $Update $SelfUpdate
@@ -115,6 +116,7 @@ function Invoke-AccountMenu {
     elseif ($act.Name -eq "launch") { return Close-AccountMenu $st.Sel }
     elseif ($act.Name -eq "pick") { return Close-AccountMenu $act.Index }
     elseif ($act.Name -eq "quit" -or $act.Name -eq "restart") { return Close-AccountMenu $null }
+    elseif ($act.Name -eq "offline") { $script:MenuOffline = $true; return Close-AccountMenu $null }
     elseif ($act.Name -eq "refresh") { Request-EntryRead $st $now }
     elseif ($act.Name -eq "drivesync" -and -not $script:DriveJob.Connected) { Invoke-MenuCommand "drivelogin" }
     elseif ($act.Name -eq "drivesync") { $st.Msg = Request-DriveSync $script:DriveJob; $st.Dirty = $true }

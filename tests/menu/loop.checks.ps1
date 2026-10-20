@@ -79,7 +79,7 @@ try {
   Assert-True $script:DriveJob.Notify "y sans Drive : resultat de la synchro annonce"
   $null = Invoke-WithKeys @("y", [ConsoleKey]::Escape)
   Assert-Equal 2 $script:LoginCalls "y avec Drive : pas de nouvelle connexion"
-  Assert-Equal "b 1" ((Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter) $true).Label + " " + $script:ClaudeStarts) "menu ouvert pendant la mise a jour : Entree lance le compte a la fin"
+  Assert-Equal " 1" ("" + (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter, [ConsoleKey]::Escape) $true).Label + " " + $script:ClaudeStarts) "pendant la mise a jour : Entree refusee, aucun compte lance"
   Assert-Null (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Escape) $true) "Echap pendant la mise a jour : menu quitte a la fin"
   Assert-Equal "2   a, b, c : Claude Code a jour (2.1.292)" ("" + $script:ClaudeStarts + " " + $script:MenuState.Msg[0]) "Echap pendant la mise a jour : mise a jour menee au bout"
   Assert-Null $script:Startup "menu ferme : bloc de lancement oublie"
