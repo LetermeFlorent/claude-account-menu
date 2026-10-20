@@ -98,8 +98,9 @@ function Get-AccountAway {
 }
 
 function Open-DriveJob {
+  param([bool]$Start = $true)
   if ($null -ne $script:DriveJob) { return }
   $connected = Test-DriveConnected
   $script:DriveJob = New-DriveJob $connected (Get-DriveLastSync)
-  if ($connected -and (Test-DriveAuto)) { Start-DriveJob $script:DriveJob }
+  if ($Start -and $connected -and (Test-DriveAuto)) { Start-DriveJob $script:DriveJob }
 }

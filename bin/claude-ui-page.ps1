@@ -1,4 +1,5 @@
 $script:WorkPage = $null
+$script:PageMaxWidth = 100
 
 function New-TextRow {
   param([string]$Text, $Ink, [bool]$Bold = $false)
@@ -9,7 +10,7 @@ function New-TextRow {
 
 function Get-PageRows {
   param([string]$Title, $Body, [string[]]$Pairs = @(), [string]$Sub = "")
-  $w = Get-Clamped ($script:UiCols - 2) 38 100
+  $w = Get-Clamped ($script:UiClip - $script:FrameCols) $script:MenuMinWidth $script:PageMaxWidth
   $rows = New-Object 'System.Collections.Generic.List[object]'
   $rows.Add((New-Row))
   $rows.Add((Get-HeaderRow $Title $w))
@@ -18,10 +19,11 @@ function Get-PageRows {
   $rows.Add((New-Row))
   foreach ($r in $Body) { $rows.Add($r) }
   $rows.Add((New-Row))
-  $rows.Add((Get-RuleRow $w))
+  if ($Pairs.Count -gt 0 -or $null -ne $script:UiProgress) { $rows.Add((Get-RuleRow $w)) }
   if ($Pairs.Count -gt 0) { foreach ($r in (Get-FooterRows $Pairs $w)) { $rows.Add($r) } }
   if ($null -ne $script:UiProgress) { $rows.Add((Get-ProgressRow $w (Get-NowMs))) }
-  return ,$rows
+  if ($w + $script:FrameCols -gt $script:UiClip) { return ,$rows }
+  return ,(Get-FramedRows $rows $null $w)
 }
 
 function Read-PageKey {

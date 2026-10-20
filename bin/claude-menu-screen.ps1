@@ -32,6 +32,8 @@ function Get-SimpleRows {
   param($State, $L, [int]$Top, [int]$Last, [double]$Now)
   $rows = New-Object 'System.Collections.Generic.List[object]'
   $rows.Add((Get-HeaderRow "Comptes Claude Code" $L.W))
+  Add-StartupTextRows $rows $script:Startup $Now
+  $State.Hit.Start = $rows.Count
   for ($i = $Top; $i -lt $Last; $i++) {
     $e = $State.Entries[$i]
     $u = $e.U
@@ -79,6 +81,7 @@ function Get-MenuRows {
   Add-PlainRow $rows $fades (Get-MenuHeaderRow $State $L.W)
   Add-PlainRow $rows $fades (Get-RuleRow $L.W $tip)
   Add-PlainRow $rows $fades (New-Row)
+  Add-StartupRows $rows $fades $script:Startup $L $Now
   $start = $rows.Count
   $State.Hit = @{ Start = $start; Per = $L.Per; Top = $top; Last = $last }
   Add-MenuCards $rows $fades $State $L $Now
@@ -109,8 +112,9 @@ function Get-MenuMouseAction {
 
 function Show-Menu {
   param($State, [double]$Now)
-  $L = Get-MenuLayout $script:UiCols $script:UiRows $State.Entries.Count
+  $L = Get-MenuLayout $script:UiCols $script:UiRows $State.Entries.Count (Get-StartupRowCount $script:Startup)
   $f = Get-MenuRows $State $L $Now
+  if ($L.Mode -ne "simple") { $f = @{ Rows = (Get-FramedRows $f.Rows $f.Fades $L.W); Fades = $null } }
   Show-UiRows $f.Rows $Now $f.Fades
   $State.Dirty = $false
 }
@@ -119,6 +123,7 @@ function Test-MenuAnimating {
   param($State, [double]$Now)
   if ((Test-UiAnimating $Now) -or $null -ne $script:InkTween -or (Test-TweenRunning $State.SelTween $Now)) { return $true }
   if ($null -ne $script:UiProgress -and ($script:UiProgress.Pct -lt 0 -or (Test-TweenRunning $script:UiProgress.Bar $Now))) { return $true }
+  if (Test-StartupAnimating $script:Startup $Now) { return $true }
   foreach ($e in $State.Entries) {
     if ($e.Pending -and -not $e.Seen -and $script:MotionOn) { return $true }
     if ((Test-TweenRunning $e.T5 $Now) -or (Test-TweenRunning $e.T7 $Now)) { return $true }

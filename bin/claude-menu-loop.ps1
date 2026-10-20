@@ -11,6 +11,7 @@ function Step-MenuFrame {
   if (Update-MenuTimers $st $now) { $st.Dirty = $true }
   if (Step-ClmCheck $script:ClmCheck $now) { $st.Dirty = $true }
   if (Step-DriveJob $script:DriveJob) { Show-DriveNotice $st }
+  if (Step-Startup $script:Startup $st $now) { $st.Dirty = $true }
   if ($st.Dirty -or (Test-MenuAnimating $st $now)) { Show-Menu $st $now; return $true }
   return $false
 }
@@ -40,6 +41,7 @@ function Stop-MenuLoader {
 
 function Close-AccountMenu {
   param($Idx)
+  $script:Startup = $null
   Stop-MenuLoader 1000
   Stop-ClmCheck
   if ($null -eq $Idx) { Stop-DriveJob $script:DriveJob }
@@ -85,30 +87,34 @@ function Invoke-MenuCommand {
   Start-MenuLoader $st
 }
 
+function Read-MenuAction {
+  param($State)
+  $k = Read-UiKey
+  $act = @{ Name = "none" }
+  if ($k -is [hashtable]) { $act = Get-MenuMouseAction $State $k }
+  elseif ($null -ne $k) { $act = Get-MenuAction $k $State.Entries.Count }
+  if ($script:UiQuit) { $act = @{ Name = "quit" } }
+  return $act
+}
+
 function Invoke-AccountMenu {
   param([bool]$Update, [bool]$SelfUpdate = $false)
   $script:UiQuit = $false
   $script:MenuRestart = $false
   $script:ClmUpdated = $false
   Enter-UiScreen
-  $open = Invoke-StartupScreens $Update $SelfUpdate
-  Hide-Screen
-  if (-not $open) { Exit-UiScreen; return $null }
+  Open-MenuSession $Update $SelfUpdate
   while ($true) {
     $st = $script:MenuState
     $n = $st.Entries.Count
-    $k = Read-UiKey
-    $act = @{ Name = "none" }
-    if ($k -is [hashtable]) { $act = Get-MenuMouseAction $st $k }
-    elseif ($null -ne $k) { $act = Get-MenuAction $k $n }
-    if ($script:UiQuit) { $act = @{ Name = "quit" } }
+    $act = Get-StartupGate $script:Startup (Read-MenuAction $st) $st
     $now = Get-NowMs
     if ($act.Name -eq "up") { Move-MenuSel $st (($st.Sel + $n - 1) % $n) $now $true }
     elseif ($act.Name -eq "down") { Move-MenuSel $st (($st.Sel + 1) % $n) $now $true }
     elseif ($act.Name -eq "select") { Move-MenuSel $st $act.Index $now $true }
     elseif ($act.Name -eq "launch") { return Close-AccountMenu $st.Sel }
     elseif ($act.Name -eq "pick") { return Close-AccountMenu $act.Index }
-    elseif ($act.Name -eq "quit") { return Close-AccountMenu $null }
+    elseif ($act.Name -eq "quit" -or $act.Name -eq "restart") { return Close-AccountMenu $null }
     elseif ($act.Name -eq "refresh") { Request-EntryRead $st $now }
     elseif ($act.Name -eq "drivesync" -and -not $script:DriveJob.Connected) { Invoke-MenuCommand "drivelogin" }
     elseif ($act.Name -eq "drivesync") { $st.Msg = Request-DriveSync $script:DriveJob; $st.Dirty = $true }

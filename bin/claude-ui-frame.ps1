@@ -11,6 +11,12 @@ function Reset-Frame {
   $script:FrameLines = $null
 }
 
+function Get-FadedRgb {
+  param($Rgb, [double]$Fade, $Bg)
+  if ($Fade -lt 0) { $Fade = 0 }
+  return @([int]($Bg[0] + ($Rgb[0] - $Bg[0]) * $Fade), [int]($Bg[1] + ($Rgb[1] - $Bg[1]) * $Fade), [int]($Bg[2] + ($Rgb[2] - $Bg[2]) * $Fade))
+}
+
 function ConvertTo-LineText {
   param([object[]]$Segs, [int]$Max, [double]$Fade = 1, $Bg = $null)
   $e = $script:Esc
@@ -23,15 +29,10 @@ function ConvertTo-LineText {
     if ($t.Length -eq 0) { continue }
     if ($t.Length -gt $left) { $t = $t.Substring(0, $left) }
     $c = $s[1]
-    $r = [int]$c[0]; $g = [int]$c[1]; $b = [int]$c[2]
-    if ($Fade -lt 1) {
-      $r = [int]($Bg[0] + ($r - $Bg[0]) * $Fade)
-      $g = [int]($Bg[1] + ($g - $Bg[1]) * $Fade)
-      $b = [int]($Bg[2] + ($b - $Bg[2]) * $Fade)
-    }
+    if ($Fade -lt 1) { $c = Get-FadedRgb $c $Fade $Bg }
     [void]$sb.Append($e).Append("[0")
     if ($s[2]) { [void]$sb.Append(";1") }
-    [void]$sb.Append(";38;2;").Append($r).Append(";").Append($g).Append(";").Append($b).Append("m").Append($t)
+    [void]$sb.Append(";38;2;").Append([int]$c[0]).Append(";").Append([int]$c[1]).Append(";").Append([int]$c[2]).Append("m").Append($t)
     $left -= $t.Length
   }
   [void]$sb.Append($e).Append("[0m")

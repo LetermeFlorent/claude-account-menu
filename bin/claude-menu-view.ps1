@@ -27,6 +27,7 @@ $script:Palettes = @{
 . (Join-Path $PSScriptRoot "claude-menu-timer.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-clm-check.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-job.ps1")
+. (Join-Path $PSScriptRoot "claude-menu-startup-view.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-screen.ps1")
 . (Join-Path $PSScriptRoot "claude-ui-progress.ps1")
 . (Join-Path $PSScriptRoot "claude-ui-mouse.ps1")

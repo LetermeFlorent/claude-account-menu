@@ -1,5 +1,7 @@
 $script:UpArrow = [string][char]0x2191
 $script:DownArrow = [string][char]0x2193
+$script:FrameSide = 0x2502
+$script:FrameCols = 2
 $script:MenuFooter = @("Entree", "lancer", "a", "ajouter", "x", "retirer", "n", "renommer", "m", "maj", "y", "sync", "s", "sauvegarder", "r", "restaurer", "q", "quitter")
 
 function Get-HeaderRow {
@@ -35,10 +37,55 @@ function Get-FooterRows {
   return ,$rows
 }
 
+function Limit-Text {
+  param([string]$Text, [int]$Max)
+  if ($Text.Length -le $Max) { return $Text }
+  return $Text.Substring(0, $Max - 3) + "..."
+}
+
 function Add-PlainRow {
   param($Rows, $Fades, $Row)
   $Rows.Add($Row)
   $Fades.Add(1.0)
+}
+
+function Get-FrameEdge {
+  param([int]$Left, [int]$Right, [int]$W)
+  $r = New-Row
+  $r.Add(@(([string][char]$Left + ($script:Rule * $W) + [string][char]$Right), $script:Ink.Empty, $false))
+  return ,$r
+}
+
+function Get-FramedRow {
+  param($Row, [int]$W, [double]$Fade)
+  $side = [string][char]$script:FrameSide
+  $r = New-Row
+  $r.Add(@($side, $script:Ink.Empty, $false))
+  $left = $W
+  foreach ($s in $Row) {
+    $t = [string]$s[0]
+    if ($left -le 0 -or $t.Length -eq 0) { continue }
+    $c = $s.Clone()
+    if ($t.Length -gt $left) { $c[0] = $t.Substring(0, $left) }
+    if ($Fade -lt 1) { $c[1] = Get-FadedRgb $s[1] $Fade $script:Ink.Bg }
+    $r.Add($c)
+    $left -= $c[0].Length
+  }
+  $r.Add(@(((" " * $left) + $side), $script:Ink.Empty, $false))
+  return ,$r
+}
+
+function Get-FramedRows {
+  param($Rows, $Fades, [int]$W)
+  $out = New-Object 'System.Collections.Generic.List[object]'
+  $out.Add((Get-FrameEdge 0x256D 0x256E $W))
+  for ($i = 1; $i -lt $Rows.Count; $i++) {
+    $f = 1.0
+    if ($null -ne $Fades -and $i -lt $Fades.Count) { $f = $Fades[$i] }
+    $out.Add((Get-FramedRow $Rows[$i] $W $f))
+  }
+  $out.Add((Get-FrameEdge 0x2570 0x256F $W))
+  return ,$out
 }
 
 function Add-MarkSeg {

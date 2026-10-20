@@ -62,7 +62,7 @@ if ($restoreZip) {
 if ($null -ne $direct) {
   $accs = @(Get-Accounts)
   if ($direct -ge $accs.Count) { Write-Output ("pas de compte " + ($direct + 1)); exit 1 }
-  if ($update) { $null = Update-ClaudeForAccounts $accs }
+  if ($update) { Update-ClaudeForAccounts $accs }
   Start-Account $accs[$direct] $rest
   exit $LASTEXITCODE
 }
@@ -83,7 +83,7 @@ if ($script:ClmUpdated) {
 }
 if ($fallback) {
   if ($selfUpdate -and $menuMode -and -not $script:ClmChecked -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
-  if ($update -and -not $script:MenuUpdated) { $null = Update-ClaudeForAccounts @(Get-Accounts) }
+  if ($update -and -not $script:MenuUpdated) { Update-ClaudeForAccounts @(Get-Accounts) }
   $usages = @(Get-AllUsages)
   foreach ($u in $usages) { Write-Host (Format-Row $u) }
   $n = Read-Host ("Numero du compte (1-" + $usages.Count + ")")

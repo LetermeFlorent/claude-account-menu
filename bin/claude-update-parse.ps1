@@ -41,12 +41,6 @@ function Add-UpdateLine {
   elseif ($k -eq "error" -and -not $State.Error) { $State.Error = $e.Text }
 }
 
-function Limit-Text {
-  param([string]$Text, [int]$Max)
-  if ($Text.Length -le $Max) { return $Text }
-  return $Text.Substring(0, $Max - 3) + "..."
-}
-
 function New-Outcome {
   param([string]$Kind, [string]$Text)
   return [PSCustomObject]@{ Kind = $Kind; Text = $Text }

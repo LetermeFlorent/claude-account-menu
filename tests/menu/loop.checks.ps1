@@ -13,9 +13,18 @@ function Get-Accounts { return @(foreach ($l in @("a", "b", "c")) { [PSCustomObj
 function Update-UiTick { param([double]$Now, [bool]$Busy) return $false }
 $script:FakeLatest = $null
 function New-ClmCheck { return @{ Loader = $null; NextAt = $null; Installed = $null; Latest = $script:FakeLatest } }
-$driveMocked = @("Invoke-DriveLogin", "Test-DriveConnected", "Test-DriveAuto", "Get-DriveLastSync", "Start-DriveJob")
-$driveKept = @{}
-foreach ($n in $driveMocked) { $f = Get-Item ("function:" + $n) -ErrorAction SilentlyContinue; if ($f) { $driveKept[$n] = $f.ScriptBlock } }
+$softMocked = @("Invoke-DriveLogin", "Test-DriveConnected", "Test-DriveAuto", "Get-DriveLastSync", "Start-DriveJob", "Start-ClaudeUpdate", "Step-ClaudeUpdate")
+$softKept = @{}
+foreach ($n in $softMocked) { $f = Get-Item ("function:" + $n) -ErrorAction SilentlyContinue; if ($f) { $softKept[$n] = $f.ScriptBlock } }
+$script:ClaudeStarts = 0
+function Start-ClaudeUpdate { param([string]$Exe, $Acc) $script:ClaudeStarts++; return @{ Left = 2; State = (New-UpdateState); Watch = $null; Outcome = $null } }
+function Step-ClaudeUpdate {
+  param($Run)
+  $Run.Left = $Run.Left - 1
+  if ($Run.Left -gt 0) { return $false }
+  $Run.Outcome = New-Outcome "ok" "Claude Code a jour (2.1.292)"
+  return $true
+}
 function Invoke-DriveLogin {
   $script:LoginCalls++
   $script:UiAtLogin = $script:UiOn
@@ -29,7 +38,7 @@ $script:SyncStarts = 0
 function Start-DriveJob { param($Job) $script:SyncStarts++ }
 
 function Invoke-WithKeys {
-  param([object[]]$Keys)
+  param([object[]]$Keys, [bool]$Update = $false)
   $script:UiKeys.Clear()
   $script:ClmCheck = $null
   $script:MenuRestart = $false
@@ -38,7 +47,7 @@ function Invoke-WithKeys {
     if ($k -is [string]) { $c = [char]$k; $k = [ConsoleKey]::D2 }
     $script:UiKeys.Enqueue((New-Object System.ConsoleKeyInfo $c, $k, $false, $false, $false))
   }
-  return Invoke-AccountMenu $false
+  return Invoke-AccountMenu $Update
 }
 
 try {
@@ -70,10 +79,17 @@ try {
   Assert-True $script:DriveJob.Notify "y sans Drive : resultat de la synchro annonce"
   $null = Invoke-WithKeys @("y", [ConsoleKey]::Escape)
   Assert-Equal 2 $script:LoginCalls "y avec Drive : pas de nouvelle connexion"
+  Assert-Equal "b 1" ((Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter) $true).Label + " " + $script:ClaudeStarts) "menu ouvert pendant la mise a jour : Entree lance le compte a la fin"
+  Assert-Null (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Escape) $true) "Echap pendant la mise a jour : menu quitte a la fin"
+  Assert-Equal "2   a, b, c : Claude Code a jour (2.1.292)" ("" + $script:ClaudeStarts + " " + $script:MenuState.Msg[0]) "Echap pendant la mise a jour : mise a jour menee au bout"
+  Assert-Null $script:Startup "menu ferme : bloc de lancement oublie"
+  Assert-Null (Invoke-WithKeys @([ConsoleKey]::Escape) $true) "Echap avant la mise a jour : menu quitte"
+  Assert-Equal 2 $script:ClaudeStarts "Echap avant la mise a jour : rien lance"
 } finally {
   foreach ($n in $mocked) { Set-Item -Path ("function:" + $n) -Value $kept[$n] }
-  foreach ($n in $driveMocked) { if ($driveKept[$n]) { Set-Item -Path ("function:" + $n) -Value $driveKept[$n] } else { Remove-Item -Path ("function:" + $n) } }
+  foreach ($n in $softMocked) { if ($softKept[$n]) { Set-Item -Path ("function:" + $n) -Value $softKept[$n] } else { Remove-Item -Path ("function:" + $n) } }
   $script:DriveJob = $null
+  $script:Startup = $null
   $script:UiKeys.Clear()
   $script:ClmCheck = $null
   $script:MenuRestart = $false

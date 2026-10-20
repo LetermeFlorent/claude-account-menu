@@ -88,12 +88,62 @@ Assert-Equal 2 @($groups[0].Accounts).Count "deux comptes dans le groupe"
 Assert-Equal "compte1" $groups[0].Accounts[0].Label "premier compte du groupe"
 Assert-Equal "  compte1, pro : Claude Code a jour (2.1.292)" (Format-UpdateMessage $groups[0].Accounts "Claude Code a jour (2.1.292)") "message sous le menu"
 
-$run = @{ State = @{ Mode = ""; Done = $false }; Watch = $null; Killed = ""; ExitAt = -1.0 }
 $gone = [PSCustomObject]@{ HasExited = $true }
-$open = @([PSCustomObject]@{ Eof = $false }, [PSCustomObject]@{ Eof = $false })
-Assert-Equal $false (Step-UpdateRun $run $gone $open 10.0) "processus sorti, flux encore ouverts"
+$run = @{ Proc = $gone; Srcs = @([PSCustomObject]@{ Eof = $false }, [PSCustomObject]@{ Eof = $false }); State = @{ Mode = ""; Done = $false }; Watch = $null; Killed = ""; ExitAt = -1.0 }
+Assert-Equal $false (Step-UpdateRun $run 10.0) "processus sorti, flux encore ouverts"
 Assert-Equal 10.0 $run.ExitAt "heure de sortie notee"
-Assert-Equal $true (Step-UpdateRun $run $gone $open 12.0) "flux pendants, arret apres deux secondes"
-$closed = @([PSCustomObject]@{ Eof = $true }, [PSCustomObject]@{ Eof = $true })
+Assert-Equal $true (Step-UpdateRun $run 12.0) "flux pendants, arret apres deux secondes"
+$run.Srcs = @([PSCustomObject]@{ Eof = $true }, [PSCustomObject]@{ Eof = $true })
 $run.ExitAt = -1.0
-Assert-Equal $true (Step-UpdateRun $run $gone $closed 3.0) "processus sorti, flux fermes"
+Assert-Equal $true (Step-UpdateRun $run 3.0) "processus sorti, flux fermes"
+
+function Get-TickText {
+  param($State, $Watch)
+  $t = Get-UpdateTick $State $Watch
+  return $t.Label + "|" + $t.Pct + "|" + $t.Detail
+}
+
+$st = New-UpdateState
+Assert-Equal "recherche de mise a jour|-1|" (Get-TickText $st $null) "etape : recherche"
+Add-UpdateLine $st "Updating to 2.1.300..."
+Assert-Equal "mise a jour 2.1.300|-1|Updating to 2.1.300..." (Get-TickText $st $null) "etape : version trouvee, telechargement pas encore vu"
+$watch = @{ Seen = $true; Settled = $false; Bytes = [long]127429200; Size = [long]254858400 }
+Assert-Equal "telechargement 2.1.300|50|121 / 243 Mo" (Get-TickText $st $watch) "etape : telechargement avec pourcentage"
+$watch.Size = [long]0
+Assert-Equal "telechargement 2.1.300|-1|121 Mo" (Get-TickText $st $watch) "etape : telechargement de taille inconnue"
+$watch.Settled = $true
+Assert-Equal "installation 2.1.300|100|" (Get-TickText $st $watch) "etape : installation"
+
+Assert-Equal "ok" (Get-UpdateKind @("ok", "manual", "unknown")) "bilan sans mise a jour"
+Assert-Equal "updated" (Get-UpdateKind @("ok", "updated")) "bilan avec une mise a jour"
+Assert-Equal "failed" (Get-UpdateKind @("updated", "failed")) "bilan avec un echec"
+Assert-Equal "ok" (Get-UpdateKind @()) "bilan vide"
+$sum = Get-UpdateSummary @("  a : Claude Code a jour", "  b : echec") @("ok", "failed")
+Assert-Equal "  a : Claude Code a jour     b : echec" $sum[0] "bilan : messages mis bout a bout"
+Assert-Equal $script:Ink.Alert $sum[1] "bilan : couleur du pire resultat"
+
+foreach ($exe in @("", (Join-Path $PSScriptRoot "absent-claude.exe"))) {
+  $run = Start-ClaudeUpdate $exe $null
+  Assert-Equal "Claude Code introuvable, pas de mise a jour" $run.Outcome.Text ("Claude Code absent, resultat immediat : " + $exe)
+  Assert-Equal $true (Step-ClaudeUpdate $run) ("Claude Code absent, rien a attendre : " + $exe)
+}
+Assert-Equal "failed" (Invoke-ClaudeUpdate "" $null).Kind "mode texte, Claude Code absent"
+
+function New-FakeUpdateProc {
+  param([bool]$Exited, [string]$Out)
+  $p = [PSCustomObject]@{ HasExited = $Exited; ExitCode = 0; Id = 1; Disposed = $false; StandardOutput = (New-Object IO.StringReader $Out); StandardError = (New-Object IO.StringReader "") }
+  $p | Add-Member -MemberType ScriptMethod -Name Dispose -Value { $this.Disposed = $true }
+  return $p
+}
+
+$proc = New-FakeUpdateProc $false "Current version: 2.1.292"
+$run = New-UpdateRun $proc
+Assert-Equal $false (Step-ClaudeUpdate $run) "pas a pas : processus en cours"
+Assert-Null $run.Outcome "pas a pas : pas encore de resultat"
+Assert-Equal "2.1.292" $run.State.Current "pas a pas : sortie lue au fil de l'eau"
+$proc = New-FakeUpdateProc $true "Current version: 2.1.292`nClaude Code is up to date (2.1.292)"
+$run = New-UpdateRun $proc
+Assert-Equal $true (Step-ClaudeUpdate $run) "pas a pas : processus fini"
+Assert-Equal "Claude Code a jour (2.1.292)" $run.Outcome.Text "pas a pas : resultat tire de la sortie"
+Assert-True $proc.Disposed "pas a pas : processus libere"
+Assert-Equal $true (Step-ClaudeUpdate $run) "pas a pas : fini reste fini"

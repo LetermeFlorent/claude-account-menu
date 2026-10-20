@@ -3,12 +3,6 @@
 
 function Write-UpdateProgress {
   param([string]$Label, [string]$Bar, [string]$Pct, [string]$Detail)
-  if ($script:UiOn) {
-    $p = -1
-    if ($Pct -match "\d+") { $p = [int]$Matches[0] }
-    Set-UiProgress $Label $p $Detail
-    return
-  }
   $head = "  " + $Label + "  "
   $mid = ""
   if ($Pct) { $mid = "  " + $Pct }
@@ -20,65 +14,81 @@ function Write-UpdateProgress {
   Write-Host ("`r" + $line + (" " * $pad) + $script:Esc + "[0m") -NoNewline
 }
 
+function Get-UpdateTick {
+  param($State, $Watch)
+  $ver = "" + $State.Target
+  if (-not $State.Mode) { return @{ Label = "recherche de mise a jour"; Pct = -1; Detail = "" } }
+  if ($null -eq $Watch -or -not $Watch.Seen) { return @{ Label = ("mise a jour " + $ver).Trim(); Pct = -1; Detail = $State.Last } }
+  if ($Watch.Settled) { return @{ Label = ("installation " + $ver); Pct = 100; Detail = "" } }
+  return @{ Label = ("telechargement " + $ver); Pct = (Get-DownloadPercent $Watch.Bytes $Watch.Size); Detail = (Format-DownloadDetail $Watch.Bytes $Watch.Size) }
+}
+
 function Show-UpdateTick {
   param($State, $Watch, [int]$Tick)
-  $wait = Get-WaitBar $Tick
-  $ver = "" + $State.Target
-  if (-not $State.Mode) { Write-UpdateProgress "recherche de mise a jour" $wait "" ""; return }
-  if ($null -eq $Watch -or -not $Watch.Seen) {
-    $label = ("mise a jour " + $ver).Trim()
-    Write-UpdateProgress $label $wait "" $State.Last
-    return
-  }
-  if ($Watch.Settled) { Write-UpdateProgress ("installation " + $ver) (Get-ProgressBar 100) "100 %" ""; return }
-  $p = Get-DownloadPercent $Watch.Bytes $Watch.Size
-  $detail = Format-DownloadDetail $Watch.Bytes $Watch.Size
-  if ($p -lt 0) { Write-UpdateProgress ("telechargement " + $ver) $wait "" $detail; return }
-  Write-UpdateProgress ("telechargement " + $ver) (Get-ProgressBar $p) (("" + $p + " %").PadLeft(5)) $detail
+  $t = Get-UpdateTick $State $Watch
+  $bar = Get-WaitBar $Tick
+  $pct = ""
+  if ($t.Pct -ge 0) { $bar = Get-ProgressBar $t.Pct; $pct = ("" + $t.Pct + " %").PadLeft(5) }
+  Write-UpdateProgress $t.Label $bar $pct $t.Detail
 }
 
 function Step-UpdateRun {
-  param($Run, $Proc, $Srcs, [double]$Now)
-  if ($Proc.HasExited) {
+  param($Run, [double]$Now)
+  if ($Run.Proc.HasExited) {
     if ($Run.ExitAt -lt 0) { $Run.ExitAt = $Now }
-    return (($Srcs[0].Eof -and $Srcs[1].Eof) -or $Now - $Run.ExitAt -ge 2)
+    return (($Run.Srcs[0].Eof -and $Run.Srcs[1].Eof) -or $Now - $Run.ExitAt -ge 2)
   }
   $seen = $false; $settled = $false; $idle = 0.0
   if ($null -ne $Run.Watch) { $seen = $Run.Watch.Seen; $settled = $Run.Watch.Settled; $idle = $Now - $Run.Watch.Changed }
   $Run.Killed = Get-WatchAction $Now ([bool]($Run.State.Mode -or $Run.State.Done)) $seen $settled $idle
-  if ($Run.Killed) { Stop-UpdateProcess $Proc; return $true }
+  if ($Run.Killed) { Stop-UpdateProcess $Run.Proc; return $true }
   return $false
+}
+
+function New-UpdateRun {
+  param($Proc)
+  $srcs = @((New-LineSource $Proc.StandardOutput), (New-LineSource $Proc.StandardError))
+  return @{ Proc = $Proc; Srcs = $srcs; State = (New-UpdateState); Watch = $null; Killed = ""; ExitAt = -1.0; Clock = [Diagnostics.Stopwatch]::StartNew(); Outcome = $null }
+}
+
+function Start-ClaudeUpdate {
+  param([string]$Exe, $Acc)
+  $proc = $null
+  if ($Exe -and (Test-Path -LiteralPath $Exe)) { $proc = Invoke-InAccountEnv $Acc { Start-UpdateProcess $Exe } }
+  if ($null -eq $proc) { return @{ Outcome = (New-Outcome "failed" "Claude Code introuvable, pas de mise a jour") } }
+  return New-UpdateRun $proc
+}
+
+function Step-ClaudeUpdate {
+  param($Run)
+  if ($null -ne $Run.Outcome) { return $true }
+  foreach ($s in $Run.Srcs) { foreach ($l in Receive-Lines $s) { Add-UpdateLine $Run.State $l } }
+  if ($Run.State.Mode -eq "native" -and $null -eq $Run.Watch) { $Run.Watch = New-StagingWatch $Run.State.Target $Run.Proc.Id $Run.Clock.Elapsed.TotalSeconds }
+  $now = $Run.Clock.Elapsed.TotalSeconds
+  if ($null -ne $Run.Watch) { Update-StagingWatch $Run.Watch $now }
+  if (-not (Step-UpdateRun $Run $now)) { return $false }
+  $code = -1
+  if ($Run.Proc.HasExited) { $code = $Run.Proc.ExitCode }
+  $Run.Proc.Dispose()
+  $Run.Outcome = Get-UpdateOutcome $Run.State $code $Run.Killed
+  return $true
 }
 
 function Invoke-ClaudeUpdate {
   param([string]$Exe, $Acc)
-  $missing = New-Outcome "failed" "Claude Code introuvable, pas de mise a jour"
-  if (-not $Exe -or -not (Test-Path -LiteralPath $Exe)) { return $missing }
-  $proc = Invoke-InAccountEnv $Acc { Start-UpdateProcess $Exe }
-  if ($null -eq $proc) { return $missing }
-  $state = New-UpdateState
-  $srcs = @((New-LineSource $proc.StandardOutput), (New-LineSource $proc.StandardError))
-  $clock = [Diagnostics.Stopwatch]::StartNew()
-  $run = @{ State = $state; Watch = $null; Killed = ""; ExitAt = -1.0 }
+  $run = Start-ClaudeUpdate $Exe $Acc
+  if ($null -ne $run.Outcome) { return $run.Outcome }
   $tick = 0
   try {
-    while ($true) {
-      foreach ($s in $srcs) { foreach ($l in Receive-Lines $s) { Add-UpdateLine $state $l } }
-      if ($state.Mode -eq "native" -and $null -eq $run.Watch) { $run.Watch = New-StagingWatch $state.Target $proc.Id $clock.Elapsed.TotalSeconds }
-      $now = $clock.Elapsed.TotalSeconds
-      if ($null -ne $run.Watch) { Update-StagingWatch $run.Watch $now }
-      if (Step-UpdateRun $run $proc $srcs $now) { break }
-      Show-UpdateTick $state $run.Watch $tick
+    while (-not (Step-ClaudeUpdate $run)) {
+      Show-UpdateTick $run.State $run.Watch $tick
       $tick++
       Wait-Progress 250
     }
   } finally {
-    if (-not $script:UiOn) { Write-Host ("`r" + (" " * ($script:ViewWidth - 1)) + "`r") -NoNewline }
+    Write-Host ("`r" + (" " * ($script:ViewWidth - 1)) + "`r") -NoNewline
   }
-  $code = -1
-  if ($proc.HasExited) { $code = $proc.ExitCode }
-  $proc.Dispose()
-  return Get-UpdateOutcome $state $code $run.Killed
+  return $run.Outcome
 }
 
 function Get-AccountExe {
@@ -114,17 +124,22 @@ function Get-UpdateInk {
   return $script:Ink.Dim
 }
 
+function Get-UpdateKind {
+  param($Kinds)
+  if (@($Kinds) -contains "failed") { return "failed" }
+  if (@($Kinds) -contains "updated") { return "updated" }
+  return "ok"
+}
+
+function Get-UpdateSummary {
+  param($Parts, $Kinds)
+  return @((@($Parts) -join "   "), (Get-UpdateInk (Get-UpdateKind $Kinds)))
+}
+
 function Update-ClaudeForAccounts {
   param($Accounts)
-  $parts = @(); $kinds = @()
   foreach ($g in Get-UpdateGroups $Accounts) {
     $o = Invoke-ClaudeUpdate $g.Exe $g.Accounts[0]
-    if (-not $script:UiOn) { foreach ($a in $g.Accounts) { Write-Segs @(@(("  " + $a.Label + "  "), $script:Ink.Text, $true), @($o.Text, (Get-UpdateInk $o.Kind), $false)) } }
-    $parts += Format-UpdateMessage $g.Accounts $o.Text
-    $kinds += $o.Kind
+    foreach ($a in $g.Accounts) { Write-Segs @(@(("  " + $a.Label + "  "), $script:Ink.Text, $true), @($o.Text, (Get-UpdateInk $o.Kind), $false)) }
   }
-  $kind = "ok"
-  if ($kinds -contains "updated") { $kind = "updated" }
-  if ($kinds -contains "failed") { $kind = "failed" }
-  return @(($parts -join "   "), (Get-UpdateInk $kind))
 }

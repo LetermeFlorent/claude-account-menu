@@ -1,4 +1,5 @@
 $script:MenuMaxWidth = 105
+$script:MenuMinWidth = 38
 
 function Get-Clamped {
   param([int]$V, [int]$Min, [int]$Max)
@@ -6,15 +7,16 @@ function Get-Clamped {
 }
 
 function Get-MenuLayout {
-  param([int]$Cols, [int]$Rows, [int]$Count)
+  param([int]$Cols, [int]$Rows, [int]$Count, [int]$Extra = 0)
   $n = [math]::Max(1, $Count)
-  $w = Get-Clamped ($Cols - 2) 38 $script:MenuMaxWidth
+  $inner = $Cols - 1 - $script:FrameCols
+  $w = Get-Clamped $inner $script:MenuMinWidth $script:MenuMaxWidth
   $foot = (Get-FooterRows $script:MenuFooter $w).Count
-  $fixed = 6 + $foot
+  $fixed = 7 + $foot + $Extra
   $l = @{ W = $w; FooterRows = $foot; Clip = [math]::Max(1, $Cols - 1); Visible = $n; Cells = 0 }
-  if ($Cols -lt 40 -or $Rows -lt $fixed + 3) {
+  if ($inner -lt $script:MenuMinWidth -or $Rows -lt $fixed + 3) {
     $l.Mode = "simple"; $l.Per = 1
-    $l.Visible = [math]::Max(1, [math]::Min($n, $Rows - 2))
+    $l.Visible = [math]::Max(1, [math]::Min($n, $Rows - 2 - $Extra))
   } elseif ($fixed + 5 * $n -le $Rows) {
     $l.Mode = "full"; $l.Per = 5
     $l.Cells = Get-Clamped ($w - 34) 8 48
