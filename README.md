@@ -153,6 +153,7 @@ clm --sync --force           même chose, au-delà du garde-fou des suppressions
 clm --sync-auto=off          coupe la synchro Drive automatique, on la remet
 clm --prefs                  réglages de synchro de ce PC, avec l'id de chaque case
 clm --prefs-off global:roblox global:blender
+clm --prefs-off "global:*"   décoche tous les MCP globaux, "mcp:*" tous les locaux
 clm --prefs-on <id>          recoche, ou annule un effacement demandé
 clm --prefs-erase <id> --yes efface partout à la prochaine synchro
 ```
@@ -292,7 +293,9 @@ Les conversations ne quittent jamais leur PC : les fichiers `.jsonl` de `project
 
 ### Réglages de synchro par PC
 
-La touche `p` ouvre "Reglages de synchro de ce PC", une liste à cocher en trois groupes : les skills, les MCP locaux rangés par projet ("dossier perso" pour ceux de `~/.mcp.json`), puis les MCP globaux de ce PC. Une case cochée veut dire que l'élément est synchronisé sur ce PC. Les flèches déplacent le curseur, Espace coche ou décoche, Suppr efface partout après confirmation par `o`, et Échap ou `q` revient au menu, en lançant une synchro si une case a changé. La page demande un Drive connecté.
+La touche `p` ouvre "Reglages de synchro de ce PC", une liste à cocher en trois groupes : les skills, les MCP locaux rangés sous le nom de leur projet ("dossier perso" pour ceux de `~/.mcp.json`), puis les MCP globaux de ce PC. Une case cochée veut dire que l'élément est synchronisé sur ce PC. Les flèches déplacent le curseur, Espace coche ou décoche, Suppr efface partout après confirmation par `o`, et Échap ou `q` revient au menu, en lançant une synchro si une case a changé. La page demande un Drive connecté.
+
+En tête des MCP locaux, la case "tous les MCP locaux" vaut pour tout le groupe, et "tous les MCP globaux" fait de même pour les globaux. À droite, elles comptent les cases cochées, et un carré gris dit que le groupe l'est en partie. Espace sur l'une d'elles décoche tout le groupe s'il était entièrement coché, et le coche en entier sinon. Un MCP en attente d'effacement n'est pas compté et garde son effacement. Suppr n'y fait rien : un effacement se demande MCP par MCP.
 
 Un MCP local est déclaré pour un projet situé sous le dossier perso, dans `projects.<chemin>.mcpServers` du `.claude.json` d'un compte, ou dans `~/.mcp.json`. Chaque PC publie les siens dans son fichier du dossier `presence` du Drive, et `mcpServers` ne part plus dans les `.claude.json` envoyés : chaque PC reconstruit ses fichiers avec ses propres cases. Un MCP global est déclaré dans `mcpServers` en tête du `.claude.json`. Il ne quitte jamais son PC, et `clm` le recopie entre les comptes du PC comme décrit dans "Réglages et MCP synchronisés".
 
@@ -302,7 +305,7 @@ Suppr efface partout. Un skill part à la corbeille du Drive et son dossier quit
 
 Les cases ne valent que lorsque tous les PC du Drive ont une version de `clm` qui les gère. Avant, les MCP partent en entier comme avant, et la page nomme les PC en retard : "MCP envoyes en entier tant que ces PC n'ont pas clm a jour". Les cases décochées et les effacements en attente sont gardés dans `~/.clm-sync-choice.json`.
 
-Sans menu, `clm --prefs` affiche les mêmes cases, `[x]` ou `[ ]`, chacune avec son id : `skill:<nom>`, `mcp:<projet>|<nom>` (projet vide pour `~/.mcp.json`) ou `global:<nom>`. `--prefs-on` et `--prefs-off` cochent et décochent un ou plusieurs ids, `--prefs-erase` les efface partout et demande `--yes`. Le nom seul suffit quand un seul élément le porte, sinon la commande liste les ids possibles. Après un changement, `clm` lance la synchro, comme Échap dans la page.
+Sans menu, `clm --prefs` affiche les mêmes cases, `[x]` ou `[ ]`, chacune avec son id : `skill:<nom>`, `mcp:<projet>|<nom>` (projet vide pour `~/.mcp.json`) ou `global:<nom>`. `"mcp:*"` vise tous les MCP locaux et `"global:*"` tous les globaux, entre guillemets à cause du `*`, et `[-]` marque un groupe coché en partie. `--prefs-on` et `--prefs-off` cochent et décochent un ou plusieurs ids, `--prefs-erase` les efface partout et demande `--yes`, mais refuse un groupe entier. Le nom seul suffit quand un seul élément le porte, sinon la commande liste les ids possibles. Après un changement, `clm` lance la synchro, comme Échap dans la page.
 
 ### Jetons de connexion
 

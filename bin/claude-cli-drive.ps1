@@ -36,7 +36,9 @@ function Format-PrefsItem {
   param($Item)
   $box = "[ ]"
   if ($Item.On -and -not $Item.Erasing) { $box = "[x]" }
+  elseif ($Item.Mixed) { $box = "[-]" }
   $t = "  " + $box + " " + (Get-PrefsId $Item)
+  if ($Item.All) { $t += "  " + $Item.Label }
   if ($Item.Tag) { $t += "  " + $Item.Tag }
   if ($Item.Erasing) { $t += "  efface a la prochaine synchro" }
   return $t
@@ -48,7 +50,9 @@ function Get-CliPrefsLines {
   $out = New-Object 'System.Collections.Generic.List[string]'
   $out.Add($script:PrefsTitle + ", " + (Get-CliMcpModeLine $p.Catalog))
   foreach ($l in $p.Lines) {
-    if ($l.Head) { $out.Add($l.Label) } else { $out.Add((Format-PrefsItem $l)) }
+    if ($l.Sub) { $out.Add("  " + $l.Label) }
+    elseif ($l.Head) { $out.Add($l.Label) }
+    else { $out.Add((Format-PrefsItem $l)) }
   }
   return ,$out.ToArray()
 }
@@ -78,12 +82,14 @@ function Resolve-PrefsItems {
 function Set-CliPrefsItem {
   param($Choice, $Item, [string]$Move)
   if ($Move -eq "erase") { Add-EraseRequest $Choice $Item.Kind $Item.Key; return }
+  if ($Item.All) { foreach ($one in $Item.Items) { Set-PrefsState $Choice $one ($Move -eq "on") }; return }
   Set-PrefsState $Choice $Item ($Move -eq "on")
 }
 
 function Invoke-CliPrefsChange {
   param([string]$Move, [string[]]$Refs, [bool]$Yes)
   $prefsPicked = @(Resolve-PrefsItems (Read-CliPrefs).Lines $Refs)
+  if ($Move -eq "erase" -and @($prefsPicked | Where-Object { $_.All }).Count -gt 0) { throw "un groupe entier ne s'efface pas, donner les ids un par un" }
   if ($Move -eq "erase" -and -not $Yes) {
     foreach ($i in $prefsPicked) { Write-Host ("effacer " + (Get-PrefsId $i) + " partout : " + $script:PrefsEraseWarn[$i.Kind].Trim()) }
     throw "ajouter --yes pour confirmer"

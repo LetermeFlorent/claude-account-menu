@@ -47,27 +47,51 @@ try {
   $choice.globals["blender"] = $false
   Add-EraseRequest $choice "mcp" "|vieux"
   $lines = Get-PrefsLines $choice $cat @("roblox")
-  $want = "[Skills] alpha:10 beta:10 [MCP locaux : dossier perso] ici:10 loin:00 vieux:01 [MCP locaux : Documents/p] outil:10 [MCP globaux de ce PC, jamais envoyes aux autres PC] blender:00 roblox:10"
-  Assert-Equal $want (Get-PrefsText $lines) "reglages : skills, MCP locaux par projet, MCP globaux"
-  Assert-Equal "Autre" $lines[5].Tag "reglages : systeme du MCP affiche"
+  $want = "[Skills] alpha:10 beta:10 [MCP locaux] tous les MCP locaux:00 [dossier perso] ici:10 loin:00 vieux:01 [Documents/p] outil:10 [MCP globaux de ce PC, jamais envoyes aux autres PC] tous les MCP globaux:00 blender:00 roblox:10"
+  Assert-Equal $want (Get-PrefsText $lines) "reglages : skills, MCP locaux par projet, MCP globaux, une case pour tout le groupe"
+  Assert-Equal "Autre" $lines[7].Tag "reglages : systeme du MCP affiche"
 
   Set-PrefsCheck $choice $lines[1]
   Assert-True ($choice.skills["alpha"] -eq $false) "skill decoche"
   Set-PrefsCheck $choice (Get-PrefsLines $choice $cat @("roblox"))[1]
   Assert-True (-not $choice.skills.ContainsKey("alpha")) "skill recoche : retour au defaut"
-  Set-PrefsCheck $choice $lines[5]
+  Set-PrefsCheck $choice $lines[7]
   Assert-True ($choice.mcp["|loin"] -eq $true) "MCP d'un autre systeme coche a la main"
-  Set-PrefsCheck $choice $lines[4]
-  Assert-True ($choice.mcp["|ici"] -eq $false) "MCP du meme systeme decoche"
   Set-PrefsCheck $choice $lines[6]
+  Assert-True ($choice.mcp["|ici"] -eq $false) "MCP du meme systeme decoche"
+  Set-PrefsCheck $choice $lines[8]
   Assert-Equal 0 $choice.Erase.mcp.Count "Espace sur un effacement en attente : annule"
   Assert-True (-not $choice.mcp.ContainsKey("|vieux")) "effacement annule : case inchangee"
-  Set-PrefsCheck $choice $lines[11]
+  Set-PrefsCheck $choice $lines[14]
   Assert-True ($choice.globals["roblox"] -eq $false) "MCP global decoche"
+
+  $group = New-SyncChoice
+  $group.globals["blender"] = $false
+  Add-EraseRequest $group "mcp" "|vieux"
+  $l = Get-PrefsLines $group $cat @("roblox")
+  Assert-True ($l[4].Mixed -and -not $l[4].On -and $l[4].Tag -eq "coches : 2 sur 3") "tous les MCP locaux : en partie coches, effacement en attente pas compte"
+  Assert-True ($l[12].Mixed -and $l[12].Tag -eq "coches : 1 sur 2") "tous les MCP globaux : en partie coches"
+  Set-PrefsCheck $group $l[4]
+  Assert-True ($group.mcp["|loin"] -eq $true -and -not $group.mcp.ContainsKey("|ici")) "tous les MCP locaux en partie coches : tout coche"
+  $l = Get-PrefsLines $group $cat @("roblox")
+  Assert-True ($l[4].On -and -not $l[4].Mixed) "tous les MCP locaux : tout coche"
+  Set-PrefsCheck $group $l[4]
+  Assert-True ($group.mcp["|ici"] -eq $false -and -not $group.mcp.ContainsKey("|loin") -and $group.mcp["Documents/p|outil"] -eq $false) "tous les MCP locaux coches : tout decoche"
+  Assert-Equal "|vieux" ($group.Erase.mcp -join ",") "tous les MCP locaux : effacement en attente garde"
+  Set-PrefsCheck $group $l[12]
+  Assert-Equal 0 $group.globals.Count "tous les MCP globaux en partie coches : tout coche"
+  Set-PrefsCheck $group (Get-PrefsLines $group $cat @("roblox"))[12]
+  Assert-True ($group.globals["blender"] -eq $false -and $group.globals["roblox"] -eq $false) "tous les MCP globaux coches : tout decoche"
+  Assert-Equal 0 @((Get-PrefsLines (New-SyncChoice) (New-SyncCatalog) @()) | Where-Object { $_.All }).Count "rien a regler : pas de case pour tout le groupe"
+  $script:UiRows = 40
+  $l = Get-PrefsLines $group $cat @("roblox")
+  $shown = @(foreach ($r in (Get-PrefsRows $l 4)) { (@($r) | ForEach-Object { $_[0] }) -join "" })
+  Assert-Equal "    dossier perso" $shown[5] "projet en sous-titre, decale"
+  Assert-True ($shown[4].Contains("tous les MCP locaux") -and $shown[4].Contains("coches : 0 sur 3")) "case du groupe : nom et compte"
 
   Assert-Equal 1 (Move-PrefsSel $lines -1 1) "premiere case : titre saute"
   Assert-Equal 4 (Move-PrefsSel $lines 2 1) "case suivante : titre de groupe saute"
-  Assert-Equal 11 (Move-PrefsSel $lines 1 -1) "case precedente : tour par la fin"
+  Assert-Equal 14 (Move-PrefsSel $lines 1 -1) "case precedente : tour par la fin"
   Assert-Equal 0 (Move-PrefsSel @((New-PrefsHead "a")) 0 1) "que des titres : selection gardee"
   Assert-Equal 8 (Find-PrefsLine $lines $lines[8]) "case retrouvee apres reconstruction"
   Assert-Equal 1 (Find-PrefsLine $lines (New-PrefsItem "mcp" "|absent" "absent" "" $false $false)) "case disparue : premiere case"
@@ -105,6 +129,7 @@ try {
   Assert-Equal "reglages de synchro enregistres, synchro Drive lancee" $msg "Espace : reglage enregistre"
   Assert-True ((Read-SyncChoice).skills["beta"] -eq $false) "Espace : skill beta decoche dans le fichier"
   Assert-Equal 1 $script:PrefsSyncs "reglage change : synchro lancee"
+  Assert-Equal "reglages de synchro inchanges" (Invoke-PrefsKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::DownArrow, [ConsoleKey]::Delete, "o", [ConsoleKey]::Escape)) "Suppr sur tout un groupe : sans effet"
   Assert-Equal "reglages de synchro inchanges" (Invoke-PrefsKeys @([ConsoleKey]::Delete, "n", [ConsoleKey]::Escape)) "Suppr puis n : rien efface"
   $null = Invoke-PrefsKeys @([ConsoleKey]::Delete, "o", [ConsoleKey]::Escape)
   Assert-Equal "alpha" ((Read-SyncChoice).Erase.skills -join ",") "Suppr puis o : effacement demande"

@@ -23,6 +23,7 @@ function Get-PrefsItemRow {
   $r = New-Row
   $r.Add(@("    ", $ink, $false))
   if ($Item.On -and -not $Item.Erasing) { $r.Add(@(([string][char]0x25A0 + "  "), $script:Levels["7d"][0], $false)) }
+  elseif ($Item.Mixed) { $r.Add(@(([string][char]0x25A0 + "  "), $script:Ink.Dim, $false)) }
   else { $r.Add(@(([string][char]0x25A1 + "  "), $script:Ink.Empty, $false)) }
   $r.Add(@((Limit-Text $Item.Label $script:PrefsLabelWidth).PadRight($script:PrefsLabelWidth), $ink, $Sel))
   if ($Item.Tag) { $r.Add(@(("  " + $Item.Tag), $script:Ink.Dim, $false)) }
@@ -46,7 +47,8 @@ function Get-PrefsRows {
   if ($win[0] -gt 0) { $rows.Add((New-TextRow ("    " + $script:UpArrow) $script:Ink.Dim)) }
   for ($i = $win[0]; $i -lt $win[1]; $i++) {
     $l = $Lines[$i]
-    if ($l.Head) { $rows.Add((New-TextRow ("  " + $l.Label) $script:Ink.Text $true)) }
+    if ($l.Sub) { $rows.Add((New-TextRow ("    " + $l.Label) $script:Ink.Dim)) }
+    elseif ($l.Head) { $rows.Add((New-TextRow ("  " + $l.Label) $script:Ink.Text $true)) }
     else { $rows.Add((Get-PrefsItemRow $l ($i -eq $Sel))) }
   }
   if ($win[1] -lt $Lines.Count) { $rows.Add((New-TextRow ("    " + $script:DownArrow) $script:Ink.Dim)) }
@@ -101,7 +103,7 @@ function Show-PrefsMenu {
     if ($k.Key -eq "DownArrow") { $sel = Move-PrefsSel $lines $sel 1; continue }
     if ($k.Key -eq "Escape" -or $k.KeyChar -eq "q") { break }
     if ($k.Key -eq "Spacebar") { $prefsChoice = Update-SyncChoice { param($c) Set-PrefsCheck $c $prefsItem } }
-    elseif ($k.Key -eq "Delete" -and -not $prefsItem.Erasing -and (Confirm-PrefsErase $prefsItem)) { $prefsChoice = Update-SyncChoice { param($c) Add-EraseRequest $c $prefsItem.Kind $prefsItem.Key } }
+    elseif ($k.Key -eq "Delete" -and -not $prefsItem.Erasing -and -not $prefsItem.All -and (Confirm-PrefsErase $prefsItem)) { $prefsChoice = Update-SyncChoice { param($c) Add-EraseRequest $c $prefsItem.Kind $prefsItem.Key } }
     else { continue }
     $changed = $true
     $lines = Get-PrefsLines $prefsChoice $catalog $globals
