@@ -14,6 +14,7 @@
 . (Join-Path $PSScriptRoot "claude-menu-startup.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-cli.ps1")
 . (Join-Path $PSScriptRoot "claude-account-guard.ps1")
+. (Join-Path $PSScriptRoot "claude-cli.ps1")
 
 function Start-Account {
   param($Acc, $Extra)
@@ -37,6 +38,13 @@ function Invoke-TextStartup {
   if ($Update) { Update-ClaudeForAccounts @(Get-Accounts) }
   if ($Drive -and (Test-DriveAuto)) { $null = Invoke-DriveCliSync $false }
   Assert-Online
+}
+
+$cli = Get-CliCommand $args
+if ($null -ne $cli) {
+  $code = Invoke-CliCommand $cli $args
+  if ($script:CliRestart) { Restart-Clm $PSCommandPath $args }
+  exit $code
 }
 
 $direct = $null

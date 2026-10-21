@@ -1,10 +1,15 @@
+function Assert-AccountName {
+  param([string]$Name, [string]$Dir, $List)
+  if ($Name -eq "") { throw "nom vide" }
+  if ($Name.Contains(",")) { throw "la virgule est reservee a --save= et --only=" }
+  if (@($List | Where-Object { $_.Dir -ne $Dir -and $_.Label -eq $Name }).Count -gt 0) { throw ("le nom " + $Name + " est deja pris") }
+}
+
 function Rename-Account {
   param($Acc, [string]$Name)
   $name = $Name.Trim()
-  if ($name -eq "") { throw "nom vide" }
-  if ($name.Contains(",")) { throw "la virgule est reservee a --save= et --only=" }
   $list = @(Get-Accounts)
-  if (@($list | Where-Object { $_.Dir -ne $Acc.Dir -and $_.Label -eq $name }).Count -gt 0) { throw ("le nom " + $name + " est deja pris") }
+  Assert-AccountName $name $Acc.Dir $list
   $old = $Acc.Label
   if ($old -ceq $name) { return "nom inchange" }
   foreach ($a in $list) { if ($a.Dir -eq $Acc.Dir) { $a.Label = $name } }

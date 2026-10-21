@@ -136,8 +136,13 @@ function Add-Account {
   Write-Host ""
   $label = Read-Host "  Nom du compte (Entree pour le nom par defaut, q pour annuler)"
   if ($label -eq "q") { return "ajout annule" }
-  $acc = New-AccountSlot $label
-  Invoke-AsAccount $acc @("auth", "login")
+  return Connect-NewAccount $label
+}
+
+function Connect-NewAccount {
+  param([string]$Label)
+  $acc = New-AccountSlot $Label
+  Invoke-AsAccount $acc @("auth", "login") | Out-Host
   $mail = Get-AccountEmail $acc
   if ($mail -eq "") { return $acc.Label + " cree, mais non connecte : relance-le pour faire /login" }
   return $acc.Label + " ajoute : " + $mail

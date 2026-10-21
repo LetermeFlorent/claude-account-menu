@@ -125,25 +125,45 @@ Le nouveau nom est refusé s'il est vide, s'il contient une virgule, qui sépare
 
 ## Ligne de commande
 
+Tout ce que fait le menu se fait aussi sans lui, par une option. `clm --help` les décrit toutes, avec les touches du menu, les variables et les fichiers : une personne, un script ou un agent comme Claude Code y trouve de quoi tout piloter, sans skill ni serveur MCP à installer.
+
 ```
 clm                          menu
+clm --help                   toutes les options, aussi -h
 clm -2                       lance le compte 2 sans passer par le menu
 clm -2 --resume              les arguments non reconnus passent à Claude Code
 clm --no-update              ne cherche de mise à jour ni pour clm ni pour Claude Code
+clm --list                   numéro, nom, dossier et e-mail de chaque compte
 clm --usage                  quotas de tous les comptes, une ligne par compte
+clm --add [nom]              nouveau compte, connexion dans le navigateur
+clm --rename <compte> <nom>  renomme un compte
+clm --remove <compte> --yes  retire un compte du menu, son dossier reste
+clm --remove <compte> --erase --yes
 clm --save                   sauvegarde de tous les comptes
 clm --save=compte2,compte3   sauvegarde de certains comptes
+clm --backups                archives de Téléchargements, la plus récente d'abord
 clm --restore=<fichier>      restauration de tous les comptes d'une archive
 clm --restore=<fichier> --only=compte2
+clm --version                versions de clm et de Claude Code
+clm --update                 met à jour clm puis Claude Code de chaque compte
+clm --drive-status           connexion Drive, nom du PC, synchro auto, dernière synchro
 clm --drive-login            connecte ce PC à Google Drive
 clm --sync                   synchro Drive tout de suite
 clm --sync --force           même chose, au-delà du garde-fou des suppressions
 clm --sync-auto=off          coupe la synchro Drive automatique, on la remet
+clm --prefs                  réglages de synchro de ce PC, avec l'id de chaque case
+clm --prefs-off global:roblox global:blender
+clm --prefs-on <id>          recoche, ou annule un effacement demandé
+clm --prefs-erase <id> --yes efface partout à la prochaine synchro
 ```
 
 `-N` accepte un chiffre de 1 à 9. Un numéro sans compte affiche "pas de compte N" et sort avec le code 1. `--save=` et `--only=` prennent des noms de comptes, ceux affichés dans le menu, séparés par des virgules, sans tenir compte des majuscules. Un nom inconnu arrête la commande avec "compte inconnu : ..." et le code 1, sans rien sauvegarder ni restaurer.
 
-`--usage`, `--save` et `--restore` font leur travail et sortent aussitôt, sans menu ni mise à jour de Claude Code. `--restore` ne demande pas de confirmation, mais garde comme dans le menu une copie de l'état actuel des comptes visés. `--usage` écrit une ligne par compte, de la forme `pro moi@exemple.fr Max 5x | 5h 70% reset 18:30 (dans 2h05), fort | 7d 30% reset 12/10 09:00 (dans 4j3h), normal`, suivie de "(lu il y a ...)" quand les chiffres viennent du cache ou de la barre d'état, ou "(fenetre passee, lu il y a ...)" quand une remise à zéro a eu lieu depuis, ou du message d'erreur à la place des quotas. Il n'y a pas d'option `--help`.
+`--usage`, `--save` et `--restore` font leur travail et sortent aussitôt, sans menu ni mise à jour de Claude Code. `--restore` ne demande pas de confirmation, mais garde comme dans le menu une copie de l'état actuel des comptes visés. `--usage` écrit une ligne par compte, de la forme `pro moi@exemple.fr Max 5x | 5h 70% reset 18:30 (dans 2h05), fort | 7d 30% reset 12/10 09:00 (dans 4j3h), normal`, suivie de "(lu il y a ...)" quand les chiffres viennent du cache ou de la barre d'état, ou "(fenetre passee, lu il y a ...)" quand une remise à zéro a eu lieu depuis, ou du message d'erreur à la place des quotas.
+
+Un `<compte>` se donne par son numéro dans le menu, son nom ou son dossier (`.claude-compte2`). `--remove` sans `--yes` dit ce qu'il ferait et sort avec le code 1, sans rien toucher ; `--erase` refuse le dossier `.claude`, comme le menu, et range d'abord une archive dans Téléchargements. `--add` crée le compte puis ouvre la connexion dans le navigateur, qu'une personne doit finir. Les noms passent les mêmes contrôles qu'au renommage. `--update` redémarre `clm` après une nouvelle version, puis met à jour Claude Code. Avec `-N`, toutes les options vont à Claude Code : `clm -2 --help` affiche l'aide de Claude Code.
+
+Chaque option écrit son résultat en texte simple et sort avec le code 0, ou 1 avec la raison sur la dernière ligne. `--list`, `--version`, `--backups`, `--drive-status` et `--prefs` lisent seulement les fichiers de ce PC, sans réseau.
 
 ## Mise à jour de clm
 
@@ -281,6 +301,8 @@ Un nouveau skill arrive coché sur tous les PC. Un nouveau MCP local arrive coch
 Suppr efface partout. Un skill part à la corbeille du Drive et son dossier quitte chaque PC, un MCP local quitte chaque PC à sa prochaine synchro, un global quitte tous les comptes de ce PC. D'ici là, la ligne affiche "efface a la prochaine synchro". Seule la définition d'un MCP voyage : le programme qu'elle lance, paquet npm ou exécutable, s'installe à la main sur chaque PC.
 
 Les cases ne valent que lorsque tous les PC du Drive ont une version de `clm` qui les gère. Avant, les MCP partent en entier comme avant, et la page nomme les PC en retard : "MCP envoyes en entier tant que ces PC n'ont pas clm a jour". Les cases décochées et les effacements en attente sont gardés dans `~/.clm-sync-choice.json`.
+
+Sans menu, `clm --prefs` affiche les mêmes cases, `[x]` ou `[ ]`, chacune avec son id : `skill:<nom>`, `mcp:<projet>|<nom>` (projet vide pour `~/.mcp.json`) ou `global:<nom>`. `--prefs-on` et `--prefs-off` cochent et décochent un ou plusieurs ids, `--prefs-erase` les efface partout et demande `--yes`. Le nom seul suffit quand un seul élément le porte, sinon la commande liste les ids possibles. Après un changement, `clm` lance la synchro, comme Échap dans la page.
 
 ### Jetons de connexion
 
