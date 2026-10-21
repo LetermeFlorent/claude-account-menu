@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>clm</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<script src="api.js" defer></script>
+<script src="ui.js" defer></script>
+<script src="accounts.js" defer></script>
+<script src="sync.js" defer></script>
+<script src="display.js" defer></script>
+<script src="backups.js" defer></script>
+</head>
+<body>
+<div id="app" hidden>
+  <header class="top">
+    <div class="row">
+      <h1 id="version">clm</h1>
+      <button id="update" type="button" hidden>Installer la mise à jour</button>
+    </div>
+    <p id="drive-tag" class="dim"></p>
+    <p id="status" class="status dim" role="status" aria-live="polite"></p>
+    <p id="busy" class="notice" hidden></p>
+  </header>
+  <fieldset id="controls" class="plain">
+    <main>
+      <section aria-labelledby="h-accounts">
+        <h2 id="h-accounts">Comptes</h2>
+        <ul id="account-list" class="accounts"></ul>
+        <div class="row">
+          <input id="add-name" type="text" maxlength="40" placeholder="nom du nouveau compte, vide pour le nom par défaut" aria-label="Nom du nouveau compte">
+          <button id="add-btn" type="button">Ajouter un compte</button>
+        </div>
+        <p class="dim">La connexion à Claude se termine ensuite dans le terminal et le navigateur.</p>
+      </section>
+      <section aria-labelledby="h-sync">
+        <h2 id="h-sync">Synchro Drive</h2>
+        <div id="drive"></div>
+        <div id="prefs"></div>
+      </section>
+      <section aria-labelledby="h-display">
+        <h2 id="h-display">Affichage</h2>
+        <p class="dim">Couleurs et animations du menu, pour ce PC seulement.</p>
+        <div class="row">
+          <label class="field" for="palette">Couleurs</label>
+          <select id="palette"></select>
+        </div>
+        <p id="palette-env" class="dim" hidden>STATUSLINE_BG est définie sur ce PC et passe avant ce choix.</p>
+        <div class="row">
+          <label class="field" for="anim">Animations</label>
+          <select id="anim"></select>
+        </div>
+        <p id="anim-env" class="dim" hidden>CLM_ANIM est définie sur ce PC et passe avant ce choix.</p>
+      </section>
+      <section aria-labelledby="h-backups">
+        <h2 id="h-backups">Sauvegardes</h2>
+        <p class="dim">Une archive des comptes cochés part dans Téléchargements.</p>
+        <div id="save-list" class="checks"></div>
+        <button id="save-btn" type="button">Sauvegarder</button>
+        <p id="backup-dir" class="dim"></p>
+        <ul id="backup-list" class="backups"></ul>
+      </section>
+    </main>
+  </fieldset>
+</div>
+<dialog id="ask" aria-labelledby="ask-title">
+  <h3 id="ask-title"></h3>
+  <div id="ask-body"></div>
+  <div class="row end">
+    <button id="ask-no" type="button">Annuler</button>
+    <button id="ask-yes" type="button">Confirmer</button>
+  </div>
+</dialog>
+</body>
+</html>

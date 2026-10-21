@@ -5,7 +5,7 @@ $script:InkTo = $null
 function New-ThemeWatch {
   param([string]$Os = $script:OsName, $Vars = $null, [double]$Now = (Get-NowMs), [scriptblock]$Probe = $null)
   if ($null -eq $Probe) { $Probe = { param($O, $V) Get-SystemTheme $O $V } }
-  $fixed = $null -ne (ConvertTo-ThemeName (Read-EnvVar "STATUSLINE_BG" $Vars) -French)
+  $fixed = $null -ne (Get-FixedTheme $Vars)
   $last = $null
   if (-not $fixed) { try { $last = & $Probe $Os $Vars } catch {} }
   return @{ Fixed = $fixed; Last = $last; Next = $Now + 2000; Probe = $Probe }
@@ -44,4 +44,11 @@ function Update-InkFade {
   foreach ($k in $script:InkTo.Keys) { $ink[$k] = Get-MixedRgb $script:InkFrom[$k] $script:InkTo[$k] $t }
   $script:Ink = $ink
   return $true
+}
+
+function Update-UiDisplay {
+  param([double]$Now = (Get-NowMs))
+  $script:ThemeWatch = New-ThemeWatch $script:OsName $null $Now
+  $script:MotionOn = Get-MotionEnabled
+  Set-UiTheme (Get-ThemeName) $Now
 }

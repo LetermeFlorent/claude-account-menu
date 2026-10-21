@@ -81,5 +81,7 @@ function Get-MotionEnabled {
   $v = Read-EnvVar "CLM_ANIM" $Vars
   if ($v -eq "0") { return $false }
   if ($v -eq "1") { return $true }
+  $a = (Read-DisplayConfig $Vars).anim
+  if ($a -ne "auto") { return $a -eq "on" }
   return Get-SystemMotion $Os
 }

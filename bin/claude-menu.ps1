@@ -52,11 +52,13 @@ $only = $null
 $restoreZip = $null
 $update = $true
 $selfUpdate = $true
+$openWeb = $false
 $rest = @()
 foreach ($a in $args) {
   if ($a -match "^-([1-9])$") { $direct = [int]$Matches[1] - 1 }
   elseif ($a -eq "--no-update") { $update = $false; $selfUpdate = $false }
   elseif ($a -eq "--updated") { $selfUpdate = $false }
+  elseif ($a -eq $script:WebFlag) { $openWeb = $true }
   elseif ($a -eq "--usage") {
     foreach ($u in Get-AllUsages) { Write-Output (Format-Row $u) }
     exit 0
@@ -73,6 +75,10 @@ foreach ($a in $args) {
 
 $driveCli = Get-DriveCliAction $args
 $menuMode = $null -eq $driveCli -and -not $restoreZip -and $null -eq $direct -and (Test-RichTerminal)
+if ($openWeb -and -not $menuMode) {
+  Write-Output "  --web ouvre la page avec le menu de clm, dans un terminal interactif"
+  exit 1
+}
 if ($null -eq $driveCli -and -not $restoreZip) { Assert-Online }
 if ($selfUpdate -and -not $menuMode -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
 if ($null -ne $driveCli) { exit (Invoke-DriveCli $driveCli) }
@@ -96,7 +102,7 @@ if ($null -ne $direct) {
 $chosen = $null
 $fallback = -not $menuMode
 if ($menuMode) {
-  try { $chosen = Invoke-AccountMenu $update $selfUpdate }
+  try { $chosen = Invoke-AccountMenu $update $selfUpdate $openWeb }
   catch {
     Exit-UiScreen
     $fallback = $true
@@ -109,7 +115,7 @@ if ($script:MenuOffline) {
 }
 if ($script:ClmUpdated) {
   Write-Host "  clm mis a jour, redemarrage" -ForegroundColor DarkGray
-  Restart-Clm $PSCommandPath $args
+  Restart-Clm $PSCommandPath (Get-WebRestartArgs $args)
 }
 if ($fallback) {
   if ($selfUpdate -and $menuMode -and -not $script:ClmChecked -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
@@ -123,7 +129,7 @@ if ($fallback) {
 if ($script:MenuRestart) {
   Clear-Host
   if (-not (Update-Clm)) { Start-Sleep -Seconds 3 }
-  Restart-Clm $PSCommandPath $args
+  Restart-Clm $PSCommandPath (Get-WebRestartArgs $args)
 }
 
 if ($null -eq $chosen) { exit 0 }

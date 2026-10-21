@@ -2,6 +2,7 @@ $script:UiProgress = $null
 $script:UiPulse = $null
 $script:UiKeys = New-Object 'System.Collections.Generic.Queue[object]'
 $script:UiQuit = $false
+$script:UiPoll = $null
 
 function Set-UiProgress {
   param([string]$Label, [int]$Pct, [string]$Detail = "")
@@ -32,7 +33,12 @@ function Get-ProgressRow {
   return ,$r
 }
 
+function Invoke-UiPoll {
+  if ($null -ne $script:UiPoll) { & $script:UiPoll }
+}
+
 function Receive-UiKeys {
+  Invoke-UiPoll
   try {
     while ($null -ne ($k = Read-UiInput)) {
       if ($k -is [ConsoleKeyInfo] -and [int]$k.KeyChar -eq 3) { $script:UiQuit = $true } else { $script:UiKeys.Enqueue($k) }
@@ -41,6 +47,7 @@ function Receive-UiKeys {
 }
 
 function Read-UiKey {
+  Invoke-UiPoll
   if ($script:UiKeys.Count -gt 0) { return $script:UiKeys.Dequeue() }
   try { return Read-UiInput } catch {}
   return $null

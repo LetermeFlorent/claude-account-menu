@@ -1,3 +1,4 @@
+. (Join-Path $PSScriptRoot "claude-menu-web.ps1")
 $script:MenuState = $null
 $script:MenuUpdated = $false
 $script:MenuRestart = $false
@@ -52,7 +53,7 @@ function Close-AccountMenu {
 }
 
 function Invoke-MenuPage {
-  param([string]$Name, [int]$Sel)
+  param([string]$Name, [int]$Sel, $Arg = $null)
   if ($Name -eq "save") { return Show-SaveMenu }
   if ($Name -eq "restore") { return Show-RestoreMenu }
   if ($Name -eq "remove") { return Show-RemoveMenu $Sel }
@@ -60,7 +61,7 @@ function Invoke-MenuPage {
   if ($Name -eq "drivelogin") { return Connect-MenuDrive }
   if ($Name -eq "prefs") { return Show-PrefsMenu }
   Exit-UiScreen
-  try { return Add-Account } finally { Enter-UiScreen }
+  try { return Add-Account $Arg } finally { Enter-UiScreen }
 }
 
 function Connect-MenuDrive {
@@ -73,39 +74,53 @@ function Connect-MenuDrive {
   return $msg
 }
 
-function Invoke-MenuCommand {
-  param([string]$Name)
-  Stop-MenuLoader 30000
-  $sel = $script:MenuState.Sel
-  Hide-Screen
-  try { $msg = @(("  " + (Invoke-MenuPage $Name $sel)), $script:Levels["7d"][0]) }
-  catch { $msg = @(($script:MenuFails[$Name] + $_.Exception.Message), $script:Ink.Alert) }
-  if (-not $script:UiQuit) { Hide-Screen }
+function Reset-MenuState {
+  param($Msg, [int]$Sel)
   $accs = @(Get-Accounts)
-  $st = New-MenuState $accs (Get-NowMs) $false ([math]::Min($sel, $accs.Count - 1))
-  $st.Msg = $msg
+  $st = New-MenuState $accs (Get-NowMs) $false ([math]::Min($Sel, $accs.Count - 1))
+  $st.Msg = $Msg
   $script:MenuState = $st
   Start-MenuLoader $st
 }
 
+function Invoke-MenuCommand {
+  param([string]$Name, $Arg = $null)
+  Stop-MenuLoader 30000
+  $sel = $script:MenuState.Sel
+  Hide-Screen
+  try { $msg = @(("  " + (Invoke-MenuPage $Name $sel $Arg)), $script:Levels["7d"][0]) }
+  catch { $msg = @(($script:MenuFails[$Name] + $_.Exception.Message), $script:Ink.Alert) }
+  if (-not $script:UiQuit) { Hide-Screen }
+  Reset-MenuState $msg $sel
+}
+
 function Read-MenuAction {
   param($State)
-  $k = Read-UiKey
+  $script:WebOpen = $true
+  try { $k = Read-UiKey } finally { $script:WebOpen = $false }
   $act = @{ Name = "none" }
   if ($k -is [hashtable]) { $act = Get-MenuMouseAction $State $k }
   elseif ($null -ne $k) { $act = Get-MenuAction $k $State.Entries.Count }
+  elseif ($null -ne ($web = Get-WebAction)) { $act = Invoke-WebAction $web }
   if ($script:UiQuit) { $act = @{ Name = "quit" } }
   return $act
 }
 
 function Invoke-AccountMenu {
-  param([bool]$Update, [bool]$SelfUpdate = $false)
+  param([bool]$Update, [bool]$SelfUpdate = $false, [bool]$Web = $false)
   $script:UiQuit = $false
   $script:MenuRestart = $false
   $script:MenuOffline = $false
   $script:ClmUpdated = $false
   Enter-UiScreen
-  Open-MenuSession $Update $SelfUpdate
+  try {
+    Open-MenuSession $Update $SelfUpdate
+    if ($Web) { Open-MenuWeb $script:MenuState }
+    Invoke-MenuLoop
+  } finally { Close-MenuWeb }
+}
+
+function Invoke-MenuLoop {
   while ($true) {
     $st = $script:MenuState
     $n = $st.Entries.Count
@@ -125,7 +140,8 @@ function Invoke-AccountMenu {
       if (Test-ClmUpdateReady) { $script:MenuRestart = $true; return Close-AccountMenu $null }
       $st.Msg = @("  aucune mise a jour de clm en attente", $script:Ink.Dim); $st.Dirty = $true
     }
-    elseif ($act.Name -ne "none") { Invoke-MenuCommand $act.Name }
+    elseif ($act.Name -eq "web") { Open-MenuWeb $st }
+    elseif ($act.Name -ne "none") { Invoke-MenuCommand $act.Name $act.Arg }
     if (Step-MenuFrame) { Start-Sleep -Milliseconds 33 } else { Start-Sleep -Milliseconds 50 }
   }
 }

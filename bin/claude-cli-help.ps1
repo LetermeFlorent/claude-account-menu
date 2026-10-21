@@ -11,6 +11,8 @@ Lancer
   clm -N [arguments]             lance le compte N (1 a 9) sans menu,
                                  les arguments vont a Claude Code
   clm --no-update                ne met a jour ni clm ni Claude Code
+  clm --web                      menu, et sa page web dans le navigateur :
+                                 comptes, Drive, affichage, archives
   clm --help, -h                 cette aide
 
 Comptes
@@ -19,6 +21,7 @@ Comptes
   clm --add [nom]                nouveau compte, connexion dans le
                                  navigateur, a finir par une personne
   clm --rename <compte> <nom>    renomme, sans virgule ni nom deja pris
+  clm --move <compte> <rang>     change sa place dans le menu, 1 en haut
   clm --remove <compte> --yes    retire du menu, le dossier reste en place
   clm --remove <compte> --erase --yes
                                  retire et efface le dossier du compte,
@@ -61,15 +64,21 @@ Reglages de synchro de ce PC, Drive connecte
   de .claude.json) ne partent jamais vers les autres PC et sont recopies
   entre les comptes de ce PC : les decocher les retire de tous ces comptes.
 
+Affichage de ce PC
+  clm --palette auto|dark|light  couleurs du menu, auto suit le systeme
+  clm --anim auto|on|off         animations du menu, auto suit le systeme
+
 Variables
-  CLM_ANIM=0|1                   coupe ou force les animations du menu
-  STATUSLINE_BG=dark|light       fixe la palette, sinon celle du systeme
+  CLM_ANIM=0|1                   coupe ou force les animations du menu,
+                                 avant --anim
+  STATUSLINE_BG=dark|light       fixe la palette, avant --palette
 
 Fichiers du dossier perso
   .claude-accounts.json          liste des comptes, noms et dossiers
   .clm-sync-choice.json          reglages de synchro de ce PC
   .clm-sync-catalog.json         skills et MCP vus a la derniere synchro
   .clm-drive.json                connexion Drive, secret, a ne pas partager
+  .clm-display.json              couleurs et animations de ce PC
   .local/bin                     scripts de clm et clm.version
 '@
 

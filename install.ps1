@@ -3,6 +3,9 @@ $src = Join-Path $PSScriptRoot "bin"
 $dst = Join-Path $env:USERPROFILE ".local\bin"
 if (-not (Test-Path -LiteralPath $dst)) { New-Item -ItemType Directory -Path $dst | Out-Null }
 Get-ChildItem -LiteralPath $src -File | Where-Object { $_.Extension -eq ".ps1" -or $_.Extension -eq ".cmd" } | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $dst -Force }
+$webDst = Join-Path $dst "clm-web"
+if (Test-Path -LiteralPath $webDst) { Remove-Item -LiteralPath $webDst -Recurse -Force }
+Copy-Item -LiteralPath (Join-Path $src "clm-web") -Destination $webDst -Recurse
 Write-Host ("scripts copies dans " + $dst)
 $versionFile = Join-Path $dst "clm.version"
 if (Test-Path -LiteralPath $versionFile) { Remove-Item -LiteralPath $versionFile -Force }

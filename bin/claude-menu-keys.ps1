@@ -1,4 +1,4 @@
-$script:MenuKeys = @{ "s" = "save"; "r" = "restore"; "a" = "add"; "x" = "remove"; "n" = "rename"; "m" = "refresh"; "u" = "selfupdate"; "y" = "drivesync"; "p" = "prefs"; "q" = "quit" }
+$script:MenuKeys = @{ "s" = "save"; "r" = "restore"; "a" = "add"; "x" = "remove"; "n" = "rename"; "m" = "refresh"; "u" = "selfupdate"; "y" = "drivesync"; "p" = "prefs"; "w" = "web"; "q" = "quit" }
 
 function Get-MenuAction {
   param($Key, [int]$Count)

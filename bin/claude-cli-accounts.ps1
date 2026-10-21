@@ -1,3 +1,4 @@
+. (Join-Path $PSScriptRoot "claude-account-move.ps1")
 $script:CliDateFormat = "dd/MM/yyyy HH:mm"
 
 function Find-CliAccount {
@@ -45,6 +46,13 @@ function Invoke-CliRename {
   param([string[]]$Values)
   if ($Values.Count -ne 2) { throw "--rename attend un compte puis un nom" }
   Write-Host (Rename-Account (Find-CliAccount (Get-Accounts) $Values[0]) $Values[1])
+  return 0
+}
+
+function Invoke-CliMove {
+  param([string[]]$Values)
+  if ($Values.Count -ne 2 -or $Values[1] -notmatch "^[0-9]+$") { throw "--move attend un compte puis un rang, 1 pour le haut du menu" }
+  Write-Host (Move-Account (Find-CliAccount (Get-Accounts) $Values[0]) ([int]$Values[1]))
   return 0
 }
 

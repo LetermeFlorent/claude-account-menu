@@ -3,7 +3,7 @@ $script:DownArrow = [string][char]0x2193
 $script:FrameSide = 0x2502
 $script:FrameCols = 2
 $script:FooterLimits = @{}
-$script:MenuFooter = @("Entree", "lancer", "a", "ajouter", "x", "retirer", "n", "renommer", "m", "maj", "y", "sync", "p", "reglages", "s", "sauvegarder", "r", "restaurer", "q", "quitter")
+$script:MenuFooter = @("Entree", "lancer", "a", "ajouter", "x", "retirer", "n", "renommer", "m", "maj", "y", "sync", "p", "reglages", "s", "sauvegarder", "r", "restaurer", "w", "page web", "q", "quitter")
 
 function Get-HeaderRow {
   param([string]$Title, [int]$W, [string]$Right = "")

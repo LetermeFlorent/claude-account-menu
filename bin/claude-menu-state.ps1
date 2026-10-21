@@ -85,9 +85,10 @@ function Start-MenuLoader {
 }
 
 function Request-EntryRead {
-  param($State, [double]$Now, [long]$UnixNow = 0)
+  param($State, [double]$Now, [long]$UnixNow = 0, [int]$Index = -1)
   if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
-  $e = $State.Entries[$State.Sel]
+  if ($Index -lt 0) { $Index = $State.Sel }
+  $e = $State.Entries[$Index]
   $pause = [long]$e.U.LimitedUntil - $UnixNow
   if ($e.Pending) { $text = "lecture deja en cours" }
   elseif ($pause -gt 0) { $text = "API en pause, reessai dans " + (Format-Countdown $pause) }

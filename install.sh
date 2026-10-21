@@ -4,6 +4,8 @@ src=$(cd "$(dirname "$0")" && pwd)
 dst="$HOME/.local/bin"
 mkdir -p "$dst"
 cp "$src"/bin/*.ps1 "$src/bin/clm" "$dst/"
+rm -rf "$dst/clm-web"
+cp -R "$src/bin/clm-web" "$dst/clm-web"
 chmod +x "$dst/clm"
 echo "scripts copies dans $dst"
 rm -f "$dst/clm.version"

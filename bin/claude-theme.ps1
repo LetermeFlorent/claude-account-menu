@@ -1,4 +1,5 @@
 . (Join-Path $PSScriptRoot "claude-platform.ps1")
+. (Join-Path $PSScriptRoot "claude-display.ps1")
 
 function ConvertTo-ThemeName {
   param($Value, [switch]$French)
@@ -64,11 +65,25 @@ function Get-SystemTheme {
   return Get-LinuxTheme $scheme (Read-EnvVar "GTK_THEME" $Vars) $kde
 }
 
+function Get-FixedTheme {
+  param($Vars = $null)
+  $t = ConvertTo-ThemeName (Read-EnvVar "STATUSLINE_BG" $Vars) -French
+  if ($t) { return $t }
+  $p = (Read-DisplayConfig $Vars).palette
+  if ($p -ne "auto") { return $p }
+  return $null
+}
+
 function Get-ThemeName {
   param([string]$Os = $script:OsName, $Vars = $null)
-  $t = ConvertTo-ThemeName (Read-EnvVar "STATUSLINE_BG" $Vars) -French
+  $t = Get-FixedTheme $Vars
   if ($t) { return $t }
   $t = Get-SystemTheme $Os $Vars
   if ($t) { return $t }
   return "dark"
+}
+
+function Get-DisplayForced {
+  param($Vars = $null)
+  return @{ palette = ($null -ne (ConvertTo-ThemeName (Read-EnvVar "STATUSLINE_BG" $Vars) -French)); anim = (@("0", "1") -contains (Read-EnvVar "CLM_ANIM" $Vars)) }
 }

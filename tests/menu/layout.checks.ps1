@@ -14,9 +14,9 @@ function Get-FooterLengths {
   param([int]$W)
   return (@(foreach ($r in (Get-FooterRows $script:MenuFooter $W)) { $t = ""; foreach ($s in $r) { $t += $s[0] }; $t.Length }) -join " ")
 }
-Assert-Equal "56 59" (Get-FooterLengths 105) "pied equilibre entre ses deux lignes"
-Assert-Equal "56 59" (Get-FooterLengths 105) "pied relu depuis le cache, meme decoupe"
-Assert-Equal "115" (Get-FooterLengths 200) "pied sur une ligne quand tout tient"
+Assert-Equal "64 63" (Get-FooterLengths 105) "pied equilibre entre ses deux lignes"
+Assert-Equal "64 63" (Get-FooterLengths 105) "pied relu depuis le cache, meme decoupe"
+Assert-Equal "127" (Get-FooterLengths 200) "pied sur une ligne quand tout tient"
 Assert-Equal "full 3" ((Get-MenuLayout 120 40 3 4).Mode + " " + (Get-MenuLayout 120 40 3 4).Visible) "barres du lancement, cartes completes gardees"
 $l = Get-MenuLayout 80 20 3 4
 Assert-Equal "compact 2" ($l.Mode + " " + $l.Visible) "barres du lancement, un compte de moins en vue compacte"
