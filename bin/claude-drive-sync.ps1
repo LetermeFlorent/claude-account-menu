@@ -1,6 +1,8 @@
 . (Join-Path $PSScriptRoot "claude-drive-actions.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-creds.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-leftovers.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-changes.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-sessions.ps1")
 $script:DriveLockPath = Join-Path (Get-HomeDir) ".clm-drive.lock"
 $script:DriveLockWaitMs = 5000
 $script:DriveDeleteLimit = 20
@@ -35,8 +37,9 @@ function Test-InSyncRoots {
 function Select-RemoteFiles {
   param($Listing, $Patterns, $Roots)
   $out = New-PathMap
+  $rx = Get-ExcludeRegex $Patterns
   foreach ($k in $Listing.Keys) {
-    if ((Test-SafeSyncPath $k) -and (Test-InSyncRoots $k $Roots) -and -not (Test-SyncExcluded $k $Patterns)) { $out[$k] = $Listing[$k] }
+    if (-not $rx.IsMatch($k) -and (Test-InSyncRoots $k $Roots) -and (Test-SafeSyncPath $k)) { $out[$k] = $Listing[$k] }
   }
   return $out
 }
@@ -77,13 +80,16 @@ function Invoke-DriveSyncPass {
   $pc = Get-DrivePcName
   $accs = @(Get-Accounts)
   $Res.Failed += [int](Sync-DriveCredentials $folders $accs)
-  $Res.Away = Get-AwayMap (Get-DriveListing $folders.Presence) $pc ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
+  $presence = Get-DriveListing $folders.Presence
+  Set-PresenceFormat $folders $presence $pc
+  $Res.Away = Get-AwayMap $presence $pc ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
   $roots = Get-SyncRoots $accs
   $state = Read-SyncBase $folders.Root $roots
   $patterns = Get-SyncPatterns $accs
   $local = Get-LocalFiles $script:HomeDir $roots $patterns $state.Files $Ctl $DeadlineMs
   if ($local.Stopped) { $Res.Ok = $true; $Res.Stopped = $true; return }
-  $listing = Get-DriveListing $folders.Files
+  $local.Skipped.AddRange([string[]]@(Get-HeldPaths))
+  $listing = Get-DriveFilesListing $folders $pc
   $remote = Select-RemoteFiles $listing $patterns $roots
   $plan = Get-SyncPlan $local.Files $state.Files $remote $local.Skipped -Joining:($state.At -eq 0) -CaseFold:($script:OsName -ne "Linux")
   Assert-DeleteLimit $plan $state.Files.Count $Force
@@ -96,7 +102,7 @@ function Invoke-DriveSyncPass {
     Save-DriveState $state
   }
   if ($Res.Failed -gt 0) { $Res.Error = "" + $Res.Failed + " fichier(s) en echec, nouvel essai a la prochaine synchro"; return }
-  if ($Res.Left -eq 0) { $Res.Deleted += Remove-OwnLeftovers $listing $pc $Ctl $DeadlineMs }
+  if ($Res.Left -eq 0 -and (Test-AllPcsCurrent $presence)) { $Res.Deleted += Remove-OwnLeftovers $listing $pc $Ctl $DeadlineMs }
   $Res.Ok = $true
   $Res.Again = (Get-RegistryMd5 $state.Files) -ne $registry
   if ($Res.Left -eq 0) { $Res.At = $state.At; Set-DriveLastSync $state.At }

@@ -2,7 +2,7 @@
 . (Join-Path $PSScriptRoot "claude-menu-save.ps1")
 . (Join-Path $PSScriptRoot "claude-json.ps1")
 . (Join-Path $PSScriptRoot "claude-machine-settings.ps1")
-$script:SyncLocalOnly = @("*/chrome-bidi/profils")
+$script:SyncLocalOnly = @("*/chrome-bidi/profils", "node_modules", "file-history") + @(foreach ($p in $script:SkipConversations) { "*/" + $p })
 $script:SyncExtraExcludes = @("*.bak-sync", "*.conflit-*", ".credentials.json", "*.tmp") + $script:SyncLocalOnly
 $script:RegistryName = ".claude-accounts.json"
 
@@ -16,17 +16,47 @@ function Get-SyncRoots {
   return @(Get-AccountItems $Accs) + @($script:RegistryName)
 }
 
-function Test-SyncExcluded {
-  param([string]$Rel, [string[]]$Patterns)
-  $parts = $Rel.Split("/")
-  foreach ($p in $Patterns) {
-    if ($p.Contains("/")) {
-      if ($Rel -like $p -or $Rel -like ($p + "/*")) { return $true }
-      continue
-    }
-    foreach ($s in $parts) { if ($s -like $p) { return $true } }
+$script:ExcludeRegexMemo = New-PathMap
+$script:ExcludeRegexOptions = [Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant, Singleline"
+
+function ConvertTo-WildcardRegex {
+  param([string]$Pattern, [string]$Star, [string]$One)
+  $sb = New-Object Text.StringBuilder
+  for ($i = 0; $i -lt $Pattern.Length; $i++) {
+    $ch = [string]$Pattern[$i]
+    $close = -1
+    if ($ch -eq "[") { $close = $Pattern.IndexOf("]", $i + 1) }
+    if ($ch -eq "``" -and $i + 1 -lt $Pattern.Length) { $i++; [void]$sb.Append([regex]::Escape([string]$Pattern[$i])) }
+    elseif ($ch -eq "*") { [void]$sb.Append($Star) }
+    elseif ($ch -eq "?") { [void]$sb.Append($One) }
+    elseif ($close -gt $i + 1) { [void]$sb.Append("[" + $Pattern.Substring($i + 1, $close - $i - 1).Replace("\", "\\").Replace("[", "\[").Replace("^", "\^") + "]"); $i = $close }
+    else { [void]$sb.Append([regex]::Escape($ch)) }
   }
-  return $false
+  return $sb.ToString()
+}
+
+function Get-ExcludeRegex {
+  param($Patterns)
+  $key = @($Patterns) -join "`n"
+  if ($script:ExcludeRegexMemo.ContainsKey($key)) { return $script:ExcludeRegexMemo[$key] }
+  $segments = New-Object 'System.Collections.Generic.List[string]'
+  $paths = New-Object 'System.Collections.Generic.List[string]'
+  foreach ($p in @($Patterns)) {
+    if ($p.Contains("/")) { $paths.Add((ConvertTo-WildcardRegex $p ".*" ".")) }
+    else { $segments.Add((ConvertTo-WildcardRegex $p "[^/]*" "[^/]")) }
+  }
+  $parts = @()
+  if ($segments.Count -gt 0) { $parts += "(?:^|/)(?:" + ($segments -join "|") + ")(?:/|$)" }
+  if ($paths.Count -gt 0) { $parts += "^(?:" + ($paths -join "|") + ")(?:/.*)?$" }
+  if ($parts.Count -eq 0) { $parts = @("(?!)") }
+  $rx = New-Object regex ($parts -join "|"), $script:ExcludeRegexOptions
+  $script:ExcludeRegexMemo[$key] = $rx
+  return $rx
+}
+
+function Test-SyncExcluded {
+  param([string]$Rel, $Patterns)
+  return (Get-ExcludeRegex $Patterns).IsMatch($Rel)
 }
 
 function ConvertTo-HexText {
@@ -82,8 +112,9 @@ function Get-LocalFiles {
   param([string]$Root, $Roots, $Patterns, $Base, $Ctl = $null, [long]$DeadlineMs = 0)
   $res = @{ Files = (New-PathMap); Skipped = (New-Object 'System.Collections.Generic.List[string]'); Stopped = $false }
   $stack = New-Object Collections.Stack
+  $rx = Get-ExcludeRegex $Patterns
   foreach ($r in $Roots) {
-    if (Test-SyncExcluded $r $Patterns) { continue }
+    if ($rx.IsMatch($r)) { continue }
     $full = Join-Path $Root $r
     if ([IO.File]::Exists($full)) { Add-LocalFile $res $r ([IO.FileInfo]$full) $Base }
     elseif ([IO.Directory]::Exists($full)) { $stack.Push(@($r, $full)) }
@@ -94,7 +125,7 @@ function Get-LocalFiles {
     try { $items = ([IO.DirectoryInfo]$d[1]).GetFileSystemInfos() } catch { $res.Skipped.Add($d[0]); continue }
     foreach ($i in $items) {
       $rel = $d[0] + "/" + $i.Name
-      if (Test-SyncExcluded $rel $Patterns) { continue }
+      if ($rx.IsMatch($rel)) { continue }
       if ($i.Attributes -band [IO.FileAttributes]::ReparsePoint) { $res.Skipped.Add($rel); continue }
       if ($i -is [IO.DirectoryInfo]) { $stack.Push(@($rel, $i.FullName)) }
       else { Add-LocalFile $res $rel $i $Base }

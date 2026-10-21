@@ -73,12 +73,17 @@ Assert-Equal "jetons en cours de synchro" $err "jetons synchronises sous verrou"
 
 $now = 1000000
 $pres = @{
-  "MAC.json" = @{ Props = @{ ".claude" = ("" + ($now - 100)); ".claude-compte2" = ("" + ($now - 13 * 3600)); ".claude-compte4" = "0" } }
+  "MAC.json" = @{ Props = @{ ".claude" = ("" + ($now - 100)); ".claude-compte2" = ("" + ($now - 13 * 3600)); ".claude-compte4" = "0"; "fmt" = "2" } }
   "PC.json" = @{ Props = @{ ".claude-compte3" = ("" + $now) } }
 }
 $away = Get-AwayMap $pres "PC" $now
 Assert-Equal 1 $away.Count "presence : seulement les comptes ouverts ailleurs depuis moins de 12 h"
 Assert-Equal "MAC" $away[".claude"] "presence : nom de l'autre PC"
+Assert-True (-not (Test-AllPcsCurrent $pres)) "version de synchro : un PC sans marque bloque le retrait"
+$pres["PC.json"].Props["fmt"] = "2"
+Assert-True (Test-AllPcsCurrent $pres) "version de synchro : tous les PC a jour"
+$pres["PC.json"].Props["fmt"] = "x"
+Assert-Equal 0 (Get-PresenceFormat $pres["PC.json"]) "version de synchro illisible : 0"
 
 $script:Props = $null
 function Get-DriveFolders { return @{ Root = "R"; Files = "F"; Credentials = "C"; Presence = "P" } }
@@ -89,6 +94,7 @@ Assert-Equal "own" $script:Props[0] "presence : fichier du PC mis a jour"
 Assert-True ([long]$script:Props[1][".claude-credtest"] -gt 1700000000) "presence : heure d'ouverture"
 Set-DrivePresence $acc $false
 Assert-Equal "0" $script:Props[1][".claude-credtest"] "presence : compte ferme"
+Assert-Equal "2" $script:Props[1]["fmt"] "presence : version de synchro annoncee"
 function Get-DriveListing { param([string]$FolderId) return @{} }
 $script:Sent.Clear()
 Set-DrivePresence $acc $true

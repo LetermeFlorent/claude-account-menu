@@ -2,13 +2,13 @@
 Use-Pc "PCA"
 Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
 Set-PcFile ".claude/settings.json" "a1" 1700000000
-Set-PcFile ".claude/projects/p/s.jsonl" "s1"
+Set-PcFile ".claude/projects/p/memory/s.md" "s1"
 Set-PcFile ".claude/cache/x.bin" "cache"
 $r = Invoke-DriveSync
 Assert-True $r.Ok ("premier envoi reussi " + $r.Error)
-Assert-Equal 3 $r.Up "premier envoi : registre, reglages, conversation"
+Assert-Equal 3 $r.Up "premier envoi : registre, reglages, memoire"
 $fakeKeys = [string[]]@($script:Fake.Keys); [Array]::Sort($fakeKeys, [StringComparer]::Ordinal)
-Assert-Equal ".claude-accounts.json|.claude/projects/p/s.jsonl|.claude/settings.json" ($fakeKeys -join "|") "noms Drive = chemins relatifs, cache exclu"
+Assert-Equal ".claude-accounts.json|.claude/projects/p/memory/s.md|.claude/settings.json" ($fakeKeys -join "|") "noms Drive = chemins relatifs, cache exclu"
 Assert-Equal "PCA" $script:Fake[".claude/settings.json"].Pc "PC d'origine en metadonnee"
 Assert-Equal 1700000000 $script:Fake[".claude/settings.json"].M "date en metadonnee"
 Assert-True ($r.At -gt 0) "heure de la derniere synchro"
@@ -33,14 +33,14 @@ $r = Invoke-DriveSync
 Assert-Equal 1 $r.Down "modification recue"
 Assert-Equal "b2" (Get-PcText ".claude/settings.json") "contenu modifie recu"
 
-Remove-Item -LiteralPath (Join-Path $script:HomeDir ".claude/projects/p/s.jsonl")
+Remove-Item -LiteralPath (Join-Path $script:HomeDir ".claude/projects/p/memory/s.md")
 $r = Invoke-DriveSync
 Assert-Equal 1 $r.Deleted "suppression propagee au Drive"
-Assert-True (-not $script:Fake.ContainsKey(".claude/projects/p/s.jsonl")) "fichier mis a la corbeille du Drive"
+Assert-True (-not $script:Fake.ContainsKey(".claude/projects/p/memory/s.md")) "fichier mis a la corbeille du Drive"
 Use-Pc "PCB"
 $r = Invoke-DriveSync
 Assert-Equal 1 $r.Deleted "suppression recue"
-Assert-Null (Get-PcText ".claude/projects/p/s.jsonl") "fichier supprime localement"
+Assert-Null (Get-PcText ".claude/projects/p/memory/s.md") "fichier supprime localement"
 
 Use-Pc "PCA"
 Set-PcFile ".claude/settings.json" "a3" 1700000300

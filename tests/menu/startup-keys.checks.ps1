@@ -54,14 +54,24 @@ try {
   Assert-Equal "offline" $script:Su.Exit.Name "echec sans internet : clm se ferme"
   $script:FakeOnline = $true
 
-  foreach ($case in @(@("Failed", "failed erreur"), @("Busy", "ok en attente, un autre PC synchronise"))) {
-    New-StartupCase @("drive")
-    $null = Invoke-StartupTicks
-    $script:DriveJob.Loader = $null
-    $script:DriveJob[$case[0]] = $true
-    $null = Invoke-StartupTicks
-    Assert-Equal $case[1] ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) ("Drive : " + $case[0])
-  }
+  New-StartupCase @("drive")
+  $null = Invoke-StartupTicks
+  $script:DriveJob.Loader = $null
+  $script:DriveJob.Failed = $true
+  $null = Invoke-StartupTicks
+  Assert-Equal "failed erreur" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Drive : erreur"
+
+  New-StartupCase @("drive")
+  $null = Invoke-StartupTicks
+  $script:DriveJob.Loader = $null
+  $script:DriveJob.Busy = $true
+  $null = Invoke-StartupTicks
+  Assert-Equal "run attente de la synchro en cours 2" ($script:Su.Steps[0].State + " " + $script:Su.Steps[0].Text + " " + $script:DriveStarts) "Drive : synchro deja en cours, attente puis nouvel essai"
+  Assert-Equal "none" (Send-StartupAct "launch").Name "Drive : compte refuse pendant l'attente"
+  $script:DriveJob.Loader = $null
+  $script:T += 60000
+  $null = Invoke-StartupTicks
+  Assert-Equal "ok en attente, une autre synchro tourne" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Drive : attente trop longue, menu libre"
 
   Assert-Equal "  mise a jour de clm impossible : x" (Add-ClmFailure @("", $script:Ink.Dim) "x")[0] "erreur de clm sans autre message"
   Assert-Equal "  ok" (Add-ClmFailure @("  ok", $script:Ink.Dim) "")[0] "pas d'erreur de clm : message garde"

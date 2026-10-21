@@ -47,6 +47,14 @@ function Write-JsonFile {
   [IO.File]::WriteAllText($Path, (ConvertTo-JsonText $Data) + "`n", (New-Object Text.UTF8Encoding $false))
 }
 
+function Write-TextFileAtomic {
+  param([string]$Path, [string]$Text)
+  $tmp = $Path + "." + [guid]::NewGuid().ToString("N") + ".tmp"
+  [IO.File]::WriteAllText($tmp, $Text, (New-Object Text.UTF8Encoding $false))
+  if (Test-Path -LiteralPath $Path) { [IO.File]::Replace($tmp, $Path, [NullString]::Value) }
+  else { [IO.File]::Move($tmp, $Path) }
+}
+
 function New-PathMap {
   [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseLiteralInitializerForHashtable", "", Justification = "case-sensitive paths")]
   param()

@@ -61,11 +61,16 @@ function ConvertTo-DriveQuery {
   return $Text.Replace("\", "\\").Replace("'", "\'")
 }
 
+function New-RemoteEntry {
+  param([string]$Id, [string]$Name, [string]$Md5, $Props)
+  return @{ Id = $Id; Name = $Name; Md5 = $Md5; M = [long]$Props["m"]; Pc = [string]$Props["pc"]; Exp = [long]$Props["exp"]; Props = $Props }
+}
+
 function ConvertTo-RemoteEntry {
   param($File)
   $props = @{}
   if ($null -ne $File.appProperties) { foreach ($p in $File.appProperties.PSObject.Properties) { $props[$p.Name] = [string]$p.Value } }
-  return @{ Id = [string]$File.id; Name = [string]$File.name; Md5 = [string]$File.md5Checksum; M = [long]$props["m"]; Pc = [string]$props["pc"]; Exp = [long]$props["exp"]; Props = $props }
+  return New-RemoteEntry ([string]$File.id) ([string]$File.name) ([string]$File.md5Checksum) $props
 }
 
 function Get-DriveListing {

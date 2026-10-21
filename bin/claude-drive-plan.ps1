@@ -41,9 +41,12 @@ function Get-SyncPlan {
   $quick = New-Object 'System.Collections.Generic.List[object]'
   $first = New-Object 'System.Collections.Generic.List[object]'
   $later = New-Object 'System.Collections.Generic.List[object]'
+  $anySkipped = @($Skipped).Count -gt 0
   foreach ($p in $paths) {
-    if (Test-UnderSkipped $p $Skipped) { continue }
-    $kind = Get-PathAction $Local[$p] $Base[$p] $Remote[$p] -Joining:$Joining
+    if ($anySkipped -and (Test-UnderSkipped $p $Skipped)) { continue }
+    $l = $Local[$p]; $b = $Base[$p]; $r = $Remote[$p]
+    if ($null -ne $l -and $null -ne $b -and $null -ne $r -and $l.Md5 -eq $b.Md5 -and $r.Md5 -eq $b.Md5 -and $r.Id -eq $b.Id) { continue }
+    $kind = Get-PathAction $l $b $r -Joining:$Joining
     if ($null -eq $kind) { continue }
     $a = @{ Kind = $kind; Path = $p }
     if ($script:BaseOnlyKinds -contains $kind) { $quick.Add($a) }

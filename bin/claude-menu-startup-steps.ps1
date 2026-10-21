@@ -1,5 +1,6 @@
 $script:StartupPollMs = 250
 $script:StartupBarMs = 350
+$script:DriveStartupBusyMs = 60000
 
 function Set-StartupProgress {
   param($Step, [int]$Pct, [string]$Text, [double]$Now)
@@ -115,6 +116,7 @@ function Step-DriveStartup {
   $job = $script:DriveJob
   if ($Step.State -eq "wait") {
     $script:DriveChecked = $true
+    $Step.BusyEnd = $Now + $script:DriveStartupBusyMs
     Start-DriveJob $job
     $Step.State = "run"
     $null = Set-StartupProgress $Step -1 "preparation" $Now
@@ -125,8 +127,12 @@ function Step-DriveStartup {
     if ($p -match "^(\d+)/(\d+)$" -and [int]$Matches[2] -gt 0) { return Set-StartupProgress $Step ([int][math]::Floor([int]$Matches[1] * 100 / [int]$Matches[2])) ($p + " fichiers") $Now }
     return Set-StartupProgress $Step -1 "preparation" $Now
   }
+  if ($job.Busy -and $Now -lt $Step.BusyEnd) {
+    Start-DriveJob $job
+    return Set-StartupProgress $Step -1 "attente de la synchro en cours" $Now
+  }
   if ($job.Failed) { Complete-StartupStep $Step "failed" "erreur" $Now }
-  elseif ($job.Busy) { Complete-StartupStep $Step "ok" "en attente, un autre PC synchronise" $Now }
+  elseif ($job.Busy) { Complete-StartupStep $Step "ok" "en attente, une autre synchro tourne" $Now }
   else { Complete-StartupStep $Step "ok" "a jour" $Now }
   return $true
 }

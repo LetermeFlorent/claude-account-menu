@@ -31,8 +31,5 @@ function ConvertTo-StateText {
 
 function Save-DriveState {
   param($State)
-  $tmp = $script:DriveStatePath + ".tmp"
-  [IO.File]::WriteAllText($tmp, (ConvertTo-StateText $State), (New-Object Text.UTF8Encoding $false))
-  if (Test-Path -LiteralPath $script:DriveStatePath) { [IO.File]::Replace($tmp, $script:DriveStatePath, [NullString]::Value) }
-  else { [IO.File]::Move($tmp, $script:DriveStatePath) }
+  Write-TextFileAtomic $script:DriveStatePath (ConvertTo-StateText $State)
 }

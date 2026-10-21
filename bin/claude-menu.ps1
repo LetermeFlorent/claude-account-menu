@@ -12,14 +12,17 @@
 . (Join-Path $PSScriptRoot "claude-menu-loop.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-startup.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-cli.ps1")
+. (Join-Path $PSScriptRoot "claude-account-guard.ps1")
 
 function Start-Account {
   param($Acc, $Extra)
   try { Update-StatusState $Acc } catch {}
   Sync-Accounts
   Sync-DriveBeforeLaunch $Acc
-  Invoke-AsAccount $Acc $Extra
-  Stop-DriveSession $Acc
+  Repair-AccountConfig $Acc
+  $session = Open-DriveSession $Acc
+  try { Invoke-AsAccount $Acc $Extra }
+  finally { Stop-DriveSession $Acc $session }
 }
 
 function Assert-Online {

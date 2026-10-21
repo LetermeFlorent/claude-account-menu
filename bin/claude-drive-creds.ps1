@@ -1,6 +1,6 @@
 . (Join-Path $PSScriptRoot "claude-drive-transfer.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-folders.ps1")
-$script:AwaySeconds = 12 * 3600
+. (Join-Path $PSScriptRoot "claude-drive-presence.ps1")
 $script:CredentialMarginMs = 60000
 $script:CredLockPath = Join-Path (Get-HomeDir) ".clm-drive-creds.lock"
 $script:CredLockWaitMs = 15000
@@ -110,40 +110,4 @@ function Send-DriveCredential {
 function Test-CredentialUsable {
   param($Cred)
   return (Get-CredentialExpiry $Cred) -gt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + $script:CredentialMarginMs
-}
-
-function Set-DrivePresence {
-  param($Acc, [bool]$Open)
-  $f = Get-DriveFolders
-  $name = (Get-DrivePcName) + ".json"
-  $v = "0"
-  if ($Open) { $v = "" + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
-  $own = (Get-DriveListing $f.Presence)[$name]
-  if ($null -ne $own) { Set-DriveProps $own.Id @{ $Acc.Dir = $v }; return }
-  $null = Send-DriveText $f.Presence $name "{}" @{ $Acc.Dir = $v } ""
-}
-
-function Get-AwayMap {
-  param($Listing, [string]$Pc, [long]$NowSec)
-  $map = @{}
-  foreach ($name in $Listing.Keys) {
-    $other = $name -replace "\.json$", ""
-    if ($other -eq $Pc) { continue }
-    $props = $Listing[$name].Props
-    foreach ($dir in $props.Keys) {
-      $t = [long]$props[$dir]
-      if ($t -gt 0 -and $NowSec - $t -lt $script:AwaySeconds) { $map[$dir] = $other }
-    }
-  }
-  return $map
-}
-
-function Test-AccountAway {
-  param($Acc)
-  if (-not (Test-DriveConnected)) { return $false }
-  try {
-    $f = Get-DriveFolders
-    $away = Get-AwayMap (Get-DriveListing $f.Presence) (Get-DrivePcName) ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
-    return $away.ContainsKey([string]$Acc.Dir)
-  } catch { return $false }
 }

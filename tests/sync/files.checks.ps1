@@ -1,5 +1,5 @@
 $fh = Join-Path $script:Sandbox "pc-files"
-foreach ($rel in @(".claude/settings.json", ".claude/cache/x.bin", ".claude/plugins/cache/p.js", ".claude/a.lock", ".claude/x.json.conflit-MAC", ".claude/.credentials.json", ".claude/settings.json.bak-sync", ".claude/w.json.ab12.tmp", ".claude/outils/chrome-bidi/profils/c/Cookies", ".claude-compte2/skills/s.md", ".claude-compte2/notes.md", ".claude-compte2/CLAUDE.md", ".claude/projects/C--x/a b.jsonl", ".claude.json", ".claude-accounts.json", ".autre/hors.md")) {
+foreach ($rel in @(".claude/settings.json", ".claude/cache/x.bin", ".claude/plugins/cache/p.js", ".claude/a.lock", ".claude/x.json.conflit-MAC", ".claude/.credentials.json", ".claude/settings.json.bak-sync", ".claude/w.json.ab12.tmp", ".claude/outils/chrome-bidi/profils/c/Cookies", ".claude-compte2/skills/s.md", ".claude-compte2/notes.md", ".claude-compte2/CLAUDE.md", ".claude/projects/C--x/a b.jsonl", ".claude/projects/C--x/memory/a b.md", ".claude.json", ".claude-accounts.json", ".autre/hors.md")) {
   $null = New-SandboxFile ("pc-files/" + $rel) ("contenu " + $rel)
 }
 $accs = @([PSCustomObject]@{ Label = "a"; Dir = ".claude" }, [PSCustomObject]@{ Label = "b"; Dir = ".claude-compte2" })
@@ -8,7 +8,7 @@ Assert-True ($roots -contains ".claude-accounts.json" -and $roots -contains ".cl
 $patterns = Get-SyncPatterns $accs
 $res = Get-LocalFiles $fh $roots $patterns (New-PathMap)
 $keys = [string[]]@($res.Files.Keys); [Array]::Sort($keys, [StringComparer]::Ordinal)
-Assert-Equal ".claude-accounts.json|.claude-compte2/notes.md|.claude.json|.claude/projects/C--x/a b.jsonl|.claude/settings.json" ($keys -join "|") "perimetre : exclusions et elements partages ecartes"
+Assert-Equal ".claude-accounts.json|.claude-compte2/notes.md|.claude.json|.claude/projects/C--x/memory/a b.md|.claude/settings.json" ($keys -join "|") "perimetre : exclusions et elements partages ecartes"
 $e = $res.Files[".claude/settings.json"]
 Assert-Equal (Get-FileMd5 (Join-Path $fh ".claude/settings.json")) $e.Md5 "empreinte MD5 calculee"
 Assert-Equal 32 $e.Md5.Length "MD5 en hexadecimal"

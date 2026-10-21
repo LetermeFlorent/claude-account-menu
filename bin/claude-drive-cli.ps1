@@ -1,5 +1,6 @@
 . (Join-Path $PSScriptRoot "claude-drive-job.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-login.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-watch-launch.ps1")
 
 function Get-DriveCliAction {
   param([object[]]$ArgList)
@@ -34,11 +35,32 @@ function Invoke-DriveCli {
   return 0
 }
 
-function Stop-DriveSession {
+function Open-DriveSession {
   param($Acc)
+  if (-not (Test-DriveConnected)) { return "" }
+  try { $path = Register-DriveSession $Acc } catch { return "" }
+  $null = Start-DriveWatcher
+  return $path
+}
+
+function Submit-DriveSession {
+  param([string]$Session)
+  $ended = ""
+  try { $ended = Close-DriveSession $Session } catch {}
+  if (-not $ended) { return $false }
+  if (Wait-DriveWatcher $ended) { return $true }
+  try { [IO.File]::Delete($ended) } catch {}
+  return $false
+}
+
+function Stop-DriveSession {
+  param($Acc, [string]$Session = "")
   $code = $global:LASTEXITCODE
-  $end = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + $script:DriveExitBudgetMs
-  Stop-DriveJob $script:DriveJob $script:DriveExitBudgetMs
-  Sync-DriveAfterExit $Acc $end
+  if (Submit-DriveSession $Session) { Stop-DriveJob $script:DriveJob $script:DriveQuitWaitMs }
+  else {
+    $end = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + $script:DriveExitBudgetMs
+    Stop-DriveJob $script:DriveJob $script:DriveExitBudgetMs
+    Sync-DriveAfterExit $Acc $end
+  }
   $global:LASTEXITCODE = $code
 }

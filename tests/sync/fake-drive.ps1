@@ -1,5 +1,7 @@
-$syncSaved = @($script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs)
+$syncSaved = @($script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs, $script:DriveParallel, $script:DriveSessionDir)
+$script:DriveParallel = 1
 $script:Fake = New-PathMap
+$script:FakePresence = New-PathMap
 $script:FakeSeq = 0
 $script:FailSend = @()
 $script:StopAfter = 0
@@ -31,10 +33,13 @@ function Get-DriveListing {
   param([string]$FolderId)
   $m = New-PathMap
   if ($FolderId -eq "F") { foreach ($k in $script:Fake.Keys) { $m[$k] = $script:Fake[$k] } }
+  if ($FolderId -eq "P") { foreach ($k in $script:FakePresence.Keys) { $m[$k] = $script:FakePresence[$k] } }
   return $m
 }
+function Get-DriveFilesListing { param($Folders, [string]$Pc) return Get-DriveListing $Folders.Files }
 function Send-DriveContent {
   param([string]$FolderId, [string]$Name, [byte[]]$Bytes, $Props, [string]$Id)
+  if ($FolderId -eq "P") { $script:FakePresence[$Name] = @{ Id = ("p-" + $Name); Name = $Name; Props = $Props }; return @{ Id = ("p-" + $Name); Md5 = "" } }
   if ($null -ne $script:OnSend) { & $script:OnSend $Name }
   if ($script:FailSend -contains $Name) { throw "panne reseau" }
   if ($Id) { $Name = Find-FakeName $Id } else { $script:FakeSeq++; $Id = "id" + $script:FakeSeq }
@@ -52,6 +57,16 @@ function Save-DriveMedia {
   if ($null -ne $script:OnMedia) { & $script:OnMedia }
 }
 function Remove-DriveFile { param([string]$Id) $script:Fake.Remove((Find-FakeName $Id)) }
+function Remove-DriveFiles {
+  param([string[]]$Ids, $Ctl, [long]$DeadlineMs)
+  if (Test-SyncStop $Ctl $DeadlineMs) { return 0 }
+  foreach ($id in $Ids) { Remove-DriveFile $id }
+  return $Ids.Count
+}
+function Set-DriveProps {
+  param([string]$Id, $Props)
+  foreach ($k in $script:FakePresence.Keys) { if ($script:FakePresence[$k].Id -eq $Id) { foreach ($p in $Props.Keys) { $script:FakePresence[$k].Props[$p] = $Props[$p] } } }
+}
 
 function Use-Pc {
   param([string]$Name)
@@ -61,6 +76,7 @@ function Use-Pc {
   $script:DriveStatePath = Join-Path $script:HomeDir ".clm-drive-state.json"
   $script:DriveConfigPath = Join-Path $script:HomeDir ".clm-drive.json"
   $script:DriveLockPath = Join-Path $script:HomeDir ".clm-drive.lock"
+  $script:DriveSessionDir = Join-Path $script:HomeDir ".clm-drive-watch"
   Save-DriveConfig @{ refreshToken = "r"; pc = $Name }
 }
 
@@ -82,5 +98,5 @@ function Get-PcText {
 $script:DriveLockWaitMs = 0
 
 function Restore-FakeDrive {
-  $script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs = $syncSaved
+  $script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs, $script:DriveParallel, $script:DriveSessionDir = $syncSaved
 }

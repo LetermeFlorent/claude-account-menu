@@ -10,6 +10,11 @@ $script:Fake[$ownState] = @{ Id = "own-state"; Name = $ownState; Md5 = "x"; M = 
 $script:Fake[$other] = @{ Id = "other"; Name = $other; Md5 = "x"; M = 0; Pc = "PCM"; Bytes = [byte[]]@(65) }
 Set-PcFile $own "local"
 Assert-Equal 0 (Remove-OwnLeftovers (Get-DriveListing "F") "PCL" @{ Stop = $true } 0) "arret demande : rien retire du Drive"
+$script:FakePresence["PCM.json"] = @{ Id = "pm"; Name = "PCM.json"; Props = @{ ".claude" = "0" } }
+Assert-Equal 0 (Invoke-DriveSync).Deleted "un PC encore sur l'ancienne version : rien retire du Drive"
+Assert-True $script:Fake.ContainsKey($own) "un PC encore sur l'ancienne version : copie gardee"
+Assert-Equal "2" $script:FakePresence["PCL.json"].Props["fmt"] "presence : version de synchro de ce PC annoncee"
+$script:FakePresence["PCM.json"].Props["fmt"] = "2"
 $r = Invoke-DriveSync
 Assert-Equal 2 $r.Deleted "profil Chrome envoye par ce PC : chaque fichier retire du Drive"
 Assert-True (-not ($script:Fake.ContainsKey($own) -or $script:Fake.ContainsKey($ownState))) "profil Chrome de ce PC : mis a la corbeille du Drive"
@@ -18,5 +23,6 @@ Assert-True $script:Fake.ContainsKey($other) "profil Chrome d'un autre PC : lais
 Assert-Equal "local" (Get-PcText $own) "profil Chrome : copie locale gardee"
 Assert-Equal 0 (Invoke-DriveSync).Deleted "profil Chrome : retire une seule fois"
 $script:Fake.Remove($other)
+$script:FakePresence.Clear()
 Restore-FakeDrive
 . (Join-Path $bin "claude-drive-creds.ps1")

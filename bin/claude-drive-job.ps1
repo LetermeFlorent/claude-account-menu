@@ -2,10 +2,31 @@
 $script:DriveJob = $null
 $script:DriveQuitWaitMs = 2000
 $script:DriveRetryMs = 60000
+$script:DriveProbeMs = 1000
 
 function New-DriveJob {
   param([bool]$Connected, [long]$Last)
-  return @{ Loader = $null; Ctl = $null; Connected = $Connected; Last = $Last; Failed = $false; Busy = $false; RetryAt = [long]0; Away = @{}; Seen = ""; Notify = $false; Notice = $null }
+  return @{ Loader = $null; Ctl = $null; Connected = $Connected; Last = $Last; Failed = $false; Busy = $false; RetryAt = [long]0; Away = @{}; Seen = ""; Notify = $false; Notice = $null; Elsewhere = $false; ProbeAt = [long]0 }
+}
+
+function Test-DriveLockHeld {
+  try { $fs = [IO.File]::Open($script:DriveLockPath, "OpenOrCreate", "ReadWrite", "None") } catch { return $true }
+  $fs.Dispose()
+  return $false
+}
+
+function Update-DriveElsewhere {
+  param($Job, [long]$NowMs)
+  if (-not $Job.Connected -or $NowMs - $Job.ProbeAt -lt $script:DriveProbeMs) { return $false }
+  $Job.ProbeAt = $NowMs
+  $held = Test-DriveLockHeld
+  if ($held -eq $Job.Elsewhere) { return $false }
+  $Job.Elsewhere = $held
+  if ($held) { return $true }
+  if ($Job.Busy) { $Job.RetryAt = $NowMs }
+  $last = Get-DriveLastSync
+  if ($last -gt $Job.Last) { $Job.Last = $last }
+  return $true
 }
 
 function Get-DriveLastSync {
@@ -50,7 +71,7 @@ function Step-DriveJob {
   param($Job, [long]$NowMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
   if ($null -eq $Job) { return $false }
   if ($null -eq $Job.Loader -and $Job.Busy -and $NowMs -ge $Job.RetryAt) { Start-DriveJob $Job; return $true }
-  if (-not (Test-DriveJobRunning $Job)) { return $false }
+  if (-not (Test-DriveJobRunning $Job)) { return Update-DriveElsewhere $Job $NowMs }
   if ($Job.Loader.Ctl.Done) { Complete-DriveJob $Job; return $true }
   $p = "" + $Job.Ctl.Progress
   if ($p -eq $Job.Seen) { return $false }
@@ -74,6 +95,7 @@ function Get-DriveTag {
     if ($p) { return @(("sync " + $p), $script:Ink.Dim) }
     return @("sync...", $script:Ink.Dim)
   }
+  if ($Job.Elsewhere) { return @("sync...", $script:Ink.Dim) }
   if ($Job.Busy) { return @("sync attente", $script:Ink.Dim) }
   if ($Job.Failed) { return @("sync erreur", $script:Ink.Alert) }
   if ($Job.Last -gt 0) { return @(("sync " + [DateTimeOffset]::FromUnixTimeSeconds($Job.Last).LocalDateTime.ToString("HH:mm")), $script:Ink.Dim) }

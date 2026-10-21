@@ -47,7 +47,9 @@ try {
   . (Join-Path $bin "claude-self-update.ps1")
   . (Join-Path $bin "claude-statusline-seed.ps1")
   . (Join-Path $bin "claude-drive-sync.ps1")
+  . (Join-Path $bin "claude-drive-watch.ps1")
   . (Join-Path $bin "claude-drive-cli.ps1")
+  . (Join-Path $bin "claude-account-guard.ps1")
   Remove-Item Env:STATUSLINE_BG
   foreach ($checkFile in Get-ChildItem -LiteralPath $PSScriptRoot -Filter "*.checks.ps1" -Recurse | Sort-Object Name) {
     try { . $checkFile.FullName } catch { $script:Failed += ($checkFile.Name + " : exception " + $_.Exception.Message + " ligne " + $_.InvocationInfo.ScriptLineNumber) }

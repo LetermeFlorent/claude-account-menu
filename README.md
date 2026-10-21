@@ -219,6 +219,8 @@ Chaque compte garde son `settings.json` et son `.claude.json`, mais `clm` les sy
 
 La règle est celle du dernier modifié. `.claude-sync-state.json` garde la dernière valeur commune. Parmi les comptes qui s'en écartent, celui dont le fichier est le plus récent gagne, et sa valeur est recopiée dans les autres. Avant sa première réécriture par la synchronisation, un fichier est copié en `<fichier>.bak-sync`. Un verrou, `.claude-sync.lock`, empêche deux lancements de synchroniser en même temps : au bout de 5 secondes d'attente, le second lance le compte sans synchroniser et l'indique.
 
+Juste avant de lancer un compte, `clm` vérifie deux réglages dont l'absence fait reposer à Claude Code ses questions d'accueil, choix du thème compris. Le `.claude.json` du compte doit marquer l'accueil comme fait : `clm` y écrit `hasCompletedOnboarding` s'il manque, et crée le fichier s'il n'existe pas ou s'il est vide. Le `settings.json` doit porter un `theme` : à défaut, `clm` y met celui d'un autre compte, ou `dark` si aucun n'en a.
+
 ## Synchronisation entre PC
 
 `clm` peut garder les mêmes comptes sur plusieurs PC, Windows, macOS et Linux mélangés, en passant par un dossier `clm-sync` de Google Drive. Tout ce qu'une sauvegarde emporte y passe, jetons de connexion compris, sauf les scripts de `clm` : chaque PC se met à jour seul depuis GitHub.
@@ -235,28 +237,39 @@ Le premier PC envoie tout. Sur un PC qui rejoint, la première synchro prend ce 
 
 La synchro automatique est active dès la connexion. `clm --sync-auto=off` la coupe et `clm --sync-auto=on` la remet. Quand elle est active :
 
-- le menu lance une synchro en arrière-plan à son ouverture, après les mises à jour de clm et de Claude Code pour ne pas tourner en même temps qu'elles. Sa barre "Drive" suit le nombre de fichiers traités, et les comptes n'apparaissent qu'à sa fin. Elle s'arrête quand on quitte le menu. Quitter pendant les mises à jour ferme `clm` sans la lancer ;
-- à la fermeture de Claude Code, `clm` envoie ce qui a changé, pendant 30 secondes au plus. Ce qui reste part à la synchro suivante, et un message le dit.
+- le menu lance une synchro en arrière-plan à son ouverture, après les mises à jour de clm et de Claude Code pour ne pas tourner en même temps qu'elles. Sa barre "Drive" suit le nombre de fichiers traités, et les comptes n'apparaissent qu'à sa fin. Si une autre synchro tourne déjà sur ce PC, celle de la session précédente par exemple, la barre affiche "attente de la synchro en cours" et réessaie jusqu'à ce qu'elle finisse, une minute au plus. Elle s'arrête quand on quitte le menu. Quitter pendant les mises à jour ferme `clm` sans la lancer ;
+- pendant que Claude Code est ouvert, un veilleur caché synchronise : toutes les 30 secondes si le Drive a changé, et 2 secondes après un changement sur le disque, avec 30 secondes au moins entre deux synchros ;
+- à la fermeture de Claude Code, par `/quit`, Ctrl+C ou la fenêtre fermée, la fenêtre rend la main tout de suite et le veilleur fait la dernière synchro.
 
 À la main, la touche `y` du menu, ou un clic sur l'état de la synchro dans l'en-tête, lance une synchro et affiche son résultat. `clm --sync` fait de même en ligne de commande, avec la progression, et sort avec le code 1 en cas d'erreur.
 
-L'en-tête affiche, après la version, "sync 14:32" pour la dernière synchro réussie, "sync 120/5508" pendant un transfert, "sync erreur" en couleur d'alerte, et "sync jamais" avant la première. "sync attente" signale qu'une autre synchro tourne déjà sur ce PC, dans une autre fenêtre `clm` par exemple : le menu réessaie une minute plus tard. Rien n'apparaît quand le Drive n'est pas connecté.
+L'en-tête affiche, après la version, "sync 14:32" pour la dernière synchro réussie, "sync 120/5508" pendant un transfert, "sync erreur" en couleur d'alerte, et "sync jamais" avant la première. "sync..." apparaît aussi pendant la synchro du veilleur ou d'une autre fenêtre `clm` du même PC. "sync attente" signale qu'une synchro du menu a trouvé la place prise : elle repart dès que l'autre a fini, ou une minute plus tard. Rien n'apparaît quand le Drive n'est pas connecté.
+
+### Le veilleur
+
+Le veilleur est un process PowerShell sans fenêtre, en priorité basse, lancé par `clm` à l'ouverture de Claude Code quand le PC est connecté au Drive. Il n'y en a qu'un par PC, quel que soit le nombre de fenêtres : chaque session ouverte s'inscrit dans `~/.clm-drive-watch/`, et un verrou, `~/.clm-drive-watch.lock`, garde le veilleur unique. Il s'arrête de lui-même quand plus aucune session n'est ouverte et que la dernière synchro est faite.
+
+Il regarde le disque par les notifications du système, sans relire les dossiers. Là où elles manquent, il synchronise toutes les minutes. Les jetons de connexion sont comparés à chaque passage, même quand la synchro automatique est coupée. Le `.claude.json` d'un compte ouvert, que Claude Code réécrit sans arrêt, attend la fin de la session pour partir.
+
+Une session dont le process a disparu, fenêtre fermée ou PC éteint, compte comme finie. Une synchro qui échoue est retentée une minute plus tard, et le veilleur renonce au bout de 10 minutes d'échecs : la synchro suivante reprend le travail. S'il ne peut pas démarrer, la fenêtre fait elle-même la synchro de sortie, 30 secondes au plus, comme avant. Son journal est `~/.clm-drive-watch/watch.log`, vidé au-delà de 256 Ko.
 
 Une synchro coupée en route ne perd pas son travail. Son état est enregistré toutes les minutes pendant les transferts, et la suivante ne refait pas ce qui était déjà passé. Quitter le menu pendant l'analyse du disque l'arrête aussitôt, avec le message "interrompue pendant l'analyse, reprise a la prochaine synchro".
 
 ### Ce qui est comparé
 
-Chaque PC garde dans `~/.clm-drive-state.json` l'état de sa dernière synchro, et compare à cet état le disque et le Drive. Un fichier modifié d'un seul côté est copié de l'autre, une suppression est propagée. Un fichier modifié des deux côtés est un conflit : la version la plus récente gagne et l'autre reste sur ce PC sous `<fichier>.conflit-<PC>`. Les fichiers `.conflit-*`, `.bak-sync` et `.tmp` ne sont pas synchronisés, et les exclusions de la sauvegarde s'appliquent. Les profils Chrome rangés sous `chrome-bidi/profils` ne passent pas non plus par le Drive, dans aucun sens : chaque PC garde le sien. Si un PC en avait déjà envoyé, il met ces fichiers à la corbeille du Drive à sa première synchro complète, et ne touche pas à ceux des autres PC, que chacun retire à son tour. La base de chaque PC les oublie, et rien n'est effacé sur les disques.
+Chaque PC garde dans `~/.clm-drive-state.json` l'état de sa dernière synchro, et compare à cet état le disque et le Drive. Un fichier modifié d'un seul côté est copié de l'autre, une suppression est propagée. Un fichier modifié des deux côtés est un conflit : la version la plus récente gagne et l'autre reste sur ce PC sous `<fichier>.conflit-<PC>`. Les fichiers `.conflit-*`, `.bak-sync` et `.tmp` ne sont pas synchronisés, et les exclusions de la sauvegarde s'appliquent. Quatre sortes de fichiers restent propres à chaque PC et ne passent par le Drive dans aucun sens : les conversations (voir plus bas), les dossiers `file-history` et `node_modules`, et les profils Chrome rangés sous `chrome-bidi/profils`. Si un PC en avait déjà envoyé, il met ces fichiers à la corbeille du Drive, en lots de 100, à la première synchro complète qui suit le passage de tous les PC à une version de `clm` qui les exclut. Il ne touche pas à ceux des autres PC, que chacun retire à son tour. La base de chaque PC les oublie, et rien n'est effacé sur les disques.
+
+Pour aller vite, la liste du Drive n'est relue en entier qu'une fois par jour. Entre deux, `clm` ne demande au Drive que ce qui a changé depuis la dernière synchro, et garde la liste dans `~/.clm-drive-remote.json`. Les téléchargements et les petits envois partent en avance sur 4 connexions en parallèle, puis les fichiers sont posés sur le disque et notés dans la base dans l'ordre.
 
 Plus de 20 suppressions prévues, ou plus d'un dixième des fichiers connus, bloquent la synchro avec "synchro bloquee : N suppressions prevues". Après vérification, `clm --sync --force` passe outre. Un fichier qui échoue est retenté à la synchro suivante, et trois échecs de suite arrêtent la synchro en cours. Un verrou, `~/.clm-drive.lock`, empêche deux synchros en même temps sur un PC.
 
 Le `settings.json` de chaque compte garde deux réglages propres au PC. Son entrée `statusLine`, qui désigne le programme de la barre d'état sur ce PC, ne part pas sur le Drive : à la réception, `clm` remet celle que le PC avait déjà, ou à défaut celle de `.claude`. La commande du hook de la barre d'état part sous la forme de Windows, et chaque PC la reçoit sous la forme de son système. Un PC où la barre n'a pas encore été installée reçoit donc des réglages sans barre d'état : y lancer l'installeur de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline). Un `settings.json` envoyé par un ancien `clm`, `statusLine` compris, est nettoyé à la réception puis renvoyé une fois sous la forme commune.
 
-Les conversations de `projects/` passent telles quelles. Comme Claude Code nomme ces dossiers d'après le chemin du projet, une conversation ouverte sous Windows ne se reprend pas sous macOS : elle est copiée, mais reste à part.
+Les conversations ne quittent jamais leur PC : les fichiers `.jsonl` de `projects/` et les dossiers `subagents` et `tool-results` qui les accompagnent restent hors du Drive. La mémoire des projets, `projects/<projet>/memory`, passe, elle. Comme Claude Code nomme ces dossiers d'après le chemin du projet, la mémoire d'un projet ouvert sous Windows reste à part sous macOS.
 
 ### Jetons de connexion
 
-Les jetons de chaque compte ont leur propre fichier sur le Drive, et le plus récent gagne toujours : un PC ne remplace pas un jeton local par un jeton qui expire plus tôt. Avant de lancer un compte, `clm` prend le jeton du Drive s'il est plus frais. Avant de renouveler un jeton expiré, il regarde d'abord si un autre PC ne l'a pas déjà fait, et envoie le nouveau jeton après un renouvellement. À la fermeture de Claude Code, le jeton part sur le Drive, même quand la synchro automatique est coupée. Sous macOS, les jetons sont lus et écrits dans le trousseau, par l'entrée standard de `security` pour que le jeton n'apparaisse jamais dans la liste des process.
+Les jetons de chaque compte ont leur propre fichier sur le Drive, et le plus récent gagne toujours : un PC ne remplace pas un jeton local par un jeton qui expire plus tôt. Avant de lancer un compte, `clm` prend le jeton du Drive s'il est plus frais. Avant de renouveler un jeton expiré, il regarde d'abord si un autre PC ne l'a pas déjà fait, et envoie le nouveau jeton après un renouvellement. Pendant que Claude Code est ouvert, le veilleur compare les jetons toutes les 30 secondes et dès que l'un d'eux change sur le disque, et à la fermeture le jeton part sur le Drive, même quand la synchro automatique est coupée. Sous macOS, les jetons sont lus et écrits dans le trousseau, par l'entrée standard de `security` pour que le jeton n'apparaisse jamais dans la liste des process.
 
 Un jeton local illisible, tenu par Claude Code au moment de la synchro, n'est jamais écrasé : le compte est retenté à la synchro suivante. Chaque jeton envoyé porte l'adresse du compte, et un PC refuse le jeton d'une autre adresse, ce qui arrive quand le même dossier de compte sert à deux comptes différents sur deux PC.
 
@@ -327,7 +340,9 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | fichier d'état `claude-statusline/state` | quotas pour la barre d'état |
 | `claude-comptes-*.zip` ou `.tar.gz` dans Téléchargements | sauvegardes |
 | `~/.clm-drive.json` | connexion Google Drive, nom du PC, synchro automatique |
-| `~/.clm-drive-state.json` et `~/.clm-drive*.lock` | état de la dernière synchro Drive, verrous de la synchro, des dossiers Drive et des jetons |
+| `~/.clm-drive-state.json` et `~/.clm-drive*.lock` | état de la dernière synchro Drive, verrous de la synchro, des dossiers Drive, des jetons et du veilleur |
+| `~/.clm-drive-remote.json` | liste du Drive gardée entre deux synchros |
+| `~/.clm-drive-watch/` | sessions Claude Code ouvertes et journal du veilleur |
 | `<fichier>.conflit-<PC>` | version perdante d'un conflit de synchro |
 
 Il lit `USERPROFILE` puis `HOME` pour le dossier personnel, `LOCALAPPDATA` sous Windows, `XDG_CACHE_HOME`, `XDG_STATE_HOME` et `XDG_CONFIG_HOME` sous Linux, `STATUSLINE_BG` et `GTK_THEME` pour les couleurs, `CLM_ANIM` pour les animations, et `CLAUDE_CONFIG_DIR` dans le hook. Il pose ou retire lui-même `CLAUDE_CONFIG_DIR` pour lancer un compte.

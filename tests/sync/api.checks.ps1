@@ -84,3 +84,27 @@ Assert-Equal "media" ([IO.File]::ReadAllText($media)) "telechargement vers un no
 Assert-True (-not (Test-Path -LiteralPath $script:MediaOut)) "telechargement : fichier intermediaire retire"
 . (Join-Path $bin "claude-drive-transfer.ps1")
 Assert-True ($script:Calls[0].Body -is [byte[]]) "metadonnees envoyees en octets, pas en liste de nombres"
+
+$script:Calls.Clear()
+function Invoke-DriveRequest {
+  param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
+  $script:Calls.Add(@{ Method = $Method; Uri = $Uri; Body = $Body; ContentType = $ContentType })
+  return New-FakeResponse "--b`r`nContent-Type: application/http`r`n`r`nHTTP/1.1 200 OK`r`n`r`n{}`r`n--b`r`nContent-Type: application/http`r`n`r`nHTTP/1.1 404 Not Found`r`n`r`n{}`r`n--b--"
+}
+$batch = New-TrashBatchBody @("a1", "b2") "BND"
+Assert-True ($batch.StartsWith("--BND`r`nContent-Type: application/http`r`n`r`nPATCH /drive/v3/files/a1?fields=id`r`n")) "corbeille en lot : une requete par fichier"
+Assert-True ($batch.Contains("{""trashed"":true}") -and $batch.EndsWith("--BND--`r`n")) "corbeille en lot : corps et fin"
+$ids = @(foreach ($i in 1..205) { "id" + $i })
+Assert-Equal 3 (Remove-DriveFiles $ids $null 0) "corbeille en lot : reponses en echec non comptees"
+Assert-Equal "3 POST https://www.googleapis.com/batch/drive/v3" ("" + $script:Calls.Count + " " + $script:Calls[0].Method + " " + $script:Calls[0].Uri) "corbeille en lot : 100 fichiers par requete"
+Assert-True ($script:Calls[0].ContentType.StartsWith("multipart/mixed; boundary=")) "corbeille en lot : corps multipart"
+$script:Calls.Clear()
+Assert-Equal 0 (Remove-DriveFiles $ids @{ Stop = $true } 0) "corbeille en lot : arret demande"
+$lst = New-PathMap
+$lst[".claude/projects/p/s.jsonl"] = @{ Id = "c1"; Pc = "PCL" }
+$lst[".claude/outils/x/node_modules/m.js"] = @{ Id = "n1"; Pc = "PCL" }
+$lst[".claude/projects/p/memory/MEMORY.md"] = @{ Id = "k1"; Pc = "PCL" }
+$lst[".claude/projects/p/t.jsonl"] = @{ Id = "bad id"; Pc = "PCL" }
+$own = Get-OwnLeftovers $lst "PCL"
+Assert-Equal "c1,n1" (($own | Sort-Object) -join ",") "copies a retirer : conversations et modules, pas la memoire ni un id douteux"
+. (Join-Path $bin "claude-drive-transfer.ps1")

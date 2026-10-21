@@ -2,6 +2,7 @@
 . (Join-Path $PSScriptRoot "claude-drive-state.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-plan.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-transfer.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-prefetch.ps1")
 $script:DriveFailLimit = 3
 $script:DriveEchoEvery = 25
 $script:DriveSaveEveryMs = 60000
@@ -35,9 +36,8 @@ function New-BaseEntry {
 function Send-SyncFile {
   param($Ctx, [string]$Rel)
   $L = $Ctx.Local[$Rel]
-  $id = ""
-  if ($null -ne $Ctx.Remote[$Rel]) { $id = $Ctx.Remote[$Rel].Id }
-  $r = Send-DriveContent $Ctx.Folder $Rel (Get-SyncBytes $Rel $L.Full) @{ m = ("" + $L.M); pc = $Ctx.Pc } $id
+  $r = Get-PrefetchedUpload $Ctx.Prefetch $Rel
+  if ($null -eq $r) { $r = Send-DriveContent $Ctx.Folder $Rel (Get-SyncBytes $Rel $L.Full) (Get-UploadProps $Ctx $Rel) (Get-RemoteId $Ctx $Rel) }
   $md5 = $r.Md5
   if (-not $md5) { $md5 = $L.Md5 }
   $Ctx.State.Files[$Rel] = @{ Md5 = $md5; M = $L.M; Size = $L.Size; Id = $r.Id }
@@ -61,7 +61,8 @@ function Receive-SyncFile {
   param($Ctx, [string]$Rel)
   $R = $Ctx.Remote[$Rel]
   $path = Get-SyncLocalPath $Rel
-  $tmp = Receive-DriveTemp $R.Id $path
+  $tmp = Get-PrefetchedTemp $Ctx.Prefetch $Rel
+  if (-not $tmp) { $tmp = Receive-DriveTemp $R.Id $path }
   try {
     if (-not (Test-LocalAsScanned $Ctx $Rel)) { return $false }
     if (Test-MachineSettingsPath $Rel) { Update-MachineSettingsFile $tmp (Read-MachineSettings $path (Get-SyncLocalPath ".claude/settings.json")) }
@@ -122,21 +123,24 @@ function Invoke-SyncPlan {
   $later = 0
   $baseOnly = $false
   $Ctx.SavedAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-  foreach ($a in $Plan) {
-    if (Test-SyncStop $Ctl $DeadlineMs) { break }
-    $afterBaseOnly = $baseOnly
-    $baseOnly = $script:BaseOnlyKinds -contains $a.Kind
-    Save-SyncCheckpoint $Ctx ($afterBaseOnly -and -not $baseOnly)
-    $done++
-    try {
-      if (-not (Invoke-SyncAction $Ctx $a)) { $later++ }
-      $fails = 0
-    } catch {
-      $Ctx.Res.Failed++
-      $fails++
-      if ($fails -ge $script:DriveFailLimit) { $Ctx.Res.Left = $Plan.Count - $done + $later; throw }
+  $Ctx.Prefetch = Start-TransferPrefetch $Ctx $Plan $DeadlineMs
+  try {
+    foreach ($a in $Plan) {
+      if (Test-SyncStop $Ctl $DeadlineMs) { break }
+      $afterBaseOnly = $baseOnly
+      $baseOnly = $script:BaseOnlyKinds -contains $a.Kind
+      Save-SyncCheckpoint $Ctx ($afterBaseOnly -and -not $baseOnly)
+      $done++
+      try {
+        if (-not (Invoke-SyncAction $Ctx $a)) { $later++ }
+        $fails = 0
+      } catch {
+        $Ctx.Res.Failed++
+        $fails++
+        if ($fails -ge $script:DriveFailLimit) { $Ctx.Res.Left = $Plan.Count - $done + $later; throw }
+      }
+      Set-SyncProgress $Ctl $done $Plan.Count
     }
-    Set-SyncProgress $Ctl $done $Plan.Count
-  }
+  } finally { Stop-TransferPrefetch $Ctx.Prefetch; $Ctx.Prefetch = $null }
   $Ctx.Res.Left = $Plan.Count - $done + $later
 }

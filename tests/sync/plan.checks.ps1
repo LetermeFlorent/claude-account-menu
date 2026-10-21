@@ -48,3 +48,21 @@ Assert-Equal "a.md.conflit-PC_BUREAU_" (Get-ConflictPath "a.md" "PC BUREAU!") "n
 Assert-True (Test-SyncExcluded "a.md.conflit-MAC" (Get-SyncPatterns @())) "copie de conflit jamais synchronisee"
 Assert-True (Test-SyncExcluded ".claude/outils/chrome-bidi/profils/comptes/Default/Cookies" (Get-SyncPatterns @())) "profil Chrome jamais synchronise"
 Assert-True (-not (Test-SyncExcluded ".claude/outils/chrome-bidi/lancer.ps1" (Get-SyncPatterns @()))) "outil chrome-bidi synchronise hors profils"
+$sp = Get-SyncPatterns @()
+foreach ($c in @(".claude-compte3/projects/C--Users-x/1f2e.jsonl", ".claude/projects/C--Users-x/1f2e/subagents/agent-a.jsonl", ".claude/projects/C--x/1f2e/tool-results/r.txt", ".claude/outils/omni/node_modules/a/index.js", ".claude/file-history/1f2e/f@v1")) {
+  Assert-True (Test-SyncExcluded $c $sp) ("jamais synchronise : " + $c)
+}
+foreach ($c in @(".claude/projects/C--Users-x/memory/MEMORY.md", ".claude/history.jsonl", ".claude/outils/omni/package.json")) {
+  Assert-True (-not (Test-SyncExcluded $c $sp)) ("synchronise : " + $c)
+}
+Assert-True (Test-SyncExcluded ".claude/CACHE/x" @("cache")) "exclusion : casse ignoree"
+Assert-True (-not (Test-SyncExcluded ".claude/cached/x" @("cache"))) "exclusion : segment entier"
+Assert-True ((Test-SyncExcluded ".claude/a.lock" @("*.lock")) -and (Test-SyncExcluded ".claude/a.lock/b" @("*.lock"))) "exclusion : etoile dans un segment"
+Assert-True (-not (Test-SyncExcluded ".claude/alock" @("*.lock"))) "exclusion : point litteral"
+Assert-True ((Test-SyncExcluded ".local/bin/sub/x.exe" @(".local/bin/*.exe")) -and -not (Test-SyncExcluded ".local/bin2/x.exe" @(".local/bin/*.exe"))) "exclusion : chemin, etoile traverse les dossiers"
+Assert-True ((Test-SyncExcluded ".claude/abc" @("a?c")) -and -not (Test-SyncExcluded ".claude/a/c" @("a?c"))) "exclusion : point d'interrogation, un caractere"
+Assert-True ((Test-SyncExcluded ".claude/x1" @("x[0-9]")) -and -not (Test-SyncExcluded ".claude/xa" @("x[0-9]"))) "exclusion : crochets"
+Assert-True ((Test-SyncExcluded ".claude/a+b(c)" @("a+b(c)")) -and -not (Test-SyncExcluded ".claude/aab(c)" @("a+b(c)"))) "exclusion : caracteres de regex litteraux"
+Assert-True (-not (Test-SyncExcluded ".claude/x" @())) "exclusion : aucun motif"
+Assert-True ((Test-SyncExcluded ".claude/a*b" @("a``*b")) -and -not (Test-SyncExcluded ".claude/axb" @("a``*b"))) "exclusion : etoile echappee"
+Assert-True ((Test-SyncExcluded ".claude/x[1" @("x[1")) -and -not (Test-SyncExcluded ".claude/x1" @("x[1"))) "exclusion : crochet non ferme litteral"
