@@ -41,7 +41,7 @@ Le menu suit la taille du terminal, jusqu'à 105 colonnes de large. Quand la hau
 
 Le curseur part sur le premier compte lisible dont aucun quota n'est à 100 %, à défaut sur le premier, et suit cette règle tant que les quotas arrivent, sauf si on l'a déjà déplacé. Tant que le menu reste ouvert, chaque compte est relu pour lui seul, 3 minutes après sa lecture précédente, plus un délai pris au hasard jusqu'à 25 secondes. Au premier tour, les comptes sont en plus décalés d'une fraction des 3 minutes, un tiers par compte avec trois comptes, pour ne pas tomber sur l'API en même temps. Un compte dont les chiffres viennent du cache est relu à l'expiration du cache, et un compte en pause après un refus de l'API à la fin de sa pause (voir plus bas). Seules les barres dont la valeur a changé s'animent, et seules les lignes modifiées sont réécrites à l'écran. Ils sont aussi relus après chaque ajout, retrait, sauvegarde ou restauration.
 
-Les transitions durent de 120 à 400 millisecondes. Elles suivent le réglage du système (animations de Windows, "réduire les animations" de macOS, `enable-animations` de GNOME) et la variable `CLM_ANIM` passe outre : `0` les coupe, `1` les force. Sans animation, le menu s'affiche directement dans son état final.
+Les transitions durent de 120 à 400 millisecondes. Elles suivent le réglage du système (animations de Windows, "réduire les animations" de macOS, `enable-animations` de GNOME), sauf si ce PC a son propre choix, posé par `clm --anim on` ou `off` ou par la page web. La variable `CLM_ANIM` passe avant les deux : `0` les coupe, `1` les force. Sans animation, le menu s'affiche directement dans son état final.
 
 ### Touches
 
@@ -61,6 +61,7 @@ Le pied du menu rappelle les touches principales, sur deux lignes de longueur pr
 | `p` | choisir les skills et les MCP synchronisés sur ce PC (voir "Réglages de synchro par PC") |
 | `s` | sauvegarder des comptes |
 | `r` | restaurer une sauvegarde |
+| `w` | ouvrir la page web de clm dans le navigateur (voir "Page web") |
 | `q`, Échap ou Ctrl+C | quitter |
 
 Les lettres marchent aussi en majuscules. Après une action, son résultat reste affiché sous le menu jusqu'à l'action suivante. Dans les pages de sauvegarde, de restauration et de retrait, Ctrl+C annule la page puis ferme le menu. Pendant une sauvegarde ou une mise à jour, il laisse l'opération se terminer avant de fermer.
@@ -123,6 +124,10 @@ La touche `n` ouvre la même liste que le retrait, curseur sur le compte du menu
 
 Le nouveau nom est refusé s'il est vide, s'il contient une virgule, qui sépare les noms dans `--save=` et `--only=`, ou s'il est déjà pris par un autre compte, sans tenir compte de la casse. Changer seulement la casse d'un nom est permis.
 
+## Changer l'ordre des comptes
+
+Les comptes gardent dans le menu l'ordre de `.claude-accounts.json`, qui donne aussi leur numéro pour `1` à `9` et `-N`. `clm --move <compte> <rang>` place un compte à ce rang, 1 en haut, et décale les autres. La page web fait de même avec ses boutons "Monter" et "Descendre".
+
 ## Ligne de commande
 
 Tout ce que fait le menu se fait aussi sans lui, par une option. `clm --help` les décrit toutes, avec les touches du menu, les variables et les fichiers : une personne, un script ou un agent comme Claude Code y trouve de quoi tout piloter, sans skill ni serveur MCP à installer.
@@ -133,10 +138,12 @@ clm --help                   toutes les options, aussi -h
 clm -2                       lance le compte 2 sans passer par le menu
 clm -2 --resume              les arguments non reconnus passent à Claude Code
 clm --no-update              ne cherche de mise à jour ni pour clm ni pour Claude Code
+clm --web                    menu, et sa page web dans le navigateur
 clm --list                   numéro, nom, dossier et e-mail de chaque compte
 clm --usage                  quotas de tous les comptes, une ligne par compte
 clm --add [nom]              nouveau compte, connexion dans le navigateur
 clm --rename <compte> <nom>  renomme un compte
+clm --move <compte> <rang>   change sa place dans le menu, 1 en haut
 clm --remove <compte> --yes  retire un compte du menu, son dossier reste
 clm --remove <compte> --erase --yes
 clm --save                   sauvegarde de tous les comptes
@@ -156,6 +163,8 @@ clm --prefs-off global:roblox global:blender
 clm --prefs-off "global:*"   décoche tous les MCP globaux, "mcp:*" tous les locaux
 clm --prefs-on <id>          recoche, ou annule un effacement demandé
 clm --prefs-erase <id> --yes efface partout à la prochaine synchro
+clm --palette auto|dark|light couleurs du menu sur ce PC, auto suit le système
+clm --anim auto|on|off       animations du menu sur ce PC, auto suit le système
 ```
 
 `-N` accepte un chiffre de 1 à 9. Un numéro sans compte affiche "pas de compte N" et sort avec le code 1. `--save=` et `--only=` prennent des noms de comptes, ceux affichés dans le menu, séparés par des virgules, sans tenir compte des majuscules. Un nom inconnu arrête la commande avec "compte inconnu : ..." et le code 1, sans rien sauvegarder ni restaurer.
@@ -165,6 +174,18 @@ clm --prefs-erase <id> --yes efface partout à la prochaine synchro
 Un `<compte>` se donne par son numéro dans le menu, son nom ou son dossier (`.claude-compte2`). `--remove` sans `--yes` dit ce qu'il ferait et sort avec le code 1, sans rien toucher ; `--erase` refuse le dossier `.claude`, comme le menu, et range d'abord une archive dans Téléchargements. `--add` crée le compte puis ouvre la connexion dans le navigateur, qu'une personne doit finir. Les noms passent les mêmes contrôles qu'au renommage. `--update` redémarre `clm` après une nouvelle version, puis met à jour Claude Code. Avec `-N`, toutes les options vont à Claude Code : `clm -2 --help` affiche l'aide de Claude Code.
 
 Chaque option écrit son résultat en texte simple et sort avec le code 0, ou 1 avec la raison sur la dernière ligne. `--list`, `--version`, `--backups`, `--drive-status` et `--prefs` lisent seulement les fichiers de ce PC, sans réseau.
+
+## Page web
+
+La touche `w` ouvre dans le navigateur une page qui règle tout ce que fait le menu. `clm --web` lance le menu et ouvre la page du même coup. Le terminal reste utilisable pendant ce temps : chaque clic de la page passe par le menu, qui l'exécute comme une touche et affiche le résultat sous les comptes, et la page le reprend en haut.
+
+Aucun serveur n'est à installer ni à lancer. Tant que le menu est ouvert, `clm` écoute lui-même sur `127.0.0.1`, sur un port libre choisi par le système, et n'accepte que les demandes qui portent le jeton de l'adresse ouverte. Ce jeton change à chaque ouverture. La page est faite de fichiers simples, rangés dans `~/.local/bin/clm-web`, sans rien charger d'internet.
+
+Tout tient sur une page qui défile. La partie Comptes montre les quotas 5 h et 7 j de chaque compte, avec les teintes du menu, et permet de relire, renommer, monter, descendre ou retirer un compte, et d'en ajouter un, dont la connexion se termine dans le terminal et le navigateur comme avec `a`. La partie Synchro Drive connecte le PC, coupe ou remet la synchro automatique, lance une synchro et reprend les cases de la touche `p`. Son bouton "Supprimer partout" fait comme Suppr dans cette page, et une ligne en attente d'effacement propose "Annuler l'effacement".
+
+La partie Affichage choisit les couleurs et les animations du menu sur ce PC, comme `clm --palette` et `clm --anim`. La partie Sauvegardes sauvegarde les comptes cochés dans Téléchargements, liste les archives de ce dossier et en restaure une, avec les mêmes avertissements que la touche `r`.
+
+Les boutons ne répondent que lorsque le menu est affiché. Pendant une page du terminal, une question, une connexion ou le démarrage de clm, la page le dit et attend son retour. Quand `clm` se ferme ou lance un compte, la page devient blanche, et la recharger ensuite affiche l'erreur du navigateur, puisque plus rien n'écoute. Après une mise à jour de clm, le menu redémarre et ouvre un nouvel onglet à la nouvelle adresse, l'ancien reste blanc.
 
 ## Mise à jour de clm
 
@@ -349,11 +370,12 @@ Un compte sans chiffres affiche l'un de ces messages :
 Le menu choisit sa palette au démarrage, dans cet ordre :
 
 1. la variable `STATUSLINE_BG` (`light`, `clair`, `dark` ou `sombre`) ;
-2. le thème du système : sous Windows le réglage des applications, sous macOS l'apparence (`defaults read -g AppleInterfaceStyle`), sous Linux `gsettings` (`color-scheme`), puis `GTK_THEME`, puis les couleurs de KDE (`kdeglobals`).
+2. le choix de ce PC, posé par `clm --palette dark` ou `light`, ou par la page web, et gardé dans `~/.clm-display.json` ;
+3. le thème du système : sous Windows le réglage des applications, sous macOS l'apparence (`defaults read -g AppleInterfaceStyle`), sous Linux `gsettings` (`color-scheme`), puis `GTK_THEME`, puis les couleurs de KDE (`kdeglobals`).
 
 À défaut, la palette sombre s'applique. `clm` ne lit ni `~/.claude/statusline.json` ni le programme de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline) : ses couleurs sont celles de la barre, recopiées dans le menu.
 
-Menu ouvert, `clm` relit le thème du système toutes les deux secondes et passe d'une palette à l'autre en fondu quand il change, fond compris. Seule `STATUSLINE_BG` fixe la palette et coupe ce suivi.
+Menu ouvert, `clm` relit le thème du système toutes les deux secondes et passe d'une palette à l'autre en fondu quand il change, fond compris. `STATUSLINE_BG` ou un choix `dark` ou `light` fixe la palette et coupe ce suivi, `clm --palette auto` le rétablit.
 
 ## Barre d'état à jour au lancement
 
@@ -370,6 +392,7 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | Fichier | Rôle |
 |---|---|
 | `~/.local/bin/clm`, `clm.cmd`, `claude-menu.cmd`, `claude-*.ps1` | le menu, copié par l'installeur |
+| `~/.local/bin/clm-web/` | la page web, copiée par l'installeur |
 | `~/.claude-accounts.json` | liste des comptes |
 | `~/.claude-accounts.json.bad` | copie d'une liste illisible, mise de côté avant d'être recréée |
 | `~/.claude-compteN/` | dossiers des comptes ajoutés |
@@ -379,6 +402,7 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | `.credentials.json` de chaque compte, hors macOS | jeton renouvelé quand il a expiré |
 | fichier d'état `claude-statusline/state` | quotas pour la barre d'état |
 | `claude-comptes-*.zip` ou `.tar.gz` dans Téléchargements | sauvegardes |
+| `~/.clm-display.json` | couleurs et animations choisies pour ce PC |
 | `~/.clm-drive.json` | connexion Google Drive, nom du PC, synchro automatique |
 | `~/.clm-drive-state.json` et `~/.clm-drive*.lock` | état de la dernière synchro Drive, verrous de la synchro, des dossiers Drive, des jetons et du veilleur |
 | `~/.clm-drive-remote.json` | liste du Drive gardée entre deux synchros |
@@ -391,7 +415,7 @@ Il lit `USERPROFILE` puis `HOME` pour le dossier personnel, `LOCALAPPDATA` sous 
 
 ## Tests
 
-`tests/run.ps1` vérifie les fonctions sans réseau ni vrai compte, dans un dossier temporaire, et sort avec un code non nul en cas d'échec. Il charge tous les fichiers `*.checks.ps1`, rangés par domaine dans `accounts`, `machine`, `menu`, `setup`, `sync`, `ui` et `usage`. Ceux de `sync`, comme `machine/drive.checks.ps1`, simulent Google Drive en mémoire et deux PC dans des dossiers temporaires. Il tourne avec `powershell -File tests\run.ps1` comme avec `pwsh -File tests/run.ps1`. Le calcul du suffixe de compte du fichier d'état a en plus un test Pester, `tests/StateTag.Tests.ps1`.
+`tests/run.ps1` vérifie les fonctions sans réseau ni vrai compte, dans un dossier temporaire, et sort avec un code non nul en cas d'échec. Il charge tous les fichiers `*.checks.ps1`, rangés par domaine dans `accounts`, `machine`, `menu`, `setup`, `sync`, `ui`, `usage` et `web`. Ceux de `sync`, comme `machine/drive.checks.ps1`, simulent Google Drive en mémoire et deux PC dans des dossiers temporaires. Il tourne avec `powershell -File tests\run.ps1` comme avec `pwsh -File tests/run.ps1`. Le calcul du suffixe de compte du fichier d'état a en plus un test Pester, `tests/StateTag.Tests.ps1`.
 
 La CI lance ces tests à chaque envoi sur `main` et sur chaque pull request, sous Linux, macOS et Windows, avec PowerShell 7 partout et Windows PowerShell 5.1 en plus sous Windows. Elle vérifie aussi la syntaxe de `bin/clm` et de `install.sh`.
 

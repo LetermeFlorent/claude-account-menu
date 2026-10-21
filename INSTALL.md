@@ -26,7 +26,7 @@ cd claude-account-menu
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-L'installeur copie les fichiers `.ps1` et `.cmd` du dossier `bin` dans `%USERPROFILE%\.local\bin`, en écrasant les anciennes versions, et ajoute ce dossier au PATH de l'utilisateur quand il n'y est pas déjà. Il prévient si `tar.exe` ou Claude Code manquent, sans s'arrêter.
+L'installeur copie les fichiers `.ps1` et `.cmd` du dossier `bin` dans `%USERPROFILE%\.local\bin`, en écrasant les anciennes versions, remplace le dossier `clm-web` de la page web, et ajoute ce dossier au PATH de l'utilisateur quand il n'y est pas déjà. Il prévient si `tar.exe` ou Claude Code manquent, sans s'arrêter.
 
 Il ajoute ensuite un hook `SessionStart` dans le `settings.json` de `.claude` et de chaque dossier `.claude-compte*` du dossier personnel qui en a un. À chaque démarrage de Claude Code, ce hook écrit les quotas 5 h et 7 j du compte dans le fichier d'état de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline), avec cette commande :
 
@@ -50,7 +50,7 @@ cd claude-account-menu
 sh install.sh
 ```
 
-`install.sh` copie les fichiers `.ps1` et le lanceur `clm` dans `~/.local/bin` et rend `clm` exécutable. Si ce dossier manque au PATH, il affiche la ligne `export PATH=...` à mettre dans `~/.profile`, `~/.bashrc` ou `~/.zshrc`. Il prévient si Claude Code est introuvable. Il ajoute enfin le même hook que sous Windows, avec la commande `pwsh -NoProfile -File "$HOME/.local/bin/claude-statusline-seed.ps1"` et les mêmes règles.
+`install.sh` copie les fichiers `.ps1`, le lanceur `clm` et le dossier `clm-web` de la page web dans `~/.local/bin` et rend `clm` exécutable. Si ce dossier manque au PATH, il affiche la ligne `export PATH=...` à mettre dans `~/.profile`, `~/.bashrc` ou `~/.zshrc`. Il prévient si Claude Code est introuvable. Il ajoute enfin le même hook que sous Windows, avec la commande `pwsh -NoProfile -File "$HOME/.local/bin/claude-statusline-seed.ps1"` et les mêmes règles.
 
 Sans `pwsh`, `install.sh` copie les fichiers, indique quoi installer et s'arrête avec le code 1 avant le hook : le relancer une fois PowerShell 7 en place. Le lanceur `clm` vérifie lui aussi la présence de `pwsh`, et sans elle affiche les liens d'installation et sort avec le code 127.
 
@@ -95,7 +95,7 @@ Claude Code lui-même est mis à jour par `clm`, avec `claude update`, à chaque
 La désinstallation se fait à la main, en quatre étapes :
 
 1. Retirer du `settings.json` de chaque compte l'entrée `SessionStart` qui mentionne `claude-statusline-seed.ps1`. Remettre `settings.json.bak-seed` à la place marche aussi, mais perd les réglages changés depuis l'installation. Supprimer ensuite les fichiers `settings.json.bak-seed`.
-2. Supprimer de `%USERPROFILE%\.local\bin`, ou de `~/.local/bin`, les fichiers `clm`, `clm.cmd`, `clm.version`, `claude-menu.cmd` et `claude-*.ps1`, sans toucher à `claude.exe` ni à `claude`, qui sont Claude Code. Sous Windows, l'installeur a ajouté ce dossier au PATH de l'utilisateur : l'en retirer seulement si plus rien n'y vit, Claude Code s'y installant aussi.
+2. Supprimer de `%USERPROFILE%\.local\bin`, ou de `~/.local/bin`, les fichiers `clm`, `clm.cmd`, `clm.version`, `claude-menu.cmd` et `claude-*.ps1`, et le dossier `clm-web`, sans toucher à `claude.exe` ni à `claude`, qui sont Claude Code. Sous Windows, l'installeur a ajouté ce dossier au PATH de l'utilisateur : l'en retirer seulement si plus rien n'y vit, Claude Code s'y installant aussi.
 3. Supprimer le cache des quotas : `%LOCALAPPDATA%\claude-menu` sous Windows, qui garde aussi le lecteur de la souris `clm-conin-*.dll`, `~/Library/Caches/claude-menu` sous macOS, `${XDG_CACHE_HOME:-~/.cache}/claude-menu` sous Linux.
 4. Supprimer `.claude-accounts.json` du dossier personnel, la liste des comptes propre au menu, et les archives `claude-comptes-*` du dossier Téléchargements, qui contiennent des jetons.
 
