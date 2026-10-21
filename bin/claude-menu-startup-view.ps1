@@ -4,7 +4,9 @@ $script:StartupCellsMax = 20
 function Get-StartupRowCount {
   param($Su)
   if ($null -eq $Su -or $Su.Hidden) { return 0 }
-  return $Su.Steps.Count + 1
+  $n = (Get-ShownSteps $Su).Count
+  if ($n -eq 0) { return 0 }
+  return $n + 1
 }
 
 function Test-AccountsWaiting {
@@ -51,14 +53,19 @@ function Add-StartupRows {
   if ((Get-StartupRowCount $Su) -eq 0) { return }
   $fade = 1.0
   if ($null -ne $Su.Fade) { $fade = Get-TweenValue $Su.Fade $Now }
-  foreach ($s in $Su.Steps) { $Rows.Add((Get-StartupRow $s $L $Now)); $Fades.Add($fade) }
+  foreach ($s in (Get-ShownSteps $Su)) {
+    $f = $fade
+    if ($null -ne $s.Fade) { $f = $f * (Get-TweenValue $s.Fade $Now) }
+    $Rows.Add((Get-StartupRow $s $L $Now))
+    $Fades.Add($f)
+  }
   Add-PlainRow $Rows $Fades (New-Row)
 }
 
 function Add-StartupTextRows {
   param($Rows, $Su, [double]$Now)
   if ((Get-StartupRowCount $Su) -eq 0) { return }
-  foreach ($s in $Su.Steps) {
+  foreach ($s in (Get-ShownSteps $Su)) {
     $t = Get-StartupPct $s $Now
     if ($t) { $t += "  " }
     $r = New-Row
@@ -72,7 +79,8 @@ function Test-StartupAnimating {
   param($Su, [double]$Now)
   if ((Get-StartupRowCount $Su) -eq 0) { return $false }
   if ($null -ne $Su.Fade) { return Test-TweenRunning $Su.Fade $Now }
-  foreach ($s in $Su.Steps) {
+  foreach ($s in (Get-ShownSteps $Su)) {
+    if ($null -ne $s.Fade -and (Test-TweenRunning $s.Fade $Now)) { return $true }
     if ($s.State -eq "run" -and $s.Pct -lt 0 -and $script:MotionOn) { return $true }
     if (Test-TweenRunning $s.Bar $Now) { return $true }
   }

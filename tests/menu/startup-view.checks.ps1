@@ -70,6 +70,18 @@ Assert-Equal "0 0 0" (($v.Fades[0..2]) -join " ") "fondu de sortie : barres effa
 Assert-True (-not (Test-StartupAnimating $su 2300)) "fondu fini : rien a animer"
 
 $su = New-ViewStartup
+$su.Steps[0].Fade = @{ From = 1; To = 0; Ms = 300; Start = 1000 }
+$v = Get-StartupViewRows $su $L 1150
+Assert-True ($v.Fades[0] -eq 0.125 -and $v.Fades[1] -eq 1 -and $v.Fades[2] -eq 1) "ligne a jour : fondu de la ligne seule"
+Assert-True (Test-StartupAnimating $su 1150) "ligne a jour : fondu anime"
+$su.Steps[0].Gone = $true
+$v = Get-StartupViewRows $su $L 1400
+Assert-Equal 3 (Get-StartupRowCount $su) "ligne partie : une rangee de moins"
+Assert-True ($v.Texts[0].StartsWith("  Claude Code ") -and $v.Texts[2] -eq "") "ligne partie : les suivantes remontent"
+$su.Steps[1].Gone = $true; $su.Steps[2].Gone = $true
+Assert-Equal 0 (Get-StartupRowCount $su) "toutes les lignes parties : aucune rangee"
+
+$su = New-ViewStartup
 $narrow = Get-MenuLayout 60 40 3 4
 $v = Get-StartupViewRows $su $narrow
 Assert-Equal ($narrow.W - 2) $v.Texts[1].Length "fenetre etroite : detail raccourci a la largeur"

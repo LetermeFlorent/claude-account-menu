@@ -52,9 +52,11 @@ try {
   $script:DriveJob.Loader = $null
   $null = Invoke-StartupTicks 2
   Assert-Equal "a jour" $script:Su.Steps[2].Text "Drive : synchro finie"
+  Assert-Equal "True|False|False" (Get-StepList "Gone") "clm a jour : ligne effacee, Claude Code et Drive gardes un instant"
+  Assert-Equal 3 (Get-StartupRowCount $script:Su) "clm a jour : une rangee de moins"
   Assert-True (-not $script:Su.Hidden -and $null -eq $script:Su.Fade) "fin : barres gardees un instant"
   $null = Invoke-StartupTicks 10
-  Assert-True ($script:Su.Hidden -and $null -ne $script:Su.Fade) "fin : barres effacees en fondu"
+  Assert-True ($script:Su.Hidden -and $null -eq $script:Su.Fade) "fin : chaque ligne a jour partie seule, sans fondu d'ensemble"
   Assert-Null $script:Su.Exit "fin : menu garde ouvert"
 
   New-StartupCase @("clm", "claude", "drive")
@@ -91,6 +93,13 @@ try {
   $null = Invoke-StartupTicks 3
   Assert-Equal "failed recherche impossible" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "recherche de clm ratee : barre en erreur"
   Assert-Equal 1 $script:ClaudeStarts "recherche de clm ratee : Claude Code continue"
+  $null = Invoke-StartupTicks 2
+  Assert-Equal "done|done False|False" ((Get-StepList "State") + " " + (Get-StepList "Gone")) "fin avec un echec : lignes gardees un instant"
+  $null = Invoke-StartupTicks 4
+  Assert-Equal "False|True" (Get-StepList "Gone") "fin avec un echec : ligne a jour partie, ligne en erreur restee"
+  Assert-True (-not $script:Su.Hidden -and $null -eq $script:Su.Fade) "fin avec un echec : erreur lisible avant le fondu"
+  $null = Invoke-StartupTicks 3
+  Assert-True ($script:Su.Hidden -and $null -ne $script:Su.Fade) "fin avec un echec : ligne en erreur effacee en fondu"
   $script:FakeFindError = $null
   $script:FakeLatest = $null
 

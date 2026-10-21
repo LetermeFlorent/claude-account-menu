@@ -1,4 +1,5 @@
 . (Join-Path $PSScriptRoot "claude-menu-startup-steps.ps1")
+. (Join-Path $PSScriptRoot "claude-menu-startup-fade.ps1")
 $script:ClmUpdated = $false
 $script:ClmChecked = $false
 $script:DriveChecked = $false
@@ -8,14 +9,12 @@ $script:StartupFree = @("none", "refresh")
 $script:StartupOpen = @("up", "down", "select", "drivesync")
 $script:StartupHiding = @("clm")
 $script:StartupQuitWaits = @("clm", "claude")
-$script:StartupHoldMs = 1500
-$script:StartupFadeMs = 300
 
 function New-StartupStep {
   param([string]$Name, [string]$After)
   $text = ""
   if ($After) { $text = "apres " + $script:StartupLabels[$After] }
-  return @{ Name = $Name; After = $After; Label = $script:StartupLabels[$Name]; State = "wait"; Pct = -1; Text = $text; Kind = ""; Bar = (New-Tween 0 0 0 0); Work = $null }
+  return @{ Name = $Name; After = $After; Label = $script:StartupLabels[$Name]; State = "wait"; Pct = -1; Text = $text; Kind = ""; Bar = (New-Tween 0 0 0 0); Work = $null; HideAt = $null; Fade = $null; Gone = $false }
 }
 
 function New-Startup {
@@ -89,17 +88,8 @@ function Step-Startup {
     if ($null -ne $Su.Exit) { return $true }
   }
   Set-StartupExit $Su
+  if (Update-StepFades $Su $Now) { $changed = $true }
   return $changed -or $null -ne $Su.Exit
-}
-
-function Step-StartupEnd {
-  param($Su, [double]$Now)
-  if ($null -eq $Su.EndAt) { $Su.EndAt = $Now + $script:StartupHoldMs; return $false }
-  if ($Now -lt $Su.EndAt) { return $false }
-  if ($null -eq $Su.Fade) { $Su.Fade = New-Tween 1 0 $script:StartupFadeMs $Now; return $true }
-  if (Test-TweenRunning $Su.Fade $Now) { return $false }
-  $Su.Hidden = $true
-  return $true
 }
 
 function Set-StartupExit {
