@@ -42,6 +42,16 @@ $local[".claude/a.md"] = New-L "n"
 $local[".claude/z.md"] = New-L "s"; $remote[".claude/z.md"] = New-R "s"
 $base[".claude/parti.md"] = New-B "g"
 Assert-Equal "forget,adopt,upload" ((Get-SyncPlan $local $base $remote | ForEach-Object { $_.Kind }) -join ",") "adoptions et oublis en tete du plan"
+Assert-Equal "forget,adopt,upload" ((Get-SyncPlan $local $base $remote -CaseFold | ForEach-Object { $_.Kind }) -join ",") "sans doublon de casse, plan inchange"
+$local[".claude/A.md"] = New-L "m"; $remote[".claude/a.md"] = New-R "k"
+Assert-Equal ".claude/parti.md|.claude/z.md" ((Get-SyncPlan $local $base $remote -CaseFold | ForEach-Object { $_.Path }) -join "|") "doublon de casse ecarte des deux cotes"
+Assert-Equal 4 (Get-SyncPlan $local $base $remote).Count "doublon de casse garde si la casse compte"
+
+$listing = New-PathMap
+foreach ($k in @(".claude/a.md", ".claude-compte2/b.md", ".claude.json", ".mcp.json", ".CLAUDE/x.md", ".claude-x/y.md", ".claude//b.md", ".claude/../b.md", ".claude/./b.md", ".claude/", "", ".claude\b.md", ".claude/c:d.md", ".autre/z.md", ".claude/node_modules/m.js", ".claudeplus/q.md")) { $listing[$k] = @{ Id = $k } }
+$picked = [string[]]@((Select-RemoteFiles $listing (Get-SyncPatterns @()) @(".claude", ".claude-compte2", ".claude.json", "", ".autre")).Keys)
+[Array]::Sort($picked, [StringComparer]::Ordinal)
+Assert-Equal ".claude-compte2/b.md|.claude.json|.claude/a.md" ($picked -join "|") "Drive : seuls les chemins surs des comptes sont repris"
 
 Assert-Equal ".claude/settings.json.conflit-MAC" (Get-ConflictPath ".claude/settings.json" "MAC") "nom de la copie de conflit"
 Assert-Equal "a.md.conflit-PC_BUREAU_" (Get-ConflictPath "a.md" "PC BUREAU!") "nom du PC nettoye dans la copie"

@@ -1,4 +1,10 @@
 $script:BaseOnlyKinds = @("adopt", "forget")
+$script:SettingsPathPattern = [regex]'^(\.(claude\.json|mcp\.json|claude-accounts\.json)|\.claude[^/]*/((skills|agents|commands|hooks|rules)/.+|settings\.json|settings\.local\.json|CLAUDE\.md|ANTI-EMPREINTE\.md|statusline\.json|\.claude\.json))$'
+
+function Test-SettingsPath {
+  param([string]$Path)
+  return $script:SettingsPathPattern.IsMatch($Path)
+}
 
 function Get-PathAction {
   param($L, $B, $R, [switch]$Joining)
@@ -36,23 +42,28 @@ function Test-UnderSkipped {
 function Get-SyncPlan {
   param($Local, $Base, $Remote, $Skipped = @(), [switch]$Joining, [switch]$CaseFold)
   $paths = New-Object 'System.Collections.Generic.SortedSet[string]' ([StringComparer]::Ordinal)
-  foreach ($m in @($Local, $Base, $Remote)) { foreach ($k in $m.Keys) { [void]$paths.Add($k) } }
-  if ($CaseFold) { $Skipped = @($Skipped) + @(Get-CaseCollisions $paths) }
+  foreach ($m in @($Local, $Base, $Remote)) { if ($m.Count -gt 0) { $paths.UnionWith([string[]]@($m.Keys)) } }
+  $skip = New-Object 'System.Collections.Generic.List[string]'
+  foreach ($s in $Skipped) { if ($s) { $skip.Add([string]$s) } }
+  if ($CaseFold) { $skip.AddRange((Get-CaseCollisions $paths)) }
   $quick = New-Object 'System.Collections.Generic.List[object]'
+  $settings = New-Object 'System.Collections.Generic.List[object]'
   $first = New-Object 'System.Collections.Generic.List[object]'
   $later = New-Object 'System.Collections.Generic.List[object]'
-  $anySkipped = @($Skipped).Count -gt 0
+  $anySkipped = $skip.Count -gt 0
   foreach ($p in $paths) {
-    if ($anySkipped -and (Test-UnderSkipped $p $Skipped)) { continue }
+    if ($anySkipped -and (Test-UnderSkipped $p $skip)) { continue }
     $l = $Local[$p]; $b = $Base[$p]; $r = $Remote[$p]
     if ($null -ne $l -and $null -ne $b -and $null -ne $r -and $l.Md5 -eq $b.Md5 -and $r.Md5 -eq $b.Md5 -and $r.Id -eq $b.Id) { continue }
     $kind = Get-PathAction $l $b $r -Joining:$Joining
     if ($null -eq $kind) { continue }
     $a = @{ Kind = $kind; Path = $p }
     if ($script:BaseOnlyKinds -contains $kind) { $quick.Add($a) }
+    elseif (Test-SettingsPath $p) { $settings.Add($a) }
     elseif ($p.Contains("/projects/")) { $later.Add($a) }
     else { $first.Add($a) }
   }
+  $quick.AddRange($settings)
   $quick.AddRange($first)
   $quick.AddRange($later)
   return ,$quick.ToArray()

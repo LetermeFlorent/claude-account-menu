@@ -72,7 +72,7 @@ function Step-ClaudeUpdate {
   $Run.Outcome = New-Outcome "ok" "Claude Code a jour (2.1.292)"
   return $true
 }
-function Start-DriveJob { param($Job) $script:DriveStarts++; $Job.Ctl = @{ Stop = $false; Progress = "" }; $Job.Loader = @{ Ctl = @{ Done = $false } } }
+function Start-DriveJob { param($Job, [switch]$Hold) if ($Hold) { $script:DriveHolds++; return }; $script:DriveStarts++; $Job.Ctl = @{ Stop = $false; Progress = "" }; $Job.Loader = @{ Ctl = @{ Done = $false } } }
 function Test-ClmInstalledHere { return $script:FakeInstalled }
 function Test-DriveConnected { return $true }
 function Test-DriveAuto { return $script:FakeAuto }

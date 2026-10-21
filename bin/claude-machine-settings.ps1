@@ -1,7 +1,10 @@
 . (Join-Path $PSScriptRoot "claude-platform.ps1")
 . (Join-Path $PSScriptRoot "claude-json.ps1")
 . (Join-Path $PSScriptRoot "claude-json-members.ps1")
-$script:MachineKeys = @("statusLine")
+. (Join-Path $PSScriptRoot "claude-mcp-projects.ps1")
+$script:SettingsMachine = @{ Keys = [string[]]@("statusLine"); Seed = $true; Fallback = ".claude/settings.json"; Projects = $false }
+$script:McpMachineKeys = [string[]]@("mcpServers")
+$script:McpConfigPattern = [regex]'^(\.claude\.json|\.mcp\.json|\.claude[^/]*/\.claude\.json)$'
 $script:SeedFile = "claude-statusline-seed.ps1"
 $script:SeedTokenPattern = '(?<="command"\s*:\s*)"(?:[^"\\]|\\.)*claude-statusline-seed\.ps1(?:[^"\\]|\\.)*"'
 $script:Utf8Bom = [byte[]](0xEF, 0xBB, 0xBF)
@@ -21,16 +24,16 @@ function Set-SeedCommand {
 }
 
 function Get-MachineSettings {
-  param([string]$Text)
+  param([string]$Text, $Kind = $script:SettingsMachine)
   $info = Get-JsonMembers $Text
   if ($null -eq $info) { return ,[string[]]@() }
-  return ,[string[]]@($info.Members | Where-Object { $script:MachineKeys -ccontains $_.Name } | ForEach-Object { $Text.Substring($_.Start, $_.End - $_.Start) })
+  return ,[string[]]@($info.Members | Where-Object { $Kind.Keys -ccontains $_.Name } | ForEach-Object { $Text.Substring($_.Start, $_.End - $_.Start) })
 }
 
 function Remove-MachineSettings {
-  param([string]$Text)
+  param([string]$Text, $Kind = $script:SettingsMachine)
   $out = $Text
-  foreach ($k in $script:MachineKeys) {
+  foreach ($k in $Kind.Keys) {
     while ($out.Contains('"' + $k + '"')) {
       $info = Get-JsonMembers $out
       $i = Find-JsonMember $info $k
@@ -38,23 +41,34 @@ function Remove-MachineSettings {
       $out = Remove-JsonMember $out $info $i
     }
   }
+  if ($Kind.Projects) { $out = Remove-ProjectMcp $out }
+  if (-not $Kind.Seed) { return $out }
   return Set-SeedCommand $out (Get-SeedHookCommand "Windows")
 }
 
 function Add-MachineSettings {
-  param([string]$Text, [string[]]$Members)
+  param([string]$Text, [string[]]$Members, $Kind = $script:SettingsMachine)
   $out = $Text
   foreach ($m in $Members) {
     $info = Get-JsonMembers $out
     if ($null -eq $info) { break }
     $out = Add-JsonMember $out $info $m
   }
+  if (-not $Kind.Seed) { return $out }
   return Set-SeedCommand $out (Get-SeedHookCommand $script:OsName)
+}
+
+function Get-MachineKind {
+  param([string]$Rel)
+  if ($Rel -match '^\.claude[^/]*/settings\.json$') { return $script:SettingsMachine }
+  if (-not $script:McpPerPc -or -not $script:McpConfigPattern.IsMatch($Rel)) { return $null }
+  if ($Rel -eq ".mcp.json") { return @{ Keys = $script:McpMachineKeys; Seed = $false; Fallback = ""; Projects = $false } }
+  return @{ Keys = $script:McpMachineKeys; Seed = $false; Fallback = ".claude.json"; Projects = $true }
 }
 
 function Test-MachineSettingsPath {
   param([string]$Rel)
-  return $Rel -match '^\.claude[^/]*/settings\.json$'
+  return $null -ne (Get-MachineKind $Rel)
 }
 
 function Test-Utf8Bom {
@@ -70,10 +84,11 @@ function ConvertFrom-SettingsBytes {
 }
 
 function Convert-SettingsBytes {
-  param([byte[]]$Bytes, [string[]]$Members, [switch]$Local)
+  param([byte[]]$Bytes, [string[]]$Members, [switch]$Local, $Kind = $script:SettingsMachine, $Projects = $null)
   $text = ConvertFrom-SettingsBytes $Bytes
-  $new = Remove-MachineSettings $text
-  if ($Local) { $new = Add-MachineSettings $new $Members }
+  $new = Remove-MachineSettings $text $Kind
+  if ($Local) { $new = Add-MachineSettings $new $Members $Kind }
+  if ($Local -and $null -ne $Projects) { $set = Set-ProjectMcp $new $Projects; if ($null -ne $set) { $new = $set } }
   if ($new -ceq $text) { return ,$Bytes }
   $out = [Text.Encoding]::UTF8.GetBytes($new)
   if (Test-Utf8Bom $Bytes) { $out = [byte[]]($script:Utf8Bom + $out) }
@@ -81,16 +96,35 @@ function Convert-SettingsBytes {
 }
 
 function Read-MachineSettings {
-  param([string]$Path, [string]$Fallback = "")
+  param([string]$Path, [string]$Fallback = "", $Kind = $script:SettingsMachine)
   foreach ($p in @($Path, $Fallback)) {
-    if ($p -and [IO.File]::Exists($p)) { return ,(Get-MachineSettings (ConvertFrom-SettingsBytes ([IO.File]::ReadAllBytes($p)))) }
+    if ($p -and [IO.File]::Exists($p)) { return ,(Get-MachineSettings (ConvertFrom-SettingsBytes ([IO.File]::ReadAllBytes($p))) $Kind) }
   }
   return $null
 }
 
 function Update-MachineSettingsFile {
-  param([string]$Path, [string[]]$Members)
-  [IO.File]::WriteAllBytes($Path, (Convert-SettingsBytes ([IO.File]::ReadAllBytes($Path)) $Members -Local))
+  param([string]$Path, [string[]]$Members, $Kind = $script:SettingsMachine, $Projects = $null)
+  [IO.File]::WriteAllBytes($Path, (Convert-SettingsBytes ([IO.File]::ReadAllBytes($Path)) $Members -Local -Kind $Kind -Projects $Projects))
+}
+
+function Read-LocalProjectMcp {
+  param([string]$Path, [string]$Fallback)
+  foreach ($p in @($Path, $Fallback)) {
+    if ($p -and [IO.File]::Exists($p)) { return Read-ProjectMcp (ConvertFrom-SettingsBytes ([IO.File]::ReadAllBytes($p))) }
+  }
+  return $null
+}
+
+function Restore-LocalMachineSettings {
+  param([string]$Received, [string]$Path, [string]$Rel)
+  $kind = Get-MachineKind $Rel
+  if ($null -eq $kind) { return }
+  $fallback = ""
+  if ($kind.Fallback) { $fallback = Join-Path $script:HomeDir $kind.Fallback }
+  $projects = $null
+  if ($kind.Projects) { $projects = Read-LocalProjectMcp $Path $fallback }
+  Update-MachineSettingsFile $Received (Read-MachineSettings $Path $fallback $kind) $kind $projects
 }
 
 function Get-MachineSnapshot {

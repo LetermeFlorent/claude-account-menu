@@ -1,6 +1,6 @@
 $script:AwaySeconds = 12 * 3600
 $script:SyncFormatKey = "fmt"
-$script:SyncFormat = 2
+$script:SyncFormat = 3
 
 function Get-PresenceProps {
   param($Acc, [bool]$Open)
@@ -38,10 +38,16 @@ function Set-PresenceFormat {
   $Presence[$name] = @{ Id = $r.Id; Name = $name; Props = $props }
 }
 
+function Get-WaitingPcs {
+  param($Presence)
+  $names = [string[]]@($Presence.Keys | Where-Object { (Get-PresenceFormat $Presence[$_]) -lt $script:SyncFormat } | ForEach-Object { $_ -replace "\.json$", "" })
+  [Array]::Sort($names, [StringComparer]::OrdinalIgnoreCase)
+  return ,$names
+}
+
 function Test-AllPcsCurrent {
   param($Presence)
-  foreach ($k in $Presence.Keys) { if ((Get-PresenceFormat $Presence[$k]) -lt $script:SyncFormat) { return $false } }
-  return $true
+  return (Get-WaitingPcs $Presence).Count -eq 0
 }
 
 function Get-AwayMap {

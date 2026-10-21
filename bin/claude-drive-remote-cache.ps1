@@ -36,6 +36,24 @@ function Save-RemoteCache {
   $script:RemoteCacheMemo = @{ Stamp = (Get-RemoteCacheStamp); Cache = $Cache }
 }
 
+$script:RemoteHead = New-Object regex ('\A\{\n  "folder": ' + $script:JsonPlainValue + ',\n  "token": ' + $script:JsonPlainValue + ',\n  "full": (-?\d+),\n  "files": \[')
+$script:RemoteRow = New-Object regex ('^    \{"id": ' + $script:JsonPlainValue + ', "name": ' + $script:JsonPlainValue + ', "md5": ' + $script:JsonPlainValue + ', "m": (-?\d+), "pc": ' + $script:JsonPlainValue + ', "exp": (-?\d+)\},?$'), ([Text.RegularExpressions.RegexOptions]::Multiline)
+
+function ConvertFrom-RemoteCacheRows {
+  param([string]$Text)
+  $head = $script:RemoteHead.Match($Text)
+  if (-not $head.Success) { return $null }
+  $rows = Get-JsonRows $script:RemoteRow $Text
+  if ($null -eq $rows) { return $null }
+  $files = New-PathMap
+  foreach ($r in $rows) {
+    $g = $r.Groups
+    $m = $g[4].Value; $pc = $g[5].Value; $exp = $g[6].Value
+    $files[$g[2].Value] = @{ Id = $g[1].Value; Name = $g[2].Value; Md5 = $g[3].Value; M = [long]$m; Pc = $pc; Exp = [long]$exp; Props = @{ m = $m; pc = $pc; exp = $exp } }
+  }
+  return New-RemoteCache $head.Groups[1].Value $head.Groups[2].Value ([long]$head.Groups[3].Value) $files
+}
+
 function ConvertFrom-RemoteCacheData {
   param($Data)
   $files = New-PathMap
@@ -52,9 +70,13 @@ function Read-RemoteCache {
     $stamp = Get-RemoteCacheStamp
     if (-not $stamp) { return $null }
     if ($null -ne $script:RemoteCacheMemo -and $script:RemoteCacheMemo.Stamp -eq $stamp) { return $script:RemoteCacheMemo.Cache }
-    $data = Read-JsonFile $script:RemoteCachePath
-    if ($null -eq $data) { return $null }
-    $cache = ConvertFrom-RemoteCacheData $data
+    $text = [IO.File]::ReadAllText($script:RemoteCachePath)
+    $cache = ConvertFrom-RemoteCacheRows $text
+    if ($null -eq $cache) {
+      $data = ConvertFrom-JsonText $text
+      if ($null -eq $data) { return $null }
+      $cache = ConvertFrom-RemoteCacheData $data
+    }
     $script:RemoteCacheMemo = @{ Stamp = $stamp; Cache = $cache }
     return $cache
   } catch { return $null }

@@ -79,12 +79,13 @@ try {
   Assert-True $script:DriveJob.Notify "y sans Drive : resultat de la synchro annonce"
   $null = Invoke-WithKeys @("y", [ConsoleKey]::Escape)
   Assert-Equal 2 $script:LoginCalls "y avec Drive : pas de nouvelle connexion"
-  Assert-Equal " 1" ("" + (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter, [ConsoleKey]::Escape) $true).Label + " " + $script:ClaudeStarts) "pendant la mise a jour : Entree refusee, aucun compte lance"
+  Assert-Equal " 1" ("" + (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter, [ConsoleKey]::Escape) $true).Label + " " + $script:ClaudeStarts) "pendant la mise a jour : Entree puis Echap, aucun compte lance"
   Assert-Null (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Escape) $true) "Echap pendant la mise a jour : menu quitte a la fin"
   Assert-Equal "2   a, b, c : Claude Code a jour (2.1.292)" ("" + $script:ClaudeStarts + " " + $script:MenuState.Msg[0]) "Echap pendant la mise a jour : mise a jour menee au bout"
   Assert-Null $script:Startup "menu ferme : bloc de lancement oublie"
   Assert-Null (Invoke-WithKeys @([ConsoleKey]::Escape) $true) "Echap avant la mise a jour : menu quitte"
   Assert-Equal 2 $script:ClaudeStarts "Echap avant la mise a jour : rien lance"
+  Assert-Equal "b 3" ("" + (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter) $true).Label + " " + $script:ClaudeStarts) "Entree pendant la mise a jour : compte lance a la fin"
 } finally {
   foreach ($n in $mocked) { Set-Item -Path ("function:" + $n) -Value $kept[$n] }
   foreach ($n in $softMocked) { if ($softKept[$n]) { Set-Item -Path ("function:" + $n) -Value $softKept[$n] } else { Remove-Item -Path ("function:" + $n) } }

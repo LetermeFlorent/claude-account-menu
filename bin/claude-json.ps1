@@ -1,8 +1,12 @@
 function Read-JsonFile {
   param([string]$Path)
   if (-not (Test-Path -LiteralPath $Path)) { return $null }
-  $raw = [IO.File]::ReadAllText($Path)
-  if ($PSVersionTable.PSVersion.Major -ge 6) { return ConvertFrom-Json $raw -AsHashtable -Depth 100 }
+  return ConvertFrom-JsonText ([IO.File]::ReadAllText($Path))
+}
+
+function ConvertFrom-JsonText {
+  param([string]$Raw)
+  if ($PSVersionTable.PSVersion.Major -ge 6) { return ConvertFrom-Json $Raw -AsHashtable -Depth 100 }
   Add-Type -AssemblyName System.Web.Extensions
   $s = New-Object System.Web.Script.Serialization.JavaScriptSerializer
   $s.MaxJsonLength = [int]::MaxValue

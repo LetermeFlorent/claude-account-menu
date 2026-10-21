@@ -67,7 +67,14 @@ Assert-Null $waitJob.Notice "attente automatique : pas de message"
 
 $script:Started = 0
 $keptLoader = (Get-Item "function:Start-UsageLoader").ScriptBlock
-function Start-UsageLoader { param($Accounts, [string]$Source, [string]$Reader) $script:Started++; $script:LoaderArgs = @($Accounts, $Source, $Reader); return New-FakeDriveLoader $null $false }
+function Start-UsageLoader {
+  param($Accounts, [string]$Source, [string]$Reader, [switch]$Hold)
+  $script:Started++
+  $script:LoaderArgs = @($Accounts, $Source, $Reader)
+  $l = New-FakeDriveLoader $null $false
+  $l.Ctl.Go = New-Object Threading.ManualResetEventSlim((-not $Hold))
+  return $l
+}
 try {
   Assert-Equal "  Drive non connecte : clm --drive-login" (Request-DriveSync (New-DriveJob $false 0))[0] "touche y sans Drive"
   $job = New-DriveJob $true 0
@@ -83,6 +90,15 @@ try {
   Assert-True (Step-DriveJob $waitJob $waitJob.RetryAt) "attente : nouvel essai apres le delai"
   Assert-Equal 2 $script:Started "attente : synchro relancee"
   Assert-Equal "sync..." (Get-DriveTag $waitJob)[0] "nouvel essai en cours"
+  $held = New-DriveJob $true $at
+  Start-DriveJob $held -Hold
+  Assert-True ((-not (Test-DriveJobRunning $held)) -and (Get-DriveTag $held)[0] -eq ("sync " + $hm)) "synchro chargee en avance : pas encore en cours"
+  Assert-Equal "  synchro Drive lancee" (Request-DriveSync $held)[0] "touche y pendant le chargement : synchro lancee"
+  Assert-True ((Test-DriveJobRunning $held) -and $script:Started -eq 3) "synchro chargee en avance : relachee sans nouvelle tache"
+  $held = New-DriveJob $true $at
+  Start-DriveJob $held -Hold
+  Stop-DriveJob $held 0
+  Assert-True ($held.Ctl.Stop -and $held.Loader.Ctl.Go.IsSet) "arret pendant le chargement : tache relachee pour finir"
 } finally { Set-Item "function:Start-UsageLoader" $keptLoader }
 $job.Loader.Ctl.Done = $true
 Stop-DriveJob $job
@@ -106,6 +122,6 @@ Assert-True ((Get-JobSegsText (Get-CardHead $awayE 1 @{ Mode = "full"; W = 80 } 
 Assert-True ((Get-JobSegsText (Get-CardHead $awayE 1 @{ Mode = "compact"; W = 80 } 1.0)[0]) -match "ouvert sur MAC  Pro$") "carte compacte : compte ouvert ailleurs"
 $awayE.U.Acc = [PSCustomObject]@{ Label = "c1"; Dir = ".claude" }
 Assert-True ((Get-JobSegsText (Get-CardHead $awayE 0 @{ Mode = "full"; W = 80 } 1.0)[0]) -notmatch "ouvert") "carte : compte libre, rien"
-Assert-True (@((Get-FooterRows $script:MenuFooter 105)[0] | Where-Object { $_[3] -eq "y" }).Count -gt 0) "pied de page : touche y"
+Assert-True (@(foreach ($fr in (Get-FooterRows $script:MenuFooter 105)) { $fr | Where-Object { $_[3] -eq "y" } }).Count -gt 0) "pied de page : touche y"
 
 $script:DriveJob = $keptJob

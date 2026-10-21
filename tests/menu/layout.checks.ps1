@@ -8,9 +8,15 @@ Assert-Equal "simple" (Get-MenuLayout 39 30 3).Mode "terminal etroit, vue simple
 Assert-Equal "simple True" ((Get-MenuLayout 40 30 3).Mode + " " + ((Get-MenuLayout 41 30 3).Mode -ne "simple")) "cadre trop large sous 41 colonnes, vue simple"
 $l = Get-MenuLayout 9 8 3
 Assert-Equal "simple 3 8" ($l.Mode + " " + $l.Visible + " " + $l.Clip) "terminal minuscule, vue simple"
-Assert-Equal 2 (Get-MenuLayout 60 40 2).FooterRows "pied sur deux lignes sous 78 colonnes"
-Assert-Equal 2 (Get-MenuLayout 107 40 2).FooterRows "pied sur deux lignes sous 108 colonnes"
-Assert-Equal 1 (Get-MenuLayout 108 40 2).FooterRows "pied sur une ligne a partir de 108 colonnes"
+Assert-Equal 3 (Get-MenuLayout 60 40 2).FooterRows "pied sur trois lignes a 60 colonnes"
+Assert-Equal 2 (Get-MenuLayout 200 40 2).FooterRows "pied sur deux lignes a la largeur maximale"
+function Get-FooterLengths {
+  param([int]$W)
+  return (@(foreach ($r in (Get-FooterRows $script:MenuFooter $W)) { $t = ""; foreach ($s in $r) { $t += $s[0] }; $t.Length }) -join " ")
+}
+Assert-Equal "56 59" (Get-FooterLengths 105) "pied equilibre entre ses deux lignes"
+Assert-Equal "56 59" (Get-FooterLengths 105) "pied relu depuis le cache, meme decoupe"
+Assert-Equal "115" (Get-FooterLengths 200) "pied sur une ligne quand tout tient"
 Assert-Equal "full 3" ((Get-MenuLayout 120 40 3 4).Mode + " " + (Get-MenuLayout 120 40 3 4).Visible) "barres du lancement, cartes completes gardees"
 $l = Get-MenuLayout 80 20 3 4
 Assert-Equal "compact 2" ($l.Mode + " " + $l.Visible) "barres du lancement, un compte de moins en vue compacte"

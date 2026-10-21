@@ -1,7 +1,7 @@
 $script:MenuState = $null
 $script:MenuUpdated = $false
 $script:MenuRestart = $false
-$script:MenuFails = @{ save = "  sauvegarde impossible : "; restore = "  restauration impossible : "; add = "  ajout impossible : "; remove = "  retrait impossible : "; rename = "  renommage impossible : "; drivelogin = "  connexion Drive impossible : " }
+$script:MenuFails = @{ save = "  sauvegarde impossible : "; restore = "  restauration impossible : "; add = "  ajout impossible : "; remove = "  retrait impossible : "; rename = "  renommage impossible : "; drivelogin = "  connexion Drive impossible : "; prefs = "  reglages de synchro impossibles : " }
 
 function Step-MenuFrame {
   $now = Get-NowMs
@@ -58,6 +58,7 @@ function Invoke-MenuPage {
   if ($Name -eq "remove") { return Show-RemoveMenu $Sel }
   if ($Name -eq "rename") { return Show-RenameMenu $Sel }
   if ($Name -eq "drivelogin") { return Connect-MenuDrive }
+  if ($Name -eq "prefs") { return Show-PrefsMenu }
   Exit-UiScreen
   try { return Add-Account } finally { Enter-UiScreen }
 }

@@ -4,6 +4,11 @@ $envNames = @("USERPROFILE", "HOME", "LOCALAPPDATA", "XDG_CACHE_HOME", "XDG_STAT
 $savedEnv = @{}
 foreach ($n in $envNames) { $savedEnv[$n] = [Environment]::GetEnvironmentVariable($n) }
 $script:Sandbox = Join-Path ([IO.Path]::GetTempPath()) ("clm-tests-" + [guid]::NewGuid().ToString("N"))
+$script:NoNetworkText = "reseau interdit pendant les tests"
+
+function Stop-TestNetwork { throw $script:NoNetworkText }
+Set-Alias -Name Invoke-WebRequest -Value Stop-TestNetwork
+Set-Alias -Name Invoke-RestMethod -Value Stop-TestNetwork
 $script:Passed = 0
 $script:Failed = @()
 

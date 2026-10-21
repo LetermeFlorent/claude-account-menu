@@ -36,6 +36,17 @@ Assert-Equal 1 $res.Count "arret apres le compte en cours"
 Assert-Equal "ok a" $res[0][1] "le compte en cours finit sa lecture"
 Assert-True ($waits -gt 0) "attente rendue pendant l'arret"
 
+$ld = Start-UsageLoader @(@{ Name = "a" }) $fake "Get-FakeUsage" -Hold
+Start-Sleep -Milliseconds 300
+Assert-True ((Test-UsageLoaderHeld $ld) -and -not $ld.Ctl.Done -and $ld.Queue.Count -eq 0) "chargeur retenu : rien lu avant le feu vert"
+Resume-UsageLoader $ld
+Wait-LoaderDone $ld
+Assert-Equal "ok a" (Receive-UsageResults $ld)[0][1] "chargeur retenu : lecture apres le feu vert"
+Close-UsageLoader $ld
+$ld = Start-UsageLoader @(@{ Name = "a" }) $fake "Get-FakeUsage" -Hold
+Stop-UsageLoader $ld 15000
+Assert-True ($ld.Ctl.Done -and (Receive-UsageResults $ld).Count -eq 0) "chargeur retenu puis arrete : rien lu, tache finie"
+
 $ld = Start-UsageLoader @(@{ Name = "a" }) (Join-Path $script:Sandbox "absent.ps1") "Get-FakeUsage"
 Wait-LoaderDone $ld
 $res = Receive-UsageResults $ld

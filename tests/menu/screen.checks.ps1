@@ -77,8 +77,8 @@ $st = @{ Entries = $cards; Sel = 0; SelTween = (New-Tween 0 0 0 0); Top = 0; Msg
 $L = Get-MenuLayout 120 40 3
 $f = Get-MenuRows $st $L 0
 $texts = @(foreach ($r in $f.Rows) { Get-SegsText $r })
-Assert-Equal 22 $f.Rows.Count "trois cartes completes en 120x40"
-Assert-Equal 22 $f.Fades.Count "un fondu par rangee"
+Assert-Equal 23 $f.Rows.Count "trois cartes completes en 120x40"
+Assert-Equal 23 $f.Fades.Count "un fondu par rangee"
 Assert-True (@($texts | Where-Object { $_.Length -gt $L.Clip }).Count -eq 0) "aucune rangee au-dela du bord"
 Assert-True ($texts[4].StartsWith("  " + $script:Mark + " 1  perso")) "repere sur le compte choisi"
 Assert-True ($texts[4].EndsWith("quota 7d atteint  Max 5x")) "badge et offre a droite"
@@ -88,7 +88,7 @@ Assert-True ($texts[11] -match "jeton refuse") "erreur a la place des barres"
 Assert-True ($texts[16] -match "lecture\.\.\.") "compte encore en lecture"
 Assert-Equal 1 $f.Fades[4] "carte choisie a pleine intensite"
 Assert-Equal 0.65 $f.Fades[9] "autre carte attenuee"
-Assert-Equal "  pret" $texts[21] "message en pied"
+Assert-Equal "  pret" $texts[22] "message en pied"
 
 $L = Get-MenuLayout 80 12 3
 $st.Sel = 2

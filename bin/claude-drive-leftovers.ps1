@@ -6,9 +6,10 @@ $script:DriveIdPattern = '^[A-Za-z0-9_-]+$'
 function Get-OwnLeftovers {
   param($Listing, [string]$Pc)
   $ids = New-Object 'System.Collections.Generic.List[string]'
+  $localOnly = Get-ExcludeRegex $script:SyncLocalOnly
   foreach ($k in $Listing.Keys) {
     $e = $Listing[$k]
-    if ($e.Pc -eq $Pc -and $e.Id -match $script:DriveIdPattern -and (Test-SyncExcluded $k $script:SyncLocalOnly)) { $ids.Add($e.Id) }
+    if (($e.Pc -eq $Pc -or -not $e.Pc) -and $e.Id -match $script:DriveIdPattern -and $localOnly.IsMatch($k)) { $ids.Add($e.Id) }
   }
   return ,$ids.ToArray()
 }

@@ -43,7 +43,7 @@ Assert-Equal 4 $v.Rows.Count "barres puis rangee vide"
 Assert-Equal ("  clm          " + ($script:BarFull * 19) + $script:BarHalf + "  a jour") $v.Texts[0] "clm a jour : barre pleine"
 Assert-Equal $green ($v.Rows[0][1][1] -join " ") "barre pleine en vert, comme la barre 7d"
 Assert-Equal ("  Claude Code  " + ($script:BarFull * 8) + $script:BarHalf + ($script:BarEmpty * 11) + "   45%  telechargement 2.1.300  45 / 100 Mo") $v.Texts[1] "Claude Code : barre, pourcentage et detail"
-Assert-Equal ("  Drive        " + ($script:BarEmpty * 20) + "  apres Claude Code") $v.Texts[2] "Drive en attente : barre vide"
+Assert-Equal ("  Drive        " + ($script:BarEmpty * 20) + "  apres clm") $v.Texts[2] "Drive en attente : barre vide"
 Assert-Equal (($script:Ink.Cell -join " ") + " " + ($script:Ink.Dim -join " ")) (($v.Rows[2][1][1] -join " ") + " " + ($v.Rows[2][2][1] -join " ")) "attente : cases vides et texte attenue"
 Assert-Equal "" $v.Texts[3] "rangee vide avant les comptes"
 
@@ -78,10 +78,11 @@ Assert-True ($v.Texts[1].EndsWith("telecharg...")) "fenetre etroite : detail cou
 $st = @{ Entries = @((New-ViewEntry "a"), (New-ViewEntry "b"), (New-ViewEntry "c")); Sel = 0; SelTween = (New-Tween 0 0 0 0); Top = 0; Msg = @("  pret", $script:Ink.Dim); Moved = $false }
 $script:Startup = $su
 try {
+  $su.Steps[0].State = "run"
   $f = Get-MenuRows $st (Get-MenuLayout 120 40 3 (Get-StartupRowCount $su)) 0
-  Assert-Equal "8 0 0" ("" + $st.Hit.Start + " " + $st.Hit.Top + " " + $st.Hit.Last) "mises a jour en cours : aucun compte affiche"
-  Assert-Equal -1 (Get-EntryAt $st 8) "mises a jour en cours : clic sans compte"
-  $su.Index = $su.Steps.Count
+  Assert-Equal "8 0 0" ("" + $st.Hit.Start + " " + $st.Hit.Top + " " + $st.Hit.Last) "verification de clm : aucun compte affiche"
+  Assert-Equal -1 (Get-EntryAt $st 8) "verification de clm : clic sans compte"
+  $su.Steps[0].State = "done"
   $f = Get-MenuRows $st (Get-MenuLayout 120 40 3 (Get-StartupRowCount $su)) 0
   $texts = @(foreach ($r in $f.Rows) { Get-ViewText $r })
   Assert-True ($texts[4].StartsWith("  clm  ")) "menu : barres sous le titre"
@@ -94,7 +95,7 @@ try {
   Assert-True ($boxed[$boxed.Count - 2].StartsWith([string][char]0x2502 + "  pret")) "cadre : message dans le cadre"
   $f = Get-MenuRows $st (Get-MenuLayout 30 12 3 (Get-StartupRowCount $su)) 0
   $texts = @(foreach ($r in $f.Rows) { Get-ViewText $r })
-  Assert-Equal "  clm  a jour|  Claude Code  45%  telechargement 2.1.300  45 / 100 Mo|  Drive  apres Claude Code" ($texts[1..3] -join "|") "vue simple : etapes en texte"
+  Assert-Equal "  clm  a jour|  Claude Code  45%  telechargement 2.1.300  45 / 100 Mo|  Drive  apres clm" ($texts[1..3] -join "|") "vue simple : etapes en texte"
   Assert-Equal 4 $st.Hit.Start "vue simple : comptes sous les etapes"
   $su.Hidden = $true
   $f = Get-MenuRows $st (Get-MenuLayout 120 40 3 (Get-StartupRowCount $su)) 0

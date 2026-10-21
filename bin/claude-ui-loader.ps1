@@ -3,6 +3,7 @@ param($Source, $Reader, $Accounts, $Ctl, $Queue)
 $ProgressPreference = "SilentlyContinue"
 try {
   . $Source
+  $Ctl.Go.Wait()
   for ($i = 0; $i -lt $Accounts.Count; $i++) {
     if ($Ctl.Stop) { break }
     $Ctl.Current = $i
@@ -14,8 +15,9 @@ finally { $Ctl.Current = -1; $Ctl.Done = $true }
 '@
 
 function Start-UsageLoader {
-  param($Accounts, [string]$Source = (Join-Path $PSScriptRoot "claude-usage.ps1"), [string]$Reader = "Get-AccountUsage")
-  $ctl = [hashtable]::Synchronized(@{ Stop = $false; Done = $false; Current = -1; Error = $null })
+  param($Accounts, [string]$Source = (Join-Path $PSScriptRoot "claude-usage.ps1"), [string]$Reader = "Get-AccountUsage", [switch]$Hold)
+  $go = New-Object Threading.ManualResetEventSlim((-not $Hold))
+  $ctl = [hashtable]::Synchronized(@{ Stop = $false; Done = $false; Current = -1; Error = $null; Go = $go })
   $queue = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
   $ps = [PowerShell]::Create()
   [void]$ps.AddScript($script:LoaderScript).AddArgument($Source).AddArgument($Reader).AddArgument(@($Accounts)).AddArgument($ctl).AddArgument($queue)
@@ -31,6 +33,16 @@ function Receive-UsageResults {
   return ,$out.ToArray()
 }
 
+function Resume-UsageLoader {
+  param($Loader)
+  if ($null -ne $Loader -and $null -ne $Loader.Ctl.Go) { $Loader.Ctl.Go.Set() }
+}
+
+function Test-UsageLoaderHeld {
+  param($Loader)
+  return $null -ne $Loader -and $null -ne $Loader.Ctl.Go -and -not $Loader.Ctl.Go.IsSet
+}
+
 function Close-UsageLoader {
   param($Loader)
   if ($null -eq $Loader.Ps -or -not $Loader.Ctl.Done) { return }
@@ -43,6 +55,7 @@ function Stop-UsageLoader {
   param($Loader, [int]$TimeoutMs = 30000, [scriptblock]$OnWait = $null)
   if ($null -eq $Loader) { return }
   $Loader.Ctl.Stop = $true
+  Resume-UsageLoader $Loader
   $sw = [Diagnostics.Stopwatch]::StartNew()
   while (-not $Loader.Ctl.Done -and $sw.ElapsedMilliseconds -lt $TimeoutMs) {
     if ($null -ne $OnWait) { & $OnWait $sw.ElapsedMilliseconds }

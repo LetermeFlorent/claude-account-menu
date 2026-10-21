@@ -5,6 +5,9 @@ $script:DriveChecked = $false
 $script:Startup = $null
 $script:StartupLabels = @{ clm = "clm"; claude = "Claude Code"; drive = "Drive" }
 $script:StartupFree = @("none", "refresh")
+$script:StartupOpen = @("up", "down", "select", "drivesync")
+$script:StartupHiding = @("clm")
+$script:StartupQuitWaits = @("clm", "claude")
 $script:StartupHoldMs = 1500
 $script:StartupFadeMs = 300
 
@@ -12,15 +15,18 @@ function New-StartupStep {
   param([string]$Name, [string]$After)
   $text = ""
   if ($After) { $text = "apres " + $script:StartupLabels[$After] }
-  return @{ Name = $Name; Label = $script:StartupLabels[$Name]; State = "wait"; Pct = -1; Text = $text; Kind = ""; Bar = (New-Tween 0 0 0 0); Work = $null }
+  return @{ Name = $Name; After = $After; Label = $script:StartupLabels[$Name]; State = "wait"; Pct = -1; Text = $text; Kind = ""; Bar = (New-Tween 0 0 0 0); Work = $null }
 }
 
 function New-Startup {
   param($Names)
   $steps = New-Object 'System.Collections.Generic.List[object]'
-  $prev = ""
-  foreach ($n in @($Names)) { $steps.Add((New-StartupStep $n $prev)); $prev = $n }
-  return @{ Steps = $steps; Index = 0; Quit = $false; Exit = $null; EndAt = $null; Fade = $null; Hidden = ($steps.Count -eq 0); ClmError = "" }
+  foreach ($n in @($Names)) {
+    $after = ""
+    if ($n -ne "clm" -and @($Names) -contains "clm") { $after = "clm" }
+    $steps.Add((New-StartupStep $n $after))
+  }
+  return @{ Steps = $steps; Quit = $false; Exit = $null; Pending = $null; EndAt = $null; Fade = $null; Hidden = ($steps.Count -eq 0); ClmError = "" }
 }
 
 function Get-StartupNames {
@@ -37,28 +43,53 @@ function Open-MenuSession {
   $now = Get-NowMs
   $script:ClmCheck = New-ClmCheck $now (Test-ClmInstalledHere) (Read-ClmVersion)
   Open-DriveJob $false
-  $script:Startup = New-Startup @(Get-StartupNames $Update $SelfUpdate)
+  $names = @(Get-StartupNames $Update $SelfUpdate)
+  $script:Startup = New-Startup $names
+  if ($names -contains "drive") { Start-DriveJob $script:DriveJob -Hold }
   $script:MenuState = New-MenuState @(Get-Accounts) $now
   Start-MenuLoader $script:MenuState
 }
 
+function Test-StepsLeft {
+  param($Su, [string[]]$Names)
+  if ($null -eq $Su) { return $false }
+  foreach ($s in $Su.Steps) { if ($s.State -ne "done" -and ($Names.Count -eq 0 -or $Names -contains $s.Name)) { return $true } }
+  return $false
+}
+
 function Test-StartupBlocking {
   param($Su)
-  return $null -ne $Su -and $Su.Index -lt $Su.Steps.Count
+  return Test-StepsLeft $Su $script:StartupHiding
+}
+
+function Test-QuitWaits {
+  param($Su)
+  foreach ($s in $Su.Steps) { if ($s.State -eq "run" -and $script:StartupQuitWaits -contains $s.Name) { return $true } }
+  return $false
+}
+
+function Test-StepReady {
+  param($Su, $Step)
+  if ($Step.State -ne "wait") { return $true }
+  if ($Su.Quit) { return $false }
+  foreach ($s in $Su.Steps) { if ($s.Name -eq $Step.After) { return $s.State -eq "done" } }
+  return $true
 }
 
 function Step-Startup {
   param($Su, $State, [double]$Now)
   if ($null -eq $Su -or $Su.Hidden -or $null -ne $Su.Exit) { return $false }
-  if ($Su.Index -ge $Su.Steps.Count) { return Step-StartupEnd $Su $Now }
-  $step = $Su.Steps[$Su.Index]
-  if ($step.State -eq "wait" -and $Su.Quit) { $Su.Exit = @{ Name = "quit" }; return $true }
-  $changed = Invoke-StartupWork $Su $step $State $Now
-  if ($step.State -ne "done") { return $changed }
-  $Su.Index++
-  if ($step.Kind -eq "failed" -and -not (Test-Network)) { $Su.Exit = @{ Name = "offline" }; return $true }
+  if (-not (Test-StepsLeft $Su @())) { return Step-StartupEnd $Su $Now }
+  $changed = $false
+  foreach ($step in $Su.Steps) {
+    if ($step.State -eq "done" -or -not (Test-StepReady $Su $step)) { continue }
+    if (Invoke-StartupWork $Su $step $State $Now) { $changed = $true }
+    if ($step.State -ne "done") { continue }
+    if ($step.Kind -eq "failed" -and -not (Test-Network)) { $Su.Exit = @{ Name = "offline" } }
+    if ($null -ne $Su.Exit) { return $true }
+  }
   Set-StartupExit $Su
-  return $true
+  return $changed -or $null -ne $Su.Exit
 }
 
 function Step-StartupEnd {
@@ -73,23 +104,35 @@ function Step-StartupEnd {
 
 function Set-StartupExit {
   param($Su)
-  if ($null -ne $Su.Exit -or (Test-StartupBlocking $Su)) { return }
-  if ($Su.Quit) { $Su.Exit = @{ Name = "quit" } }
+  if ($null -ne $Su.Exit) { return }
+  if ($Su.Quit) { if (-not (Test-QuitWaits $Su)) { $Su.Exit = @{ Name = "quit" } }; return }
+  if ($null -ne $Su.Pending -and -not (Test-StepsLeft $Su @())) { $Su.Exit = $Su.Pending }
+}
+
+function Get-HeldAction {
+  param($State, [string]$Text)
+  $State.Msg = @($Text, $script:Ink.Dim)
+  $State.Dirty = $true
+  return @{ Name = "none" }
 }
 
 function Get-StartupGate {
   param($Su, $Act, $State)
   if ($null -eq $Su) { return $Act }
   if ($null -ne $Su.Exit) { return $Su.Exit }
-  if (-not (Test-StartupBlocking $Su) -or $script:StartupFree -contains $Act.Name) { return $Act }
-  $text = "  comptes affiches a la fin des mises a jour"
+  if (-not (Test-StepsLeft $Su @()) -or $script:StartupFree -contains $Act.Name) { return $Act }
   if ($Act.Name -eq "quit") {
+    if (-not (Test-QuitWaits $Su)) { return $Act }
     $Su.Quit = $true
-    $text = "  arret demande, fin de la mise a jour en cours..."
+    $Su.Pending = $null
+    return Get-HeldAction $State "  arret demande, fin de la mise a jour en cours..."
   }
-  $State.Msg = @($text, $script:Ink.Dim)
-  $State.Dirty = $true
-  return @{ Name = "none" }
+  if (Test-StartupBlocking $Su) { return Get-HeldAction $State "  comptes affiches apres la verification de clm" }
+  if ($script:StartupOpen -contains $Act.Name) { return $Act }
+  if ($Act.Name -eq "launch") { $Act = @{ Name = "pick"; Index = $State.Sel } }
+  if ($Act.Name -ne "pick") { return Get-HeldAction $State "  disponible a la fin des mises a jour" }
+  $Su.Pending = $Act
+  return Get-HeldAction $State ("  " + $State.Entries[$Act.Index].Acc.Label + " lance a la fin des mises a jour...")
 }
 
 function Add-ClmFailure {

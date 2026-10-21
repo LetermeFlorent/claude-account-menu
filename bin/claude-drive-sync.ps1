@@ -3,11 +3,11 @@
 . (Join-Path $PSScriptRoot "claude-drive-leftovers.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-changes.ps1")
 . (Join-Path $PSScriptRoot "claude-drive-sessions.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-prefs.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-scope.ps1")
 $script:DriveLockPath = Join-Path (Get-HomeDir) ".clm-drive.lock"
 $script:DriveLockWaitMs = 5000
-$script:DriveDeleteLimit = 20
 $script:DriveExitBudgetMs = 30000
-$script:DriveRootPattern = '^\.(claude[^/]*|mcp\.json)$'
 $script:DriveBusyText = "une autre synchro Drive est en cours"
 
 function Invoke-WithDriveLock {
@@ -17,53 +17,6 @@ function Invoke-WithDriveLock {
 
 function New-SyncResult {
   return @{ Ok = $false; Error = ""; Busy = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Total = 0; Away = @{}; Again = $false }
-}
-
-function Test-SafeSyncPath {
-  param([string]$Rel)
-  if ($Rel -eq "" -or $Rel.Contains("\") -or $Rel.Contains(":")) { return $false }
-  $parts = $Rel.Split("/")
-  if ($parts[0] -notmatch $script:DriveRootPattern) { return $false }
-  foreach ($s in $parts) { if ($s -eq "" -or $s -eq "." -or $s -eq "..") { return $false } }
-  return $true
-}
-
-function Test-InSyncRoots {
-  param([string]$Rel, $Roots)
-  foreach ($r in $Roots) { if ($Rel -eq $r -or $Rel.StartsWith($r + "/", [StringComparison]::Ordinal)) { return $true } }
-  return $false
-}
-
-function Select-RemoteFiles {
-  param($Listing, $Patterns, $Roots)
-  $out = New-PathMap
-  $rx = Get-ExcludeRegex $Patterns
-  foreach ($k in $Listing.Keys) {
-    if (-not $rx.IsMatch($k) -and (Test-InSyncRoots $k $Roots) -and (Test-SafeSyncPath $k)) { $out[$k] = $Listing[$k] }
-  }
-  return $out
-}
-
-function Read-SyncBase {
-  param([string]$Root, $Roots)
-  $state = Read-DriveState
-  if ($state.Root -ne $Root) { $state = @{ At = [long]0; Root = $Root; Files = (New-PathMap) } }
-  foreach ($k in @($state.Files.Keys)) { if (-not (Test-InSyncRoots $k $Roots)) { $state.Files.Remove($k) } }
-  return $state
-}
-
-function Get-RegistryMd5 {
-  param($Files)
-  $e = $Files[$script:RegistryName]
-  if ($null -eq $e) { return "" }
-  return [string]$e.Md5
-}
-
-function Assert-DeleteLimit {
-  param($Plan, [int]$BaseCount, [bool]$Force)
-  $n = @($Plan | Where-Object { $_.Kind -eq "delete-local" -or $_.Kind -eq "delete-remote" }).Count
-  $limit = [math]::Max($script:DriveDeleteLimit, [int][math]::Floor($BaseCount / 10))
-  if ($n -gt $limit -and -not $Force) { throw ("synchro bloquee : " + $n + " suppressions prevues, verifier puis lancer clm --sync --force") }
 }
 
 function Set-DriveLastSync {
@@ -83,16 +36,18 @@ function Invoke-DriveSyncPass {
   $presence = Get-DriveListing $folders.Presence
   Set-PresenceFormat $folders $presence $pc
   $Res.Away = Get-AwayMap $presence $pc ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
+  $prefs = Start-SyncPrefs $folders $presence $pc $accs $Res
   $roots = Get-SyncRoots $accs
   $state = Read-SyncBase $folders.Root $roots
-  $patterns = Get-SyncPatterns $accs
+  $patterns = @(Get-SyncPatterns $accs) + @($prefs.Excludes)
   $local = Get-LocalFiles $script:HomeDir $roots $patterns $state.Files $Ctl $DeadlineMs
   if ($local.Stopped) { $Res.Ok = $true; $Res.Stopped = $true; return }
   $local.Skipped.AddRange([string[]]@(Get-HeldPaths))
   $listing = Get-DriveFilesListing $folders $pc
+  Complete-SyncPrefs $prefs $listing $Ctl $DeadlineMs
   $remote = Select-RemoteFiles $listing $patterns $roots
   $plan = Get-SyncPlan $local.Files $state.Files $remote $local.Skipped -Joining:($state.At -eq 0) -CaseFold:($script:OsName -ne "Linux")
-  Assert-DeleteLimit $plan $state.Files.Count $Force
+  Assert-DeleteLimit $plan $state.Files.Count $Force $prefs.Erased
   $Res.Total = $plan.Count
   $registry = Get-RegistryMd5 $local.Files
   $ctx = @{ Folder = $folders.Files; Pc = $pc; State = $state; Local = $local.Files; Remote = $remote; Res = $Res }

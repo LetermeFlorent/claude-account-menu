@@ -2,6 +2,7 @@
 . (Join-Path $PSScriptRoot "claude-menu-save.ps1")
 . (Join-Path $PSScriptRoot "claude-json.ps1")
 . (Join-Path $PSScriptRoot "claude-machine-settings.ps1")
+. (Join-Path $PSScriptRoot "claude-drive-patterns.ps1")
 $script:SyncLocalOnly = @("*/chrome-bidi/profils", "node_modules", "file-history") + @(foreach ($p in $script:SkipConversations) { "*/" + $p })
 $script:SyncExtraExcludes = @("*.bak-sync", "*.conflit-*", ".credentials.json", "*.tmp") + $script:SyncLocalOnly
 $script:RegistryName = ".claude-accounts.json"
@@ -16,48 +17,8 @@ function Get-SyncRoots {
   return @(Get-AccountItems $Accs) + @($script:RegistryName)
 }
 
-$script:ExcludeRegexMemo = New-PathMap
-$script:ExcludeRegexOptions = [Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant, Singleline"
-
-function ConvertTo-WildcardRegex {
-  param([string]$Pattern, [string]$Star, [string]$One)
-  $sb = New-Object Text.StringBuilder
-  for ($i = 0; $i -lt $Pattern.Length; $i++) {
-    $ch = [string]$Pattern[$i]
-    $close = -1
-    if ($ch -eq "[") { $close = $Pattern.IndexOf("]", $i + 1) }
-    if ($ch -eq "``" -and $i + 1 -lt $Pattern.Length) { $i++; [void]$sb.Append([regex]::Escape([string]$Pattern[$i])) }
-    elseif ($ch -eq "*") { [void]$sb.Append($Star) }
-    elseif ($ch -eq "?") { [void]$sb.Append($One) }
-    elseif ($close -gt $i + 1) { [void]$sb.Append("[" + $Pattern.Substring($i + 1, $close - $i - 1).Replace("\", "\\").Replace("[", "\[").Replace("^", "\^") + "]"); $i = $close }
-    else { [void]$sb.Append([regex]::Escape($ch)) }
-  }
-  return $sb.ToString()
-}
-
-function Get-ExcludeRegex {
-  param($Patterns)
-  $key = @($Patterns) -join "`n"
-  if ($script:ExcludeRegexMemo.ContainsKey($key)) { return $script:ExcludeRegexMemo[$key] }
-  $segments = New-Object 'System.Collections.Generic.List[string]'
-  $paths = New-Object 'System.Collections.Generic.List[string]'
-  foreach ($p in @($Patterns)) {
-    if ($p.Contains("/")) { $paths.Add((ConvertTo-WildcardRegex $p ".*" ".")) }
-    else { $segments.Add((ConvertTo-WildcardRegex $p "[^/]*" "[^/]")) }
-  }
-  $parts = @()
-  if ($segments.Count -gt 0) { $parts += "(?:^|/)(?:" + ($segments -join "|") + ")(?:/|$)" }
-  if ($paths.Count -gt 0) { $parts += "^(?:" + ($paths -join "|") + ")(?:/.*)?$" }
-  if ($parts.Count -eq 0) { $parts = @("(?!)") }
-  $rx = New-Object regex ($parts -join "|"), $script:ExcludeRegexOptions
-  $script:ExcludeRegexMemo[$key] = $rx
-  return $rx
-}
-
-function Test-SyncExcluded {
-  param([string]$Rel, $Patterns)
-  return (Get-ExcludeRegex $Patterns).IsMatch($Rel)
-}
+$script:MachinePathHint = New-Object regex '^(?:\.claude[^/]*/(?:settings|\.claude)\.json|\.(?:claude|mcp)\.json)$',([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant")
+$script:StopCheckDirs = 16
 
 function ConvertTo-HexText {
   param([byte[]]$Bytes)
@@ -74,7 +35,8 @@ function Get-FileMd5 {
 function Get-SyncBytes {
   param([string]$Rel, [string]$Path)
   $bytes = Read-SharedBytes $Path
-  if (Test-MachineSettingsPath $Rel) { return ,(Convert-SettingsBytes $bytes) }
+  $kind = Get-MachineKind $Rel
+  if ($null -ne $kind) { return ,(Convert-SettingsBytes $bytes -Kind $kind) }
   return ,$bytes
 }
 
@@ -119,17 +81,37 @@ function Get-LocalFiles {
     if ([IO.File]::Exists($full)) { Add-LocalFile $res $r ([IO.FileInfo]$full) $Base }
     elseif ([IO.Directory]::Exists($full)) { $stack.Push(@($r, $full)) }
   }
+  $dirs = 0
   while ($stack.Count -gt 0) {
-    if (Test-SyncStop $Ctl $DeadlineMs) { $res.Stopped = $true; break }
+    if (($dirs++ % $script:StopCheckDirs) -eq 0 -and (Test-SyncStop $Ctl $DeadlineMs)) { $res.Stopped = $true; break }
     $d = $stack.Pop()
     try { $items = ([IO.DirectoryInfo]$d[1]).GetFileSystemInfos() } catch { $res.Skipped.Add($d[0]); continue }
     foreach ($i in $items) {
       $rel = $d[0] + "/" + $i.Name
       if ($rx.IsMatch($rel)) { continue }
       if ($i.Attributes -band [IO.FileAttributes]::ReparsePoint) { $res.Skipped.Add($rel); continue }
-      if ($i -is [IO.DirectoryInfo]) { $stack.Push(@($rel, $i.FullName)) }
-      else { Add-LocalFile $res $rel $i $Base }
+      if ($i -is [IO.DirectoryInfo]) { $stack.Push(@($rel, $i.FullName)); continue }
+      $b = $Base[$rel]
+      if ($null -ne $b -and [long]$b.Size -eq $i.Length -and -not $script:MachinePathHint.IsMatch($rel)) {
+        $m = ([DateTimeOffset]$i.LastWriteTimeUtc).ToUnixTimeSeconds()
+        if ([long]$b.M -eq $m) { $res.Files[$rel] = @{ Md5 = [string]$b.Md5; M = $m; Size = $i.Length; Full = $i.FullName }; continue }
+      }
+      Add-LocalFile $res $rel $i $Base
     }
   }
   return $res
+}
+
+$script:SyncKeptDepth = 2
+
+function Remove-SyncLocalFile {
+  param([string]$Rel)
+  $full = Get-SyncLocalPath $Rel
+  if (Test-Path -LiteralPath $full) { Remove-Item -LiteralPath $full -Force -ErrorAction Stop }
+  $parts = $Rel.Split("/")
+  for ($n = $parts.Count - 1; $n -gt $script:SyncKeptDepth; $n--) {
+    $dir = Get-SyncLocalPath ($parts[0..($n - 1)] -join "/")
+    if (-not [IO.Directory]::Exists($dir) -or @([IO.Directory]::GetFileSystemEntries($dir)).Count -gt 0) { return }
+    try { [IO.Directory]::Delete($dir) } catch [IO.IOException] { return }
+  }
 }

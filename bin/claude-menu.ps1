@@ -5,6 +5,7 @@
 . (Join-Path $PSScriptRoot "claude-menu-select.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-remove.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-rename.ps1")
+. (Join-Path $PSScriptRoot "claude-menu-prefs.ps1")
 . (Join-Path $PSScriptRoot "claude-statusline-seed.ps1")
 . (Join-Path $PSScriptRoot "claude-update.ps1")
 . (Join-Path $PSScriptRoot "claude-self-update.ps1")

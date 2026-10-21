@@ -89,6 +89,7 @@ function New-KeyInfo {
   if ($Name -match "^Entree") { return New-Object System.ConsoleKeyInfo ([char]13), ([ConsoleKey]::Enter), $false, $false, $false }
   if ($Name -eq "Espace") { return New-Object System.ConsoleKeyInfo ([char]32), ([ConsoleKey]::Spacebar), $false, $false, $false }
   if ($Name -eq "Echap" -or $Name -eq "autre touche") { return New-Object System.ConsoleKeyInfo ([char]27), ([ConsoleKey]::Escape), $false, $false, $false }
+  if ($Name -eq "Suppr") { return New-Object System.ConsoleKeyInfo ([char]0), ([ConsoleKey]::Delete), $false, $false, $false }
   if ($Name -eq "up") { return New-Object System.ConsoleKeyInfo ([char]0), ([ConsoleKey]::UpArrow), $false, $false, $false }
   if ($Name -eq "down") { return New-Object System.ConsoleKeyInfo ([char]0), ([ConsoleKey]::DownArrow), $false, $false, $false }
   if ($Name.Length -ne 1) { return $null }

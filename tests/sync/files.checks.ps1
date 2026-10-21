@@ -59,4 +59,23 @@ Assert-Equal "i2" $st2.Files[".claude/a.md"].Id "id relu"
 Assert-Equal "i3" $st2.Files['.claude/q"x\y.md'].Id "chemin avec guillemet et barre oblique inverse relu"
 Assert-Equal 6 $st2.Files[".claude/a.md"].M "date relue"
 Assert-Equal 77 $st2.At "date de synchro relue"
+$escaped = [IO.File]::ReadAllText($script:DriveStatePath)
+Assert-True (-not (Read-DriveStateRows @{ At = [long]0; Root = ""; Files = (New-PathMap) } $escaped)) "etat : chemin echappe, lecteur complet"
+$st2.Files.Remove('.claude/q"x\y.md')
+$st2.Root = "R"
+Save-DriveState $st2
+$plain = [IO.File]::ReadAllText($script:DriveStatePath)
+$fast = @{ At = [long]0; Root = ""; Files = (New-PathMap) }
+Assert-True (Read-DriveStateRows $fast $plain) "etat : lecture rapide du format ecrit"
+Assert-Equal "R|77|2|m1|5|3|i1" ($fast.Root + "|" + $fast.At + "|" + $fast.Files.Count + "|" + $fast.Files[".claude/A.md"].Md5 + "|" + $fast.Files[".claude/A.md"].M + "|" + $fast.Files[".claude/A.md"].Size + "|" + $fast.Files[".claude/A.md"].Id) "etat : lecture rapide complete"
+[IO.File]::WriteAllText($script:DriveStatePath, $plain.Replace("`n", "`r`n"))
+$crlf = Read-DriveState
+Assert-Equal "R|77|i2" ($crlf.Root + "|" + $crlf.At + "|" + $crlf.Files[".claude/a.md"].Id) "etat en CRLF relu"
+[IO.File]::WriteAllText($script:DriveStatePath, $plain.Replace('"m": 6,', '"m": 6, "x": 1,'))
+Assert-Equal "i2" (Read-DriveState).Files[".claude/a.md"].Id "etat avec champ inconnu relu"
 Remove-Item -LiteralPath $script:DriveStatePath -Force
+
+foreach ($p in @(".claude/settings.json", ".claude-compte2/settings.json", ".claude/SETTINGS.json", ".claude.json", ".mcp.json", ".claude/.claude.json", ".claude-compte2/.claude.json", ".claude/profiles/x/settings.json", ".claude/plugins/p/.claude.json", ".claude/settings.local.json", ".claudex.json")) {
+  Assert-True (-not (Test-MachineSettingsPath $p) -or $script:MachinePathHint.IsMatch($p)) ("reglages machine jamais repris de la base : " + $p)
+}
+Assert-True (-not $script:MachinePathHint.IsMatch(".claude/profiles/x/settings.json")) "reglages d'un profil : MD5 repris de la base"

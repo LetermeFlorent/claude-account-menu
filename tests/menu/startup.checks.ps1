@@ -8,28 +8,33 @@ try {
   $script:FakeInstalled = $true; $script:FakeAuto = $false
   Assert-Equal "clm|claude" ((Get-StartupNames $true $true) -join "|") "synchro auto coupee : pas de barre Drive"
   Assert-Equal "" ((Get-StartupNames $false $false) -join "|") "sans mise a jour ni synchro : aucune etape"
+  $script:DriveHolds = 0
   Open-MenuSession $false $false
-  Assert-True $script:Startup.Hidden "sans mise a jour ni synchro : pas de bloc"
+  Assert-True ($script:Startup.Hidden -and $script:DriveHolds -eq 0) "sans mise a jour ni synchro : pas de bloc, Drive pas charge"
 
   $script:FakeAuto = $true; $script:DriveJob = $null; $script:DriveStarts = 0; $script:MenuLoads = 0
   Open-MenuSession $true $true
   $script:Su = $script:Startup
   Assert-Equal "clm|Claude Code|Drive" (Get-StepList "Label") "ouverture : une barre par etape"
-  Assert-Equal "|apres clm|apres Claude Code" (Get-StepList "Text") "ouverture : chaque barre attend la precedente"
+  Assert-Equal "|apres clm|apres clm" (Get-StepList "Text") "ouverture : Claude Code et Drive attendent clm"
   Assert-Equal "3 1" ("" + $script:MenuState.Entries.Count + " " + $script:MenuLoads) "ouverture : comptes et quotas tout de suite"
   Assert-True ($script:DriveJob.Connected -and $script:DriveStarts -eq 0) "ouverture : Drive pret, synchro pas encore lancee"
+  Assert-Equal 1 $script:DriveHolds "ouverture : synchro chargee en avance pendant la verification de clm"
 
   New-StartupCase @("clm", "claude", "drive")
   Assert-True (Invoke-StartupTicks) "clm : barre redessinee au demarrage"
   Assert-Equal "Find-ClmUpdate" ($script:Loads -join "|") "clm : recherche lancee a part"
   Assert-True $script:ClmChecked "clm : pas de nouvelle recherche en mode texte"
-  Assert-Equal "recherche d'une nouvelle version|apres clm|apres Claude Code" (Get-StepList "Text") "clm : recherche affichee"
+  Assert-Equal "recherche d'une nouvelle version|apres clm|apres clm" (Get-StepList "Text") "clm : recherche affichee"
   Assert-True (-not (Invoke-StartupTicks)) "clm : rien a redessiner pendant la recherche"
+  Assert-True (Test-StartupBlocking $script:Su) "clm : comptes caches pendant la verification"
   $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks
-  Assert-Equal "done|wait|wait" (Get-StepList "State") "clm a jour : etape finie"
+  Assert-Equal "done|run|run" (Get-StepList "State") "clm a jour : Claude Code et Drive lances ensemble"
+  Assert-True (-not (Test-StartupBlocking $script:Su)) "clm a jour : comptes affiches tout de suite"
   Assert-Equal "a jour 100" ($script:Su.Steps[0].Text + " " + $script:Su.Steps[0].Bar.To) "clm a jour : barre pleine"
-  $null = Invoke-StartupTicks 2
+  Assert-Equal 1 $script:DriveStarts "Drive : lance des que clm est a jour"
+  $null = Invoke-StartupTicks
   Assert-Equal 1 $script:ClaudeStarts "Claude Code : lance apres clm"
   Assert-True $script:MenuUpdated "Claude Code : pas relance en mode texte"
   $run = $script:Su.Steps[1].Run
@@ -37,12 +42,10 @@ try {
   $run.Watch = @{ Seen = $true; Settled = $false; Bytes = 45MB; Size = 100MB }
   $null = Invoke-StartupTicks
   Assert-Equal "45 telechargement 2.1.300  45 / 100 Mo" ("" + $script:Su.Steps[1].Pct + " " + $script:Su.Steps[1].Text) "Claude Code : telechargement suivi"
-  Assert-Equal 0 $script:DriveStarts "Drive : attend la fin de Claude Code"
+  Assert-Equal "preparation" $script:Su.Steps[2].Text "Drive : en cours pendant Claude Code"
   $null = Invoke-StartupTicks
   Assert-Equal "a jour (2.1.292)" $script:Su.Steps[1].Text "Claude Code a jour : annonce"
   Assert-Equal "  a, b, c : Claude Code a jour (2.1.292)" $script:St.Msg[0] "Claude Code a jour : resultat sous les comptes"
-  $null = Invoke-StartupTicks
-  Assert-Equal 1 $script:DriveStarts "Drive : lance apres Claude Code"
   $script:DriveJob.Ctl.Progress = "3/10"
   Assert-True (Invoke-StartupTicks) "Drive : avancement redessine"
   Assert-Equal "30 3/10 fichiers" ("" + $script:Su.Steps[2].Pct + " " + $script:Su.Steps[2].Text) "Drive : fichiers faits sur le total"

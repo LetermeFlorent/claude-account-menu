@@ -65,7 +65,7 @@ function Receive-SyncFile {
   if (-not $tmp) { $tmp = Receive-DriveTemp $R.Id $path }
   try {
     if (-not (Test-LocalAsScanned $Ctx $Rel)) { return $false }
-    if (Test-MachineSettingsPath $Rel) { Update-MachineSettingsFile $tmp (Read-MachineSettings $path (Get-SyncLocalPath ".claude/settings.json")) }
+    Restore-LocalMachineSettings $tmp $path $Rel
     Install-DriveTemp $tmp $path -InPlace:(Test-SharedFilePath $Rel)
   } finally { Remove-DriveTemp $tmp }
   if ([long]$R.M -gt 0) { [IO.File]::SetLastWriteTimeUtc($path, [DateTimeOffset]::FromUnixTimeSeconds([long]$R.M).UtcDateTime) }
@@ -95,8 +95,7 @@ function Invoke-SyncAction {
     "download" { if (-not (Receive-SyncFile $Ctx $p)) { return $false }; $res.Down++ }
     "delete-local" {
       if (-not (Test-LocalAsScanned $Ctx $p)) { return $false }
-      $full = Get-SyncLocalPath $p
-      if (Test-Path -LiteralPath $full) { Remove-Item -LiteralPath $full -Force -ErrorAction Stop }
+      Remove-SyncLocalFile $p
       $Ctx.State.Files.Remove($p); $res.Deleted++
     }
     "delete-remote" { Remove-DriveFile $Ctx.Remote[$p].Id; $Ctx.State.Files.Remove($p); $res.Deleted++ }

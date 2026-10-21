@@ -36,16 +36,17 @@ function Get-DriveLastSync {
 }
 
 function Start-DriveJob {
-  param($Job)
-  if ($null -eq $Job -or $null -ne $Job.Loader) { return }
+  param($Job, [switch]$Hold)
+  if ($null -eq $Job) { return }
+  if ($null -ne $Job.Loader) { if (-not $Hold) { Resume-UsageLoader $Job.Loader }; return }
   $Job.Ctl = [hashtable]::Synchronized(@{ Stop = $false; Progress = "" })
   $Job.Seen = ""
-  $Job.Loader = Start-UsageLoader @(, $Job.Ctl) (Join-Path $PSScriptRoot "claude-drive-sync.ps1") "Invoke-DriveSync"
+  $Job.Loader = Start-UsageLoader @(, $Job.Ctl) (Join-Path $PSScriptRoot "claude-drive-sync.ps1") "Invoke-DriveSync" -Hold:$Hold
 }
 
 function Test-DriveJobRunning {
   param($Job)
-  return $null -ne $Job -and $null -ne $Job.Loader
+  return $null -ne $Job -and $null -ne $Job.Loader -and -not (Test-UsageLoaderHeld $Job.Loader)
 }
 
 function Complete-DriveJob {
@@ -81,7 +82,8 @@ function Step-DriveJob {
 
 function Stop-DriveJob {
   param($Job, [int]$TimeoutMs = $script:DriveQuitWaitMs)
-  if (-not (Test-DriveJobRunning $Job)) { return }
+  if ($null -eq $Job -or $null -eq $Job.Loader) { return }
+  if (Test-UsageLoaderHeld $Job.Loader) { $TimeoutMs = 0 }
   $Job.Ctl.Stop = $true
   Stop-UsageLoader $Job.Loader $TimeoutMs
   if ($Job.Loader.Ctl.Done) { $Job.Loader = $null }

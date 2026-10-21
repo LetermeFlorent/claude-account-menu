@@ -2,7 +2,8 @@ $script:UpArrow = [string][char]0x2191
 $script:DownArrow = [string][char]0x2193
 $script:FrameSide = 0x2502
 $script:FrameCols = 2
-$script:MenuFooter = @("Entree", "lancer", "a", "ajouter", "x", "retirer", "n", "renommer", "m", "maj", "y", "sync", "s", "sauvegarder", "r", "restaurer", "q", "quitter")
+$script:FooterLimits = @{}
+$script:MenuFooter = @("Entree", "lancer", "a", "ajouter", "x", "retirer", "n", "renommer", "m", "maj", "y", "sync", "p", "reglages", "s", "sauvegarder", "r", "restaurer", "q", "quitter")
 
 function Get-HeaderRow {
   param([string]$Title, [int]$W, [string]$Right = "")
@@ -21,20 +22,42 @@ function Get-RuleRow {
   return ,$r
 }
 
-function Get-FooterRows {
-  param([string[]]$Pairs, [int]$W)
+function Split-FooterPairs {
+  param([string[]]$Pairs, [int]$Max)
   $rows = New-Object 'System.Collections.Generic.List[object]'
   $r = New-Row
   $len = 0
   for ($i = 0; $i + 1 -lt $Pairs.Count; $i += 2) {
     $piece = 3 + $Pairs[$i].Length + $Pairs[$i + 1].Length
-    if ($len -gt 0 -and $len + $piece -gt $W - 2) { $rows.Add($r); $r = New-Row; $len = 0 }
+    if ($len -gt 0 -and $len + $piece -gt $Max) { $rows.Add($r); $r = New-Row; $len = 0 }
     $r.Add(@(("  " + $Pairs[$i]), $script:Ink.Text, $false, $Pairs[$i]))
     $r.Add(@((" " + $Pairs[$i + 1]), $script:Ink.Dim, $false, $Pairs[$i]))
     $len += $piece
   }
   $rows.Add($r)
   return ,$rows
+}
+
+function Get-FooterLimit {
+  param([string[]]$Pairs, [int]$W)
+  $count = (Split-FooterPairs $Pairs ($W - 2)).Count
+  if ($count -lt 2) { return $W - 2 }
+  $total = 0
+  for ($i = 0; $i + 1 -lt $Pairs.Count; $i += 2) { $total += 3 + $Pairs[$i].Length + $Pairs[$i + 1].Length }
+  $lo = [int][math]::Ceiling($total / $count)
+  $hi = $W - 2
+  while ($lo -lt $hi) {
+    $mid = [int][math]::Floor(($lo + $hi) / 2)
+    if ((Split-FooterPairs $Pairs $mid).Count -le $count) { $hi = $mid } else { $lo = $mid + 1 }
+  }
+  return $hi
+}
+
+function Get-FooterRows {
+  param([string[]]$Pairs, [int]$W)
+  $key = "" + $W + "|" + ($Pairs -join "|")
+  if (-not $script:FooterLimits.ContainsKey($key)) { $script:FooterLimits[$key] = Get-FooterLimit $Pairs $W }
+  return ,(Split-FooterPairs $Pairs $script:FooterLimits[$key])
 }
 
 function Limit-Text {
