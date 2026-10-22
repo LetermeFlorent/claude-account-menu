@@ -61,6 +61,16 @@ Assert-Null (Join-KeychainChunks 'pas du json' { param($k) $chunks[$k] }) "trous
 $keptHosts = $script:NetworkHosts
 $keptPort = $script:NetworkPort
 $keptWait = $script:NetworkTimeoutMs
+$keptRetry = $script:NetworkRetryMs
+$keptOnce = ${function:Test-NetworkOnce}
+
+function Get-NetFailReason {
+  $c = New-Object System.Net.Sockets.TcpClient
+  try { $c.Connect("127.0.0.1", $script:NetworkPort); return "un essai de plus passe" }
+  catch { return $_.Exception.InnerException.Message }
+  finally { $c.Close() }
+}
+
 $listener = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Loopback), 0
 $listener.Start()
 try {
@@ -69,10 +79,27 @@ try {
   $script:NetworkTimeoutMs = 15000
   $netClock = [Diagnostics.Stopwatch]::StartNew()
   $netUp = Test-Network
-  Assert-True $netUp ("reseau : connexion etablie, " + $netClock.ElapsedMilliseconds + " ms")
+  $netWhy = ""
+  if (-not $netUp) { $netWhy = ", " + (Get-NetFailReason) }
+  Assert-True $netUp ("reseau : connexion etablie, " + $netClock.ElapsedMilliseconds + " ms" + $netWhy)
   $listener.Stop()
+  $script:NetworkTimeoutMs = 1000
   Assert-True (-not (Test-Network)) "reseau : aucune reponse, clm ne s'ouvre pas"
-} finally { $listener.Stop(); $script:NetworkHosts = $keptHosts; $script:NetworkPort = $keptPort; $script:NetworkTimeoutMs = $keptWait }
+  $script:NetworkRetryMs = 0
+  $script:NetTries = 0
+  ${function:Test-NetworkOnce} = { $script:NetTries++; return $script:NetTries -ge 2 }
+  Assert-True (Test-Network) "reseau : un echec rapide est retente"
+  $script:NetTries = -10
+  Assert-True (-not (Test-Network)) "reseau : trois echecs, clm ne s'ouvre pas"
+  Assert-Equal -7 $script:NetTries "reseau : trois essais au plus"
+} finally {
+  $listener.Stop()
+  ${function:Test-NetworkOnce} = $keptOnce
+  $script:NetworkHosts = $keptHosts
+  $script:NetworkPort = $keptPort
+  $script:NetworkTimeoutMs = $keptWait
+  $script:NetworkRetryMs = $keptRetry
+}
 Assert-True (Test-Conversation ".claude/projects/p/s.jsonl") "sauvegarde : conversation exclue"
 Assert-True (Test-Conversation ".claude/projects/p/s/subagents") "sauvegarde : sous-agents exclus"
 Assert-True (-not (Test-Conversation ".claude/projects/p/memory/MEMORY.md")) "sauvegarde : memoires gardees"
