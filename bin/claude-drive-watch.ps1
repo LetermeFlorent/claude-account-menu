@@ -1,7 +1,7 @@
-. (Join-Path $PSScriptRoot "claude-drive-sync.ps1")
-. (Join-Path $PSScriptRoot "claude-drive-watch-launch.ps1")
-. (Join-Path $PSScriptRoot "claude-drive-watch-fs.ps1")
-. (Join-Path $PSScriptRoot "claude-drive-watch-plan.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-sync.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-sync.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-watch-launch.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-watch-launch.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-watch-fs.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-watch-fs.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-watch-plan.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-watch-plan.ps1") }
 $script:DriveWatchLogName = "watch.log"
 $script:DriveWatchLogMaxBytes = 262144
 

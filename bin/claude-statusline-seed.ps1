@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-usage.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-usage.ps1")) { . (Join-Path $PSScriptRoot "claude-usage.ps1") }
 
 function Convert-ToEpoch {
   param($Iso)

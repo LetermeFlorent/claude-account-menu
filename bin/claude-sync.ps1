@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-json.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
 $script:AccountKeys = @("model", "modelSettings", "theme")
 $script:SyncStatePath = Join-Path $script:HomeDir ".claude-sync-state.json"
 $script:SyncLockPath = Join-Path $script:HomeDir ".claude-sync.lock"

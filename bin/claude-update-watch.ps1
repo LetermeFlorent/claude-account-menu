@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-update-parse.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-update-parse.ps1")) { . (Join-Path $PSScriptRoot "claude-update-parse.ps1") }
 $script:ReleaseBase = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases"
 
 function Get-HostArch {

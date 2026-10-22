@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-drive-auth.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-auth.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-auth.ps1") }
 $script:DriveLoginSeconds = 300
 
 function ConvertFrom-AuthRequest {

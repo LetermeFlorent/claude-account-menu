@@ -1,7 +1,7 @@
-. (Join-Path $PSScriptRoot "claude-web-server.ps1")
-. (Join-Path $PSScriptRoot "claude-web-state.ps1")
-. (Join-Path $PSScriptRoot "claude-web-lists.ps1")
-. (Join-Path $PSScriptRoot "claude-web-actions.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-server.ps1")) { . (Join-Path $PSScriptRoot "claude-web-server.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-state.ps1")) { . (Join-Path $PSScriptRoot "claude-web-state.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-lists.ps1")) { . (Join-Path $PSScriptRoot "claude-web-lists.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-actions.ps1")) { . (Join-Path $PSScriptRoot "claude-web-actions.ps1") }
 $script:WebOpen = $false
 $script:WebReopen = $false
 $script:WebFlag = "--web"

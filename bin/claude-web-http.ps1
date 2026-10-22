@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-json.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
 $script:WebHeadMax = 8192
 $script:WebBodyMax = 65536
 $script:WebReadMs = 5000

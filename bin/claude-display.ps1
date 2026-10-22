@@ -1,5 +1,5 @@
-. (Join-Path $PSScriptRoot "claude-platform.ps1")
-. (Join-Path $PSScriptRoot "claude-json.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
 $script:DisplayFileName = ".clm-display.json"
 $script:DisplayPalettes = @("auto", "dark", "light")
 $script:DisplayAnims = @("auto", "on", "off")

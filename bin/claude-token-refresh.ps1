@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-drive-creds.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-creds.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-creds.ps1") }
 $script:OauthTokenUrl = "https://platform.claude.com/v1/oauth/token"
 $script:OauthClientId = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 

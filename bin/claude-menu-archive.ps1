@@ -1,5 +1,5 @@
-. (Join-Path $PSScriptRoot "claude-platform.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-progress.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-progress.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-progress.ps1") }
 $script:Tar = $null
 $script:TarFlavor = $null
 

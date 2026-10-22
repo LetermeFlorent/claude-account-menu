@@ -1,5 +1,5 @@
-. (Join-Path $PSScriptRoot "claude-sync-choice.ps1")
-. (Join-Path $PSScriptRoot "claude-mcp-keys.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-choice.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-choice.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-keys.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-keys.ps1") }
 $script:McpOsPattern = [regex]'^[A-Za-z]{1,20}$'
 $script:McpDefMax = 65536
 $script:SkillNamePattern = [regex]'^[^/\\:*?"<>|\x00-\x1f]{1,128}$'

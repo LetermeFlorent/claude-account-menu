@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-sync-pcdata.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-pcdata.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-pcdata.ps1") }
 $script:SyncCatalogPath = Join-Path (Get-HomeDir) ".clm-sync-catalog.json"
 
 function New-SyncCatalog {

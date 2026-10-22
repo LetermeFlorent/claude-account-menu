@@ -1,5 +1,5 @@
-. (Join-Path $PSScriptRoot "claude-platform.ps1")
-. (Join-Path $PSScriptRoot "claude-json.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
 $script:DriveConfigPath = Join-Path (Get-HomeDir) ".clm-drive.json"
 
 function Read-DriveConfig {

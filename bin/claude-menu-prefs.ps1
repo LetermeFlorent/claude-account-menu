@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-menu-prefs-data.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-prefs-data.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-prefs-data.ps1") }
 $script:PrefsTitle = "Reglages de synchro de ce PC"
 $script:PrefsPairs = @("Espace", "cocher", "Suppr", "effacer partout", "Echap", "revenir")
 $script:PrefsChrome = 14

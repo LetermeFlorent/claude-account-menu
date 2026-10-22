@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-drive-sync.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-sync.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-sync.ps1") }
 $script:DriveJob = $null
 $script:DriveQuitWaitMs = 2000
 $script:DriveRetryMs = 60000

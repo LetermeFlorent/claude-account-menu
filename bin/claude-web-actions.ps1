@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-web-actions-sync.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-actions-sync.ps1")) { . (Join-Path $PSScriptRoot "claude-web-actions-sync.ps1") }
 $script:WebFree = @("backups-of")
 $script:WebStartupText = "clm finit de demarrer, reessayer dans un instant"
 $script:WebHandlers = @{

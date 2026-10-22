@@ -10,28 +10,28 @@ $script:Palettes = @{
   "light" = @{ Text = @(0, 0, 0); Dim = @(120, 112, 100); Empty = @(190, 180, 165); Cell = @(190, 180, 165); Alert = @(185, 85, 85); Bg = @(250, 250, 250) }
   "dark" = @{ Text = @(232, 234, 237); Dim = @(150, 150, 150); Empty = @(75, 75, 80); Cell = @(226, 229, 234); Alert = @(220, 100, 100); Bg = @(12, 12, 12) }
 }
-. (Join-Path $PSScriptRoot "claude-theme.ps1")
-. (Join-Path $PSScriptRoot "claude-usage-pace.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-usage-line.ps1")
-. (Join-Path $PSScriptRoot "claude-ui-motion.ps1")
-. (Join-Path $PSScriptRoot "claude-ui-frame.ps1")
-. (Join-Path $PSScriptRoot "claude-ui-theme.ps1")
-. (Join-Path $PSScriptRoot "claude-ui-term.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-layout.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-keys.ps1")
-. (Join-Path $PSScriptRoot "claude-ui-loader.ps1")
-. (Join-Path $PSScriptRoot "claude-ui-bars.ps1")
-. (Join-Path $PSScriptRoot "claude-ui-chrome.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-card.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-state.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-timer.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-clm-check.ps1")
-. (Join-Path $PSScriptRoot "claude-drive-job.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-startup-view.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-screen.ps1")
-. (Join-Path $PSScriptRoot "claude-ui-progress.ps1")
-. (Join-Path $PSScriptRoot "claude-ui-mouse.ps1")
-. (Join-Path $PSScriptRoot "claude-ui-page.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-theme.ps1")) { . (Join-Path $PSScriptRoot "claude-theme.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-usage-pace.ps1")) { . (Join-Path $PSScriptRoot "claude-usage-pace.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-usage-line.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-usage-line.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-ui-motion.ps1")) { . (Join-Path $PSScriptRoot "claude-ui-motion.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-ui-frame.ps1")) { . (Join-Path $PSScriptRoot "claude-ui-frame.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-ui-theme.ps1")) { . (Join-Path $PSScriptRoot "claude-ui-theme.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-ui-term.ps1")) { . (Join-Path $PSScriptRoot "claude-ui-term.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-layout.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-layout.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-keys.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-keys.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-ui-loader.ps1")) { . (Join-Path $PSScriptRoot "claude-ui-loader.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-ui-bars.ps1")) { . (Join-Path $PSScriptRoot "claude-ui-bars.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-ui-chrome.ps1")) { . (Join-Path $PSScriptRoot "claude-ui-chrome.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-card.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-card.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-state.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-state.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-timer.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-timer.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-clm-check.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-clm-check.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-job.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-job.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-startup-view.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-startup-view.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-screen.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-screen.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-ui-progress.ps1")) { . (Join-Path $PSScriptRoot "claude-ui-progress.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-ui-mouse.ps1")) { . (Join-Path $PSScriptRoot "claude-ui-mouse.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-ui-page.ps1")) { . (Join-Path $PSScriptRoot "claude-ui-page.ps1") }
 $script:Ink = $script:Palettes[(Get-ThemeName)]
 
 function Fg {

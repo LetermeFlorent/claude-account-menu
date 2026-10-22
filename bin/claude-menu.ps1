@@ -1,20 +1,24 @@
-. (Join-Path $PSScriptRoot "claude-usage.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-view.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-save.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-restore.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-select.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-remove.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-rename.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-prefs.ps1")
-. (Join-Path $PSScriptRoot "claude-statusline-seed.ps1")
-. (Join-Path $PSScriptRoot "claude-update.ps1")
-. (Join-Path $PSScriptRoot "claude-self-update.ps1")
-. (Join-Path $PSScriptRoot "claude-sync.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-loop.ps1")
-. (Join-Path $PSScriptRoot "claude-menu-startup.ps1")
-. (Join-Path $PSScriptRoot "claude-drive-cli.ps1")
-. (Join-Path $PSScriptRoot "claude-account-guard.ps1")
-. (Join-Path $PSScriptRoot "claude-cli.ps1")
+$script:ClmOnce = New-Object 'System.Collections.Generic.HashSet[string]'
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-boot-bar.ps1")) { . (Join-Path $PSScriptRoot "claude-boot-bar.ps1") }
+$script:BootBar = Start-BootBar $args $PSScriptRoot $script:ClmOnce
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-usage.ps1")) { . (Join-Path $PSScriptRoot "claude-usage.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-view.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-view.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-save.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-save.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-restore.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-restore.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-select.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-select.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-remove.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-remove.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-rename.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-rename.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-prefs.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-prefs.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-statusline-seed.ps1")) { . (Join-Path $PSScriptRoot "claude-statusline-seed.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-update.ps1")) { . (Join-Path $PSScriptRoot "claude-update.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-self-update.ps1")) { . (Join-Path $PSScriptRoot "claude-self-update.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync.ps1")) { . (Join-Path $PSScriptRoot "claude-sync.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-loop.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-loop.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-startup.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-startup.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-cli.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-cli.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-account-guard.ps1")) { . (Join-Path $PSScriptRoot "claude-account-guard.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-cli.ps1")) { . (Join-Path $PSScriptRoot "claude-cli.ps1") }
+Set-BootBarReady
 
 function Start-Account {
   param($Acc, $Extra)
@@ -29,6 +33,7 @@ function Start-Account {
 
 function Assert-Online {
   if (Test-Network) { return }
+  Stop-BootBar
   Write-Output ("  " + $script:OfflineText)
   exit 1
 }

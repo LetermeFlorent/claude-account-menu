@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-drive-api.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-api.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-api.ps1") }
 $script:DriveFoldersLockPath = Join-Path (Get-HomeDir) ".clm-drive-folders.lock"
 $script:DriveFoldersWaitMs = 15000
 $script:DriveFolderKeys = @("Root", "Files", "Credentials", "Presence")

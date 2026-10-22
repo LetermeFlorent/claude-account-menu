@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-mcp-globals.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-globals.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-globals.ps1") }
 
 function Start-SyncPrefs {
   param($Folders, $Presence, [string]$Pc, $Accs, $Res)

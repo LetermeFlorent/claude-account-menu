@@ -1,4 +1,5 @@
-. (Join-Path $PSScriptRoot "claude-menu-web.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-web.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-web.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-boot-bar.ps1")) { . (Join-Path $PSScriptRoot "claude-boot-bar.ps1") }
 $script:MenuState = $null
 $script:MenuUpdated = $false
 $script:MenuRestart = $false
@@ -112,9 +113,9 @@ function Invoke-AccountMenu {
   $script:MenuRestart = $false
   $script:MenuOffline = $false
   $script:ClmUpdated = $false
+  try { Open-MenuSession $Update $SelfUpdate } finally { Stop-BootBar }
   Enter-UiScreen
   try {
-    Open-MenuSession $Update $SelfUpdate
     if ($Web) { Open-MenuWeb $script:MenuState }
     Invoke-MenuLoop
   } finally { Close-MenuWeb }

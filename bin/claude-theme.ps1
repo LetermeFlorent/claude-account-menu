@@ -1,5 +1,5 @@
-. (Join-Path $PSScriptRoot "claude-platform.ps1")
-. (Join-Path $PSScriptRoot "claude-display.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-display.ps1")) { . (Join-Path $PSScriptRoot "claude-display.ps1") }
 
 function ConvertTo-ThemeName {
   param($Value, [switch]$French)

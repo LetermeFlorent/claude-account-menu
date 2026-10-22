@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-sync-catalog.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-catalog.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-catalog.ps1") }
 $script:SkillsRoot = ".claude/skills"
 
 function Get-SkillOfPath {

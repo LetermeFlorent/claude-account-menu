@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-drive-config.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-config.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-config.ps1") }
 $script:SyncChoicePath = Join-Path (Get-HomeDir) ".clm-sync-choice.json"
 $script:SyncChoiceLockPath = Join-Path (Get-HomeDir) ".clm-sync-choice.lock"
 $script:SyncChoiceWaitMs = 5000

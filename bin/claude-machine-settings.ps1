@@ -1,7 +1,7 @@
-. (Join-Path $PSScriptRoot "claude-platform.ps1")
-. (Join-Path $PSScriptRoot "claude-json.ps1")
-. (Join-Path $PSScriptRoot "claude-json-members.ps1")
-. (Join-Path $PSScriptRoot "claude-mcp-projects.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json-members.ps1")) { . (Join-Path $PSScriptRoot "claude-json-members.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-projects.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-projects.ps1") }
 $script:SettingsMachine = @{ Keys = [string[]]@("statusLine"); Seed = $true; Fallback = ".claude/settings.json"; Projects = $false }
 $script:McpMachineKeys = [string[]]@("mcpServers")
 $script:McpConfigPattern = [regex]'^(\.claude\.json|\.mcp\.json|\.claude[^/]*/\.claude\.json)$'

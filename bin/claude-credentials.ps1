@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-keychain.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-keychain.ps1")) { . (Join-Path $PSScriptRoot "claude-keychain.ps1") }
 
 function Read-AccountCredential {
   param($Acc)

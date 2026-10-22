@@ -1,5 +1,5 @@
-. (Join-Path $PSScriptRoot "claude-mcp-projects.ps1")
-. (Join-Path $PSScriptRoot "claude-drive-skills.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-projects.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-projects.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-skills.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-skills.ps1") }
 $script:PcFileExt = ".json"
 $script:PcFileMax = 1048576
 $script:ErasedKeepMs = [long]30 * 24 * 3600 * 1000

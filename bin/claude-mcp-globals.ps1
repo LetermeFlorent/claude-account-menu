@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-mcp-apply.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-apply.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-apply.ps1") }
 
 function Get-GlobalFiles {
   param($Accs, [string[]]$Held)

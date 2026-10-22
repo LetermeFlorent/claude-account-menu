@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-drive-config.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-config.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-config.ps1") }
 $script:DriveAuthUrl = "https://accounts.google.com/o/oauth2/v2/auth"
 $script:DriveTokenUrl = "https://oauth2.googleapis.com/token"
 $script:DriveScope = "https://www.googleapis.com/auth/drive.file"

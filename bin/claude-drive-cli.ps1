@@ -1,6 +1,6 @@
-. (Join-Path $PSScriptRoot "claude-drive-job.ps1")
-. (Join-Path $PSScriptRoot "claude-drive-login.ps1")
-. (Join-Path $PSScriptRoot "claude-drive-watch-launch.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-job.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-job.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-login.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-login.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-watch-launch.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-watch-launch.ps1") }
 
 function Get-DriveCliAction {
   param([object[]]$ArgList)

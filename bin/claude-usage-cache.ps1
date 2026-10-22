@@ -1,4 +1,4 @@
-. (Join-Path $PSScriptRoot "claude-platform.ps1")
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
 $script:UsageCachePath = Get-UsageCachePath
 $script:UsageCacheTtl = 180
 $script:ForcedReadMaxAge = 30
