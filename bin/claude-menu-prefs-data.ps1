@@ -1,6 +1,20 @@
 $script:PrefsHomeLabel = "perso"
 $script:PrefsGlobalTag = "ce PC"
 $script:PrefsAllKey = "*"
+$script:PrefsOffWarn = @{
+  skills = "  Le skill quitte ce PC a sa prochaine synchro, il reste sur le Drive."
+  mcp = "  Le MCP quitte ce PC a sa prochaine synchro, il reste sur le Drive."
+  globals = "  Le MCP quitte tous les comptes de ce PC, sa definition est mise de cote."
+}
+
+function Get-PrefsOffLines {
+  param($Item, [string]$Pc = "ce PC")
+  $list = @($Item)
+  if ($Item.All) { $list = @($Item.Items | Where-Object { $_.On }) }
+  $lines = @(foreach ($k in @($list | ForEach-Object { $_.Kind } | Sort-Object -Unique)) { $script:PrefsOffWarn[$k].Replace("ce PC", $Pc) })
+  if ($Item.All) { $lines += "  " + $list.Count + " cases decochees d'un coup." }
+  return ,[string[]]$lines
+}
 
 function New-PrefsHead {
   param([string]$Text)

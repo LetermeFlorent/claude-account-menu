@@ -27,7 +27,7 @@ function Invoke-PrefsKeys {
   return Show-PrefsMenu
 }
 
-function Show-UiRows { param($Rows, [double]$Now, $RowFades = $null) $script:PrefsShown = $Rows }
+function Show-UiRows { param($Rows, [double]$Now, $RowFades = $null) $script:PrefsShown = $Rows; $script:PrefsSeen += [string]($Rows | ForEach-Object { $_ | ForEach-Object { $_[0] } }) }
 function Update-UiTick { param([double]$Now, [bool]$Busy) return $false }
 function Test-DriveConnected { return $script:PrefsDrive }
 function Request-DriveSync { param($Job) $script:PrefsSyncs++ }
@@ -119,6 +119,9 @@ try {
   Assert-Equal "MCP reglables par PC apres la prochaine synchro Drive" (Get-PrefsSub $cat) "sous-titre : mode par PC pas encore actif"
   $cat.PerPc = $true
   Assert-Equal "case cochee : synchronise sur ce PC" (Get-PrefsSub $cat) "sous-titre : mode par PC"
+  $offAll = New-PrefsAll "skills" "tous les skills" @((New-PrefsItem "skills" "a" "a" "" $true $false), (New-PrefsItem "skills" "b" "b" "" $false $false), (New-PrefsItem "skills" "c" "c" "" $true $false))
+  Assert-Equal ($script:PrefsOffWarn.skills + "|  2 cases decochees d'un coup.") ((Get-PrefsOffLines $offAll) -join "|") "tout decocher : seules les cases cochees comptent"
+  Assert-True ((Get-PrefsOffLines (New-PrefsItem "globals" "g" "g" "" $true $false) "B")[0].Contains("comptes de B")) "decocher pour un autre PC : son nom dit"
 
   $script:PrefsDrive = $false
   Assert-Equal "reglages de synchro : connecte d'abord le Drive avec y" (Show-PrefsMenu) "sans Drive : ecran refuse"
@@ -129,8 +132,11 @@ try {
   Assert-Equal "reglages de synchro inchanges" (Invoke-PrefsKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::UpArrow, "q")) "q sans changement"
   Assert-Equal 0 $script:PrefsSyncs "sans changement : pas de synchro"
   Assert-True ([string]($script:PrefsShown | ForEach-Object { $_ | ForEach-Object { $_[0] } }) -match "roblox") "MCP global du compte affiche"
-  $msg = Invoke-PrefsKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::DownArrow, [ConsoleKey]::Spacebar, [ConsoleKey]::Escape)
-  Assert-Equal "reglages de synchro enregistres, synchro Drive lancee" $msg "Espace : reglage enregistre"
+  $script:PrefsSeen = ""
+  Assert-Equal "reglages de synchro inchanges" (Invoke-PrefsKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::DownArrow, [ConsoleKey]::Spacebar, "n", [ConsoleKey]::Escape)) "Espace puis n : case gardee"
+  Assert-True ($script:PrefsSeen.Contains("Decocher beta ?") -and $script:PrefsSeen.Contains($script:PrefsOffWarn.skills.Trim())) "decocher : ce qui quitte ce PC est dit avant"
+  $msg = Invoke-PrefsKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::DownArrow, [ConsoleKey]::Spacebar, "o", [ConsoleKey]::Escape)
+  Assert-Equal "reglages de synchro enregistres, synchro Drive lancee" $msg "Espace puis o : reglage enregistre"
   Assert-True ((Read-SyncChoice).skills["beta"] -eq $false) "Espace : skill beta decoche dans le fichier"
   Assert-Equal 1 $script:PrefsSyncs "reglage change : synchro lancee"
   Assert-Equal "reglages de synchro inchanges" (Invoke-PrefsKeys @([ConsoleKey]::Delete, "o", [ConsoleKey]::Escape)) "Suppr sur tout un groupe : sans effet"
@@ -143,7 +149,7 @@ try {
   Assert-Equal "reglages de synchro inchanges" (Invoke-PrefsKeys @([ConsoleKey]::RightArrow, [ConsoleKey]::Spacebar, [ConsoleKey]::Escape)) "fleche droite : PC sans clm a jour, rien a cocher"
   Assert-True ((Get-PrefsShown).Contains($script:PrefsPcOld) -and (Get-PrefsShown).Contains("MOI (ce PC)")) "PC sans clm a jour : explication et liste des PC"
   $script:PrefsSyncs = 0
-  $msg = Invoke-PrefsKeys @([ConsoleKey]::LeftArrow, [ConsoleKey]::DownArrow, [ConsoleKey]::Spacebar, [ConsoleKey]::Delete, "o", [ConsoleKey]::Escape)
+  $msg = Invoke-PrefsKeys @([ConsoleKey]::LeftArrow, [ConsoleKey]::DownArrow, [ConsoleKey]::Spacebar, "o", [ConsoleKey]::Delete, "o", [ConsoleKey]::Escape)
   Assert-Equal "reglages de synchro enregistres, synchro Drive lancee" $msg "fleche gauche : dernier PC, case decochee pour lui"
   Assert-True (-not (Read-SyncChoice).Asks["B"].skills["alpha"].On) "demande enregistree pour l'autre PC"
   Assert-True ((Get-PrefsShown).Contains($script:PrefsPcWait) -and (Get-PrefsShown).Contains($script:PrefsPcTitle + "B")) "case de l'autre PC en attente"

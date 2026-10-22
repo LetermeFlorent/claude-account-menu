@@ -1,18 +1,20 @@
 $script:WebBackupMax = 30
 
 function Get-WebPrefLine {
-  param($Line)
+  param($Line, [string]$Pc = "ce PC")
   if ($Line.Head) { return [ordered]@{ type = "head"; label = $Line.Label } }
+  $off = @()
+  if ($Line.On -and -not $Line.Erasing) { $off = @(Get-PrefsOffLines $Line $Pc | ForEach-Object { $_.Trim() }) }
   return [ordered]@{
     type = "item"; id = (Get-PrefsId $Line); kind = $Line.Kind; label = $Line.Label; tag = [string]$Line.Tag
-    on = [bool]$Line.On; mixed = [bool]$Line.Mixed; all = [bool]$Line.All; erasing = [bool]$Line.Erasing; wait = [bool]$Line.Wait
+    on = [bool]$Line.On; mixed = [bool]$Line.Mixed; all = [bool]$Line.All; erasing = [bool]$Line.Erasing; wait = [bool]$Line.Wait; off = $off
   }
 }
 
 function Get-WebPcPrefs {
   param($Prefs, [string]$Me, [string]$Pc)
   $out = [ordered]@{ name = $Pc; ready = [bool](Test-PcReachable $Prefs.Catalog $Pc); sub = (Get-PcPrefsSub $Prefs.Catalog $Pc); lines = @() }
-  $out.lines = @(foreach ($l in (Get-PcPrefsLines $Prefs.Choice $Prefs.Catalog $Me $Pc)) { Get-WebPrefLine $l })
+  $out.lines = @(foreach ($l in (Get-PcPrefsLines $Prefs.Choice $Prefs.Catalog $Me $Pc)) { Get-WebPrefLine $l $Pc })
   return $out
 }
 

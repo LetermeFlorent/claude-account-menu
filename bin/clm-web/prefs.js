@@ -13,7 +13,14 @@ async function syncErase(item, warn) {
 function syncItem(item, warn, pc, grid) {
   const box = el("input", { type: "checkbox", checked: item.on, "aria-label": item.label });
   box.indeterminate = item.mixed;
-  box.addEventListener("change", () => clmAct({ do: "pref", id: item.id, move: box.checked ? "on" : "off", pc: pc.name }, syncPrefsView));
+  box.addEventListener("change", async () => {
+    if (!box.checked && !(await clmAsk("Décocher " + item.label, item.off || [], "Décocher", [], true))) {
+      box.checked = true;
+      box.indeterminate = item.mixed;
+      return;
+    }
+    clmAct({ do: "pref", id: item.id, move: box.checked ? "on" : "off", pc: pc.name }, syncPrefsView);
+  });
   const kids = [
     item.erasing ? null : box,
     el("span", { class: "grow", title: item.label }, [el("span", { text: item.label + " " }), item.tag ? el("span", { class: "dim", text: item.tag }) : null]),

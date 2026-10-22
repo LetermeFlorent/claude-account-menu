@@ -74,11 +74,10 @@ function Find-PrefsLine {
   return Move-PrefsSel $Lines -1 1
 }
 
-function Confirm-PrefsErase {
-  param($Item)
-  $ask = "Effacer " + $Item.Label + " partout ?"
-  $body = @(, (New-TextRow $script:PrefsEraseWarn[$Item.Kind] $script:Ink.Dim))
-  $k = Read-PageKey { Get-PageRows $ask $body @("o", "confirmer", "autre touche", "annuler") }
+function Confirm-PrefsPage {
+  param([string]$Ask, [string[]]$Lines)
+  $body = @(foreach ($l in $Lines) { , (New-TextRow $l $script:Ink.Dim) })
+  $k = Read-PageKey { Get-PageRows $Ask $body @("o", "confirmer", "autre touche", "annuler") }
   return $k.KeyChar -eq "o"
 }
 
@@ -94,11 +93,16 @@ function Invoke-PrefsKey {
   $prefsHit = $Item
   if ($Ctx.At -gt 0) {
     if ($Key.Key -ne "Spacebar") { return $false }
+    if ($Item.On -and -not (Confirm-PrefsPage ("Decocher " + $Item.Label + " ?") (Get-PrefsOffLines $Item $Ctx.Pcs[$Ctx.At]))) { return $false }
     $Ctx.Choice = Update-SyncChoice { param($c) Set-PcPrefsCheck $c $prefsCtx.Catalog $prefsCtx.Me $prefsCtx.Pcs[$prefsCtx.At] $prefsHit (-not $prefsHit.On) }
     return $true
   }
-  if ($Key.Key -eq "Spacebar") { $Ctx.Choice = Update-SyncChoice { param($c) Set-PrefsCheck $c $prefsHit }; return $true }
-  if ($Key.Key -ne "Delete" -or $Item.Erasing -or $Item.All -or -not (Confirm-PrefsErase $Item)) { return $false }
+  if ($Key.Key -eq "Spacebar") {
+    if ($Item.On -and -not $Item.Erasing -and -not (Confirm-PrefsPage ("Decocher " + $Item.Label + " ?") (Get-PrefsOffLines $Item))) { return $false }
+    $Ctx.Choice = Update-SyncChoice { param($c) Set-PrefsCheck $c $prefsHit }
+    return $true
+  }
+  if ($Key.Key -ne "Delete" -or $Item.Erasing -or $Item.All -or -not (Confirm-PrefsPage ("Effacer " + $Item.Label + " partout ?") @($script:PrefsEraseWarn[$Item.Kind]))) { return $false }
   $Ctx.Choice = Update-SyncChoice { param($c) Add-EraseRequest $c $prefsHit.Kind $prefsHit.Key }
   return $true
 }
