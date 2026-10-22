@@ -19,6 +19,20 @@ Assert-True (-not $rx.IsMatch(".claude/skills/a1/x.md")) "crochets pris a la let
 Assert-True ($rx.IsMatch(".claude/skills/deux/x.md")) "plusieurs skills decoches exclus"
 Assert-True ($rx.IsMatch(".claude/skills/vieux/SKILL.md")) "skill a effacer exclu"
 Assert-True (-not $rx.IsMatch(".claude/skills/vu/SKILL.md")) "skill coche garde"
+$offCat = @{ Pcs = (New-PathMap) }
+$offChoice = New-SyncChoice
+$offChoice.skills["x"] = $false
+Assert-True (Test-SkillOffEverywhere $offChoice $offCat "MOI" "x") "seul PC : decoche ici, decoche partout"
+$offCat.Pcs["AUTRE"] = New-PcContent
+$offCat.Pcs["AUTRE"].Choice.skills["x"] = $false
+Assert-True (-not (Test-SkillOffEverywhere $offChoice $offCat "MOI" "x")) "PC dont clm n'est pas a jour : compte comme coche"
+$offCat.Pcs["AUTRE"].Os = "Windows"
+Assert-True (Test-SkillOffEverywhere $offChoice $offCat "MOI" "x") "decoche sur chaque PC : decoche partout"
+Add-PcAsk $offChoice "AUTRE" "skills" "x" $true 0
+Assert-True (-not (Test-SkillOffEverywhere $offChoice $offCat "MOI" "x")) "demande de recocher en attente : pas decoche partout"
+Remove-PcAsk $offChoice "AUTRE" "skills" "x"
+$offCat.Pcs["AUTRE"].Choice.skills.Remove("x")
+Assert-True (-not (Test-SkillOffEverywhere $offChoice $offCat "MOI" "x")) "coche sur un autre PC : pas decoche partout"
 
 . (Join-Path (Split-Path -Parent $PSScriptRoot) "fake-drive.ps1")
 Use-Pc "SKA"
@@ -44,8 +58,8 @@ $r = Invoke-DriveSync
 Assert-True $r.Ok ("skill decoche " + $r.Error)
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/off"))) "skill decoche present sur le Drive : retire ici"
 Assert-True $script:Fake.ContainsKey(".claude/skills/off/SKILL.md") "skill decoche : garde sur le Drive"
-Assert-Equal "p" (Get-PcText ".claude/skills/perso/SKILL.md") "skill decoche absent du Drive : garde ici"
-Assert-True (-not $script:Fake.ContainsKey(".claude/skills/perso/SKILL.md")) "skill decoche : jamais envoye"
+Assert-Equal "p" (Get-FakeText ".claude/skills/perso/SKILL.md") "skill decoche absent du Drive : envoye d'abord"
+Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/perso"))) "skill decoche absent du Drive : retire ici une fois envoye"
 Assert-Equal "efface,garde,off" ((Read-SyncCatalog).Skills -join ",") "liste des skills du Drive gardee"
 
 Use-Pc "SKA"
@@ -57,13 +71,36 @@ Assert-Equal 0 @($script:Fake.Keys | Where-Object { $_.StartsWith(".claude/skill
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/efface"))) "skill efface : retire ici"
 Assert-Equal 0 (Read-SyncChoice).Erase.skills.Count "effacement fait : demande retiree"
 Assert-True ([Text.Encoding]::UTF8.GetString($script:FakePresence["SKA.json"].Bytes).Contains('"efface"')) "skill efface annonce aux autres PC"
-Assert-Equal "garde,off" ((Read-SyncCatalog).Skills -join ",") "liste des skills sans le skill efface"
+Assert-Equal "garde,off,perso" ((Read-SyncCatalog).Skills -join ",") "liste des skills sans le skill efface"
+Assert-Equal "p" (Get-PcText ".claude/skills/perso/SKILL.md") "skill decoche sur un autre PC : recu ici"
 
 Use-Pc "SKB"
 $r = Invoke-DriveSync
 Assert-True $r.Ok ("effacement recu malgre la limite de suppressions " + $r.Error)
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/efface"))) "skill efface ailleurs : retire ici"
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/off"))) "skill decoche : modification pas recue"
+
+Use-Pc "SKA"
+Set-PcFile ".claude/skills/garde/SKILL.md" "g2"
+$null = Update-SyncChoice { param($c) Set-ChoiceCheck $c "skills" "garde" $false $true; Set-ChoiceCheck $c "skills" "perso" $false $true }
+$r = Invoke-DriveSync
+Assert-True $r.Ok ("decoche ici apres une modification " + $r.Error)
+Assert-Equal "g2" (Get-FakeText ".claude/skills/garde/SKILL.md") "skill decoche modifie ici : modification envoyee avant le retrait"
+Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/garde"))) "skill decoche modifie ici : retire une fois envoye"
+Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/perso"))) "skill decoche partout : retire ici d'abord"
+Assert-True $script:Fake.ContainsKey(".claude/skills/perso/SKILL.md") "skill decoche partout : reste sur le Drive tant qu'il est ici"
+$r = Invoke-DriveSync
+Assert-True $r.Ok ("decoche partout " + $r.Error)
+Assert-Equal 0 @($script:Fake.Keys | Where-Object { $_.StartsWith(".claude/skills/perso/") }).Count "skill decoche partout : retire du Drive"
+Assert-True $script:Fake.ContainsKey(".claude/skills/garde/SKILL.md") "skill coche sur un autre PC : garde sur le Drive"
+Assert-True (-not (Read-SyncChoice).skills.ContainsKey("perso")) "skill parti du Drive : case oubliee ici"
+Assert-True ((Read-SyncChoice).skills.ContainsKey("garde")) "skill encore sur le Drive : case gardee"
+
+Use-Pc "SKB"
+$r = Invoke-DriveSync
+Assert-True $r.Ok ("skill decoche partout, autre PC " + $r.Error)
+Assert-True (-not (Read-SyncChoice).skills.ContainsKey("perso")) "skill parti du Drive : case oubliee sur l'autre PC"
+Assert-Equal "g2" (Get-PcText ".claude/skills/garde/SKILL.md") "skill coche ici : modification recue"
 
 $target = Join-Path $script:Sandbox "cible-lien"
 $null = New-Item -ItemType Directory -Path $target -Force

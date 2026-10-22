@@ -76,6 +76,7 @@ function Step-DriveWatch {
   if ($null -ne $St.Fs -and (Receive-WatchEvents $St.Fs)) { Add-WatchLocalChange $St $now }
   Update-WatchSessions $St $now
   if (-not (Test-WatchActive $St)) { return $false }
+  if (Test-ClmReplaced) { Write-WatchLog "clm mis a jour, le veilleur repart avec la nouvelle version"; return $false }
   $action = Get-DriveWatchAction $St $now
   if ($action -eq "") { return $true }
   if (-not (Test-DriveConnected)) { return $false }

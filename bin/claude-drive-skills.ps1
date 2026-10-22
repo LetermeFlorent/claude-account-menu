@@ -39,9 +39,15 @@ function Get-OffSkills {
   return ,$out.ToArray()
 }
 
+function Test-LocalSkill {
+  param([string]$Name)
+  return [IO.Directory]::Exists((Get-SyncLocalPath ($script:SkillsRoot + "/" + $Name)))
+}
+
 function Get-SkillExcludes {
   param($Choice)
-  $names = [string[]](Get-OffSkills $Choice) + [string[]]@($Choice.Erase.skills | Where-Object { Test-SkillName $_ })
+  $off = [string[]]@((Get-OffSkills $Choice) | Where-Object { -not (Test-LocalSkill $_) })
+  $names = $off + [string[]]@($Choice.Erase.skills | Where-Object { Test-SkillName $_ })
   return ,[string[]]@($names | ForEach-Object { ConvertTo-WildcardLiteral ($script:SkillsRoot + "/" + $_) })
 }
 
@@ -81,11 +87,61 @@ function Remove-DriveSkill {
 }
 
 function Update-SkillPrefs {
-  param($Choice, $Listing, $Ctl, [long]$DeadlineMs)
+  param($Choice, $Catalog, [string]$Me, $Listing, $Ctl, [long]$DeadlineMs)
   $erased = New-Object 'System.Collections.Generic.List[string]'
   foreach ($n in @($Choice.Erase.skills)) {
     if (-not (Test-SkillName $n) -or (Remove-DriveSkill $Listing $n $Ctl $DeadlineMs)) { $erased.Add($n) }
   }
-  foreach ($n in (Get-OffSkills $Choice)) { if ((Get-SkillDriveIds $Listing $n).Count -gt 0) { $null = Remove-LocalSkill $n } }
+  foreach ($n in (Get-UnwantedSkills $Choice $Catalog $Me)) {
+    if ((Get-SkillDriveIds $Listing $n).Count -gt 0 -and (Remove-DriveSkill $Listing $n $Ctl $DeadlineMs)) { $erased.Add($n) }
+  }
   return ,$erased.ToArray()
+}
+
+function Test-SkillCopySynced {
+  param([string]$Name, $Patterns, $Base)
+  $scan = Get-LocalFiles $script:HomeDir @($script:SkillsRoot + "/" + $Name) $Patterns $Base
+  if ($scan.Stopped -or $scan.Skipped.Count -gt 0) { return $false }
+  foreach ($k in $scan.Files.Keys) {
+    $b = $Base[$k]
+    if ($null -eq $b -or [string]$b.Md5 -ne [string]$scan.Files[$k].Md5) { return $false }
+  }
+  return $true
+}
+
+function Remove-SyncedOffSkills {
+  param($Choice, $Patterns, $Base)
+  foreach ($n in (Get-OffSkills $Choice)) {
+    if ((Test-LocalSkill $n) -and (Test-SkillCopySynced $n $Patterns $Base)) { $null = Remove-LocalSkill $n }
+  }
+}
+
+function Test-PendingOn {
+  param($Pending, [string]$Name)
+  foreach ($side in @($Pending.Others, $Pending.Mine)) {
+    $a = $side.skills[$Name]
+    if ($null -ne $a -and $a.On) { return $true }
+  }
+  return $false
+}
+
+function Test-SkillOffEverywhere {
+  param($Choice, $Catalog, [string]$Me, [string]$Name)
+  foreach ($pc in $Catalog.Pcs.Keys) {
+    if ($pc -ceq $Me) { continue }
+    $t = $Catalog.Pcs[$pc]
+    if (-not $t.Os -or -not $t.Choice.skills.ContainsKey($Name) -or $t.Choice.skills[$Name]) { return $false }
+    if (Test-PendingOn (Get-PcPending $Catalog.Pcs $Choice $Me $pc) $Name) { return $false }
+  }
+  return $true
+}
+
+function Get-UnwantedSkills {
+  param($Choice, $Catalog, [string]$Me)
+  return ,[string[]]@((Get-OffSkills $Choice) | Where-Object { -not (Test-LocalSkill $_) -and (Test-SkillOffEverywhere $Choice $Catalog $Me $_) })
+}
+
+function Get-GoneOffSkills {
+  param($Choice, $DriveNames)
+  return ,[string[]]@((Get-OffSkills $Choice) | Where-Object { $DriveNames -cnotcontains $_ -and -not (Test-LocalSkill $_) })
 }

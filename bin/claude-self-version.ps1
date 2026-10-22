@@ -70,3 +70,16 @@ function Get-ClmTag {
   if ($null -eq $v) { return "" }
   return "clm " + (Get-ClmName $v)
 }
+
+function Get-ClmSha {
+  param([string]$Dir = $PSScriptRoot)
+  $v = Read-ClmVersion $Dir
+  if ($null -eq $v) { return "" }
+  return $v.Sha
+}
+
+function Test-ClmReplaced {
+  return (Get-ClmSha) -ne $script:ClmLoadedSha
+}
+
+$script:ClmLoadedSha = Get-ClmSha

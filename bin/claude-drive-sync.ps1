@@ -56,6 +56,7 @@ function Invoke-DriveSyncPass {
     if ($Res.Left -eq 0 -and $Res.Failed -eq 0) { $state.At = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
     Save-DriveState $state
   }
+  Remove-SyncedOffSkills $prefs.Choice $patterns $state.Files
   if ($Res.Failed -gt 0) { $Res.Error = "" + $Res.Failed + " fichier(s) en echec, nouvel essai a la prochaine synchro"; return }
   if ($Res.Left -eq 0 -and (Test-AllPcsCurrent $presence)) { $Res.Deleted += Remove-OwnLeftovers $listing $pc (Get-SyncPatterns $accs) $Ctl $DeadlineMs }
   $Res.Ok = $true
@@ -63,8 +64,27 @@ function Invoke-DriveSyncPass {
   if ($Res.Left -eq 0) { $Res.At = $state.At; Set-DriveLastSync $state.At }
 }
 
+$script:FreshSyncSource = Join-Path $PSScriptRoot "claude-drive-sync.ps1"
+$script:FreshSyncFailed = "synchro par la nouvelle version de clm impossible"
+$script:FreshSyncScript = 'param($Source, $Ctl, $DeadlineMs, $Force) $ProgressPreference = "SilentlyContinue"; . $Source; Invoke-DriveSync $Ctl $DeadlineMs -Force:$Force'
+
+function Invoke-FreshDriveSync {
+  param($Ctl, [long]$DeadlineMs, [bool]$Force)
+  $res = New-SyncResult
+  $ps = [PowerShell]::Create()
+  try {
+    [void]$ps.AddScript($script:FreshSyncScript).AddArgument($script:FreshSyncSource).AddArgument($Ctl).AddArgument($DeadlineMs).AddArgument($Force)
+    $out = @($ps.Invoke())
+    if ($out.Count -gt 0 -and $out[-1] -is [hashtable]) { return $out[-1] }
+    $res.Error = $script:FreshSyncFailed
+  } catch { $res.Error = $script:FreshSyncFailed + " : " + $_.Exception.GetBaseException().Message }
+  finally { $ps.Dispose() }
+  return $res
+}
+
 function Invoke-DriveSync {
   param($Ctl = $null, [long]$DeadlineMs = 0, [switch]$Force)
+  if (Test-ClmReplaced) { return Invoke-FreshDriveSync $Ctl $DeadlineMs $Force.IsPresent }
   $res = New-SyncResult
   try {
     Invoke-WithDriveLock {

@@ -27,12 +27,14 @@ function Start-SyncPrefs {
 function Complete-SyncPrefs {
   param($Prefs, $Listing, $Ctl, [long]$DeadlineMs)
   $before = Get-OwnPcText $Prefs.Catalog $Prefs.Pc
-  $skillsErased = Update-SkillPrefs $Prefs.Choice $Listing $Ctl $DeadlineMs
+  $skillsErased = Update-SkillPrefs $Prefs.Choice $Prefs.Catalog $Prefs.Pc $Listing $Ctl $DeadlineMs
   if ($skillsErased.Count -gt 0) {
     Add-ErasedSkills $Prefs.Catalog $Prefs.Pc $skillsErased
     Save-OwnPcFile $Prefs $before
     $Prefs.Choice = Update-SyncChoice { param($c) Remove-EraseRequests $c "skills" $skillsErased }
   }
   $Prefs.Catalog.Skills = Get-DriveSkillNames $Listing
+  $goneSkills = Get-GoneOffSkills $Prefs.Choice $Prefs.Catalog.Skills
+  if ($goneSkills.Count -gt 0) { $Prefs.Choice = Update-SyncChoice { param($c) foreach ($n in $goneSkills) { $null = $c.skills.Remove($n) } } }
   Save-SyncCatalog $Prefs.Catalog
 }
