@@ -1,6 +1,12 @@
 Assert-Equal "outil" (Get-SkillOfPath ".claude/skills/outil/refs/a.md") "skill d'un chemin"
 Assert-Equal "" (Get-SkillOfPath ".claude/skills/seul.md") "fichier a la racine des skills : aucun skill"
 Assert-Equal "" (Get-SkillOfPath ".claude-c2/skills/outil/a.md") "skills d'un autre compte : ignores"
+Assert-True (-not ((Test-SkillName ".trash") -or (Test-SkillName ".") -or (Test-SkillName ".."))) "dossier masque : jamais un skill"
+Assert-True (Test-SkillName "outil.v2") "point dans le nom : skill"
+$hiddenListing = New-PathMap
+$hiddenListing[".claude/skills/.trash/vieux/SKILL.md"] = @{ Id = "t" }
+$hiddenListing[".claude/skills/outil/SKILL.md"] = @{ Id = "o" }
+Assert-Equal "outil" ((Get-DriveSkillNames $hiddenListing) -join ",") "skills du Drive : dossier masque ignore"
 Assert-Equal 'a`[1`]`*`?``' (ConvertTo-WildcardLiteral 'a[1]*?`') "nom de skill protege dans le motif"
 $choice = New-SyncChoice
 $choice.skills["a[1]"] = $false
@@ -19,9 +25,14 @@ Use-Pc "SKA"
 Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
 Set-PcFile ".claude/skills/garde/SKILL.md" "g"
 Set-PcFile ".claude/skills/off/SKILL.md" "o"
+Set-PcFile ".claude/skills/.trash/vieux/SKILL.md" "t"
+Assert-Equal "garde,off" ((Get-LocalSkillNames | Sort-Object) -join ",") "skills de ce PC : dossier masque ignore"
+$null = Measure-Entries @(".claude") @(Get-SaveExcludes @(Get-Accounts))
+Assert-True ($script:Sizes.ContainsKey(".claude/skills/garde/SKILL.md") -and -not $script:Sizes.ContainsKey(".claude/skills/.trash/vieux/SKILL.md")) "taille de la sauvegarde : dossier masque des skills compte pour rien"
 foreach ($i in 1..22) { Set-PcFile (".claude/skills/efface/f" + $i + ".md") "e" }
 $r = Invoke-DriveSync
 Assert-True $r.Ok ("skills envoyes " + $r.Error)
+Assert-True (-not $script:Fake.ContainsKey(".claude/skills/.trash/vieux/SKILL.md")) "dossier masque des skills : jamais envoye"
 
 Use-Pc "SKB"
 Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })

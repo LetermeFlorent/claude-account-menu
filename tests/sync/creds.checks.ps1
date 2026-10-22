@@ -82,7 +82,11 @@ Assert-Equal "MAC" $away[".claude"] "presence : nom de l'autre PC"
 Assert-True (-not (Test-AllPcsCurrent $pres)) "version de synchro : un PC sans marque bloque le retrait"
 $pres["vieux.json"] = @{ Props = @{ "fmt" = "2" } }
 Assert-Equal "PC,vieux" ((Get-WaitingPcs $pres) -join ",") "PC pas a jour : noms sans extension, tries"
+$pres["trois.json"] = @{ Props = @{ "fmt" = "3" } }
+Assert-Equal "PC,trois,vieux" ((Get-WaitingPcs $pres) -join ",") "PC au format 3 : pas a jour pour le menage du Drive"
+Assert-Equal "PC,vieux" ((Get-WaitingPcs $pres $script:McpFormat) -join ",") "PC au format 3 : a jour pour les MCP par PC"
 $pres.Remove("vieux.json")
+$pres.Remove("trois.json")
 $pres["PC.json"].Props["fmt"] = "" + $script:SyncFormat
 Assert-True (Test-AllPcsCurrent $pres) "version de synchro : tous les PC a jour"
 $pres["PC.json"].Props["fmt"] = "x"

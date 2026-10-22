@@ -105,6 +105,9 @@ $lst[".claude/projects/p/s.jsonl"] = @{ Id = "c1"; Pc = "PCL" }
 $lst[".claude/outils/x/node_modules/m.js"] = @{ Id = "n1"; Pc = "PCL" }
 $lst[".claude/projects/p/memory/MEMORY.md"] = @{ Id = "k1"; Pc = "PCL" }
 $lst[".claude/projects/p/t.jsonl"] = @{ Id = "bad id"; Pc = "PCL" }
-$own = Get-OwnLeftovers $lst "PCL"
-Assert-Equal "c1,n1" (($own | Sort-Object) -join ",") "copies a retirer : conversations et modules, pas la memoire ni un id douteux"
+$lst[".claude/skills/.trash/a.md"] = @{ Id = "h1"; Pc = "PCL" }
+$lst[".claude/skills/outil/SKILL.md"] = @{ Id = "s1"; Pc = "PCL" }
+$own = Get-OwnLeftovers $lst "PCL" (Get-SyncPatterns @([PSCustomObject]@{ Dir = ".claude" }))
+Assert-Equal "c1,h1,n1" (($own | Sort-Object) -join ",") "copies a retirer : conversations, modules et dossier masque des skills, pas la memoire, un skill ni un id douteux"
+Assert-Equal 0 (Get-OwnLeftovers $lst "PCL" @()).Count "copies a retirer : aucune regle, rien retire"
 . (Join-Path $bin "claude-drive-transfer.ps1")

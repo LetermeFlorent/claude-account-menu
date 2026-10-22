@@ -1,6 +1,7 @@
 $script:AwaySeconds = 12 * 3600
 $script:SyncFormatKey = "fmt"
-$script:SyncFormat = 3
+$script:SyncFormat = 4
+$script:McpFormat = 3
 
 function Get-PresenceProps {
   param($Acc, [bool]$Open)
@@ -39,8 +40,8 @@ function Set-PresenceFormat {
 }
 
 function Get-WaitingPcs {
-  param($Presence)
-  $names = [string[]]@($Presence.Keys | Where-Object { (Get-PresenceFormat $Presence[$_]) -lt $script:SyncFormat } | ForEach-Object { $_ -replace "\.json$", "" })
+  param($Presence, [int]$Format = $script:SyncFormat)
+  $names = [string[]]@($Presence.Keys | Where-Object { (Get-PresenceFormat $Presence[$_]) -lt $Format } | ForEach-Object { $_ -replace "\.json$", "" })
   [Array]::Sort($names, [StringComparer]::OrdinalIgnoreCase)
   return ,$names
 }

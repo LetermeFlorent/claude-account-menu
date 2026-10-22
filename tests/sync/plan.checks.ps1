@@ -65,6 +65,13 @@ foreach ($c in @(".claude-compte3/projects/C--Users-x/1f2e.jsonl", ".claude/proj
 foreach ($c in @(".claude/projects/C--Users-x/memory/MEMORY.md", ".claude/history.jsonl", ".claude/outils/omni/package.json")) {
   Assert-True (-not (Test-SyncExcluded $c $sp)) ("synchronise : " + $c)
 }
+$hp = Get-SyncPatterns @([PSCustomObject]@{ Dir = ".claude" }, [PSCustomObject]@{ Dir = ".claude-compte2" })
+foreach ($c in @(".claude/skills/.trash/vieux/SKILL.md", ".claude/skills/.brouillon", ".CLAUDE/Skills/.Trash/a.md")) {
+  Assert-True (Test-SyncExcluded $c $hp) ("dossier masque des skills jamais synchronise : " + $c)
+}
+foreach ($c in @(".claude/skills/outil/.git/HEAD", ".claude/skills/outil.v2/SKILL.md", ".claude/plugins/marketplaces/m/.claude-plugin/plugin.json", ".claude/plugins/m/skills/.x/a.md", ".claude/.trash/a.md")) {
+  Assert-True (-not (Test-SyncExcluded $c $hp)) ("synchronise hors dossier masque des skills : " + $c)
+}
 Assert-True (Test-SyncExcluded ".claude/CACHE/x" @("cache")) "exclusion : casse ignoree"
 Assert-True (-not (Test-SyncExcluded ".claude/cached/x" @("cache"))) "exclusion : segment entier"
 Assert-True ((Test-SyncExcluded ".claude/a.lock" @("*.lock")) -and (Test-SyncExcluded ".claude/a.lock/b" @("*.lock"))) "exclusion : etoile dans un segment"

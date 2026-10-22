@@ -3,7 +3,7 @@
 function Start-SyncPrefs {
   param($Folders, $Presence, [string]$Pc, $Accs, $Res)
   $prefs = @{ Folders = $Folders; Presence = $Presence; Pc = $Pc; Catalog = (Read-SyncCatalog); Choice = (Read-SyncChoice) }
-  $prefs.Catalog.Waiting = Get-WaitingPcs $Presence
+  $prefs.Catalog.Waiting = Get-WaitingPcs $Presence $script:McpFormat
   $script:McpPerPc = $prefs.Catalog.Waiting.Count -eq 0
   $prefs.Catalog.PerPc = $script:McpPerPc
   Update-PcFiles $prefs.Catalog $Presence

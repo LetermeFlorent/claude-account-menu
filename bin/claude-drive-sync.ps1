@@ -57,7 +57,7 @@ function Invoke-DriveSyncPass {
     Save-DriveState $state
   }
   if ($Res.Failed -gt 0) { $Res.Error = "" + $Res.Failed + " fichier(s) en echec, nouvel essai a la prochaine synchro"; return }
-  if ($Res.Left -eq 0 -and (Test-AllPcsCurrent $presence)) { $Res.Deleted += Remove-OwnLeftovers $listing $pc $Ctl $DeadlineMs }
+  if ($Res.Left -eq 0 -and (Test-AllPcsCurrent $presence)) { $Res.Deleted += Remove-OwnLeftovers $listing $pc (Get-SyncPatterns $accs) $Ctl $DeadlineMs }
   $Res.Ok = $true
   $Res.Again = (Get-RegistryMd5 $state.Files) -ne $registry
   if ($Res.Left -eq 0) { $Res.At = $state.At; Set-DriveLastSync $state.At }

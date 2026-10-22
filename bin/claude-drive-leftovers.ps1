@@ -4,12 +4,12 @@ $script:DriveBatchMax = 100
 $script:DriveIdPattern = '^[A-Za-z0-9_-]+$'
 
 function Get-OwnLeftovers {
-  param($Listing, [string]$Pc)
+  param($Listing, [string]$Pc, $Patterns)
   $ids = New-Object 'System.Collections.Generic.List[string]'
-  $localOnly = Get-ExcludeRegex $script:SyncLocalOnly
+  $dropped = Get-ExcludeRegex $Patterns
   foreach ($k in $Listing.Keys) {
     $e = $Listing[$k]
-    if (($e.Pc -eq $Pc -or -not $e.Pc) -and $e.Id -match $script:DriveIdPattern -and $localOnly.IsMatch($k)) { $ids.Add($e.Id) }
+    if (($e.Pc -eq $Pc -or -not $e.Pc) -and $e.Id -match $script:DriveIdPattern -and $dropped.IsMatch($k)) { $ids.Add($e.Id) }
   }
   return ,$ids.ToArray()
 }
@@ -44,8 +44,8 @@ function Remove-DriveFiles {
 }
 
 function Remove-OwnLeftovers {
-  param($Listing, [string]$Pc, $Ctl, [long]$DeadlineMs)
-  $ids = Get-OwnLeftovers $Listing $Pc
+  param($Listing, [string]$Pc, $Patterns, $Ctl, [long]$DeadlineMs)
+  $ids = Get-OwnLeftovers $Listing $Pc $Patterns
   if ($ids.Count -eq 0) { return 0 }
   return Remove-DriveFiles $ids $Ctl $DeadlineMs
 }

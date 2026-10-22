@@ -1,5 +1,6 @@
 $script:SkipNames = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide")
 $script:SkipConversations = @("projects/*.jsonl", "projects/*/subagents", "projects/*/tool-results")
+$script:HiddenSkillPath = [regex]'^[^/]+/skills/\.[^/]*$'
 $script:Sizes = @{}
 
 function Test-Conversation {
@@ -10,7 +11,7 @@ function Test-Conversation {
 
 function Measure-Tree {
   param([IO.FileSystemInfo]$Node, [string]$Rel, [string[]]$SkipPaths)
-  if ($script:SkipNames -contains $Node.Name -or $Node.Name -like "*.lock" -or $SkipPaths -contains $Rel -or (Test-Conversation $Rel)) { return 0 }
+  if ($script:SkipNames -contains $Node.Name -or $Node.Name -like "*.lock" -or $SkipPaths -contains $Rel -or $script:HiddenSkillPath.IsMatch($Rel) -or (Test-Conversation $Rel)) { return 0 }
   if (-not ($Node -is [IO.DirectoryInfo])) {
     $len = [long]$Node.Length + 1
     $script:Sizes[$Rel] = $len

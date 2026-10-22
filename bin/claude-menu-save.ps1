@@ -25,6 +25,7 @@ function Get-SaveExcludes {
   param($Accs)
   $ex = @($script:SaveExcludes)
   foreach ($acc in $Accs) {
+    $ex += $acc.Dir + "/skills/.*"
     if ($acc.Dir -eq ".claude") { continue }
     foreach ($s in $script:SharedDirs + $script:SharedFiles) { $ex += $acc.Dir + "/" + $s }
   }

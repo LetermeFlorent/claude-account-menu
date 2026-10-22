@@ -6,7 +6,7 @@ $script:SkillNamePattern = [regex]'^[^/\\:*?"<>|\x00-\x1f]{1,128}$'
 
 function Test-SkillName {
   param([string]$Name)
-  return $script:SkillNamePattern.IsMatch($Name) -and $Name -ne "." -and $Name -ne ".."
+  return $script:SkillNamePattern.IsMatch($Name) -and $Name -notlike ".*"
 }
 
 function New-PcContent {
