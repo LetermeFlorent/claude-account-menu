@@ -4,6 +4,7 @@ $script:FrameSide = 0x2502
 $script:FrameCols = 2
 $script:FooterLimits = @{}
 $script:MenuFooter = @("Entree", "lancer", "a", "ajouter", "x", "retirer", "n", "renommer", "m", "maj", "y", "sync", "p", "reglages", "s", "sauvegarder", "r", "restaurer", "w", "page web", "q", "quitter")
+$script:MenuFooterAccent = @("w")
 
 function Get-HeaderRow {
   param([string]$Title, [int]$W, [string]$Right = "")
@@ -23,15 +24,17 @@ function Get-RuleRow {
 }
 
 function Split-FooterPairs {
-  param([string[]]$Pairs, [int]$Max)
+  param([string[]]$Pairs, [int]$Max, [string[]]$Accent = @())
   $rows = New-Object 'System.Collections.Generic.List[object]'
   $r = New-Row
   $len = 0
   for ($i = 0; $i + 1 -lt $Pairs.Count; $i += 2) {
     $piece = 3 + $Pairs[$i].Length + $Pairs[$i + 1].Length
     if ($len -gt 0 -and $len + $piece -gt $Max) { $rows.Add($r); $r = New-Row; $len = 0 }
-    $r.Add(@(("  " + $Pairs[$i]), $script:Ink.Text, $false, $Pairs[$i]))
-    $r.Add(@((" " + $Pairs[$i + 1]), $script:Ink.Dim, $false, $Pairs[$i]))
+    $key = $script:Ink.Text; $text = $script:Ink.Dim
+    if ($Accent -contains $Pairs[$i]) { $key = $script:Levels["5h"][0]; $text = $key }
+    $r.Add(@(("  " + $Pairs[$i]), $key, $false, $Pairs[$i]))
+    $r.Add(@((" " + $Pairs[$i + 1]), $text, $false, $Pairs[$i]))
     $len += $piece
   }
   $rows.Add($r)
@@ -54,10 +57,10 @@ function Get-FooterLimit {
 }
 
 function Get-FooterRows {
-  param([string[]]$Pairs, [int]$W)
+  param([string[]]$Pairs, [int]$W, [string[]]$Accent = @())
   $key = "" + $W + "|" + ($Pairs -join "|")
   if (-not $script:FooterLimits.ContainsKey($key)) { $script:FooterLimits[$key] = Get-FooterLimit $Pairs $W }
-  return ,(Split-FooterPairs $Pairs $script:FooterLimits[$key])
+  return ,(Split-FooterPairs $Pairs $script:FooterLimits[$key] $Accent)
 }
 
 function Limit-Text {

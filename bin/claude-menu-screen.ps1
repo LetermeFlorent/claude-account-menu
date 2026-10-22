@@ -90,7 +90,7 @@ function Get-MenuRows {
   $tip = ""
   if ($last -lt $n -and $last -gt $top) { $tip = $script:DownArrow }
   Add-PlainRow $rows $fades (Get-RuleRow $L.W $tip)
-  foreach ($r in (Get-FooterRows $script:MenuFooter $L.W)) { Add-PlainRow $rows $fades $r }
+  foreach ($r in (Get-FooterRows $script:MenuFooter $L.W $script:MenuFooterAccent)) { Add-PlainRow $rows $fades $r }
   Add-PlainRow $rows $fades (Get-MsgRow $State $L.W $Now)
   return @{ Rows = $rows; Fades = $fades }
 }
