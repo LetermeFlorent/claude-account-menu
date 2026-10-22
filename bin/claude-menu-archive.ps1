@@ -39,6 +39,13 @@ function Assert-ArchiveReadable {
   }
 }
 
+function Test-ArchiveIntact {
+  param([string]$Path)
+  Initialize-Tar
+  try { & $script:Tar -tf $Path *> $null } catch { return $false }
+  return $LASTEXITCODE -eq 0
+}
+
 function Get-XdgDownloads {
   $h = Get-HomeDir
   $f = [IO.Path]::Combine((Get-XdgDir "XDG_CONFIG_HOME" @(".config")), "user-dirs.dirs")

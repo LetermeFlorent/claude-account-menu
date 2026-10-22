@@ -32,6 +32,14 @@ function Get-SaveExcludes {
   return $ex
 }
 
+function Get-FreeArchivePath {
+  param([string]$Name, [string]$Ext)
+  $dir = Get-DownloadsDir
+  $path = Join-Path $dir ($Name + $Ext)
+  for ($n = 2; Test-Path -LiteralPath $path; $n++) { $path = Join-Path $dir ($Name + "-" + $n + $Ext) }
+  return $path
+}
+
 function Save-Accounts {
   param([string]$Tag = "", $Accs = $null)
   if ($null -eq $Accs) { $Accs = @(Get-Accounts) }
@@ -39,7 +47,7 @@ function Save-Accounts {
   $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
   $name = "claude-comptes-" + $stamp
   if ($Tag) { $name = "claude-comptes-" + $Tag + "-" + $stamp }
-  $zip = Join-Path (Get-DownloadsDir) ($name + (Get-ArchiveExtension $script:TarFlavor))
+  $zip = Get-FreeArchivePath $name (Get-ArchiveExtension $script:TarFlavor)
   $argv = @("-a", "-c", "-f", $zip, "-C", $script:HomeDir)
   $ex = @(Get-SaveExcludes $Accs)
   foreach ($x in $ex) { $argv += @("--exclude", $x) }
@@ -49,6 +57,10 @@ function Save-Accounts {
   if ($Tag) { $label = "copie de l'etat actuel" }
   $warn = Invoke-Tar $argv (Measure-Entries $items $ex) $label
   if (-not (Test-Path -LiteralPath $zip)) { throw ("echec tar : " + ($warn -join " ")) }
+  if ($warn.Count -gt 0 -and -not (Test-ArchiveIntact $zip)) {
+    Remove-Item -LiteralPath $zip -Force
+    throw ("sauvegarde illisible, effacee : " + (@($warn | Select-Object -First 3) -join " "))
+  }
   $mb = [math]::Round((Get-Item -LiteralPath $zip).Length / 1MB)
   $res = $zip + " (" + $mb + " Mo, " + (@($Accs | ForEach-Object { $_.Label }) -join ", ") + ")"
   if ($warn.Count -gt 0) { $res += ", " + $warn.Count + " avertissement(s)" }
@@ -81,12 +93,14 @@ function Restore-Accounts {
   Assert-ArchiveReadable $Zip
   Assert-BackupVersion $Zip
   if ($null -eq $Accs) { $Accs = @(Get-ZipAccounts $Zip) }
+  $entries = @(& $script:Tar -tf $Zip | ForEach-Object { ($_ -split "/")[0] })
+  $top = @($entries | Sort-Object -Unique)
+  $Accs = @($Accs | Where-Object { $top -contains $_.Dir })
+  if ($Accs.Count -eq 0) { throw "aucun compte a restaurer dans cette sauvegarde" }
   $current = @(Get-Accounts)
   $present = @($current | Where-Object { $d = $_.Dir; @($Accs | Where-Object { $_.Dir -eq $d }).Count -gt 0 })
   $safety = ""
   if ($present.Count -gt 0) { $safety = Save-Accounts "avant-restauration" $present }
-  $entries = @(& $script:Tar -tf $Zip | ForEach-Object { ($_ -split "/")[0] })
-  $top = @($entries | Sort-Object -Unique)
   $items = @(Get-AccountItems $Accs | Where-Object { $top -contains $_ })
   $total = @($entries | Where-Object { $items -contains $_ }).Count
   $script:Sizes = @{}
@@ -97,7 +111,7 @@ function Restore-Accounts {
   if ($added.Count -gt 0) { Save-Registry (@($current) + $added) }
   foreach ($acc in Get-Accounts) { Repair-SharedLinks $acc -Force }
   $res = "restaure : " + (@($Accs | ForEach-Object { $_.Label }) -join ", ")
-  if ($safety) { $res += ". Etat precedent garde dans " + (Split-Path ($safety -replace " \(.*$", "") -Leaf) }
+  if ($safety) { $res += ". Etat precedent garde dans " + [regex]::Match($safety, '[^\\/]+?\.(zip|tar\.gz)(?= \()').Value }
   if ($warn.Count -gt 0) { $res += ", " + $warn.Count + " fichier(s) non restaure(s), en cours d'utilisation ?" }
   return $res
 }
