@@ -111,6 +111,8 @@ label.check { display: flex; align-items: center; gap: 8px; }
 .prefs > li .grow { flex: 1 1 200px; }
 .prefs > li.erasing .grow { text-decoration: line-through; color: var(--dim); }
 .subhead { font-size: 13px; color: var(--dim); margin: 10px 0 2px; }
+details.off { margin: 4px 0 0; }
+details.off > summary { cursor: pointer; font-size: 13px; color: var(--dim); padding: 4px 0; }
 .pcs button[aria-pressed="true"] { color: var(--text); font-weight: 600; border-color: var(--q5-0); }
 
 .checks { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 8px 0 12px; }
