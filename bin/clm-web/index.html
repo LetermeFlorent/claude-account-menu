@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="style.css">
 <script src="api.js" defer></script>
 <script src="ui.js" defer></script>
+<script src="tabs.js" defer></script>
 <script src="accounts.js" defer></script>
 <script src="sync.js" defer></script>
 <script src="display.js" defer></script>
@@ -24,11 +25,17 @@
     <p id="drive-tag" class="dim"></p>
     <p id="status" class="status dim" role="status" aria-live="polite"></p>
     <p id="busy" class="notice" hidden></p>
+    <nav id="tabs" class="tabs" role="tablist" aria-label="Parties de la page">
+      <button id="tab-accounts" type="button" role="tab" aria-controls="part-accounts">Comptes</button>
+      <button id="tab-drive" type="button" role="tab" aria-controls="part-drive">Drive</button>
+      <button id="tab-display" type="button" role="tab" aria-controls="part-display">Affichage</button>
+      <button id="tab-backups" type="button" role="tab" aria-controls="part-backups">Sauvegardes</button>
+    </nav>
   </header>
   <fieldset id="controls" class="plain">
     <main>
-      <section aria-labelledby="h-accounts">
-        <h2 id="h-accounts">Comptes</h2>
+      <section id="part-accounts" role="tabpanel" aria-labelledby="tab-accounts">
+        <h2 class="sr">Comptes</h2>
         <ul id="account-list" class="accounts"></ul>
         <div class="row">
           <input id="add-name" type="text" maxlength="40" placeholder="nom du nouveau compte, vide pour le nom par défaut" aria-label="Nom du nouveau compte">
@@ -36,13 +43,13 @@
         </div>
         <p class="dim">La connexion à Claude se termine ensuite dans le terminal et le navigateur.</p>
       </section>
-      <section aria-labelledby="h-sync">
-        <h2 id="h-sync">Synchro Drive</h2>
+      <section id="part-drive" role="tabpanel" aria-labelledby="tab-drive" hidden>
+        <h2 class="sr">Synchro Drive</h2>
         <div id="drive"></div>
         <div id="prefs"></div>
       </section>
-      <section aria-labelledby="h-display">
-        <h2 id="h-display">Affichage</h2>
+      <section id="part-display" role="tabpanel" aria-labelledby="tab-display" hidden>
+        <h2 class="sr">Affichage</h2>
         <p class="dim">Couleurs et animations du menu, pour ce PC seulement.</p>
         <div class="row">
           <label class="field" for="palette">Couleurs</label>
@@ -55,8 +62,8 @@
         </div>
         <p id="anim-env" class="dim" hidden>CLM_ANIM est définie sur ce PC et passe avant ce choix.</p>
       </section>
-      <section aria-labelledby="h-backups">
-        <h2 id="h-backups">Sauvegardes</h2>
+      <section id="part-backups" role="tabpanel" aria-labelledby="tab-backups" hidden>
+        <h2 class="sr">Sauvegardes</h2>
         <p class="dim">Une archive des comptes cochés part dans Téléchargements.</p>
         <div id="save-list" class="checks"></div>
         <button id="save-btn" type="button">Sauvegarder</button>

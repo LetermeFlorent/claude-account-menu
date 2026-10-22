@@ -25,5 +25,11 @@ $pgViews = @([regex]::Matches($pgCode, 'clmRead\("([a-z]+)"\)') | ForEach-Object
 Assert-Equal "backups prefs state" ($pgViews -join " ") "page web : vues lues"
 $pgMenuWeb = [IO.File]::ReadAllText((Join-Path $bin "claude-menu-web.ps1"))
 Assert-Equal "" (@($pgViews | Where-Object { $pgMenuWeb -notmatch ('\b' + $_ + ' = \{') }) -join " ") "page web : vues servies par le menu"
+$pgTabJs = [IO.File]::ReadAllText((Join-Path $pgRoot "tabs.js"))
+$pgTabs = @([regex]::Matches([regex]::Match($pgTabJs, 'tabNames = \[([^\]]*)\]').Groups[1].Value, '"([a-z]+)"') | ForEach-Object { $_.Groups[1].Value })
+Assert-Equal "accounts drive display backups" ($pgTabs -join " ") "page web : onglets dans l'ordre"
+$pgLost = @($pgTabs | Where-Object { $pgHtml -notmatch ('id="tab-' + $_ + '" [^>]*aria-controls="part-' + $_ + '"') -or $pgHtml -notmatch ('<section id="part-' + $_ + '" role="tabpanel" aria-labelledby="tab-' + $_ + '"') })
+Assert-Equal "" ($pgLost -join " ") "page web : chaque onglet a sa partie"
+Assert-Equal $pgTabs.Count ([regex]::Matches($pgHtml, '<section ').Count) "page web : chaque partie a son onglet"
 $pgIds = @([regex]::Matches($pgCode, 'byId\("([a-z-]+)"\)') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
 Assert-Equal "" (@($pgIds | Where-Object { $pgHtml -notmatch ('id="' + $_ + '"') }) -join " ") "page web : elements cherches presents dans la page"
