@@ -26,7 +26,7 @@ Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
 Set-PcFile ".claude/skills/garde/SKILL.md" "g"
 Set-PcFile ".claude/skills/off/SKILL.md" "o"
 Set-PcFile ".claude/skills/.trash/vieux/SKILL.md" "t"
-Assert-Equal "garde,off" ((Get-LocalSkillNames | Sort-Object) -join ",") "skills de ce PC : dossier masque ignore"
+Assert-Equal "garde,off" (((Get-LocalSkillNames) | Sort-Object) -join ",") "skills de ce PC : dossier masque ignore"
 $null = Measure-Entries @(".claude") @(Get-SaveExcludes @(Get-Accounts))
 Assert-True ($script:Sizes.ContainsKey(".claude/skills/garde/SKILL.md") -and -not $script:Sizes.ContainsKey(".claude/skills/.trash/vieux/SKILL.md")) "taille de la sauvegarde : dossier masque des skills compte pour rien"
 foreach ($i in 1..22) { Set-PcFile (".claude/skills/efface/f" + $i + ".md") "e" }
