@@ -1,9 +1,4 @@
-function Get-OutcomeFor {
-  param([string[]]$Lines, [int]$Code = 0, [string]$Killed = "")
-  $st = New-UpdateState
-  foreach ($l in $Lines) { Add-UpdateLine $st $l }
-  return Get-UpdateOutcome $st $Code $Killed
-}
+. (Join-Path $PSScriptRoot "update-fakes.ps1")
 
 $native = @("Current version: 2.1.268", "Checking for updates to latest version...", "",
   "Warning: Native installation exists but C:\x\.local\bin is not in your PATH", "Updating to 2.1.292...",
@@ -128,13 +123,6 @@ foreach ($exe in @("", (Join-Path $PSScriptRoot "absent-claude.exe"))) {
   Assert-Equal $true (Step-ClaudeUpdate $run) ("Claude Code absent, rien a attendre : " + $exe)
 }
 Assert-Equal "failed" (Invoke-ClaudeUpdate "" $null).Kind "mode texte, Claude Code absent"
-
-function New-FakeUpdateProc {
-  param([bool]$Exited, [string]$Out)
-  $p = [PSCustomObject]@{ HasExited = $Exited; ExitCode = 0; Id = 1; Disposed = $false; StandardOutput = (New-Object IO.StringReader $Out); StandardError = (New-Object IO.StringReader "") }
-  $p | Add-Member -MemberType ScriptMethod -Name Dispose -Value { $this.Disposed = $true }
-  return $p
-}
 
 $proc = New-FakeUpdateProc $false "Current version: 2.1.292"
 $run = New-UpdateRun $proc

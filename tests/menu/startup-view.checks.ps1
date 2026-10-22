@@ -63,11 +63,8 @@ Assert-Equal $green ($v.Rows[1][$v.Rows[1].Count - 1][1] -join " ") "mise a jour
 Assert-Equal ($script:Ink.Alert -join " ") ($v.Rows[2][1][1] -join " ") "echec : barre rouge"
 Assert-Equal ($script:Ink.Alert -join " ") ($v.Rows[2][$v.Rows[2].Count - 1][1] -join " ") "echec : texte rouge"
 
-$su.Fade = New-Tween 1 0 300 2000
-Assert-True (Test-StartupAnimating $su 2100) "fondu de sortie : anime"
-$v = Get-StartupViewRows $su $L 2300
-Assert-Equal "0 0 0" (($v.Fades[0..2]) -join " ") "fondu de sortie : barres effacees"
-Assert-True (-not (Test-StartupAnimating $su 2300)) "fondu fini : rien a animer"
+$v = Get-StartupViewRows $su $L 9000
+Assert-Equal 1 $v.Fades[2] "echec : ligne gardee en pleine intensite"
 
 $su = New-ViewStartup
 $su.Steps[0].Fade = @{ From = 1; To = 0; Ms = 300; Start = 1000 }

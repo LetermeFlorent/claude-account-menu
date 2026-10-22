@@ -10,19 +10,24 @@ function ConvertFrom-UpdateLine {
   if ($t -match ("^Current version:\s*" + $v)) { return @{ Kind = "current"; Version = $Matches[1] } }
   if ($t -match ("^Claude Code is up to date \(" + $v)) { return @{ Kind = "uptodate"; Version = $Matches[1] } }
   if ($t -match "^Claude is up to date") { return @{ Kind = "uptodate"; Version = $null } }
-  if ($t -match ("^Updating to " + $v)) { return @{ Kind = "native"; Version = $Matches[1] } }
+  if ($t -match ("staying on " + $v)) { return @{ Kind = "uptodate"; Version = $Matches[1] } }
+  if ($t -match ("^(?:Updating to|@\S+ is at) " + $v)) { return @{ Kind = "native"; Version = $Matches[1] } }
   if ($t -match ("^(?:New version available:|Downgrading to)\s*" + $v)) { return @{ Kind = "package"; Version = $Matches[1] } }
   if ($t -match "^Installing update") { return @{ Kind = "package"; Version = $null } }
   if ($t -match ("^Successfully (?:updated|downgraded) from " + $v + " to version " + $v)) { return @{ Kind = "success"; From = $Matches[1]; Version = $Matches[2] } }
   if ($t -match ("^Update available:\s*" + $v)) { return @{ Kind = "manual"; Version = $Matches[1] } }
   if ($t -match "^Claude is managed by (.+?)\.?$") { return @{ Kind = "manager"; Name = $Matches[1] } }
-  if ($t -match "is currently running|currently performing an update") { return @{ Kind = "busy" } }
+  if ($t -match "is currently running|currently performing an update") {
+    $holder = ""
+    if ($t -match "\(PID (\d+)\)") { $holder = $Matches[1] }
+    return @{ Kind = "busy"; Holder = $holder }
+  }
   if ($t -match "^(Error|Failed|Unable|Could not)") { return @{ Kind = "error"; Text = $t } }
   return @{ Kind = "other"; Text = $t }
 }
 
 function New-UpdateState {
-  return @{ Current = $null; Target = $null; Mode = $null; Done = $null; From = $null; Manager = $null; Busy = $false; Error = $null; Last = "" }
+  return @{ Current = $null; Target = $null; Mode = $null; Done = $null; From = $null; Manager = $null; Busy = $false; Holder = ""; Error = $null; Reason = $null; Retry = ""; Last = "" }
 }
 
 function Add-UpdateLine {
@@ -37,8 +42,9 @@ function Add-UpdateLine {
   elseif ($k -eq "success") { $State.Done = "updated"; $State.From = $e.From; $State.Target = $e.Version }
   elseif ($k -eq "manual") { $State.Done = "manual"; $State.Target = $e.Version }
   elseif ($k -eq "manager") { $State.Manager = $e.Name }
-  elseif ($k -eq "busy") { $State.Busy = $true }
+  elseif ($k -eq "busy") { $State.Busy = $true; if ($e.Holder) { $State.Holder = $e.Holder } }
   elseif ($k -eq "error" -and -not $State.Error) { $State.Error = $e.Text }
+  elseif ($State.Error -and -not $State.Reason -and $e.Text -and $e.Text -notmatch "^Try running") { $State.Reason = $e.Text }
 }
 
 function New-Outcome {
@@ -65,8 +71,16 @@ function Get-UpdateOutcome {
     if ($State.Manager) { $by = $State.Manager }
     return New-Outcome "manual" ("Claude Code " + $State.Target + " disponible, a installer avec " + $by)
   }
-  if ($State.Busy) { return New-Outcome "failed" "mise a jour de Claude Code deja en cours ailleurs" }
-  if ($State.Error) { return New-Outcome "failed" ("echec de la mise a jour : " + (Limit-Text $State.Error 50)) }
+  if ($State.Busy) {
+    $txt = "mise a jour de Claude Code deja en cours ailleurs"
+    if ($State.Holder) { $txt += " (PID " + $State.Holder + ")" }
+    return New-Outcome "failed" $txt
+  }
+  if ($State.Error) {
+    $why = $State.Error
+    if ($State.Reason) { $why = $State.Reason }
+    return New-Outcome "failed" ("echec de la mise a jour : " + (Limit-Text $why 50))
+  }
   if ($ExitCode -ne 0) { return New-Outcome "failed" ("echec de claude update (code " + $ExitCode + ")") }
   if ($State.Last) { return New-Outcome "unknown" ("claude update : " + (Limit-Text $State.Last 50)) }
   return New-Outcome "unknown" "claude update termine"

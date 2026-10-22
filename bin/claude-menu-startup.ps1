@@ -25,7 +25,7 @@ function New-Startup {
     if ($n -ne "clm" -and @($Names) -contains "clm") { $after = "clm" }
     $steps.Add((New-StartupStep $n $after))
   }
-  return @{ Steps = $steps; Quit = $false; Exit = $null; Pending = $null; EndAt = $null; Fade = $null; Hidden = ($steps.Count -eq 0); ClmError = "" }
+  return @{ Steps = $steps; Quit = $false; Exit = $null; Pending = $null; Hidden = ($steps.Count -eq 0); ClmError = "" }
 }
 
 function Get-StartupNames {

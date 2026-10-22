@@ -25,7 +25,9 @@ try {
   New-StartupCase @("claude", "drive")
   $null = Invoke-StartupTicks 2
   $null = Send-StartupAct "quit"
-  $null = Invoke-StartupTicks 3
+  $null = Invoke-StartupTicks
+  Assert-True ($false -eq $script:Su.Steps[0].Run.CanRetry) "Echap pendant Claude Code : plus de nouvel essai"
+  $null = Invoke-StartupTicks 2
   Assert-Equal "quit 1 1" ($script:Su.Exit.Name + " " + $script:ClaudeStarts + " " + $script:DriveStarts) "Echap pendant Claude Code : mise a jour finie, synchro arretee a la fermeture"
 
   New-StartupCase @("clm", "claude")

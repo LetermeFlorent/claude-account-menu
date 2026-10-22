@@ -17,6 +17,7 @@ function Restore-StartupFakes {
   $script:ClmUpdated = $false
   $script:ClmChecked = $false
   $script:MenuUpdated = $false
+  $script:FakeClaudeFail = $null
 }
 
 function New-FakeWork {
@@ -70,6 +71,7 @@ function Step-ClaudeUpdate {
   $Run.Left = $Run.Left - 1
   if ($Run.Left -gt 0) { return $false }
   $Run.Outcome = New-Outcome "ok" "Claude Code a jour (2.1.292)"
+  if ($script:FakeClaudeFail) { $Run.Outcome = New-Outcome "failed" $script:FakeClaudeFail }
   return $true
 }
 function Start-DriveJob { param($Job, [switch]$Hold) if ($Hold) { $script:DriveHolds++; return }; $script:DriveStarts++; $Job.Ctl = @{ Stop = $false; Progress = "" }; $Job.Loader = @{ Ctl = @{ Done = $false } } }

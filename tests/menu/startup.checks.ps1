@@ -54,9 +54,9 @@ try {
   Assert-Equal "a jour" $script:Su.Steps[2].Text "Drive : synchro finie"
   Assert-Equal "True|False|False" (Get-StepList "Gone") "clm a jour : ligne effacee, Claude Code et Drive gardes un instant"
   Assert-Equal 3 (Get-StartupRowCount $script:Su) "clm a jour : une rangee de moins"
-  Assert-True (-not $script:Su.Hidden -and $null -eq $script:Su.Fade) "fin : barres gardees un instant"
+  Assert-True (-not $script:Su.Hidden) "fin : barres gardees un instant"
   $null = Invoke-StartupTicks 10
-  Assert-True ($script:Su.Hidden -and $null -eq $script:Su.Fade) "fin : chaque ligne a jour partie seule, sans fondu d'ensemble"
+  Assert-True $script:Su.Hidden "fin : chaque ligne a jour partie seule"
   Assert-Null $script:Su.Exit "fin : menu garde ouvert"
 
   New-StartupCase @("clm", "claude", "drive")
@@ -97,11 +97,19 @@ try {
   Assert-Equal "done|done False|False" ((Get-StepList "State") + " " + (Get-StepList "Gone")) "fin avec un echec : lignes gardees un instant"
   $null = Invoke-StartupTicks 4
   Assert-Equal "False|True" (Get-StepList "Gone") "fin avec un echec : ligne a jour partie, ligne en erreur restee"
-  Assert-True (-not $script:Su.Hidden -and $null -eq $script:Su.Fade) "fin avec un echec : erreur lisible avant le fondu"
-  $null = Invoke-StartupTicks 3
-  Assert-True ($script:Su.Hidden -and $null -ne $script:Su.Fade) "fin avec un echec : ligne en erreur effacee en fondu"
+  $null = Invoke-StartupTicks 20
+  Assert-True (-not $script:Su.Hidden -and (Get-StepList "Gone") -eq "False|True") "fin avec un echec : ligne en erreur gardee a l'ecran"
   $script:FakeFindError = $null
   $script:FakeLatest = $null
+
+  New-StartupCase @("claude")
+  $script:FakeClaudeFail = "echec de la mise a jour : EBUSY"
+  $null = Invoke-StartupTicks 5
+  Assert-Equal "failed echec" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Claude Code en echec : la ligne dit echec"
+  Assert-Equal "  a, b, c : echec de la mise a jour : EBUSY" $script:St.Msg[0] "Claude Code en echec : la raison sous les comptes"
+  $null = Invoke-StartupTicks 20
+  Assert-True (-not $script:Su.Hidden -and -not $script:Su.Steps[0].Gone) "Claude Code en echec : la ligne reste"
+  $script:FakeClaudeFail = $null
 
   $w = New-FakeWork $null
   Assert-Null (Receive-LoaderValue $w) "tache a part : rien tant qu'elle tourne"

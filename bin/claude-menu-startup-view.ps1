@@ -51,10 +51,8 @@ function Get-StartupRow {
 function Add-StartupRows {
   param($Rows, $Fades, $Su, $L, [double]$Now)
   if ((Get-StartupRowCount $Su) -eq 0) { return }
-  $fade = 1.0
-  if ($null -ne $Su.Fade) { $fade = Get-TweenValue $Su.Fade $Now }
   foreach ($s in (Get-ShownSteps $Su)) {
-    $f = $fade
+    $f = 1.0
     if ($null -ne $s.Fade) { $f = $f * (Get-TweenValue $s.Fade $Now) }
     $Rows.Add((Get-StartupRow $s $L $Now))
     $Fades.Add($f)
@@ -78,7 +76,6 @@ function Add-StartupTextRows {
 function Test-StartupAnimating {
   param($Su, [double]$Now)
   if ((Get-StartupRowCount $Su) -eq 0) { return $false }
-  if ($null -ne $Su.Fade) { return Test-TweenRunning $Su.Fade $Now }
   foreach ($s in (Get-ShownSteps $Su)) {
     if ($null -ne $s.Fade -and (Test-TweenRunning $s.Fade $Now)) { return $true }
     if ($s.State -eq "run" -and $s.Pct -lt 0 -and $script:MotionOn) { return $true }

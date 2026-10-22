@@ -1,4 +1,5 @@
 . (Join-Path $PSScriptRoot "claude-update-watch.ps1")
+. (Join-Path $PSScriptRoot "claude-update-retry.ps1")
 . (Join-Path $PSScriptRoot "claude-menu-progress.ps1")
 
 function Write-UpdateProgress {
@@ -17,7 +18,11 @@ function Write-UpdateProgress {
 function Get-UpdateTick {
   param($State, $Watch)
   $ver = "" + $State.Target
-  if (-not $State.Mode) { return @{ Label = "recherche de mise a jour"; Pct = -1; Detail = "" } }
+  if (-not $State.Mode) {
+    $label = "recherche de mise a jour"
+    if ($State.Retry) { $label = $State.Retry }
+    return @{ Label = $label; Pct = -1; Detail = "" }
+  }
   if ($null -eq $Watch -or -not $Watch.Seen) { return @{ Label = ("mise a jour " + $ver).Trim(); Pct = -1; Detail = $State.Last } }
   if ($Watch.Settled) { return @{ Label = ("installation " + $ver); Pct = 100; Detail = "" } }
   return @{ Label = ("telechargement " + $ver); Pct = (Get-DownloadPercent $Watch.Bytes $Watch.Size); Detail = (Format-DownloadDetail $Watch.Bytes $Watch.Size) }
@@ -45,23 +50,17 @@ function Step-UpdateRun {
   return $false
 }
 
-function New-UpdateRun {
-  param($Proc)
-  $srcs = @((New-LineSource $Proc.StandardOutput), (New-LineSource $Proc.StandardError))
-  return @{ Proc = $Proc; Srcs = $srcs; State = (New-UpdateState); Watch = $null; Killed = ""; ExitAt = -1.0; Clock = [Diagnostics.Stopwatch]::StartNew(); Outcome = $null }
-}
-
 function Start-ClaudeUpdate {
   param([string]$Exe, $Acc)
-  $proc = $null
-  if ($Exe -and (Test-Path -LiteralPath $Exe)) { $proc = Invoke-InAccountEnv $Acc { Start-UpdateProcess $Exe } }
-  if ($null -eq $proc) { return @{ Outcome = (New-Outcome "failed" "Claude Code introuvable, pas de mise a jour") } }
-  return New-UpdateRun $proc
+  $proc = Start-ClaudeProcess $Exe $Acc
+  if ($null -eq $proc) { return @{ Outcome = (New-Outcome "failed" $script:UpdateMissingText) } }
+  return New-UpdateRun $proc $Exe $Acc
 }
 
 function Step-ClaudeUpdate {
   param($Run)
   if ($null -ne $Run.Outcome) { return $true }
+  if ($Run.RetryAt -ge 0) { return Resume-UpdateTry $Run }
   foreach ($s in $Run.Srcs) { foreach ($l in Receive-Lines $s) { Add-UpdateLine $Run.State $l } }
   if ($Run.State.Mode -eq "native" -and $null -eq $Run.Watch) { $Run.Watch = New-StagingWatch $Run.State.Target $Run.Proc.Id $Run.Clock.Elapsed.TotalSeconds }
   $now = $Run.Clock.Elapsed.TotalSeconds
@@ -70,7 +69,9 @@ function Step-ClaudeUpdate {
   $code = -1
   if ($Run.Proc.HasExited) { $code = $Run.Proc.ExitCode }
   $Run.Proc.Dispose()
-  $Run.Outcome = Get-UpdateOutcome $Run.State $code $Run.Killed
+  $o = Get-UpdateOutcome $Run.State $code $Run.Killed
+  if (Request-UpdateRetry $Run $o) { return $false }
+  $Run.Outcome = $o
   return $true
 }
 

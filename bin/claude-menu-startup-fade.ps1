@@ -1,5 +1,4 @@
 $script:StartupStepHoldMs = 1000
-$script:StartupHoldMs = 1500
 $script:StartupFadeMs = 300
 
 function Get-ShownSteps {
@@ -25,13 +24,7 @@ function Update-StepFades {
 function Step-StartupEnd {
   param($Su, [double]$Now)
   $changed = Update-StepFades $Su $Now
-  $shown = Get-ShownSteps $Su
-  if ($shown.Count -eq 0) { $Su.Hidden = $true; return $true }
-  if (@($shown | Where-Object { $_.Kind -eq "failed" }).Count -eq 0) { return $changed }
-  if ($null -eq $Su.EndAt) { $Su.EndAt = $Now + $script:StartupHoldMs; return $changed }
-  if ($Now -lt $Su.EndAt) { return $changed }
-  if ($null -eq $Su.Fade) { $Su.Fade = New-Tween 1 0 $script:StartupFadeMs $Now; return $true }
-  if (Test-TweenRunning $Su.Fade $Now) { return $changed }
+  if ((Get-ShownSteps $Su).Count -gt 0) { return $changed }
   $Su.Hidden = $true
   return $true
 }

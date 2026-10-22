@@ -86,6 +86,7 @@ function Step-ClaudeStartup {
   }
   if ($Now -lt $Step.NextAt) { return $false }
   $Step.NextAt = $Now + $script:StartupPollMs
+  if ($Su.Quit -and $null -ne $Step.Run) { $Step.Run.CanRetry = $false }
   if ($null -ne $Step.Run -and -not (Step-ClaudeUpdate $Step.Run)) {
     $t = Get-UpdateTick $Step.Run.State $Step.Run.Watch
     return Set-StartupProgress $Step $t.Pct (($t.Label + "  " + $t.Detail).Trim()) $Now
@@ -98,7 +99,10 @@ function Step-ClaudeStartup {
     return $false
   }
   $State.Msg = Add-ClmFailure (Get-UpdateSummary $Step.Parts $Step.Kinds) $Su.ClmError
-  Complete-StartupStep $Step (Get-UpdateKind $Step.Kinds) ($Step.Texts -join ", ") $Now
+  $kind = Get-UpdateKind $Step.Kinds
+  $text = $Step.Texts -join ", "
+  if ($kind -eq "failed") { $text = "echec" }
+  Complete-StartupStep $Step $kind $text $Now
   return $true
 }
 
