@@ -111,6 +111,7 @@ try {
   Assert-Equal "mcp:|chrome Windows True" ($l[5].id + " " + $l[5].tag + " " + $l[5].erasing) "web listes : MCP en cours d'effacement"
   Assert-True $l[3].all "web listes : case de groupe"
   Assert-Equal "case cochee : synchronise sur ce PC" $p.sub "web listes : explication"
+  Assert-Equal "bureau 0" ($p.me + " " + @($p.pcs).Count) "web listes : ce PC seul"
 
   Assert-Equal 0 @((Get-WebBackups).items).Count "web listes : aucune sauvegarde"
   $f1 = Join-Path $webDl "claude-comptes-20261001-100000.zip"

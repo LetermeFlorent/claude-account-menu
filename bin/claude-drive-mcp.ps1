@@ -86,4 +86,5 @@ function Save-OwnPcFile {
   $props = @{ $script:SyncFormatKey = ("" + $script:SyncFormat) }
   $r = Send-DriveText $Prefs.Folders.Presence $name $text $props $id
   (Get-OwnPcContent $Prefs.Catalog $Prefs.Pc).Md5 = [string]$r.Md5
+  $Prefs.Sent = $text
 }

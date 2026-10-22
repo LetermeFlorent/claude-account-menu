@@ -98,6 +98,7 @@ function Set-PrefsState {
   $default = $true
   if ($Item.Kind -eq "mcp") { $default = $Item.Tag -eq $script:OsName }
   Set-ChoiceCheck $Choice $Item.Kind $Item.Key $On $default
+  Set-ChoiceStamp $Choice $Item.Kind $Item.Key
 }
 
 function Set-PrefsCheck {

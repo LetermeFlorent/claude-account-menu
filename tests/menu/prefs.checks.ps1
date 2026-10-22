@@ -6,7 +6,7 @@ $script:SyncChoicePath = Join-Path $script:Sandbox "prefs-choice.json"
 $script:SyncChoiceLockPath = Join-Path $script:Sandbox "prefs-choice.lock"
 $script:SyncChoiceWaitMs = 0
 $script:SkillsRoot = "prefs-test/skills"
-$prefsMocked = @("Show-UiRows", "Update-UiTick", "Test-DriveConnected", "Request-DriveSync", "Get-Accounts")
+$prefsMocked = @("Show-UiRows", "Update-UiTick", "Test-DriveConnected", "Request-DriveSync", "Get-Accounts", "Get-DrivePcName")
 $prefsKept = @{}
 foreach ($n in $prefsMocked) { $prefsKept[$n] = (Get-Item ("function:" + $n)).ScriptBlock }
 
@@ -32,6 +32,8 @@ function Update-UiTick { param([double]$Now, [bool]$Busy) return $false }
 function Test-DriveConnected { return $script:PrefsDrive }
 function Request-DriveSync { param($Job) $script:PrefsSyncs++ }
 function Get-Accounts { return @([PSCustomObject]@{ Label = "p"; Dir = ".claude-prefs" }) }
+function Get-DrivePcName { return "MOI" }
+function Get-PrefsShown { return [string]($script:PrefsShown | ForEach-Object { $_ | ForEach-Object { $_[0] } }) }
 
 try {
   $cat = New-SyncCatalog
@@ -133,6 +135,19 @@ try {
   Assert-Equal "reglages de synchro inchanges" (Invoke-PrefsKeys @([ConsoleKey]::Delete, "n", [ConsoleKey]::Escape)) "Suppr puis n : rien efface"
   $null = Invoke-PrefsKeys @([ConsoleKey]::Delete, "o", [ConsoleKey]::Escape)
   Assert-Equal "alpha" ((Read-SyncChoice).Erase.skills -join ",") "Suppr puis o : effacement demande"
+  $cat.Pcs["B"] = New-PcContent
+  $cat.Pcs["B"].Os = $script:OsName
+  Save-SyncCatalog $cat
+  Assert-Equal "reglages de synchro inchanges" (Invoke-PrefsKeys @([ConsoleKey]::RightArrow, [ConsoleKey]::Spacebar, [ConsoleKey]::Escape)) "fleche droite : PC sans clm a jour, rien a cocher"
+  Assert-True ((Get-PrefsShown).Contains($script:PrefsPcOld) -and (Get-PrefsShown).Contains("MOI (ce PC)")) "PC sans clm a jour : explication et liste des PC"
+  $script:PrefsSyncs = 0
+  $msg = Invoke-PrefsKeys @([ConsoleKey]::LeftArrow, [ConsoleKey]::Spacebar, [ConsoleKey]::Delete, "o", [ConsoleKey]::Escape)
+  Assert-Equal "reglages de synchro enregistres, synchro Drive lancee" $msg "fleche gauche : dernier PC, case decochee pour lui"
+  Assert-True (-not (Read-SyncChoice).Asks["B"].skills["alpha"].On) "demande enregistree pour l'autre PC"
+  Assert-True ((Get-PrefsShown).Contains($script:PrefsPcWait) -and (Get-PrefsShown).Contains($script:PrefsPcTitle + "B")) "case de l'autre PC en attente"
+  Assert-Equal "alpha" ((Read-SyncChoice).Erase.skills -join ",") "Suppr sur un autre PC : sans effet"
+  $null = Invoke-PrefsKeys @([ConsoleKey]::LeftArrow, [ConsoleKey]::Spacebar, [ConsoleKey]::Escape)
+  Assert-True (-not (Read-SyncChoice).Asks.ContainsKey("B")) "case remise : demande retiree"
   Remove-Item -LiteralPath $script:SyncCatalogPath, (Join-Path $script:Sandbox "prefs-test") -Recurse -Force
   [IO.File]::WriteAllText((Join-Path $script:Sandbox ".claude-prefs/$($script:DriveHeldName)"), "{}")
   Remove-Item -LiteralPath $script:SyncChoicePath -Force

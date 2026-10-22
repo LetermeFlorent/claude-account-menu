@@ -10,7 +10,7 @@ function Test-SkillName {
 }
 
 function New-PcContent {
-  return @{ Md5 = ""; Mcp = (New-PathMap); Erased = (New-PathMap) }
+  return @{ Md5 = ""; Mcp = (New-PathMap); Erased = (New-PathMap); Os = ""; Choice = (New-AskMaps); Asks = (New-PathMap); Took = (New-PathMap) }
 }
 
 function ConvertTo-PositiveLong {
@@ -60,7 +60,18 @@ function ConvertFrom-PcData {
     $at = ConvertTo-PositiveLong $erased[$n]
     if ($at -gt 0 -and (Test-SkillName ([string]$n))) { $c.Erased[[string]$n] = $at }
   }
+  Read-PcChoiceData $c $Data
   return $c
+}
+
+function Read-PcChoiceData {
+  param($Content, $Data)
+  $keys = Get-JsonKeys $Data
+  if ($keys -notcontains "os" -or $Data["os"] -isnot [string] -or -not $script:McpOsPattern.IsMatch($Data["os"])) { return }
+  $Content.Os = $Data["os"]
+  if ($keys -contains "choice") { $Content.Choice = ConvertFrom-KindMaps $Data["choice"] { param($v) Read-CheckValue $v } }
+  if ($keys -contains "asks") { $Content.Asks = ConvertFrom-AsksData $Data["asks"] }
+  if ($keys -contains "took") { $Content.Took = ConvertFrom-TookData $Data["took"] }
 }
 
 function ConvertTo-McpEntryData {
@@ -75,6 +86,12 @@ function ConvertTo-PcData {
   $sorted = ConvertTo-SortedMap $Content.Mcp
   foreach ($k in $sorted.Keys) { $mcp[$k] = ConvertTo-McpEntryData $sorted[$k] }
   $data = [ordered]@{ mcp = $mcp; erased = (ConvertTo-SortedMap $Content.Erased) }
+  if ($Content.Os) {
+    $data.os = $Content.Os
+    $data.choice = ConvertTo-KindMapsData $Content.Choice { param($v) $v }
+    $data.asks = ConvertTo-AsksData $Content.Asks
+    $data.took = ConvertTo-SortedMap $Content.Took
+  }
   if ($WithMd5) { $data.md5 = $Content.Md5 }
   return $data
 }

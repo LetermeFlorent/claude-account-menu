@@ -58,7 +58,7 @@ Le pied du menu rappelle les touches principales, sur deux lignes de longueur pr
 | `m` | relire tout de suite les quotas du compte sélectionné |
 | `u` | installer la nouvelle version de clm signalée par "[maj dispo]" et relancer le menu |
 | `y` | lancer une synchro Drive, ou connecter le Drive si ce PC ne l'est pas (voir "Synchronisation entre PC") |
-| `p` | choisir les skills et les MCP synchronisés sur ce PC (voir "Réglages de synchro par PC") |
+| `p` | choisir les skills et les MCP synchronisés sur ce PC et sur les autres PC reliés (voir "Réglages de synchro par PC") |
 | `s` | sauvegarder des comptes |
 | `r` | restaurer une sauvegarde |
 | `w` | ouvrir la page web de clm dans le navigateur (voir "Page web") |
@@ -181,7 +181,7 @@ La touche `w`, en couleur dans le pied du menu, ouvre dans le navigateur une pag
 
 Aucun serveur n'est à installer ni à lancer. Tant que le menu est ouvert, `clm` écoute lui-même sur `127.0.0.1`, sur un port libre choisi par le système, et n'accepte que les demandes qui portent le jeton de l'adresse ouverte. Ce jeton change à chaque ouverture. La page est faite de fichiers simples, rangés dans `~/.local/bin/clm-web`, sans rien charger d'internet.
 
-La page range ses réglages dans quatre onglets, en haut : Comptes, Drive, Affichage et Sauvegardes. Les flèches gauche et droite passent d'un onglet à l'autre, et l'onglet ouvert reste le même quand on recharge la page. L'onglet Comptes montre les quotas 5 h et 7 j de chaque compte, avec les teintes du menu, et permet de relire, renommer, monter, descendre ou retirer un compte, et d'en ajouter un, dont la connexion se termine dans le terminal et le navigateur comme avec `a`. L'onglet Drive connecte le PC, coupe ou remet la synchro automatique, lance une synchro et reprend les cases de la touche `p`. Son bouton "Supprimer partout" fait comme Suppr dans cette page, et une ligne en attente d'effacement propose "Annuler l'effacement".
+La page range ses réglages dans quatre onglets, en haut : Comptes, Drive, Affichage et Sauvegardes. Les flèches gauche et droite passent d'un onglet à l'autre, et l'onglet ouvert reste le même quand on recharge la page. L'onglet Comptes montre les quotas 5 h et 7 j de chaque compte, avec les teintes du menu, et permet de relire, renommer, monter, descendre ou retirer un compte, et d'en ajouter un, dont la connexion se termine dans le terminal et le navigateur comme avec `a`. L'onglet Drive connecte le PC, coupe ou remet la synchro automatique, lance une synchro et reprend les cases de la touche `p`, avec un bouton par PC relié au-dessus de la liste. Sur un autre PC, une case envoie une demande comme dans la page `p` (voir "Régler un autre PC"). Le bouton "Supprimer partout" fait comme Suppr dans cette page, et une ligne en attente d'effacement propose "Annuler l'effacement".
 
 L'onglet Affichage choisit les couleurs et les animations du menu sur ce PC, comme `clm --palette` et `clm --anim`. L'onglet Sauvegardes sauvegarde les comptes cochés dans Téléchargements, liste les archives de ce dossier et en restaure une, avec les mêmes avertissements que la touche `r`.
 
@@ -330,6 +330,12 @@ Les cases ne valent que lorsque tous les PC du Drive ont une version de `clm` qu
 
 Sans menu, `clm --prefs` affiche les mêmes cases, `[x]` ou `[ ]`, chacune avec son id : `skill:<nom>`, `mcp:<projet>|<nom>` (projet vide pour `~/.mcp.json`) ou `global:<nom>`. `"mcp:*"` vise tous les MCP locaux et `"global:*"` tous les globaux, entre guillemets à cause du `*`, et `[-]` marque un groupe coché en partie. `--prefs-on` et `--prefs-off` cochent et décochent un ou plusieurs ids, `--prefs-erase` les efface partout et demande `--yes`, mais refuse un groupe entier. Le nom seul suffit quand un seul élément le porte, sinon la commande liste les ids possibles. Après un changement, `clm` lance la synchro, comme Échap dans la page.
 
+### Régler un autre PC
+
+Quand plusieurs PC partagent le Drive, la page `p` les nomme en haut, ce PC d'abord, et les flèches gauche et droite passent de l'un à l'autre. Les cases d'un autre PC montrent ce qu'il synchronise d'après sa dernière synchro. Espace en change une : la demande part sur le Drive à la synchro suivante, et le PC visé l'applique à la sienne, comme si la case avait changé chez lui. D'ici là, la ligne affiche "en attente", et remettre la case à sa valeur retire la demande. La liste d'un autre PC n'a pas de MCP globaux, qui ne quittent jamais leur PC, et Suppr n'y fait rien : effacer partout se fait depuis la page de ce PC.
+
+Quand une même case change sur deux PC, le changement le plus récent gagne, fait sur place ou demandé d'ailleurs. Chaque PC publie dans son fichier du dossier `presence` son système, ses cases, les demandes qu'il adresse aux autres et, pour chaque autre PC, la date de la dernière demande qu'il a prise en compte. Une demande prise en compte, adressée à un PC disparu du Drive ou vieille de plus de 30 jours est retirée. Un PC dont la version de `clm` ne lit pas ces demandes reste dans la liste, sans cases, avec "clm n'est pas a jour sur ce PC".
+
 ### Jetons de connexion
 
 Les jetons de chaque compte ont leur propre fichier sur le Drive, et le plus récent gagne toujours : un PC ne remplace pas un jeton local par un jeton qui expire plus tôt. Avant de lancer un compte, `clm` prend le jeton du Drive s'il est plus frais. Avant de renouveler un jeton expiré, il regarde d'abord si un autre PC ne l'a pas déjà fait, et envoie le nouveau jeton après un renouvellement. Pendant que Claude Code est ouvert, le veilleur compare les jetons toutes les 30 secondes et dès que l'un d'eux change sur le disque, et à la fermeture le jeton part sur le Drive, même quand la synchro automatique est coupée. Sous macOS, les jetons sont lus et écrits dans le trousseau, par l'entrée standard de `security` pour que le jeton n'apparaisse jamais dans la liste des process.
@@ -408,8 +414,8 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | `~/.clm-drive.json` | connexion Google Drive, nom du PC, synchro automatique |
 | `~/.clm-drive-state.json` et `~/.clm-drive*.lock` | état de la dernière synchro Drive, verrous de la synchro, des dossiers Drive, des jetons et du veilleur |
 | `~/.clm-drive-remote.json` | liste du Drive gardée entre deux synchros |
-| `~/.clm-sync-choice.json` et `~/.clm-sync-choice.lock` | cases décochées de la page `p`, effacements en attente, et leur verrou |
-| `~/.clm-sync-catalog.json` | MCP connus des autres PC, MCP globaux mis de côté |
+| `~/.clm-sync-choice.json` et `~/.clm-sync-choice.lock` | cases décochées de la page `p`, effacements en attente, demandes aux autres PC, et leur verrou |
+| `~/.clm-sync-catalog.json` | MCP et cases connus des autres PC, MCP globaux mis de côté |
 | `~/.clm-drive-watch/` | sessions Claude Code ouvertes et journal du veilleur |
 | `<fichier>.conflit-<PC>` | version perdante d'un conflit de synchro |
 

@@ -28,8 +28,9 @@ function Get-PrefsId {
 function Read-CliPrefs {
   if (-not (Test-DriveConnected)) { throw $script:DriveOffText }
   $catalog = Read-SyncCatalog
-  $lines = Get-PrefsLines (Read-SyncChoice) $catalog (Get-GlobalNames @(Get-Accounts))
-  return @{ Catalog = $catalog; Lines = $lines }
+  $choice = Read-SyncChoice
+  $lines = Get-PrefsLines $choice $catalog (Get-GlobalNames @(Get-Accounts))
+  return @{ Catalog = $catalog; Choice = $choice; Lines = $lines }
 }
 
 function Format-PrefsItem {

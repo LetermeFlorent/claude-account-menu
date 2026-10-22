@@ -27,46 +27,71 @@ async function syncErase(item, warn) {
   }
 }
 
-function syncItem(item, warn) {
+function syncItem(item, warn, pc) {
   const box = el("input", { type: "checkbox", checked: item.on, "aria-label": item.label });
   box.indeterminate = item.mixed;
-  box.addEventListener("change", () => clmAct({ do: "pref", id: item.id, move: box.checked ? "on" : "off" }, syncPrefsView));
+  box.addEventListener("change", () => clmAct({ do: "pref", id: item.id, move: box.checked ? "on" : "off", pc: pc.name }, syncPrefsView));
   const kids = [
     item.erasing ? null : box,
     el("span", { class: "grow" }, [el("span", { text: item.label + " " }), item.tag ? el("span", { class: "dim", text: item.tag }) : null]),
   ];
+  if (item.wait) kids.push(el("span", { class: "dim", text: "en attente de sa prochaine synchro" }));
   if (item.erasing) {
     kids.push(el("span", { class: "alert", text: "effacé partout à la prochaine synchro" }));
     kids.push(el("button", { type: "button", class: "small", text: "Annuler l'effacement", onclick: () => clmAct({ do: "pref", id: item.id, move: "on" }, syncPrefsView) }));
-  } else if (!item.all) {
+  } else if (!item.all && pc.self) {
     kids.push(el("button", { type: "button", class: "small danger", text: "Supprimer partout", onclick: () => syncErase(item, warn) }));
   }
   return el("li", { class: item.erasing ? "erasing" : "" }, kids);
 }
 
-function syncPrefsView(p) {
-  if (!p || !clmChanged("prefs", p)) return;
-  const box = byId("prefs");
-  if (!p.connected) {
-    box.replaceChildren();
-    return;
-  }
-  const out = [el("h3", { text: "Skills et MCP" }), el("p", { class: "dim", text: p.sub })];
+function syncPcs(p) {
+  const self = { name: p.me, self: true, ready: true, sub: p.sub, lines: p.lines };
+  return [self].concat((p.pcs || []).map((pc) => Object.assign({ self: false }, pc)));
+}
+
+function syncPcRow(pcs, cur) {
+  if (pcs.length < 2) return null;
+  const pick = (pc) => {
+    clm.prefsPc = pc.name;
+    syncPrefsDraw(clm.prefsLast);
+  };
+  const buttons = pcs.map((pc) => el("button", {
+    type: "button", class: "small", "aria-pressed": pc === cur ? "true" : "false",
+    text: pc.self ? pc.name + " (ce PC)" : pc.name, onclick: () => pick(pc),
+  }));
+  return el("div", { class: "row pcs", role: "group", "aria-label": "PC à régler" }, buttons);
+}
+
+function syncPrefsDraw(p) {
+  const pcs = syncPcs(p);
+  const cur = pcs.find((pc) => pc.name === clm.prefsPc) || pcs[0];
+  const out = [el("h3", { text: "Skills et MCP" }), syncPcRow(pcs, cur), el("p", { class: "dim", text: cur.sub })];
   let list = null;
-  for (const line of p.lines) {
+  for (const line of cur.lines) {
     if (line.type === "item") {
       if (list === null) {
         list = el("ul", { class: "prefs" });
         out.push(list);
       }
-      list.append(syncItem(line, p.warn));
+      list.append(syncItem(line, p.warn, cur));
       continue;
     }
     out.push(el(line.type === "head" ? "h4" : "p", { class: line.type === "head" ? "" : "subhead", text: line.label }));
     list = null;
   }
-  if (p.lines.length === 0) out.push(el("p", { class: "dim", text: "Rien à synchroniser pour l'instant." }));
-  box.replaceChildren(...out);
+  if (cur.ready && cur.lines.length === 0) out.push(el("p", { class: "dim", text: cur.self ? "Rien à synchroniser pour l'instant." : "Rien à régler sur ce PC pour l'instant." }));
+  byId("prefs").replaceChildren(...out.filter((x) => x !== null));
+}
+
+function syncPrefsView(p) {
+  if (!p || !clmChanged("prefs", p)) return;
+  if (!p.connected) {
+    byId("prefs").replaceChildren();
+    return;
+  }
+  clm.prefsLast = p;
+  syncPrefsDraw(p);
 }
 
 async function syncLoadPrefs() {

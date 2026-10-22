@@ -1,4 +1,5 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-config.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-config.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-asks.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-asks.ps1") }
 $script:SyncChoicePath = Join-Path (Get-HomeDir) ".clm-sync-choice.json"
 $script:SyncChoiceLockPath = Join-Path (Get-HomeDir) ".clm-sync-choice.lock"
 $script:SyncChoiceWaitMs = 5000
@@ -6,7 +7,7 @@ $script:SyncChoiceBusyText = "reglages de synchro en cours d'ecriture"
 $script:SyncChoiceKinds = @("skills", "mcp", "globals")
 
 function New-SyncChoice {
-  $c = @{ Erase = @{} }
+  $c = @{ Erase = @{}; Stamps = (New-AskMaps); Asks = (New-PathMap) }
   foreach ($k in $script:SyncChoiceKinds) { $c[$k] = New-PathMap; $c.Erase[$k] = New-Object 'System.Collections.Generic.List[string]' }
   return $c
 }
@@ -21,6 +22,8 @@ function Read-SyncChoice {
   $c = New-SyncChoice
   try { $data = Read-JsonFile $script:SyncChoicePath } catch { $data = $null }
   if ($data -isnot [Collections.IDictionary]) { return $c }
+  if ((Get-JsonKeys $data) -contains "stamps") { $c.Stamps = ConvertFrom-KindMaps $data["stamps"] { param($v) Read-StampValue $v } }
+  if ((Get-JsonKeys $data) -contains "asks") { $c.Asks = ConvertFrom-AsksData $data["asks"] }
   foreach ($kind in $script:SyncChoiceKinds) {
     $map = $null
     if ((Get-JsonKeys $data) -contains $kind) { $map = $data[$kind] }
@@ -51,6 +54,8 @@ function Save-SyncChoice {
     $erase[$kind] = [string[]]$Choice.Erase[$kind].ToArray()
   }
   $data["erase"] = $erase
+  if (-not (Test-AskMapsEmpty $Choice.Stamps)) { $data["stamps"] = ConvertTo-KindMapsData $Choice.Stamps { param($v) $v } }
+  if ($Choice.Asks.Count -gt 0) { $data["asks"] = ConvertTo-AsksData $Choice.Asks }
   Write-TextFileAtomic $script:SyncChoicePath ((ConvertTo-JsonText $data) + "`n")
 }
 

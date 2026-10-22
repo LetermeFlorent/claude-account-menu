@@ -10,7 +10,7 @@
 . (Join-Path $bin "claude-web-lists.ps1")
 . (Join-Path $bin "claude-web-actions.ps1")
 
-$actMocked = @("Send-WebJson", "Stop-MenuLoader", "Start-MenuLoader", "Hide-Screen", "Invoke-UiWork", "Save-Accounts", "Restore-Accounts", "Get-ZipAccounts", "Assert-BackupVersion", "Request-DriveSync", "Set-DriveAuto", "Test-DriveConnected", "Read-CliPrefs", "Get-DownloadsDir")
+$actMocked = @("Send-WebJson", "Stop-MenuLoader", "Start-MenuLoader", "Hide-Screen", "Invoke-UiWork", "Save-Accounts", "Restore-Accounts", "Get-ZipAccounts", "Assert-BackupVersion", "Request-DriveSync", "Set-DriveAuto", "Test-DriveConnected", "Read-CliPrefs", "Get-DownloadsDir", "Get-DrivePcName")
 $actKept = @{}
 foreach ($n in $actMocked) { $actKept[$n] = (Get-Item ("function:" + $n)).ScriptBlock }
 $actSaved = @{
@@ -42,8 +42,14 @@ function Test-DriveConnected { return $true }
 function Read-CliPrefs {
   $skill = New-PrefsItem "skills" "dessin" "dessin" "" $true $false
   $all = New-PrefsAll "skills" "tous les skills" @($skill)
-  return @{ Catalog = @{ Waiting = @(); PerPc = $true }; Lines = @((New-PrefsHead "Skills"), $all, $skill) }
+  $pcs = New-PathMap
+  $pcs["loin"] = New-PcContent
+  $pcs["loin"].Os = $script:OsName
+  $pcs["vieux"] = New-PcContent
+  $cat = @{ Waiting = @(); PerPc = $true; Skills = [string[]]@("dessin"); Pcs = $pcs }
+  return @{ Catalog = $cat; Choice = (Read-SyncChoice); Lines = @((New-PrefsHead "Skills"), $all, $skill) }
 }
+function Get-DrivePcName { return "ICI" }
 function Get-DownloadsDir { return $actDl }
 
 function Invoke-ActTest {

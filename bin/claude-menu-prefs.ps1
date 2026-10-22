@@ -1,4 +1,5 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-prefs-data.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-prefs-data.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-prefs-pc.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-prefs-pc.ps1") }
 $script:PrefsTitle = "Reglages de synchro de ce PC"
 $script:PrefsPairs = @("Espace", "cocher", "Suppr", "effacer partout", "Echap", "revenir")
 $script:PrefsChrome = 14
@@ -28,22 +29,23 @@ function Get-PrefsItemRow {
   $r.Add(@((Limit-Text $Item.Label $script:PrefsLabelWidth).PadRight($script:PrefsLabelWidth), $ink, $Sel))
   if ($Item.Tag) { $r.Add(@(("  " + $Item.Tag), $script:Ink.Dim, $false)) }
   if ($Item.Erasing) { $r.Add(@("  efface a la prochaine synchro", $script:Ink.Alert, $false)) }
+  if ($Item.Wait) { $r.Add(@(("  " + $script:PrefsPcWait), $script:Ink.Dim, $false)) }
   if ($Sel) { Add-MarkSeg $r }
   return ,$r
 }
 
 function Get-PrefsWindow {
-  param([int]$Count, [int]$Sel)
-  $max = [math]::Max(4, $script:UiRows - $script:PrefsChrome)
+  param([int]$Count, [int]$Sel, [int]$Extra = 0)
+  $max = [math]::Max(4, $script:UiRows - $script:PrefsChrome - $Extra)
   if ($Count -le $max) { return @(0, $Count) }
   $start = [math]::Max(0, [math]::Min($Sel - [int]($max / 2), $Count - $max))
   return @($start, ($start + $max))
 }
 
 function Get-PrefsRows {
-  param($Lines, [int]$Sel)
+  param($Lines, [int]$Sel, [int]$Extra = 0)
   $rows = New-Object 'System.Collections.Generic.List[object]'
-  $win = Get-PrefsWindow $Lines.Count $Sel
+  $win = Get-PrefsWindow $Lines.Count $Sel $Extra
   if ($win[0] -gt 0) { $rows.Add((New-TextRow ("    " + $script:UpArrow) $script:Ink.Dim)) }
   for ($i = $win[0]; $i -lt $win[1]; $i++) {
     $l = $Lines[$i]
@@ -87,28 +89,57 @@ function Show-PrefsEmpty {
   return "aucun reglage de synchro a montrer"
 }
 
+function Invoke-PrefsKey {
+  param($Ctx, $Key, $Item)
+  $prefsCtx = $Ctx
+  $prefsHit = $Item
+  if ($Ctx.At -gt 0) {
+    if ($Key.Key -ne "Spacebar") { return $false }
+    $Ctx.Choice = Update-SyncChoice { param($c) Set-PcPrefsCheck $c $prefsCtx.Catalog $prefsCtx.Me $prefsCtx.Pcs[$prefsCtx.At] $prefsHit (-not $prefsHit.On) }
+    return $true
+  }
+  if ($Key.Key -eq "Spacebar") { $Ctx.Choice = Update-SyncChoice { param($c) Set-PrefsCheck $c $prefsHit }; return $true }
+  if ($Key.Key -ne "Delete" -or $Item.Erasing -or $Item.All -or -not (Confirm-PrefsErase $Item)) { return $false }
+  $Ctx.Choice = Update-SyncChoice { param($c) Add-EraseRequest $c $prefsHit.Kind $prefsHit.Key }
+  return $true
+}
+
+function Get-PrefsPcStep {
+  param($Ctx, $Key)
+  if ($Ctx.Pcs.Count -lt 2) { return 0 }
+  if ($Key.Key -eq "LeftArrow") { return -1 }
+  if ($Key.Key -eq "RightArrow") { return 1 }
+  return 0
+}
+
 function Show-PrefsMenu {
   if (-not (Test-DriveConnected)) { return "reglages de synchro : connecte d'abord le Drive avec y" }
   $catalog = Read-SyncCatalog
-  $prefsChoice = Read-SyncChoice
-  $globals = Get-GlobalNames @(Get-Accounts)
-  $lines = Get-PrefsLines $prefsChoice $catalog $globals
-  if ($lines.Count -eq 0) { return Show-PrefsEmpty }
-  $sel = Move-PrefsSel $lines -1 1
+  $me = Get-DrivePcName
+  $ctx = @{ Catalog = $catalog; Choice = (Read-SyncChoice); Globals = (Get-GlobalNames @(Get-Accounts)); Me = $me; Pcs = (Get-PrefsPcs $catalog $me); At = 0 }
+  $view = Get-PrefsView $ctx
+  if ($view.Lines.Count -eq 0 -and $ctx.Pcs.Count -eq 1) { return Show-PrefsEmpty }
+  $sel = Move-PrefsSel $view.Lines -1 1
   $changed = $false
   while ($true) {
-    $k = Read-PageKey { Get-PageRows $script:PrefsTitle (Get-PrefsRows $lines $sel) $script:PrefsPairs (Get-PrefsSub $catalog) }
-    $prefsItem = $lines[$sel]
-    if ($k.Key -eq "UpArrow") { $sel = Move-PrefsSel $lines $sel -1; continue }
-    if ($k.Key -eq "DownArrow") { $sel = Move-PrefsSel $lines $sel 1; continue }
+    $k = Read-PageKey { Get-PageRows $view.Title (Get-PrefsBody $ctx $view $sel) $view.Pairs $view.Sub }
     if ($k.Key -eq "Escape" -or $k.KeyChar -eq "q") { break }
-    if ($k.Key -eq "Spacebar") { $prefsChoice = Update-SyncChoice { param($c) Set-PrefsCheck $c $prefsItem } }
-    elseif ($k.Key -eq "Delete" -and -not $prefsItem.Erasing -and -not $prefsItem.All -and (Confirm-PrefsErase $prefsItem)) { $prefsChoice = Update-SyncChoice { param($c) Add-EraseRequest $c $prefsItem.Kind $prefsItem.Key } }
-    else { continue }
+    $step = Get-PrefsPcStep $ctx $k
+    if ($step -ne 0) {
+      $ctx.At = ($ctx.At + $step + $ctx.Pcs.Count) % $ctx.Pcs.Count
+      $view = Get-PrefsView $ctx
+      $sel = Move-PrefsSel $view.Lines -1 1
+      continue
+    }
+    if ($view.Lines.Count -eq 0) { continue }
+    $prefsItem = $view.Lines[$sel]
+    if ($k.Key -eq "UpArrow") { $sel = Move-PrefsSel $view.Lines $sel -1; continue }
+    if ($k.Key -eq "DownArrow") { $sel = Move-PrefsSel $view.Lines $sel 1; continue }
+    if (-not (Invoke-PrefsKey $ctx $k $prefsItem)) { continue }
     $changed = $true
-    $lines = Get-PrefsLines $prefsChoice $catalog $globals
-    if ($lines.Count -eq 0) { break }
-    $sel = Find-PrefsLine $lines $prefsItem
+    $view = Get-PrefsView $ctx
+    if ($view.Lines.Count -eq 0 -and $ctx.Pcs.Count -eq 1) { break }
+    $sel = Find-PrefsLine $view.Lines $prefsItem
   }
   if (-not $changed) { return "reglages de synchro inchanges" }
   $null = Request-DriveSync $script:DriveJob

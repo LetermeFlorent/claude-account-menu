@@ -81,6 +81,20 @@ try {
   Assert-Equal "un groupe entier ne s'efface pas" $r.Msg "web action : groupe jamais efface d'un coup"
   Assert-Equal "choix inconnu : vider" (Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "vider" }).Msg "web action : choix inconnu"
   Assert-True ((Invoke-ActTest @{ do = "pref"; id = "skill:rien"; move = "on" }).Msg -like "reglage inconnu : skill:rien*") "web action : reglage inconnu"
+  $script:ActSyncs = 0
+  $r = Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "off"; pc = "loin" }
+  Assert-Equal "True dessin ne sera plus synchronise sur loin a sa prochaine synchro" ("" + $r.Ok + " " + $r.Msg) "web action : skill decoche pour un autre PC"
+  Assert-True ((-not (Read-SyncChoice).Asks["loin"].skills["dessin"].On) -and $script:ActSyncs -eq 1) "web action : demande enregistree, synchro lancee"
+  $loin = @(@($r.Data.pcs) | Where-Object { $_.name -eq "loin" })[0]
+  Assert-Equal "False True" ("" + @($loin.lines)[1].on + " " + @($loin.lines)[1].wait) "web action : case de l'autre PC en attente"
+  Assert-Equal "ICI loin vieux" ($r.Data.me + " " + (@($r.Data.pcs | ForEach-Object { $_.name }) -join " ")) "web action : liste des PC"
+  $r = Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "on"; pc = "loin" }
+  Assert-True ($r.Ok -and -not (Read-SyncChoice).Asks.ContainsKey("loin")) "web action : case remise, demande retiree"
+  Assert-Equal "effacer partout se fait depuis les reglages de ce PC" (Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "erase"; pc = "loin" }).Msg "web action : pas d'effacement pour un autre PC"
+  Assert-Equal ("vieux : " + $script:PrefsPcOld) (Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "on"; pc = "vieux" }).Msg "web action : PC sans clm a jour refuse"
+  Assert-Equal "PC inconnu : nulle part" (Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "on"; pc = "nulle part" }).Msg "web action : PC inconnu"
+  $r = Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "off"; pc = "ICI" }
+  Assert-True ($r.Ok -and (Read-SyncChoice).skills["dessin"] -eq $false) "web action : ce PC par son nom, reglage local"
 
   $r = Invoke-ActTest @{ do = "display"; palette = "light" }
   $d = Read-DisplayConfig

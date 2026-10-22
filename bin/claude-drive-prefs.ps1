@@ -1,4 +1,5 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-globals.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-globals.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-asks.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-asks.ps1") }
 
 function Start-SyncPrefs {
   param($Folders, $Presence, [string]$Pc, $Accs, $Res)
@@ -7,10 +8,16 @@ function Start-SyncPrefs {
   $script:McpPerPc = $prefs.Catalog.Waiting.Count -eq 0
   $prefs.Catalog.PerPc = $script:McpPerPc
   Update-PcFiles $prefs.Catalog $Presence
+  $prefs.Sent = Get-OwnPcText $prefs.Catalog $Pc
+  Receive-PcAsks $prefs
+  Update-OwnAsks $prefs
+  Set-OwnPcChoice $prefs
   if ($script:McpPerPc) {
     $Res.Failed += [int](Sync-McpPrefs $prefs $Accs)
     $Res.Failed += [int](Sync-GlobalMcp $prefs $Accs)
   }
+  Set-OwnPcChoice $prefs
+  Save-OwnPcFile $prefs $prefs.Sent
   Save-SyncCatalog $prefs.Catalog
   $prefs.Excludes = Get-SkillExcludes $prefs.Choice
   $prefs.Erased = Get-ErasedSkills $prefs.Catalog.Pcs
