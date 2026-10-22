@@ -100,15 +100,15 @@ try {
   $script:WebDriveOn = $true
   function Read-CliPrefs {
     $skill = New-PrefsItem "skills" "dessin" "dessin" "" $true $false
-    $mcp = New-PrefsItem "mcp" "|chrome" "chrome" "Windows" $false $true
-    $all = New-PrefsAll "mcp" "tous les MCP locaux" @($mcp)
-    return @{ Catalog = @{ Waiting = @(); PerPc = $true }; Lines = @((New-PrefsHead "Skills"), $skill, (New-PrefsHead "MCP locaux"), $all, (New-PrefsHead "dossier perso" $true), $mcp) }
+    $mcp = New-PrefsItem "mcp" "|chrome" "chrome" "perso, Windows" $false $true
+    $all = New-PrefsAll "mcp" "tous les MCP" @($mcp)
+    return @{ Catalog = @{ Waiting = @(); PerPc = $true }; Lines = @((New-PrefsHead "Skills"), $skill, (New-PrefsHead "MCP"), $all, $mcp) }
   }
   $p = Get-WebPrefs
   $l = @($p.lines)
-  Assert-Equal "head item head item sub item" (@($l | ForEach-Object { $_.type }) -join " ") "web listes : lignes des reglages"
+  Assert-Equal "head item head item item" (@($l | ForEach-Object { $_.type }) -join " ") "web listes : lignes des reglages"
   Assert-Equal "skill:dessin True False" ($l[1].id + " " + $l[1].on + " " + $l[1].erasing) "web listes : skill coche"
-  Assert-Equal "mcp:|chrome Windows True" ($l[5].id + " " + $l[5].tag + " " + $l[5].erasing) "web listes : MCP en cours d'effacement"
+  Assert-Equal "mcp:|chrome perso, Windows True" ($l[4].id + " " + $l[4].tag + " " + $l[4].erasing) "web listes : MCP en cours d'effacement"
   Assert-True $l[3].all "web listes : case de groupe"
   Assert-Equal "case cochee : synchronise sur ce PC" $p.sub "web listes : explication"
   Assert-Equal "bureau 0" ($p.me + " " + @($p.pcs).Count) "web listes : ce PC seul"

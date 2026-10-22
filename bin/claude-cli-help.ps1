@@ -55,9 +55,9 @@ Reglages de synchro de ce PC, Drive connecte
                                  efface partout a la prochaine synchro
   Un id s'ecrit skill:<nom>, mcp:<projet>|<nom> ou global:<nom>, entre
   guillemets a cause du |, ou se reduit au nom seul s'il est unique.
-  "mcp:*" vise tous les MCP locaux, "global:*" tous les MCP globaux, entre
-  guillemets a cause du * ; [-] veut dire un groupe en partie coche, et un
-  groupe ne s'efface pas.
+  "skill:*" vise tous les skills et "mcp:*" tous les MCP, globaux compris,
+  entre guillemets a cause du * ; [-] veut dire un groupe en partie coche,
+  et un groupe ne s'efface pas.
   --prefs-on annule aussi un effacement demande. Apres un changement,
   clm lance la synchro. Les MCP locaux (~/.mcp.json et projets sous le
   dossier perso) suivent les cases. Les MCP globaux (mcpServers en tete

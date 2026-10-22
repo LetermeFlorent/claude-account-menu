@@ -2,7 +2,7 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { 
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-http.ps1")) { . (Join-Path $PSScriptRoot "claude-web-http.ps1") }
 $script:Web = $null
 $script:WebRoot = Join-Path $PSScriptRoot "clm-web"
-$script:WebFiles = @("index.html", "style.css", "api.js", "ui.js", "tabs.js", "accounts.js", "sync.js", "backups.js", "display.js")
+$script:WebFiles = @("index.html", "style.css", "api.js", "ui.js", "tabs.js", "accounts.js", "prefs.js", "sync.js", "backups.js", "display.js")
 $script:WebTypes = @{ ".html" = "text/html; charset=utf-8"; ".css" = "text/css; charset=utf-8"; ".js" = "text/javascript; charset=utf-8" }
 $script:WebMaxConns = 16
 $script:WebMaxActions = 8

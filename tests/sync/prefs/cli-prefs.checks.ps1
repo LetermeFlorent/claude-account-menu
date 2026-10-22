@@ -42,7 +42,7 @@ try {
   $cat.PerPc = $true
   Save-SyncCatalog $cat
   $os = $script:OsName
-  $want = @("Reglages de synchro de ce PC, MCP reglables par PC", "Skills", "  [x] skill:alpha", "MCP locaux", "  [-] mcp:*  tous les MCP locaux  coches : 2 sur 3", "  dossier perso", "  [ ] mcp:|loin  Autre", ("  [x] mcp:|outil  " + $os), "  Documents/p", ("  [x] mcp:Documents/p|outil  " + $os), "MCP globaux de ce PC, jamais envoyes aux autres PC", "  [x] global:*  tous les MCP globaux  coches : 2 sur 2", "  [x] global:blender", "  [x] global:roblox")
+  $want = @("Reglages de synchro de ce PC, MCP reglables par PC", "Skills", "  [x] skill:*  tous les skills  coches : 1 sur 1", "  [x] skill:alpha", "MCP", "  [-] mcp:*  tous les MCP  coches : 4 sur 5", "  [x] global:blender  ce PC", "  [ ] mcp:|loin  perso, Autre", ("  [x] mcp:Documents/p|outil  p, " + $os), ("  [x] mcp:|outil  perso, " + $os), "  [x] global:roblox  ce PC")
   Assert-Equal ($want -join "`n") ((Get-CliPrefsLines) -join "`n") "--prefs : cases et ids par categorie"
 
   Assert-Equal 1 (Invoke-PrefsCli @("--prefs-off", "outil")) "nom porte par deux MCP : refuse"
@@ -70,14 +70,15 @@ try {
   Assert-True ($ch.Erase.skills.Count -eq 0 -and -not $ch.skills.ContainsKey("alpha")) "--prefs-on : effacement annule, case au defaut"
 
   Assert-Equal 1 (Invoke-PrefsCli @("--prefs-off", "*")) "* seul : deux groupes, refuse"
-  Assert-Equal 1 (Invoke-PrefsCli @("--prefs-erase", "global:*", "--yes")) "groupe entier a effacer : refuse"
-  Assert-True ((Get-CliPrefsLines) -contains "  [-] global:*  tous les MCP globaux  coches : 1 sur 2") "--prefs : groupe en partie coche"
-  Assert-Equal 0 (Invoke-PrefsCli @("--prefs-off", "global:*")) "--prefs-off global:* : reussi"
+  Assert-Equal 1 (Invoke-PrefsCli @("--prefs-erase", "mcp:*", "--yes")) "groupe entier a effacer : refuse"
+  Assert-Equal 1 (Invoke-PrefsCli @("--prefs-off", "global:*")) "global:* : plus de groupe a part pour les MCP globaux"
+  Assert-True ((Get-CliPrefsLines) -contains "  [-] mcp:*  tous les MCP  coches : 3 sur 5") "--prefs : groupe en partie coche"
+  Assert-Equal 0 (Invoke-PrefsCli @("--prefs-off", "mcp:*")) "--prefs-off mcp:* : reussi"
   $ch = Read-SyncChoice
-  Assert-True ($ch.globals["roblox"] -eq $false -and $ch.globals["blender"] -eq $false) "--prefs-off global:* : tous les globaux decoches"
+  Assert-True ($ch.globals["roblox"] -eq $false -and $ch.globals["blender"] -eq $false -and $ch.mcp["|outil"] -eq $false -and -not $ch.mcp.ContainsKey("|loin")) "--prefs-off mcp:* : MCP locaux et globaux decoches"
   Assert-Equal 0 (Invoke-PrefsCli @("--prefs-on", "mcp:*")) "--prefs-on mcp:* : reussi"
   $ch = Read-SyncChoice
-  Assert-True ($ch.mcp["|loin"] -eq $true -and -not $ch.mcp.ContainsKey("|outil") -and -not $ch.mcp.ContainsKey("Documents/p|outil")) "--prefs-on mcp:* : tous les MCP locaux coches"
+  Assert-True ($ch.mcp["|loin"] -eq $true -and -not $ch.mcp.ContainsKey("|outil") -and -not $ch.mcp.ContainsKey("Documents/p|outil") -and $ch.globals.Count -eq 0) "--prefs-on mcp:* : tous les MCP coches"
   Assert-Equal 7 $script:CliPrefsSyncs "chaque changement lance la synchro"
 } finally {
   foreach ($n in $cliPrefsMocked) { Set-Item -Path ("function:" + $n) -Value $cliPrefsKept[$n] }

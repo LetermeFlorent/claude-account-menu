@@ -36,18 +36,15 @@ function New-PcPrefsItem {
 
 function Add-PcMcpLines {
   param($Lines, $Target, $Pending, $Effective)
-  $groups = Get-McpGroups $Effective @{ Erase = @{ mcp = @() } }
   $items = New-Object 'System.Collections.Generic.List[object]'
-  foreach ($p in $groups.Keys) {
-    $where = $p
-    if (-not $p) { $where = $script:PrefsHomeLabel }
-    $items.Add((New-PrefsHead $where $true))
-    foreach ($k in $groups[$p]) {
-      $os = $Effective[$k].Os
-      $items.Add((New-PcPrefsItem "mcp" $k (Split-McpKey $k).Name $os $Target $Pending ($os -eq $Target.Os)))
-    }
+  foreach ($k in (New-NameSet @($Effective.Keys))) {
+    if (-not (Test-McpKey $k)) { continue }
+    $os = $Effective[$k].Os
+    $item = New-PcPrefsItem "mcp" $k (Split-McpKey $k).Name (Get-McpWhere $k $os) $Target $Pending ($os -eq $Target.Os)
+    $item.Os = $os
+    $items.Add($item)
   }
-  Add-PrefsGroup $Lines "MCP locaux" "mcp" "tous les MCP locaux" $items
+  Add-PrefsGroup $Lines "MCP" "mcp" "tous les MCP" (Get-SortedPrefsItems $items)
 }
 
 function Get-PcPrefsLines {
@@ -56,11 +53,8 @@ function Get-PcPrefsLines {
   if (-not (Test-PcReachable $Catalog $Pc)) { return ,$lines.ToArray() }
   $target = $Catalog.Pcs[$Pc]
   $pending = Get-PcPending $Catalog.Pcs $Choice $Me $Pc
-  $skills = New-NameSet @($Catalog.Skills)
-  if ($skills.Count -gt 0) {
-    $lines.Add((New-PrefsHead "Skills"))
-    foreach ($n in $skills) { $lines.Add((New-PcPrefsItem "skills" $n $n "" $target $pending $true)) }
-  }
+  $skills = @(foreach ($n in (New-NameSet @($Catalog.Skills))) { New-PcPrefsItem "skills" $n $n "" $target $pending $true })
+  Add-PrefsGroup $lines "Skills" "skills" "tous les skills" $skills
   if ($Catalog.PerPc) { Add-PcMcpLines $lines $target $pending (Get-McpCatalog $Catalog.Pcs) }
   return ,$lines.ToArray()
 }

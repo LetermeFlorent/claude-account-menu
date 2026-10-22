@@ -49,8 +49,7 @@ function Get-PrefsRows {
   if ($win[0] -gt 0) { $rows.Add((New-TextRow ("    " + $script:UpArrow) $script:Ink.Dim)) }
   for ($i = $win[0]; $i -lt $win[1]; $i++) {
     $l = $Lines[$i]
-    if ($l.Sub) { $rows.Add((New-TextRow ("    " + $l.Label) $script:Ink.Dim)) }
-    elseif ($l.Head) { $rows.Add((New-TextRow ("  " + $l.Label) $script:Ink.Text $true)) }
+    if ($l.Head) { $rows.Add((New-TextRow ("  " + $l.Label) $script:Ink.Text $true)) }
     else { $rows.Add((Get-PrefsItemRow $l ($i -eq $Sel))) }
   }
   if ($win[1] -lt $Lines.Count) { $rows.Add((New-TextRow ("    " + $script:DownArrow) $script:Ink.Dim)) }

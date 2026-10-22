@@ -2,7 +2,6 @@ $script:WebBackupMax = 30
 
 function Get-WebPrefLine {
   param($Line)
-  if ($Line.Head -and $Line.Sub) { return [ordered]@{ type = "sub"; label = $Line.Label } }
   if ($Line.Head) { return [ordered]@{ type = "head"; label = $Line.Label } }
   return [ordered]@{
     type = "item"; id = (Get-PrefsId $Line); kind = $Line.Kind; label = $Line.Label; tag = [string]$Line.Tag

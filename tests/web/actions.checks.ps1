@@ -86,7 +86,7 @@ try {
   Assert-Equal "True dessin ne sera plus synchronise sur loin a sa prochaine synchro" ("" + $r.Ok + " " + $r.Msg) "web action : skill decoche pour un autre PC"
   Assert-True ((-not (Read-SyncChoice).Asks["loin"].skills["dessin"].On) -and $script:ActSyncs -eq 1) "web action : demande enregistree, synchro lancee"
   $loin = @(@($r.Data.pcs) | Where-Object { $_.name -eq "loin" })[0]
-  Assert-Equal "False True" ("" + @($loin.lines)[1].on + " " + @($loin.lines)[1].wait) "web action : case de l'autre PC en attente"
+  Assert-Equal "False True" ("" + @($loin.lines)[2].on + " " + @($loin.lines)[2].wait) "web action : case de l'autre PC en attente"
   Assert-Equal "ICI loin vieux" ($r.Data.me + " " + (@($r.Data.pcs | ForEach-Object { $_.name }) -join " ")) "web action : liste des PC"
   $r = Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "on"; pc = "loin" }
   Assert-True ($r.Ok -and -not (Read-SyncChoice).Asks.ContainsKey("loin")) "web action : case remise, demande retiree"

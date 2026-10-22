@@ -1,9 +1,10 @@
-$script:PrefsHomeLabel = "dossier perso"
+$script:PrefsHomeLabel = "perso"
+$script:PrefsGlobalTag = "ce PC"
 $script:PrefsAllKey = "*"
 
 function New-PrefsHead {
-  param([string]$Text, [bool]$Sub = $false)
-  return @{ Head = $true; Sub = $Sub; Label = $Text }
+  param([string]$Text)
+  return @{ Head = $true; Label = $Text }
 }
 
 function New-PrefsItem {
@@ -38,57 +39,55 @@ function New-NameSet {
   return ,$set
 }
 
+function Get-SortedPrefsItems {
+  param($Items)
+  return ,@($Items | Sort-Object { $_.Label }, { $_.Tag })
+}
+
 function Add-SkillLines {
   param($Lines, $Choice, $Catalog)
   $names = New-NameSet @($Catalog.Skills, (Get-LocalSkillNames), $Choice.Erase.skills)
-  if ($names.Count -eq 0) { return }
-  $Lines.Add((New-PrefsHead "Skills"))
-  foreach ($n in $names) { $Lines.Add((New-PrefsItem "skills" $n $n "" (Test-SkillChecked $Choice $n) $Choice.Erase.skills.Contains($n))) }
+  $items = @(foreach ($n in $names) { New-PrefsItem "skills" $n $n "" (Test-SkillChecked $Choice $n) $Choice.Erase.skills.Contains($n) })
+  Add-PrefsGroup $Lines "Skills" "skills" "tous les skills" $items
 }
 
-function Get-McpGroups {
-  param($Effective, $Choice)
-  $groups = New-Object 'System.Collections.Generic.SortedDictionary[string,object]' ([StringComparer]::OrdinalIgnoreCase)
-  foreach ($k in @(@($Effective.Keys) + @($Choice.Erase.mcp))) {
-    if (-not (Test-McpKey $k)) { continue }
-    $p = (Split-McpKey $k).Project
-    if (-not $groups.ContainsKey($p)) { $groups[$p] = New-NameSet }
-    [void]$groups[$p].Add($k)
-  }
-  return ,$groups
+function Get-McpWhere {
+  param([string]$Key, [string]$Os)
+  $where = $script:PrefsHomeLabel
+  $project = (Split-McpKey $Key).Project
+  if ($project) { $where = @($project -split "/")[-1] }
+  if ($Os) { $where += ", " + $Os }
+  return $where
+}
+
+function New-McpItem {
+  param([string]$Key, [string]$Os, [bool]$On, [bool]$Erasing)
+  $item = New-PrefsItem "mcp" $Key (Split-McpKey $Key).Name (Get-McpWhere $Key $Os) $On $Erasing
+  $item.Os = $Os
+  return $item
 }
 
 function Add-McpLines {
-  param($Lines, $Choice, $Catalog)
+  param($Lines, $Choice, $Catalog, [string[]]$Globals)
   $effective = Get-McpCatalog $Catalog.Pcs
-  $groups = Get-McpGroups $effective $Choice
   $items = New-Object 'System.Collections.Generic.List[object]'
-  foreach ($p in $groups.Keys) {
-    $where = $p
-    if (-not $p) { $where = $script:PrefsHomeLabel }
-    $items.Add((New-PrefsHead $where $true))
-    foreach ($k in $groups[$p]) {
-      $os = ""
-      if ($null -ne $effective[$k]) { $os = $effective[$k].Os }
-      $items.Add((New-PrefsItem "mcp" $k (Split-McpKey $k).Name $os (Test-McpChecked $Choice $k $os) $Choice.Erase.mcp.Contains($k)))
-    }
+  foreach ($k in (New-NameSet @(@($effective.Keys), @($Choice.Erase.mcp)))) {
+    if (-not (Test-McpKey $k)) { continue }
+    $os = ""
+    if ($null -ne $effective[$k]) { $os = $effective[$k].Os }
+    $items.Add((New-McpItem $k $os (Test-McpChecked $Choice $k $os) $Choice.Erase.mcp.Contains($k)))
   }
-  Add-PrefsGroup $Lines "MCP locaux" "mcp" "tous les MCP locaux" $items
-}
-
-function Add-GlobalLines {
-  param($Lines, $Choice, $Catalog, [string[]]$Present)
-  $names = New-NameSet @($Present, @($Catalog.Parked.Keys), $Choice.Erase.globals)
-  $items = @(foreach ($n in $names) { New-PrefsItem "globals" $n $n "" (-not (Test-GlobalOff $Choice $n)) $Choice.Erase.globals.Contains($n) })
-  Add-PrefsGroup $Lines "MCP globaux de ce PC, jamais envoyes aux autres PC" "globals" "tous les MCP globaux" $items
+  foreach ($n in (New-NameSet @($Globals, @($Catalog.Parked.Keys), $Choice.Erase.globals))) {
+    $items.Add((New-PrefsItem "globals" $n $n $script:PrefsGlobalTag (-not (Test-GlobalOff $Choice $n)) $Choice.Erase.globals.Contains($n)))
+  }
+  Add-PrefsGroup $Lines "MCP" "mcp" "tous les MCP" (Get-SortedPrefsItems $items)
 }
 
 function Get-PrefsLines {
   param($Choice, $Catalog, [string[]]$Globals)
   $lines = New-Object 'System.Collections.Generic.List[object]'
   Add-SkillLines $lines $Choice $Catalog
-  Add-McpLines $lines $Choice $Catalog
-  Add-GlobalLines $lines $Choice $Catalog $Globals
+  Add-McpLines $lines $Choice $Catalog $Globals
   return ,$lines.ToArray()
 }
 
@@ -96,7 +95,7 @@ function Set-PrefsState {
   param($Choice, $Item, [bool]$On)
   Remove-EraseRequests $Choice $Item.Kind @($Item.Key)
   $default = $true
-  if ($Item.Kind -eq "mcp") { $default = $Item.Tag -eq $script:OsName }
+  if ($Item.Kind -eq "mcp") { $default = $Item.Os -eq $script:OsName }
   Set-ChoiceCheck $Choice $Item.Kind $Item.Key $On $default
   Set-ChoiceStamp $Choice $Item.Kind $Item.Key
 }

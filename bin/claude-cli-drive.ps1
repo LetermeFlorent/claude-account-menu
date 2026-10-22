@@ -51,8 +51,7 @@ function Get-CliPrefsLines {
   $out = New-Object 'System.Collections.Generic.List[string]'
   $out.Add($script:PrefsTitle + ", " + (Get-CliMcpModeLine $p.Catalog))
   foreach ($l in $p.Lines) {
-    if ($l.Sub) { $out.Add("  " + $l.Label) }
-    elseif ($l.Head) { $out.Add($l.Label) }
+    if ($l.Head) { $out.Add($l.Label) }
     else { $out.Add((Format-PrefsItem $l)) }
   }
   return ,$out.ToArray()
