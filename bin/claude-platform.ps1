@@ -129,8 +129,8 @@ function Test-Network {
       $clients += $c
       try { $tasks += $c.ConnectAsync($h, $script:NetworkPort) } catch { continue }
     }
-    $end = [DateTime]::UtcNow.AddMilliseconds($script:NetworkTimeoutMs)
-    while ($tasks.Count -gt 0 -and [DateTime]::UtcNow -lt $end) {
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    while ($tasks.Count -gt 0 -and $clock.ElapsedMilliseconds -lt $script:NetworkTimeoutMs) {
       if (@($tasks | Where-Object { $_.Status -eq "RanToCompletion" }).Count -gt 0) { return $true }
       if (@($tasks | Where-Object { -not $_.IsCompleted }).Count -eq 0) { return $false }
       Start-Sleep -Milliseconds 20
