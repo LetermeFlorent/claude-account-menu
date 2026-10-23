@@ -1,4 +1,5 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-peers.ps1")) { . (Join-Path $PSScriptRoot "claude-peers.ps1") }
 $script:StateLockExt = ".lock"
 $script:StateTmpExt = ".tmp"
 $script:StateTmpMinAgeMinutes = 10
@@ -46,10 +47,19 @@ function Remove-StateLeftovers {
   }
 }
 
+function Test-OldStatePresent {
+  param([string]$HomeDir)
+  foreach ($old in $script:StateRenames.Keys) { if (Test-Path -LiteralPath (Join-Path $HomeDir $old)) { return $true } }
+  try { $files = [IO.Directory]::GetFiles($HomeDir, "*" + $script:StateTmpExt) } catch { return $false }
+  foreach ($f in $files) { if (Test-StateLeftover ([IO.Path]::GetFileName($f))) { return $true } }
+  return $false
+}
+
 function Invoke-StateMigration {
   param($Vars = $null)
   $homeDir = Get-HomeDir $Vars
-  if (Test-OldStateBusy $homeDir) { return $false }
+  if (-not (Test-OldStatePresent $homeDir)) { return $true }
+  if ((Test-OldStateBusy $homeDir) -or @(Get-ClmPeers).Count -gt 0) { return $false }
   $dir = Get-StateDir -Vars $Vars
   foreach ($old in $script:StateRenames.Keys) { Move-StateEntry (Join-Path $homeDir $old) (Join-Path $dir $script:StateRenames[$old]) }
   Remove-StateLeftovers $homeDir
