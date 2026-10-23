@@ -1,6 +1,7 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
-$script:DriveSessionDir = Join-Path (Get-HomeDir) ".clm-drive-watch"
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+$script:DriveSessionDir = Get-StatePath "drive-watch"
 $script:DriveSessionStampSlack = 2
 $script:DriveLiveExt = ".json"
 $script:DriveEndedExt = ".end"

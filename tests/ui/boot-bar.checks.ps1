@@ -72,19 +72,20 @@ Set-BootBarReady $null
 Assert-True $true "barre de demarrage : arret et fin de chargement sans barre, sans erreur"
 
 $savedAnim = $env:CLM_ANIM
+$bootDisplay = Join-Path (Get-StateDir) "display.json"
 try {
   $env:CLM_ANIM = $null
   Assert-True (Test-BootBarMotion) "barre de demarrage : animee par defaut"
-  $null = New-SandboxFile ".clm-display.json" '{ "palette": "auto", "anim": "off" }'
+  [IO.File]::WriteAllText($bootDisplay, '{ "palette": "auto", "anim": "off" }')
   Assert-True (-not (Test-BootBarMotion)) "barre de demarrage : animation coupee dans les reglages"
-  $null = New-SandboxFile ".clm-display.json" '{ "anim": "on" }'
+  [IO.File]::WriteAllText($bootDisplay, '{ "anim": "on" }')
   Assert-True (Test-BootBarMotion) "barre de demarrage : animation allumee dans les reglages"
   $env:CLM_ANIM = "0"
   Assert-True (-not (Test-BootBarMotion)) "barre de demarrage : CLM_ANIM=0 coupe l'animation"
   $env:CLM_ANIM = "1"
-  $null = New-SandboxFile ".clm-display.json" '{ "anim": "off" }'
+  [IO.File]::WriteAllText($bootDisplay, '{ "anim": "off" }')
   Assert-True (Test-BootBarMotion) "barre de demarrage : CLM_ANIM=1 passe avant les reglages"
 } finally {
   $env:CLM_ANIM = $savedAnim
-  Remove-Item -LiteralPath (Join-Path $script:Sandbox ".clm-display.json") -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $bootDisplay -ErrorAction SilentlyContinue
 }

@@ -1,3 +1,4 @@
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-display.ps1")) { . (Join-Path $PSScriptRoot "claude-display.ps1") }
 $script:BootBarFlags = @("--no-update", "--updated", "--web")
 $script:BootBarLabel = "demarrage"
 $script:BootBarCells = 20
@@ -51,9 +52,7 @@ function Test-BootBarWanted {
 function Test-BootBarMotion {
   if ($env:CLM_ANIM -eq "0") { return $false }
   if ($env:CLM_ANIM -eq "1") { return $true }
-  $dir = $env:USERPROFILE
-  if (-not $dir) { $dir = $env:HOME }
-  try { $text = [IO.File]::ReadAllText((Join-Path $dir ".clm-display.json")) } catch { return $true }
+  try { $text = [IO.File]::ReadAllText((Get-DisplayPath)) } catch { return $true }
   return $text -notmatch '"anim"\s*:\s*"(off|0)"'
 }
 

@@ -15,8 +15,8 @@ function New-WatchFsItem {
 }
 
 function New-WatchFsContext {
-  param([string]$Root, $Roots, $Patterns)
-  return @{ Root = $Root; Roots = @($Roots); Rx = (Get-ExcludeRegex $Patterns); Items = @(); Blind = $false; Key = ($Roots -join "|") }
+  param([string]$Root, $Roots, $Patterns, [string]$Registry = "")
+  return @{ Root = $Root; Roots = @($Roots); Rx = (Get-ExcludeRegex $Patterns); Items = @(); Blind = $false; Key = ($Roots -join "|"); Registry = $Registry }
 }
 
 function Start-WatchFs {
@@ -24,6 +24,9 @@ function Start-WatchFs {
   $items = New-Object 'System.Collections.Generic.List[object]'
   try {
     $items.Add((New-WatchFsItem $Ctx.Root $false "home"))
+    $state = ""
+    if ($Ctx.Registry) { $state = Split-Path -Parent $Ctx.Registry }
+    if ($state -and $state -ne $Ctx.Root) { $items.Add((New-WatchFsItem $state $false "state")) }
     foreach ($r in $Ctx.Roots) {
       $full = Join-Path $Ctx.Root $r
       if ([IO.Directory]::Exists($full)) { $items.Add((New-WatchFsItem $full $true ("" + $items.Count))) }
@@ -43,7 +46,8 @@ function Stop-WatchFs {
 
 function Test-WatchPathRelevant {
   param([string]$Full, $Ctx)
-  if (-not $Full -or $Full.Length -le $Ctx.Root.Length) { return $false }
+  if ($Full -and $Ctx.Registry -and (ConvertTo-PathKey $Full) -eq (ConvertTo-PathKey $Ctx.Registry)) { return $true }
+  if (-not $Full -or $Full.Length -le $Ctx.Root.Length -or -not $Full.StartsWith($Ctx.Root, [StringComparison]::Ordinal)) { return $false }
   $rel = $Full.Substring($Ctx.Root.Length).TrimStart($script:PathSeps).Replace("\", "/")
   if ($Ctx.Roots -notcontains $rel.Split("/")[0]) { return $false }
   $name = [IO.Path]::GetFileName($rel)

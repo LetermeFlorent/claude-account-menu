@@ -1,5 +1,6 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-pcdata.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-pcdata.ps1") }
-$script:SyncCatalogPath = Join-Path (Get-HomeDir) ".clm-sync-catalog.json"
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+$script:SyncCatalogPath = Get-StatePath "sync-catalog.json"
 
 function New-SyncCatalog {
   return @{ PerPc = $false; Waiting = [string[]]@(); Skills = [string[]]@(); Pcs = (New-PathMap); Applied = (New-PathMap); Parked = (New-PathMap); Globals = $null }

@@ -7,6 +7,12 @@ $script:SyncLocalOnly = @("*/chrome-bidi/profils", "node_modules", "file-history
 $script:SyncExtraExcludes = @("*.bak-sync", "*.conflit-*", ".credentials.json", "*.tmp") + $script:SyncLocalOnly
 $script:RegistryName = ".claude-accounts.json"
 
+function Get-SyncRootPath {
+  param([string]$Root, [string]$Rel)
+  if ($Rel -eq $script:RegistryName -or $Rel.StartsWith($script:RegistryName + ".")) { return $script:RegistryPath + $Rel.Substring($script:RegistryName.Length) }
+  return Join-Path $Root ($Rel.Replace("/", [IO.Path]::DirectorySeparatorChar))
+}
+
 function Get-SyncPatterns {
   param($Accs)
   return @(Get-SaveExcludes $Accs) + $script:SyncExtraExcludes
@@ -77,7 +83,7 @@ function Get-LocalFiles {
   $rx = Get-ExcludeRegex $Patterns
   foreach ($r in $Roots) {
     if ($rx.IsMatch($r)) { continue }
-    $full = Join-Path $Root $r
+    $full = Get-SyncRootPath $Root $r
     if ([IO.File]::Exists($full)) { Add-LocalFile $res $r ([IO.FileInfo]$full) $Base }
     elseif ([IO.Directory]::Exists($full)) { $stack.Push(@($r, $full)) }
   }

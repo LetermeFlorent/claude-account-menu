@@ -91,15 +91,16 @@ function Set-DriveProps {
 function Use-Pc {
   param([string]$Name)
   $script:HomeDir = Join-Path $script:Sandbox ("pc-" + $Name)
-  if (-not (Test-Path -LiteralPath $script:HomeDir)) { New-Item -ItemType Directory -Path $script:HomeDir -Force | Out-Null }
-  $script:RegistryPath = Join-Path $script:HomeDir ".claude-accounts.json"
-  $script:DriveStatePath = Join-Path $script:HomeDir ".clm-drive-state.json"
-  $script:DriveConfigPath = Join-Path $script:HomeDir ".clm-drive.json"
-  $script:DriveLockPath = Join-Path $script:HomeDir ".clm-drive.lock"
-  $script:DriveSessionDir = Join-Path $script:HomeDir ".clm-drive-watch"
-  $script:SyncChoicePath = Join-Path $script:HomeDir ".clm-sync-choice.json"
-  $script:SyncChoiceLockPath = Join-Path $script:HomeDir ".clm-sync-choice.lock"
-  $script:SyncCatalogPath = Join-Path $script:HomeDir ".clm-sync-catalog.json"
+  $state = $script:HomeDir + "-etat"
+  New-Item -ItemType Directory -Path $script:HomeDir, $state -Force | Out-Null
+  $script:RegistryPath = Join-Path $state "accounts.json"
+  $script:DriveStatePath = Join-Path $state "drive-state.json"
+  $script:DriveConfigPath = Join-Path $state "drive.json"
+  $script:DriveLockPath = Join-Path $state "drive.lock"
+  $script:DriveSessionDir = Join-Path $state "drive-watch"
+  $script:SyncChoicePath = Join-Path $state "sync-choice.json"
+  $script:SyncChoiceLockPath = Join-Path $state "sync-choice.lock"
+  $script:SyncCatalogPath = Join-Path $state "sync-catalog.json"
   $script:SyncChoiceWaitMs = 0
   Save-DriveConfig @{ refreshToken = "r"; pc = $Name }
 }

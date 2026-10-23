@@ -5,9 +5,9 @@
 $backupHome = $script:HomeDir
 $backupRegistry = $script:RegistryPath
 $script:HomeDir = Join-Path $script:Sandbox "maison sauvegarde"
-$script:RegistryPath = Join-Path $script:HomeDir ".claude-accounts.json"
+$script:RegistryPath = Join-Path (Join-Path $script:Sandbox "etat sauvegarde") "accounts.json"
 $script:BackupDl = Join-Path $script:Sandbox "dl (1)"
-$null = New-Item -ItemType Directory -Path $script:HomeDir, $script:BackupDl -Force
+$null = New-Item -ItemType Directory -Path $script:HomeDir, $script:BackupDl, (Split-Path -Parent $script:RegistryPath) -Force
 function Get-DownloadsDir { return $script:BackupDl }
 function Set-HomeText { param([string]$Rel, [string]$Text) $null = New-SandboxFile ("maison sauvegarde/" + $Rel) $Text }
 function Get-HomeText {
@@ -37,6 +37,8 @@ Assert-True ($first.StartsWith($zip + " (")) "sauvegarde : chemin de l'archive r
 Assert-True (($names -contains ".claude/skills/outil/SKILL.md") -and ($names -contains ".claude/projects/p/memory/note.md") -and ($names -contains ".claude.json") -and ($names -contains ".claude-compte2/.credentials.json")) "sauvegarde : fichiers des comptes"
 Assert-Equal 0 @($names | Where-Object { $_ -match '\.trash|\.jsonl$|/cache/|^\.claude-compte2/(skills|CLAUDE\.md)' }).Count "sauvegarde : caches, conversations et liens partages exclus"
 Assert-Equal ("compte1|" + $team) ((@(Get-ZipAccounts $zip) | ForEach-Object { $_.Label }) -join "|") "sauvegarde : noms des comptes relus"
+Assert-Equal ".claude-accounts.json" ((@($names | Where-Object { $_ -like "*accounts.json" })) -join "|") "sauvegarde : liste des comptes a la racine, sous son ancien nom"
+Assert-Equal 0 @(Get-ChildItem -LiteralPath ([IO.Path]::GetTempPath()) -Filter "claude-reg-*" -Directory).Count "sauvegarde : copie de la liste effacee"
 
 $taken = Join-Path $script:BackupDl "claude-comptes-pris.zip"
 [IO.File]::WriteAllText($taken, "")
@@ -64,6 +66,17 @@ Remove-LinkOrTree (Join-Path $script:HomeDir ".claude-compte2")
 $null = Restore-Accounts $zip @(Get-ZipAccounts $zip | Where-Object { $_.Dir -eq ".claude-compte2" })
 Assert-Equal $team ((@(Get-Accounts | Where-Object { $_.Dir -eq ".claude-compte2" }) | ForEach-Object { $_.Label }) -join "|") "compte absent : remis au menu sous son nom"
 Assert-Equal "B1|regles" (@((Get-HomeText ".claude-compte2/.credentials.json"), (Get-HomeText ".claude-compte2/CLAUDE.md")) -join "|") "compte absent : fichiers remis et relies"
+Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude-accounts.json"))) "restauration : rien ecrit sous l'ancien nom du dossier perso"
+
+$null = New-SandboxFile "ancienne/.claude-accounts.json" '[{ "Label": "vieux", "Dir": ".claude-compte3" }]'
+$null = New-SandboxFile "ancienne/.claude-compte3/.credentials.json" "C1"
+$old = Join-Path $script:BackupDl ("claude-comptes-ancienne" + (Get-ArchiveExtension $script:TarFlavor))
+& $script:Tar -a -c -f $old -C (Join-Path $script:Sandbox "ancienne") ".claude-accounts.json" ".claude-compte3"
+Assert-Equal "vieux" ((@(Get-ZipAccounts $old) | ForEach-Object { $_.Label }) -join "|") "ancienne archive : noms des comptes relus"
+$null = Restore-Accounts $old
+Assert-Equal "C1" (Get-HomeText ".claude-compte3/.credentials.json") "ancienne archive : compte remis"
+Assert-True ([IO.File]::ReadAllText($script:RegistryPath).Contains("vieux")) "ancienne archive : liste ecrite dans le dossier de clm"
+Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude-accounts.json"))) "ancienne archive : liste hors du dossier perso"
 
 $null = New-SandboxFile "intrus/Documents/a.txt" "x"
 $empty = Join-Path $script:BackupDl ("claude-comptes-vide" + (Get-ArchiveExtension $script:TarFlavor))
@@ -77,6 +90,6 @@ Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir "Documents"
 
 . (Join-Path $bin "claude-menu-archive.ps1")
 Remove-LinkOrTree $script:HomeDir
-Remove-Item -LiteralPath $script:BackupDl, (Join-Path $script:Sandbox "intrus") -Recurse -Force
+Remove-Item -LiteralPath $script:BackupDl, (Join-Path $script:Sandbox "intrus"), (Join-Path $script:Sandbox "ancienne"), (Split-Path -Parent $script:RegistryPath) -Recurse -Force
 $script:HomeDir = $backupHome
 $script:RegistryPath = $backupRegistry

@@ -21,7 +21,7 @@ function Update-WatchFs {
   $roots = @(Get-SyncRoots $accs)
   if ($null -ne $St.Fs -and $St.Fs.Key -eq ($roots -join "|")) { return }
   Stop-WatchFs $St.Fs
-  $St.Fs = New-WatchFsContext $script:HomeDir $roots (Get-SyncPatterns $accs)
+  $St.Fs = New-WatchFsContext $script:HomeDir $roots (Get-SyncPatterns $accs) $script:RegistryPath
   Start-WatchFs $St.Fs
   if ($St.Fs.Blind) { Write-WatchLog "surveillance des fichiers indisponible, synchro reguliere a la place" }
 }

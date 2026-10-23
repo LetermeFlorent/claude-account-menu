@@ -1,4 +1,7 @@
 $fh = Join-Path $script:Sandbox "pc-files"
+$filesRegistry = $script:RegistryPath
+$script:RegistryPath = Join-Path (Join-Path $script:Sandbox "pc-files-etat") "accounts.json"
+$null = New-SandboxFile "pc-files-etat/accounts.json" "contenu liste"
 foreach ($rel in @(".claude/settings.json", ".claude/cache/x.bin", ".claude/plugins/cache/p.js", ".claude/a.lock", ".claude/x.json.conflit-MAC", ".claude/.credentials.json", ".claude/settings.json.bak-sync", ".claude/w.json.ab12.tmp", ".claude/outils/chrome-bidi/profils/c/Cookies", ".claude-compte2/skills/s.md", ".claude-compte2/notes.md", ".claude-compte2/CLAUDE.md", ".claude/projects/C--x/a b.jsonl", ".claude/projects/C--x/memory/a b.md", ".claude.json", ".claude-accounts.json", ".autre/hors.md")) {
   $null = New-SandboxFile ("pc-files/" + $rel) ("contenu " + $rel)
 }
@@ -9,6 +12,10 @@ $patterns = Get-SyncPatterns $accs
 $res = Get-LocalFiles $fh $roots $patterns (New-PathMap)
 $keys = [string[]]@($res.Files.Keys); [Array]::Sort($keys, [StringComparer]::Ordinal)
 Assert-Equal ".claude-accounts.json|.claude-compte2/notes.md|.claude.json|.claude/projects/C--x/memory/a b.md|.claude/settings.json" ($keys -join "|") "perimetre : exclusions et elements partages ecartes"
+Assert-Equal $script:RegistryPath $res.Files[".claude-accounts.json"].Full "liste des comptes : lue dans le dossier de clm, nom Drive garde"
+Assert-Equal ($script:RegistryPath + ".conflit-MAC") (Get-SyncLocalPath ".claude-accounts.json.conflit-MAC") "liste des comptes : conflit range a cote"
+Assert-Equal (Join-Path (Join-Path $script:HomeDir ".claude") "settings.json") (Get-SyncLocalPath ".claude/settings.json") "autres fichiers : dans le dossier perso"
+$script:RegistryPath = $filesRegistry
 $e = $res.Files[".claude/settings.json"]
 Assert-Equal (Get-FileMd5 (Join-Path $fh ".claude/settings.json")) $e.Md5 "empreinte MD5 calculee"
 Assert-Equal 32 $e.Md5.Length "MD5 en hexadecimal"

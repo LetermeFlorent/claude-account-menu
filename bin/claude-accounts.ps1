@@ -1,8 +1,9 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-credentials.ps1")) { . (Join-Path $PSScriptRoot "claude-credentials.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-account-add.ps1")) { . (Join-Path $PSScriptRoot "claude-account-add.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
 $script:HomeDir = Get-HomeDir
-$script:RegistryPath = Join-Path $script:HomeDir ".claude-accounts.json"
+$script:RegistryPath = Get-StatePath "accounts.json"
 $script:ClaudeExe = Find-ClaudeExe
 
 function Get-ClaudeVersion {

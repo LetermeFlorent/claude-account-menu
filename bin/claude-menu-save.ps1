@@ -2,6 +2,7 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-archive.ps1")
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-self-version.ps1")) { . (Join-Path $PSScriptRoot "claude-self-version.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-machine-settings.ps1")) { . (Join-Path $PSScriptRoot "claude-machine-settings.ps1") }
 $script:SaveExcludes = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide", "*.lock", ".local/bin/*.exe") + $script:SkipConversations
+$script:ArchiveRegistryName = ".claude-accounts.json"
 
 function Get-AccountItems {
   param($Accs)
@@ -17,8 +18,16 @@ function Get-SaveItems {
   param($Accs)
   $h = $script:HomeDir
   $bin = Get-ChildItem -LiteralPath $PSScriptRoot -File | Where-Object { $_.Name -match "^((clm|claude-.*)\.(cmd|ps1)|clm|clm\.version)$" } | ForEach-Object { ".local/bin/" + $_.Name }
-  $names = @(Get-AccountItems $Accs) + @(".claude-accounts.json") + @($bin)
+  $names = @(Get-AccountItems $Accs) + @($bin)
   return @($names | Where-Object { Test-Path -LiteralPath (Join-Path $h $_) })
+}
+
+function New-RegistryStage {
+  if (-not (Test-Path -LiteralPath $script:RegistryPath)) { return $null }
+  $dir = Join-Path ([IO.Path]::GetTempPath()) ("claude-reg-" + [guid]::NewGuid().ToString("N"))
+  $null = [IO.Directory]::CreateDirectory($dir)
+  [IO.File]::Copy($script:RegistryPath, (Join-Path $dir $script:ArchiveRegistryName))
+  return $dir
 }
 
 function Get-SaveExcludes {
@@ -55,7 +64,10 @@ function Save-Accounts {
   $argv += $items
   $label = "sauvegarde"
   if ($Tag) { $label = "copie de l'etat actuel" }
-  $warn = Invoke-Tar $argv (Measure-Entries $items $ex) $label
+  $stage = New-RegistryStage
+  if ($stage) { $argv += @("-C", $stage, $script:ArchiveRegistryName) }
+  try { $warn = Invoke-Tar $argv (Measure-Entries $items $ex) $label }
+  finally { if ($stage) { Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue } }
   if (-not (Test-Path -LiteralPath $zip)) { throw ("echec tar : " + ($warn -join " ")) }
   if ($warn.Count -gt 0 -and -not (Test-ArchiveIntact $zip)) {
     Remove-Item -LiteralPath $zip -Force
@@ -76,7 +88,7 @@ function Get-ZipAccounts {
   Assert-ArchiveReadable $Zip
   $dirs = @(& $script:Tar -tf $Zip | ForEach-Object { ($_ -split "/")[0] } | Where-Object { $_ -match "^\.claude(-[^.]+)?$" } | Sort-Object -Unique)
   $reg = @()
-  try { $reg = @(((& $script:Tar -xOf $Zip ".claude-accounts.json" 2>$null | Out-String) -replace "^[^\[\{]*", "") | ConvertFrom-Json | ForEach-Object { $_ }) } catch {}
+  try { $reg = @(((& $script:Tar -xOf $Zip $script:ArchiveRegistryName 2>$null | Out-String) -replace "^[^\[\{]*", "") | ConvertFrom-Json | ForEach-Object { $_ }) } catch {}
   $out = @()
   foreach ($d in $dirs) {
     $hit = @($reg | Where-Object { $_.Dir -eq $d })

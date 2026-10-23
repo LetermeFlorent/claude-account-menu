@@ -1,4 +1,6 @@
 $script:ClmOnce = New-Object 'System.Collections.Generic.HashSet[string]'
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state-migrate.ps1")) { . (Join-Path $PSScriptRoot "claude-state-migrate.ps1") }
+$null = Invoke-StateMigration
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-boot-bar.ps1")) { . (Join-Path $PSScriptRoot "claude-boot-bar.ps1") }
 $script:BootBar = Start-BootBar $args $PSScriptRoot $script:ClmOnce
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-usage.ps1")) { . (Join-Path $PSScriptRoot "claude-usage.ps1") }

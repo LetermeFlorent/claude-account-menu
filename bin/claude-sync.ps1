@@ -1,7 +1,8 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
 $script:AccountKeys = @("model", "modelSettings", "theme")
-$script:SyncStatePath = Join-Path $script:HomeDir ".claude-sync-state.json"
-$script:SyncLockPath = Join-Path $script:HomeDir ".claude-sync.lock"
+$script:SyncStatePath = Get-StatePath "sync-state.json"
+$script:SyncLockPath = Get-StatePath "sync.lock"
 
 function Invoke-WithSyncLock {
   param([scriptblock]$Action)

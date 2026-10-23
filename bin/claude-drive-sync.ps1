@@ -5,7 +5,8 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-changes.ps1"
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-sessions.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-sessions.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-prefs.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-prefs.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-scope.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-scope.ps1") }
-$script:DriveLockPath = Join-Path (Get-HomeDir) ".clm-drive.lock"
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+$script:DriveLockPath = Get-StatePath "drive.lock"
 $script:DriveLockWaitMs = 5000
 $script:DriveExitBudgetMs = 30000
 $script:DriveBusyText = "une autre synchro Drive est en cours"

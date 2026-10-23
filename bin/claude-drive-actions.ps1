@@ -9,7 +9,7 @@ $script:DriveSaveEveryMs = 60000
 
 function Get-SyncLocalPath {
   param([string]$Rel)
-  return Join-Path $script:HomeDir ($Rel.Replace("/", [IO.Path]::DirectorySeparatorChar))
+  return Get-SyncRootPath $script:HomeDir $Rel
 }
 
 function Save-SyncCheckpoint {

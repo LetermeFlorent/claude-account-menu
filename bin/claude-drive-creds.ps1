@@ -1,8 +1,9 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-transfer.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-transfer.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-folders.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-folders.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-presence.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-presence.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
 $script:CredentialMarginMs = 60000
-$script:CredLockPath = Join-Path (Get-HomeDir) ".clm-drive-creds.lock"
+$script:CredLockPath = Get-StatePath "drive-creds.lock"
 $script:CredLockWaitMs = 15000
 
 function Get-CredentialExpiry {

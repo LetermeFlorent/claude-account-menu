@@ -1,7 +1,8 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-config.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-config.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-asks.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-asks.ps1") }
-$script:SyncChoicePath = Join-Path (Get-HomeDir) ".clm-sync-choice.json"
-$script:SyncChoiceLockPath = Join-Path (Get-HomeDir) ".clm-sync-choice.lock"
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+$script:SyncChoicePath = Get-StatePath "sync-choice.json"
+$script:SyncChoiceLockPath = Get-StatePath "sync-choice.lock"
 $script:SyncChoiceWaitMs = 5000
 $script:SyncChoiceBusyText = "reglages de synchro en cours d'ecriture"
 $script:SyncChoiceKinds = @("skills", "mcp", "globals")
