@@ -73,12 +73,19 @@ Variables
                                  avant --anim
   STATUSLINE_BG=dark|light       fixe la palette, avant --palette
 
+Fichiers de clm, un dossier par utilisateur
+  Windows                        %LOCALAPPDATA%\clm
+  Linux                          ~/.local/state/clm, ou $XDG_STATE_HOME/clm
+  macOS                          ~/Library/Application Support/clm
+  accounts.json                  liste des comptes, noms et dossiers
+  sync-choice.json               reglages de synchro de ce PC
+  sync-catalog.json              skills et MCP vus a la derniere synchro
+  drive.json                     connexion Drive, secret, a ne pas partager
+  display.json                   couleurs et animations de ce PC
+  Les anciens .claude-accounts.json et .clm-*.json du dossier perso y sont
+  deplaces au premier lancement.
+
 Fichiers du dossier perso
-  .claude-accounts.json          liste des comptes, noms et dossiers
-  .clm-sync-choice.json          reglages de synchro de ce PC
-  .clm-sync-catalog.json         skills et MCP vus a la derniere synchro
-  .clm-drive.json                connexion Drive, secret, a ne pas partager
-  .clm-display.json              couleurs et animations de ce PC
   .local/bin                     scripts de clm et clm.version
 '@
 

@@ -60,7 +60,9 @@ Sous macOS, Claude Code range les jetons dans le trousseau, où le menu les lit 
 
 ## Premier lancement
 
-Au premier lancement, quand `.claude-accounts.json` n'existe pas encore dans le dossier personnel, `clm` crée la liste des comptes : `.claude` devient `compte1`, puis chaque dossier présent de `.claude-compte2` à `.claude-compte9` devient un compte du même nom. Ensuite, seule cette liste compte. Un dossier de compte nommé autrement, ou créé à la main après coup, doit y être ajouté à la main, au format décrit dans le README.
+Au premier lancement, quand la liste des comptes, `accounts.json`, n'existe pas encore dans le dossier de `clm`, `clm` la crée : `.claude` devient `compte1`, puis chaque dossier présent de `.claude-compte2` à `.claude-compte9` devient un compte du même nom. Ensuite, seule cette liste compte. Un dossier de compte nommé autrement, ou créé à la main après coup, doit y être ajouté à la main, au format décrit dans le README.
+
+Ce dossier est `%LOCALAPPDATA%\clm` sous Windows, `~/.local/state/clm` sous Linux, ou `$XDG_STATE_HOME/clm` si cette variable est définie, et `~/Library/Application Support/clm` sous macOS. Une version précédente rangeait ces fichiers dans le dossier personnel, sous des noms en `.claude-` ou `.clm-` : `clm` les déplace dans son dossier au premier lancement qui suit la mise à jour.
 
 Sur un poste qui n'a qu'un seul compte, le menu n'en montre donc qu'un. Appuyer sur `a` pour en ajouter : le menu demande un nom, crée le dossier, puis ouvre la connexion dans le navigateur. Si claude.ai est déjà connecté sur un autre compte dans ce navigateur, copier le lien de connexion dans une fenêtre privée, sinon c'est l'autre compte qui sera enregistré. La touche `x` fait l'inverse : elle retire un compte du menu, et peut aussi effacer son dossier après en avoir rangé une archive dans Téléchargements.
 
@@ -86,7 +88,7 @@ L'archive n'est pas chiffrée et contient les jetons en clair. La transférer pa
 
 `clm` se met à jour tout seul. À l'ouverture du menu, à un lancement direct comme `clm -2` et avant `clm --restore`, il compare sa version au dernier commit publié sur GitHub, installe la nouvelle s'il y en a une, puis redémarre. Quand une version sort pendant que le menu est ouvert, un bouton "[maj dispo]" apparaît à côté du numéro de version, "clm v34" : un clic dessus, ou la touche `u`, l'installe et relance `clm`. Le détail est dans le [README](README.md#mise-à-jour-de-clm).
 
-À la main, ça reste possible : `git pull` dans le dossier cloné, puis relancer `install.ps1`, ou `install.sh` sous Linux et macOS. Les comptes, leurs jetons et `.claude-accounts.json` ne sont pas modifiés, et le hook déjà en place n'est pas ajouté une seconde fois. Comme chaque mise à jour, automatique ou à la main, repasse par l'installeur, une commande de hook périmée est corrigée à cette occasion.
+À la main, ça reste possible : `git pull` dans le dossier cloné, puis relancer `install.ps1`, ou `install.sh` sous Linux et macOS. Les comptes, leurs jetons et la liste des comptes ne sont pas modifiés, et le hook déjà en place n'est pas ajouté une seconde fois. Comme chaque mise à jour, automatique ou à la main, repasse par l'installeur, une commande de hook périmée est corrigée à cette occasion.
 
 Claude Code lui-même est mis à jour par `clm`, avec `claude update`, à chaque ouverture du menu et à chaque lancement direct comme `clm -2`. Pour sauter les deux mises à jour une fois, lancer `clm --no-update`.
 
@@ -97,7 +99,7 @@ La désinstallation se fait à la main, en quatre étapes :
 1. Retirer du `settings.json` de chaque compte l'entrée `SessionStart` qui mentionne `claude-statusline-seed.ps1`. Remettre `settings.json.bak-seed` à la place marche aussi, mais perd les réglages changés depuis l'installation. Supprimer ensuite les fichiers `settings.json.bak-seed`.
 2. Supprimer de `%USERPROFILE%\.local\bin`, ou de `~/.local/bin`, les fichiers `clm`, `clm.cmd`, `clm.version`, `claude-menu.cmd` et `claude-*.ps1`, et le dossier `clm-web`, sans toucher à `claude.exe` ni à `claude`, qui sont Claude Code. Sous Windows, l'installeur a ajouté ce dossier au PATH de l'utilisateur : l'en retirer seulement si plus rien n'y vit, Claude Code s'y installant aussi.
 3. Supprimer le cache des quotas : `%LOCALAPPDATA%\claude-menu` sous Windows, qui garde aussi le lecteur de la souris `clm-conin-*.dll`, `~/Library/Caches/claude-menu` sous macOS, `${XDG_CACHE_HOME:-~/.cache}/claude-menu` sous Linux.
-4. Supprimer `.claude-accounts.json` du dossier personnel, la liste des comptes propre au menu, et les archives `claude-comptes-*` du dossier Téléchargements, qui contiennent des jetons.
+4. Supprimer le dossier de `clm`, `%LOCALAPPDATA%\clm`, `~/.local/state/clm` ou `~/Library/Application Support/clm`, qui garde la liste des comptes propre au menu et la connexion Drive, et les archives `claude-comptes-*` du dossier Téléchargements, qui contiennent des jetons.
 
 Les dossiers de comptes (`.claude`, `.claude-compte2`, etc.) restent en place : ils appartiennent à Claude Code, qui continue de les utiliser avec `CLAUDE_CONFIG_DIR`. Les clés écrites dans le fichier d'état de la barre d'état restent aussi, sans effet une fois périmées.
 
@@ -117,6 +119,6 @@ Si la sauvegarde signale des avertissements, ou si la restauration annonce des f
 
 Sous Linux, "GNU tar ne lit pas les zip" demande d'installer `bsdtar` (paquet `libarchive-tools`) pour restaurer un `.zip` venu d'un autre poste.
 
-Si la barre d'état n'a pas ses quotas au lancement d'un compte avec `claude`, vérifier que le `settings.json` de ce compte contient le hook, et que son dossier figure dans `.claude-accounts.json` : le hook ne fait rien pour un dossier absent de la liste.
+Si la barre d'état n'a pas ses quotas au lancement d'un compte avec `claude`, vérifier que le `settings.json` de ce compte contient le hook, et que son dossier figure dans la liste des comptes, `accounts.json` : le hook ne fait rien pour un dossier absent de la liste.
 
 Si la barre d'état a disparu d'un PC après une synchro Drive ou une restauration, son `settings.json` n'a plus d'entrée `statusLine`. `clm` garde celle du PC mais n'en crée pas : c'est le cas d'un PC où la barre n'a pas encore été installée, ou d'un PC qui avait encore un ancien `clm` quand il a reçu les réglages. Relancer sur ce PC l'installeur de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline) la remet.

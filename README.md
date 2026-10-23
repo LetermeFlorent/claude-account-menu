@@ -102,7 +102,7 @@ La touche `a` demande un nom (Entrée garde le nom par défaut `compteN`, `q` an
 1. relie les éléments partagés avec `.claude` (voir "Dossiers partagés") ;
 2. copie le `settings.json` de `.claude`, hooks compris ;
 3. écrit un `.claude.json` qui marque l'accueil de Claude Code comme déjà fait ;
-4. enregistre le compte dans `.claude-accounts.json` ;
+4. enregistre le compte dans `clm/accounts.json` ;
 5. lance `claude auth login`, qui ouvre la connexion dans le navigateur.
 
 Si claude.ai est déjà connecté dans le navigateur sur un autre compte, c'est cet autre compte qui sera enregistré. Ouvrir le lien de connexion dans une fenêtre privée évite le piège. Une connexion abandonnée laisse le compte dans le menu avec le message "cree, mais non connecte" : il suffit de le lancer et de faire `/login`. Le menu ne vérifie pas que le nom est unique, et deux comptes du même nom se confondent dans le cache des quotas et dans `--save=` : la touche `n` permet d'en renommer un.
@@ -111,7 +111,7 @@ Si claude.ai est déjà connecté dans le navigateur sur un autre compte, c'est 
 
 La touche `x` ouvre une page qui liste les comptes, curseur sur celui du menu. On choisit avec les flèches et Entrée, ou avec un chiffre, Échap ou `q` annule. Une seconde page propose deux sorties :
 
-- `1` retire le compte du menu et laisse son dossier en place. Il revient si on remet son entrée dans `.claude-accounts.json`.
+- `1` retire le compte du menu et laisse son dossier en place. Il revient si on remet son entrée dans `clm/accounts.json`.
 - `2` le retire puis efface son dossier, avec connexion, historique et réglages. Avant d'effacer, le menu range une archive du compte dans Téléchargements, restaurable avec `r`, et n'efface rien si l'archive échoue.
 
 Les dossiers et fichiers partagés sont des liens vers `.claude` : l'effacement retire le lien sans toucher à ce qu'il vise. Sous macOS, les entrées du trousseau propres au compte sont supprimées aussi. Elles ne sont pas dans l'archive, donc un compte restauré devra se reconnecter, et la page le rappelle.
@@ -120,13 +120,13 @@ Seuls les dossiers nommés `.claude-<nom>` peuvent être effacés depuis le menu
 
 ## Renommer un compte
 
-La touche `n` ouvre la même liste que le retrait, curseur sur le compte du menu. Après le choix, le menu laisse la place à une question, "Nouveau nom", et Entrée sans rien taper annule. Seul le nom affiché change, dans `.claude-accounts.json` : le dossier, la connexion et l'adresse e-mail restent les mêmes. Les quotas en cache suivent le nouveau nom, sans nouvelle lecture.
+La touche `n` ouvre la même liste que le retrait, curseur sur le compte du menu. Après le choix, le menu laisse la place à une question, "Nouveau nom", et Entrée sans rien taper annule. Seul le nom affiché change, dans `clm/accounts.json` : le dossier, la connexion et l'adresse e-mail restent les mêmes. Les quotas en cache suivent le nouveau nom, sans nouvelle lecture.
 
 Le nouveau nom est refusé s'il est vide, s'il contient une virgule, qui sépare les noms dans `--save=` et `--only=`, ou s'il est déjà pris par un autre compte, sans tenir compte de la casse. Changer seulement la casse d'un nom est permis.
 
 ## Changer l'ordre des comptes
 
-Les comptes gardent dans le menu l'ordre de `.claude-accounts.json`, qui donne aussi leur numéro pour `1` à `9` et `-N`. `clm --move <compte> <rang>` place un compte à ce rang, 1 en haut, et décale les autres. La page web fait de même avec ses boutons "Monter" et "Descendre".
+Les comptes gardent dans le menu l'ordre de `clm/accounts.json`, qui donne aussi leur numéro pour `1` à `9` et `-N`. `clm --move <compte> <rang>` place un compte à ce rang, 1 en haut, et décale les autres. La page web fait de même avec ses boutons "Monter" et "Descendre".
 
 ## Ligne de commande
 
@@ -235,7 +235,7 @@ L'archive reprend l'arborescence du dossier personnel. Elle contient :
 
 - le dossier de chaque compte coché : jetons (hors macOS), réglages, plugins, MCP, historique des conversations ;
 - `.claude.json` et `.mcp.json` quand `.claude` est coché ;
-- la liste des comptes, `.claude-accounts.json` ;
+- la liste des comptes, à la racine sous son ancien nom, `.claude-accounts.json`, comme dans les archives des versions précédentes ;
 - les scripts du menu présents dans `~/.local/bin`.
 
 Sont exclus, à toute profondeur, les dossiers et fichiers nommés `cache`, `paste-cache`, `session-env`, `shell-snapshots`, `ide` et `*.lock`, et les `.exe` de `.local/bin`. Les conversations (`projects/*.jsonl`, avec leurs dossiers `subagents` et `tool-results`) ne sont pas sauvegardées : elles pèsent l'essentiel du dossier. Les mémoires de `projects/*/memory` le sont. Le dossier `plugins/cache`, où Claude Code range le code des plugins installés, en fait partie : la liste des plugins est sauvegardée, leur code téléchargé ne l'est pas. Un dossier masqué rangé directement dans `skills`, c'est-à-dire dont le nom commence par un point comme `skills/.trash`, est ignoré partout : ni sauvegardé, ni synchronisé, ni proposé comme skill. Ceux qui se trouvent plus bas, dans un skill ou un plugin, restent pris.
@@ -264,7 +264,7 @@ Les comptes secondaires partagent avec `.claude` les dossiers `agents`, `command
 
 Chaque compte garde son `settings.json` et son `.claude.json`, mais `clm` les synchronise à chaque lancement d'un compte. Dans `settings.json`, tout est commun sauf `model`, `modelSettings` et `theme`, propres à chaque compte. Dans `.claude.json`, seul `mcpServers` est commun : connexion, projets et le reste ne bougent pas. Ce sont les MCP globaux du PC, qui ne partent jamais sur le Drive (voir "Réglages de synchro par PC").
 
-La règle est celle du dernier modifié. `.claude-sync-state.json` garde la dernière valeur commune. Parmi les comptes qui s'en écartent, celui dont le fichier est le plus récent gagne, et sa valeur est recopiée dans les autres. Avant sa première réécriture par la synchronisation, un fichier est copié en `<fichier>.bak-sync`. Un verrou, `.claude-sync.lock`, empêche deux lancements de synchroniser en même temps : au bout de 5 secondes d'attente, le second lance le compte sans synchroniser et l'indique.
+La règle est celle du dernier modifié. `clm/sync-state.json` garde la dernière valeur commune. Parmi les comptes qui s'en écartent, celui dont le fichier est le plus récent gagne, et sa valeur est recopiée dans les autres. Avant sa première réécriture par la synchronisation, un fichier est copié en `<fichier>.bak-sync`. Un verrou, `clm/sync.lock`, empêche deux lancements de synchroniser en même temps : au bout de 5 secondes d'attente, le second lance le compte sans synchroniser et l'indique.
 
 Juste avant de lancer un compte, `clm` vérifie deux réglages dont l'absence fait reposer à Claude Code ses questions d'accueil, choix du thème compris. Le `.claude.json` du compte doit marquer l'accueil comme fait : `clm` y écrit `hasCompletedOnboarding` s'il manque, et crée le fichier s'il n'existe pas ou s'il est vide. Le `settings.json` doit porter un `theme` : à défaut, `clm` y met celui d'un autre compte, ou `dark` si aucun n'en a.
 
@@ -274,9 +274,9 @@ Juste avant de lancer un compte, `clm` vérifie deux réglages dont l'absence fa
 
 ### Connecter un PC
 
-Dans le menu, la touche `y` connecte le PC tant qu'il ne l'est pas : le navigateur s'ouvre sur la page Google qui demande l'accès au Drive, il suffit d'autoriser, puis une première synchro démarre. `clm --drive-login` fait la même connexion en ligne de commande. Si le navigateur ne s'ouvre pas, le lien est affiché, et la réponse est attendue 5 minutes. La connexion est rangée dans `~/.clm-drive.json`, lisible par son seul propriétaire hors Windows, avec le nom du PC, celui de la machine.
+Dans le menu, la touche `y` connecte le PC tant qu'il ne l'est pas : le navigateur s'ouvre sur la page Google qui demande l'accès au Drive, il suffit d'autoriser, puis une première synchro démarre. `clm --drive-login` fait la même connexion en ligne de commande. Si le navigateur ne s'ouvre pas, le lien est affiché, et la réponse est attendue 5 minutes. La connexion est rangée dans `clm/drive.json`, lisible par son seul propriétaire hors Windows, avec le nom du PC, celui de la machine.
 
-`clm` passe par sa propre application Google, `clm`, de type application de bureau, déjà en production : rien à créer dans la console Google Cloud. La portée demandée, `drive.file`, ne donne accès qu'aux fichiers créés par `clm`. Le secret d'une application de bureau n'en est pas un pour Google, il est donc écrit dans `bin/claude-drive-auth.ps1`. Pour passer par une autre application, mettre `clientId` et `clientSecret` dans `~/.clm-drive.json` avant de se connecter.
+`clm` passe par sa propre application Google, `clm`, de type application de bureau, déjà en production : rien à créer dans la console Google Cloud. La portée demandée, `drive.file`, ne donne accès qu'aux fichiers créés par `clm`. Le secret d'une application de bureau n'en est pas un pour Google, il est donc écrit dans `bin/claude-drive-auth.ps1`. Pour passer par une autre application, mettre `clientId` et `clientSecret` dans `clm/drive.json` avant de se connecter.
 
 Le premier PC envoie tout. Sur un PC qui rejoint, la première synchro prend ce qui est sur le Drive quand un fichier existe des deux côtés : un PC neuf n'écrase pas les comptes des autres avec ses réglages par défaut. L'ancienne version locale est gardée sous `<fichier>.conflit-<PC>`.
 
@@ -294,21 +294,21 @@ L'en-tête affiche, après la version, "sync 14:32" pour la dernière synchro r�
 
 ### Le veilleur
 
-Le veilleur est un process PowerShell sans fenêtre, en priorité basse, lancé par `clm` à l'ouverture de Claude Code quand le PC est connecté au Drive. Il n'y en a qu'un par PC, quel que soit le nombre de fenêtres : chaque session ouverte s'inscrit dans `~/.clm-drive-watch/`, et un verrou, `~/.clm-drive-watch.lock`, garde le veilleur unique. Il s'arrête de lui-même quand plus aucune session n'est ouverte et que la dernière synchro est faite. Quand `clm` est mis à jour pendant qu'il tourne, il s'arrête et repart aussitôt avec la nouvelle version. Un menu ouvert avant la mise à jour garde son ancien code en mémoire, alors ses synchros passent par la version installée.
+Le veilleur est un process PowerShell sans fenêtre, en priorité basse, lancé par `clm` à l'ouverture de Claude Code quand le PC est connecté au Drive. Il n'y en a qu'un par PC, quel que soit le nombre de fenêtres : chaque session ouverte s'inscrit dans `clm/drive-watch/`, et un verrou, `clm/drive-watch.lock`, garde le veilleur unique. Il s'arrête de lui-même quand plus aucune session n'est ouverte et que la dernière synchro est faite. Quand `clm` est mis à jour pendant qu'il tourne, il s'arrête et repart aussitôt avec la nouvelle version. Un menu ouvert avant la mise à jour garde son ancien code en mémoire, alors ses synchros passent par la version installée.
 
 Il regarde le disque par les notifications du système, sans relire les dossiers. Là où elles manquent, il synchronise toutes les minutes. Les jetons de connexion sont comparés à chaque passage, même quand la synchro automatique est coupée. Le `.claude.json` d'un compte ouvert, que Claude Code réécrit sans arrêt, attend la fin de la session pour partir.
 
-Une session dont le process a disparu, fenêtre fermée ou PC éteint, compte comme finie. Une synchro qui échoue est retentée une minute plus tard, et le veilleur renonce au bout de 10 minutes d'échecs : la synchro suivante reprend le travail. S'il ne peut pas démarrer, la fenêtre fait elle-même la synchro de sortie, 30 secondes au plus, comme avant. Son journal est `~/.clm-drive-watch/watch.log`, vidé au-delà de 256 Ko.
+Une session dont le process a disparu, fenêtre fermée ou PC éteint, compte comme finie. Une synchro qui échoue est retentée une minute plus tard, et le veilleur renonce au bout de 10 minutes d'échecs : la synchro suivante reprend le travail. S'il ne peut pas démarrer, la fenêtre fait elle-même la synchro de sortie, 30 secondes au plus, comme avant. Son journal est `clm/drive-watch/watch.log`, vidé au-delà de 256 Ko.
 
 Une synchro coupée en route ne perd pas son travail. Son état est enregistré toutes les minutes pendant les transferts, et la suivante ne refait pas ce qui était déjà passé. Quitter le menu pendant l'analyse du disque l'arrête aussitôt, avec le message "interrompue pendant l'analyse, reprise a la prochaine synchro".
 
 ### Ce qui est comparé
 
-Chaque PC garde dans `~/.clm-drive-state.json` l'état de sa dernière synchro, et compare à cet état le disque et le Drive. Un fichier modifié d'un seul côté est copié de l'autre, une suppression est propagée. Un fichier modifié des deux côtés est un conflit : la version la plus récente gagne et l'autre reste sur ce PC sous `<fichier>.conflit-<PC>`. Les fichiers `.conflit-*`, `.bak-sync` et `.tmp` ne sont pas synchronisés, et les exclusions de la sauvegarde s'appliquent. Quatre sortes de fichiers restent propres à chaque PC et ne passent par le Drive dans aucun sens : les conversations (voir plus bas), les dossiers `file-history` et `node_modules`, et les profils Chrome rangés sous `chrome-bidi/profils`. Le ménage suit les règles : quand une version de `clm` exclut de nouveaux fichiers, comme ces quatre sortes ou les dossiers masqués de `skills`, chaque PC met à la corbeille du Drive, en lots de 100, ceux qu'il y avait envoyés et que les règles écartent désormais. Il le fait à la première synchro complète qui suit le passage de tous les PC à cette version, et ne touche pas à ceux des autres PC, que chacun retire à son tour. Un skill décoché sur un PC n'est pas concerné : il reste sur le Drive pour les autres. Ceux qui ne portent le nom d'aucun PC, envoyés par une très ancienne version, partent avec ceux du premier PC qui passe. La base de chaque PC les oublie, et rien n'est effacé sur les disques.
+Chaque PC garde dans `clm/drive-state.json` l'état de sa dernière synchro, et compare à cet état le disque et le Drive. Un fichier modifié d'un seul côté est copié de l'autre, une suppression est propagée. Un fichier modifié des deux côtés est un conflit : la version la plus récente gagne et l'autre reste sur ce PC sous `<fichier>.conflit-<PC>`. Les fichiers `.conflit-*`, `.bak-sync` et `.tmp` ne sont pas synchronisés, et les exclusions de la sauvegarde s'appliquent. Quatre sortes de fichiers restent propres à chaque PC et ne passent par le Drive dans aucun sens : les conversations (voir plus bas), les dossiers `file-history` et `node_modules`, et les profils Chrome rangés sous `chrome-bidi/profils`. Le ménage suit les règles : quand une version de `clm` exclut de nouveaux fichiers, comme ces quatre sortes ou les dossiers masqués de `skills`, chaque PC met à la corbeille du Drive, en lots de 100, ceux qu'il y avait envoyés et que les règles écartent désormais. Il le fait à la première synchro complète qui suit le passage de tous les PC à cette version, et ne touche pas à ceux des autres PC, que chacun retire à son tour. Un skill décoché sur un PC n'est pas concerné : il reste sur le Drive pour les autres. Ceux qui ne portent le nom d'aucun PC, envoyés par une très ancienne version, partent avec ceux du premier PC qui passe. La base de chaque PC les oublie, et rien n'est effacé sur les disques.
 
-Pour aller vite, la liste du Drive n'est relue en entier qu'une fois par jour. Entre deux, `clm` ne demande au Drive que ce qui a changé depuis la dernière synchro, et garde la liste dans `~/.clm-drive-remote.json`. Les téléchargements et les petits envois partent en avance sur 4 connexions en parallèle, puis les fichiers sont posés sur le disque et notés dans la base dans l'ordre.
+Pour aller vite, la liste du Drive n'est relue en entier qu'une fois par jour. Entre deux, `clm` ne demande au Drive que ce qui a changé depuis la dernière synchro, et garde la liste dans `clm/drive-remote.json`. Les téléchargements et les petits envois partent en avance sur 4 connexions en parallèle, puis les fichiers sont posés sur le disque et notés dans la base dans l'ordre.
 
-Plus de 20 suppressions prévues, ou plus d'un dixième des fichiers connus, bloquent la synchro avec "synchro bloquee : N suppressions prevues". Après vérification, `clm --sync --force` passe outre. Un fichier qui échoue est retenté à la synchro suivante, et trois échecs de suite arrêtent la synchro en cours. Un verrou, `~/.clm-drive.lock`, empêche deux synchros en même temps sur un PC.
+Plus de 20 suppressions prévues, ou plus d'un dixième des fichiers connus, bloquent la synchro avec "synchro bloquee : N suppressions prevues". Après vérification, `clm --sync --force` passe outre. Un fichier qui échoue est retenté à la synchro suivante, et trois échecs de suite arrêtent la synchro en cours. Un verrou, `clm/drive.lock`, empêche deux synchros en même temps sur un PC.
 
 Le `settings.json` de chaque compte garde deux réglages propres au PC. Son entrée `statusLine`, qui désigne le programme de la barre d'état sur ce PC, ne part pas sur le Drive : à la réception, `clm` remet celle que le PC avait déjà, ou à défaut celle de `.claude`. La commande du hook de la barre d'état part sous la forme de Windows, et chaque PC la reçoit sous la forme de son système. Un PC où la barre n'a pas encore été installée reçoit donc des réglages sans barre d'état : y lancer l'installeur de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline). Un `settings.json` envoyé par un ancien `clm`, `statusLine` compris, est nettoyé à la réception puis renvoyé une fois sous la forme commune.
 
@@ -322,11 +322,11 @@ En tête de chaque groupe, la case "tous les skills" ou "tous les MCP" vaut pour
 
 Un MCP local est déclaré pour un projet situé sous le dossier perso, dans `projects.<chemin>.mcpServers` du `.claude.json` d'un compte, ou dans `~/.mcp.json`. Chaque PC publie les siens dans son fichier du dossier `presence` du Drive, et `mcpServers` ne part plus dans les `.claude.json` envoyés : chaque PC reconstruit ses fichiers avec ses propres cases. Un MCP global est déclaré dans `mcpServers` en tête du `.claude.json`. Il ne quitte jamais son PC, et `clm` le recopie entre les comptes du PC comme décrit dans "Réglages et MCP synchronisés".
 
-Un nouveau skill arrive coché sur tous les PC. Un nouveau MCP local arrive coché sur les PC du même système que celui qui l'a ajouté, décoché sur les autres, et son système s'affiche à droite de son nom. Décocher un skill retire son dossier de ce PC à la synchro suivante, une fois ses fichiers présents sur le Drive : un skill que ce PC est seul à avoir, ou qu'il vient de modifier, y part d'abord. Les autres PC le gardent. Décoché sur tous les PC, il part à la corbeille du Drive et sa case disparaît, sachant qu'un PC dont `clm` n'est pas à jour compte comme s'il l'avait coché. Décocher un MCP local retire sa définition des fichiers de ce PC, et `claude mcp remove` fait de même sur ce PC seulement. Décocher un global le retire de tous les comptes de ce PC et met sa définition de côté dans `~/.clm-sync-catalog.json`, d'où la recocher le remet. Les fichiers d'un compte dont Claude Code est ouvert attendent sa fermeture.
+Un nouveau skill arrive coché sur tous les PC. Un nouveau MCP local arrive coché sur les PC du même système que celui qui l'a ajouté, décoché sur les autres, et son système s'affiche à droite de son nom. Décocher un skill retire son dossier de ce PC à la synchro suivante, une fois ses fichiers présents sur le Drive : un skill que ce PC est seul à avoir, ou qu'il vient de modifier, y part d'abord. Les autres PC le gardent. Décoché sur tous les PC, il part à la corbeille du Drive et sa case disparaît, sachant qu'un PC dont `clm` n'est pas à jour compte comme s'il l'avait coché. Décocher un MCP local retire sa définition des fichiers de ce PC, et `claude mcp remove` fait de même sur ce PC seulement. Décocher un global le retire de tous les comptes de ce PC et met sa définition de côté dans `clm/sync-catalog.json`, d'où la recocher le remet. Les fichiers d'un compte dont Claude Code est ouvert attendent sa fermeture.
 
 Suppr efface partout. Un skill part à la corbeille du Drive et son dossier quitte chaque PC, un MCP local quitte chaque PC à sa prochaine synchro, un global quitte tous les comptes de ce PC. D'ici là, la ligne affiche "efface a la prochaine synchro". Seule la définition d'un MCP voyage : le programme qu'elle lance, paquet npm ou exécutable, s'installe à la main sur chaque PC.
 
-Les cases ne valent que lorsque tous les PC du Drive ont une version de `clm` qui les gère. Avant, les MCP partent en entier comme avant, et la page nomme les PC en retard : "MCP envoyes en entier tant que ces PC n'ont pas clm a jour". Les cases décochées et les effacements en attente sont gardés dans `~/.clm-sync-choice.json`.
+Les cases ne valent que lorsque tous les PC du Drive ont une version de `clm` qui les gère. Avant, les MCP partent en entier comme avant, et la page nomme les PC en retard : "MCP envoyes en entier tant que ces PC n'ont pas clm a jour". Les cases décochées et les effacements en attente sont gardés dans `clm/sync-choice.json`.
 
 Sans menu, `clm --prefs` affiche les mêmes cases, `[x]` ou `[ ]`, chacune avec son id : `skill:<nom>`, `mcp:<projet>|<nom>` (projet vide pour `~/.mcp.json`) ou `global:<nom>`. `"skill:*"` vise tous les skills et `"mcp:*"` tous les MCP, globaux compris, entre guillemets à cause du `*`, et `[-]` marque un groupe coché en partie. `--prefs-on` et `--prefs-off` cochent et décochent un ou plusieurs ids, `--prefs-erase` les efface partout et demande `--yes`, mais refuse un groupe entier. Le nom seul suffit quand un seul élément le porte, sinon la commande liste les ids possibles. Après un changement, `clm` lance la synchro, comme Échap dans la page.
 
@@ -346,7 +346,7 @@ Un compte lancé sur un PC est marqué ouvert pendant 12 heures, jusqu'à la fer
 
 ## Liste des comptes
 
-Les comptes sont rangés dans `~/.claude-accounts.json` (`%USERPROFILE%\.claude-accounts.json` sous Windows), un tableau JSON dans l'ordre du menu :
+Les comptes sont rangés dans `clm/accounts.json` (`%LOCALAPPDATA%\clm\accounts.json` sous Windows), un tableau JSON dans l'ordre du menu :
 
 ```json
 [
@@ -378,7 +378,7 @@ Un compte sans chiffres affiche l'un de ces messages :
 Le menu choisit sa palette au démarrage, dans cet ordre :
 
 1. la variable `STATUSLINE_BG` (`light`, `clair`, `dark` ou `sombre`) ;
-2. le choix de ce PC, posé par `clm --palette dark` ou `light`, ou par la page web, et gardé dans `~/.clm-display.json` ;
+2. le choix de ce PC, posé par `clm --palette dark` ou `light`, ou par la page web, et gardé dans `clm/display.json` ;
 3. le thème du système : sous Windows le réglage des applications, sous macOS l'apparence (`defaults read -g AppleInterfaceStyle`), sous Linux `gsettings` (`color-scheme`), puis `GTK_THEME`, puis les couleurs de KDE (`kdeglobals`).
 
 À défaut, la palette sombre s'applique. `clm` ne lit ni `~/.claude/statusline.json` ni le programme de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline) : ses couleurs sont celles de la barre, recopiées dans le menu.
@@ -395,14 +395,16 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 
 ## Fichiers et variables
 
+Les fichiers propres à `clm` vivent dans un dossier par utilisateur, noté `clm/` dans ce README : `%LOCALAPPDATA%\clm` sous Windows, `$XDG_STATE_HOME/clm` sous Linux, ou `~/.local/state/clm` quand cette variable manque, et `~/Library/Application Support/clm` sous macOS. Les versions précédentes les rangeaient dans le dossier personnel, sous des noms en `.claude-` ou `.clm-`. Le menu, le veilleur et le hook les déplacent au démarrage, une fois pour toutes : un fichier présent aux deux endroits garde sa version du dossier `clm/`, et l'ancien est supprimé. Tant qu'un `clm` d'avant la mise à jour tourne encore, comme un veilleur, ses verrous restent pris et le déplacement attend le lancement suivant. Entre-temps, et si un déplacement échoue, chaque fichier est lu là où il se trouve. Sur le Drive et dans les sauvegardes, la liste des comptes garde son nom `.claude-accounts.json`.
+
 `clm` écrit ou modifie ces fichiers :
 
 | Fichier | Rôle |
 |---|---|
 | `~/.local/bin/clm`, `clm.cmd`, `claude-menu.cmd`, `claude-*.ps1` | le menu, copié par l'installeur |
 | `~/.local/bin/clm-web/` | la page web, copiée par l'installeur |
-| `~/.claude-accounts.json` | liste des comptes |
-| `~/.claude-accounts.json.bad` | copie d'une liste illisible, mise de côté avant d'être recréée |
+| `clm/accounts.json` | liste des comptes |
+| `clm/accounts.json.bad` | copie d'une liste illisible, mise de côté avant d'être recréée |
 | `~/.claude-compteN/` | dossiers des comptes ajoutés |
 | `settings.json` de chaque compte, et sa copie `settings.json.bak-seed` | hook `SessionStart`, ajouté ou corrigé par l'installeur |
 | cache `claude-menu/usage.json` | derniers quotas lus et pauses après un refus de l'API |
@@ -410,13 +412,14 @@ Pour le même effet avec un simple `claude`, l'installeur ajoute un hook `Sessio
 | `.credentials.json` de chaque compte, hors macOS | jeton renouvelé quand il a expiré |
 | fichier d'état `claude-statusline/state` | quotas pour la barre d'état |
 | `claude-comptes-*.zip` ou `.tar.gz` dans Téléchargements | sauvegardes |
-| `~/.clm-display.json` | couleurs et animations choisies pour ce PC |
-| `~/.clm-drive.json` | connexion Google Drive, nom du PC, synchro automatique |
-| `~/.clm-drive-state.json` et `~/.clm-drive*.lock` | état de la dernière synchro Drive, verrous de la synchro, des dossiers Drive, des jetons et du veilleur |
-| `~/.clm-drive-remote.json` | liste du Drive gardée entre deux synchros |
-| `~/.clm-sync-choice.json` et `~/.clm-sync-choice.lock` | cases décochées de la page `p`, effacements en attente, demandes aux autres PC, et leur verrou |
-| `~/.clm-sync-catalog.json` | MCP et cases connus des autres PC, MCP globaux mis de côté |
-| `~/.clm-drive-watch/` | sessions Claude Code ouvertes et journal du veilleur |
+| `clm/display.json` | couleurs et animations choisies pour ce PC |
+| `clm/drive.json` | connexion Google Drive, nom du PC, synchro automatique |
+| `clm/drive-state.json` et `clm/drive*.lock` | état de la dernière synchro Drive, verrous de la synchro, des dossiers Drive, des jetons et du veilleur |
+| `clm/drive-remote.json` | liste du Drive gardée entre deux synchros |
+| `clm/sync-choice.json` et `clm/sync-choice.lock` | cases décochées de la page `p`, effacements en attente, demandes aux autres PC, et leur verrou |
+| `clm/sync-catalog.json` | MCP et cases connus des autres PC, MCP globaux mis de côté |
+| `clm/drive-watch/` | sessions Claude Code ouvertes et journal du veilleur |
+| `clm/sync-state.json` et `clm/sync.lock` | dernières valeurs communes des réglages partagés entre comptes, et leur verrou |
 | `<fichier>.conflit-<PC>` | version perdante d'un conflit de synchro |
 
 Il lit `USERPROFILE` puis `HOME` pour le dossier personnel, `LOCALAPPDATA` sous Windows, `XDG_CACHE_HOME`, `XDG_STATE_HOME` et `XDG_CONFIG_HOME` sous Linux, `STATUSLINE_BG` et `GTK_THEME` pour les couleurs, `CLM_ANIM` pour les animations, et `CLAUDE_CONFIG_DIR` dans le hook. Il pose ou retire lui-même `CLAUDE_CONFIG_DIR` pour lancer un compte.

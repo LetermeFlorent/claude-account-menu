@@ -35,7 +35,7 @@ try {
 
   $help = Get-CliHelpLines
   $text = $help -join "`n"
-  $documented = @($script:CliCommands + @("--usage", "--save", "--restore=", "--only=", "--no-update", "--drive-login", "--sync", "--force", "--sync-auto=on|off", "--erase", "--yes", "--web", "CLM_ANIM", "STATUSLINE_BG", ".clm-display.json"))
+  $documented = @($script:CliCommands + @("--usage", "--save", "--restore=", "--only=", "--no-update", "--drive-login", "--sync", "--force", "--sync-auto=on|off", "--erase", "--yes", "--web", "CLM_ANIM", "STATUSLINE_BG", "display.json", "%LOCALAPPDATA%\clm", "~/.local/state/clm", "~/Library/Application Support/clm"))
   Assert-Equal "" (@($documented | Where-Object { -not $text.Contains($_) }) -join ",") "aide : chaque option decrite"
   Assert-Equal "" (@($help | Where-Object { $_ -match "[^\x20-\x7E]" -or $_.Length -gt 80 }) -join "|") "aide : ascii, 80 colonnes au plus"
   Assert-True ($help -contains "  p       reglages") "aide : touches du menu"

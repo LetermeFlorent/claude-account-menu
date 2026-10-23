@@ -10,11 +10,11 @@ Quand tu connectes un PC, Google demande l'accès `drive.file`. Avec cet accès,
 
 ## Ce qui reste sur ton PC
 
-Le jeton qui permet à `clm` de parler à ton Drive est rangé dans `~/.clm-drive.json`, sur ton PC seulement. Il n'est jamais envoyé sur le Drive.
+Le jeton qui permet à `clm` de parler à ton Drive est rangé dans `drive.json`, dans le dossier de `clm` (`%LOCALAPPDATA%\clm` sous Windows, `~/.local/state/clm` sous Linux, `~/Library/Application Support/clm` sous macOS), sur ton PC seulement. Il n'est jamais envoyé sur le Drive.
 
 ## Couper l'accès
 
-Supprime `~/.clm-drive.json` sur chaque PC, puis retire l'accès de `clm` sur https://myaccount.google.com/permissions. Le dossier `clm-sync` de ton Drive peut ensuite être supprimé à la main.
+Supprime `drive.json` du dossier de `clm` sur chaque PC, puis retire l'accès de `clm` sur https://myaccount.google.com/permissions. Le dossier `clm-sync` de ton Drive peut ensuite être supprimé à la main.
 
 ## Contact
 
