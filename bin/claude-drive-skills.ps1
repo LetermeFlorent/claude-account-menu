@@ -1,4 +1,5 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-catalog.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-catalog.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-remove.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-remove.ps1") }
 $script:SkillsRoot = ".claude/skills"
 
 function Get-SkillOfPath {
@@ -73,7 +74,7 @@ function Remove-LocalSkill {
   $dir = Get-SyncLocalPath ($script:SkillsRoot + "/" + $Name)
   $info = [IO.DirectoryInfo]$dir
   if (-not $info.Exists -or ($info.Attributes -band [IO.FileAttributes]::ReparsePoint)) { return $false }
-  Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction Stop
+  Remove-LinkOrTree $dir
   return $true
 }
 
