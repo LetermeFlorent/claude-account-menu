@@ -1,14 +1,14 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-self-version.ps1")) { . (Join-Path $PSScriptRoot "claude-self-version.ps1") }
-$script:ClmRepo = "LetermeFlorent/claude-account-menu"
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-self-install.ps1")) { . (Join-Path $PSScriptRoot "claude-self-install.ps1") }
 
-function ConvertFrom-CommitJson {
+function ConvertFrom-ReleaseJson {
   param([string]$Json)
-  if ($Json -notmatch '^\s*\{\s*"sha"\s*:\s*"([0-9a-f]{40})"') { return $null }
-  $sha = $Matches[1]
-  if ($Json -notmatch '"committer"\s*:\s*\{[^{}]*"date"\s*:\s*"([^"]+)"') { return $null }
+  if ($Json -notmatch '"tag_name"\s*:\s*"v([0-9]{1,9})"') { return $null }
+  $number = [int]$Matches[1]
+  if ($Json -notmatch '"published_at"\s*:\s*"([^"]+)"') { return $null }
   $at = [DateTimeOffset]::Parse($Matches[1], [Globalization.CultureInfo]::InvariantCulture)
-  return [PSCustomObject]@{ Sha = $sha; Time = $at.ToUnixTimeSeconds(); Number = 0 }
+  return [PSCustomObject]@{ Sha = ""; Time = $at.ToUnixTimeSeconds(); Number = $number }
 }
 
 function Invoke-GitHubGet {
@@ -22,20 +22,8 @@ function Invoke-GitHubGet {
 }
 
 function Get-LatestClm {
-  $r = Invoke-GitHubGet ("https://api.github.com/repos/" + $script:ClmRepo + "/commits/main") 4
-  return ConvertFrom-CommitJson ("" + $r.Content)
-}
-
-function ConvertFrom-LinkCount {
-  param([string]$Link)
-  if ($Link -notmatch '[?&]page=([0-9]+)>;\s*rel="last"') { return 0 }
-  return [int]$Matches[1]
-}
-
-function Get-ClmCommitCount {
-  param([string]$Sha)
-  $r = Invoke-GitHubGet ("https://api.github.com/repos/" + $script:ClmRepo + "/commits?per_page=1&sha=" + $Sha) 4
-  return ConvertFrom-LinkCount (@($r.Headers["Link"]) -join ",")
+  $r = Invoke-GitHubGet ("https://api.github.com/repos/" + $script:ClmRepo + "/releases/latest") 4
+  return ConvertFrom-ReleaseJson ("" + $r.Content)
 }
 
 function Test-ClmInstalledHere {
@@ -43,38 +31,20 @@ function Test-ClmInstalledHere {
   return (ConvertTo-PathKey $PSScriptRoot) -eq (ConvertTo-PathKey $dir)
 }
 
-function Invoke-ClmInstaller {
-  param([string]$Src)
-  if ($script:OsName -eq "Windows") { $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Src "install.ps1") 2>&1 }
-  else { $out = & sh (Join-Path $Src "install.sh") 2>&1 }
-  if ($LASTEXITCODE -ne 0) { throw ("installeur en echec : " + ("" + (@($out) | Select-Object -Last 1))) }
-}
-
-function Install-ClmVersion {
-  param($Version)
-  $tmp = Join-Path ([IO.Path]::GetTempPath()) ("clm-update-" + [guid]::NewGuid().ToString("N"))
-  New-Item -ItemType Directory -Path $tmp | Out-Null
-  try {
-    $zip = Join-Path $tmp "clm.zip"
-    $null = Invoke-GitHubGet ("https://codeload.github.com/" + $script:ClmRepo + "/zip/" + $Version.Sha) 60 $zip
-    Expand-Archive -LiteralPath $zip -DestinationPath $tmp
-    $src = Get-ChildItem -LiteralPath $tmp -Directory | Select-Object -First 1
-    Invoke-ClmInstaller $src.FullName
-    try { $Version.Number = Get-ClmCommitCount $Version.Sha } catch { $Version.Number = 0 }
-    Write-ClmVersion $Version
-  } finally {
-    Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
-  }
-}
-
 function Find-ClmUpdate {
+  $installed = Read-ClmVersion
+  if (-not (Test-ClmVersionKnown $installed)) { throw $script:ClmUnknownText }
   $latest = Get-LatestClm
-  if (-not (Test-ClmOutdated (Read-ClmVersion) $latest)) { return $null }
+  if (-not (Test-ClmOutdated $installed $latest)) { return $null }
   return $latest
 }
 
 function Update-Clm {
   if (-not (Test-ClmInstalledHere)) { return $false }
+  if (-not (Test-ClmVersionKnown (Read-ClmVersion))) {
+    Write-Host ("  " + $script:ClmUnknownText) -ForegroundColor DarkYellow
+    return $false
+  }
   $latest = $null
   try { $latest = Find-ClmUpdate } catch { return $false }
   if ($null -eq $latest) { return $false }

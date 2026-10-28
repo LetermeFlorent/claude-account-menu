@@ -7,21 +7,32 @@ Assert-Equal 1760090000 $v.Time "version lue, date"
 Assert-Null (ConvertFrom-ClmVersion "") "version vide refusee"
 Assert-Null (ConvertFrom-ClmVersion "main 1760090000") "version sans commit refusee"
 
+function Write-TestClmVersion {
+  param($Version, [string]$Dir)
+  $text = $Version.Sha + " " + $Version.Time
+  if ([int]$Version.Number -gt 0) { $text += " " + $Version.Number }
+  [IO.File]::WriteAllText((Join-Path $Dir "clm.version"), $text + "`n", (New-Object Text.UTF8Encoding $false))
+}
+
 $dir = Join-Path $script:Sandbox "version-bin"
 New-Item -ItemType Directory -Path $dir | Out-Null
 Assert-Null (Read-ClmVersion $dir) "pas de fichier de version"
-Write-ClmVersion $new $dir
+Write-TestClmVersion $new $dir
 Assert-Equal ($new.Sha + " " + $new.Time) ((Read-ClmVersion $dir).Sha + " " + (Read-ClmVersion $dir).Time) "version ecrite puis relue"
 Assert-True ((Format-ClmVersion $new) -match "^bbbbbbb du \d\d/\d\d/\d{4} \d\d:\d\d$") "version affichee"
 Assert-Equal "inconnue" (Format-ClmVersion $null) "version inconnue affichee"
 Assert-Equal "clm bbbbbbb" (Get-ClmTag $dir) "version courte pour l'en-tete"
 Assert-Equal "" (Get-ClmTag (Join-Path $script:Sandbox "absent")) "pas de version, rien dans l'en-tete"
 
-Assert-True (Test-ClmOutdated $old $new) "commit plus recent sur GitHub : mise a jour"
-Assert-True (Test-ClmOutdated $null $new) "version installee inconnue : mise a jour"
-Assert-Equal $false (Test-ClmOutdated $new $new) "meme commit : rien"
-Assert-Equal $false (Test-ClmOutdated $new $old) "installe plus recent que GitHub : rien"
-Assert-Equal $false (Test-ClmOutdated $old $null) "GitHub injoignable : rien"
+$v34 = ConvertFrom-ClmVersion ($old.Sha + " 1760000000 34")
+$v40 = [PSCustomObject]@{ Sha = ""; Time = [long]1760090000; Number = 40 }
+Assert-True (Test-ClmOutdated $v34 $v40) "release plus recente : mise a jour"
+Assert-Equal $false (Test-ClmOutdated $null $v40) "version installee inconnue : rien"
+Assert-Equal $false (Test-ClmOutdated $old $v40) "version installee sans numero : rien"
+Assert-Equal $false (Test-ClmOutdated $v34 $v34) "meme numero : rien"
+Assert-Equal $false (Test-ClmOutdated $v40 $v34) "installe plus recent que la release : rien"
+Assert-Equal $false (Test-ClmOutdated $v34 $null) "GitHub injoignable : rien"
+Assert-True (-not (Test-ClmVersionKnown $null) -and -not (Test-ClmVersionKnown $old) -and (Test-ClmVersionKnown $v34)) "version connue seulement avec un numero"
 
 Assert-Null (Get-BackupVersionError $new $null) "sauvegarde sans version : acceptee"
 Assert-Null (Get-BackupVersionError $new $new) "sauvegarde de la meme version : acceptee"
@@ -29,17 +40,12 @@ Assert-Null (Get-BackupVersionError $new $old) "sauvegarde plus ancienne : accep
 Assert-True ((Get-BackupVersionError $old $new) -match "^sauvegarde faite avec clm bbbbbbb .*plus recent que clm aaaaaaa .*relance clm") "sauvegarde plus recente : refusee"
 Assert-True ((Get-BackupVersionError $null $new) -match "version installee inconnue") "version installee inconnue : refusee"
 
-$json = '{"sha":"' + $new.Sha + '","node_id":"x","commit":{"author":{"name":"a","date":"2026-10-12T08:00:00Z"},"committer":{"name":"F","email":"f@x","date":"2025-10-10T08:33:20Z"},"message":"m"},"committer":{"login":"F"}}'
-$c = ConvertFrom-CommitJson $json
-Assert-Equal $new.Sha $c.Sha "commit GitHub, sha"
-Assert-Equal 1760085200 $c.Time "commit GitHub, date du committer"
-Assert-Null (ConvertFrom-CommitJson '{"message":"API rate limit exceeded"}') "reponse GitHub sans commit"
 
 Initialize-Tar
 $src = Join-Path $script:Sandbox "version-home"
 New-Item -ItemType Directory -Path (Join-Path $src ".local/bin") -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $src ".claude") -Force | Out-Null
-Write-ClmVersion $new (Join-Path $src ".local/bin")
+Write-TestClmVersion $new (Join-Path $src ".local/bin")
 $ext = Get-ArchiveExtension $script:TarFlavor
 $withVersion = Join-Path $script:Sandbox ("avec-version" + $ext)
 $withoutVersion = Join-Path $script:Sandbox ("sans-version" + $ext)
@@ -57,8 +63,6 @@ Assert-Equal "" ($frenchNames -join ", ") "lecteur de quotas nomme en anglais"
 $counted = ConvertFrom-ClmVersion ($new.Sha + " 1760090000 34`n")
 Assert-Equal 34 $counted.Number "numero de version lu"
 Assert-Equal 0 $v.Number "ancien fichier sans numero"
-Write-ClmVersion $counted $dir
+Write-TestClmVersion $counted $dir
 Assert-Equal "clm v34" (Get-ClmTag $dir) "numero de version dans l'en-tete"
 Assert-True ((Format-ClmVersion $counted) -match "^v34 du ") "numero de version dans les messages"
-Assert-Equal 34 (ConvertFrom-LinkCount '<https://api.github.com/repositories/1/commits?per_page=1&sha=abc&page=2>; rel="next", <https://api.github.com/repositories/1/commits?per_page=1&sha=abc&page=34>; rel="last"') "nombre de commits lu dans l'en-tete Link"
-Assert-Equal 0 (ConvertFrom-LinkCount "") "en-tete Link absent"

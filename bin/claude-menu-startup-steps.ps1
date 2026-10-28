@@ -38,7 +38,8 @@ function Start-ClmWork {
 }
 
 function Complete-ClmFind {
-  param($Su, $Step, $R, [double]$Now)
+  param($Su, $Step, $State, $R, [double]$Now)
+  if ($R.Error -eq $script:ClmUnknownText) { $Su.ClmError = $R.Error; $State.Msg = Add-ClmFailure @("", $script:Ink.Dim) $R.Error }
   if ($R.Error) { Complete-StartupStep $Step "failed" "recherche impossible" $Now; return }
   if ($null -eq $R.Value) { Complete-StartupStep $Step "ok" "a jour" $Now; return }
   $Step.Found = $R.Value
@@ -68,7 +69,7 @@ function Step-ClmStartup {
   }
   $r = Receive-LoaderValue $Step.Work
   if ($null -eq $r) { return $false }
-  if ($Step.Reader -eq "Find-ClmUpdate") { Complete-ClmFind $Su $Step $r $Now }
+  if ($Step.Reader -eq "Find-ClmUpdate") { Complete-ClmFind $Su $Step $State $r $Now }
   else { Complete-ClmInstall $Su $Step $State $r $Now }
   return $true
 }
