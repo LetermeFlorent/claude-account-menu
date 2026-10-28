@@ -3,7 +3,7 @@ $script:LockPollMs = 200
 $script:PrivateModeFailed = "droits du fichier prive impossibles a poser"
 
 function Write-TextFileAtomic {
-  param([string]$Path, [string]$Text, [switch]$Private)
+  param([string]$Path, [string]$Text, [switch]$Private, [switch]$Bom)
   $tmp = $Path + "." + [guid]::NewGuid().ToString("N") + ".tmp"
   try {
     [IO.File]::WriteAllBytes($tmp, [byte[]]@())
@@ -12,7 +12,7 @@ function Write-TextFileAtomic {
       & chmod 600 $tmp
       if ($LASTEXITCODE -ne 0) { throw $script:PrivateModeFailed }
     }
-    [IO.File]::WriteAllText($tmp, $Text, (New-Object Text.UTF8Encoding $false))
+    [IO.File]::WriteAllText($tmp, $Text, (New-Object Text.UTF8Encoding ([bool]$Bom)))
     if (Test-Path -LiteralPath $Path) { [IO.File]::Replace($tmp, $Path, [NullString]::Value) }
     else { [IO.File]::Move($tmp, $Path) }
   } finally {

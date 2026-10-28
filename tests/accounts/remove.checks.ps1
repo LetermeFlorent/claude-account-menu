@@ -57,8 +57,8 @@ Remove-Item Function:\Save-Accounts, Function:\Remove-KeychainCredential
 [IO.File]::WriteAllText($script:RegistryPath, "{ pas du json")
 $accs = @(Get-Accounts)
 Assert-Equal "compte1" $accs[0].Label "registre illisible, comptes par defaut"
-$badPath = $script:RegistryPath + ".bad"
+$badFiles = @(Get-ChildItem -LiteralPath (Split-Path -Parent $script:RegistryPath) -Filter "accounts.json.bad-*")
 $badText = $null
-if (Test-Path -LiteralPath $badPath) { $badText = [IO.File]::ReadAllText($badPath) }
+if ($badFiles.Count -gt 0) { $badText = [IO.File]::ReadAllText($badFiles[0].FullName) }
 Assert-Equal "{ pas du json" $badText "registre illisible garde a cote"
-Remove-Item -LiteralPath $badPath, $script:RegistryPath -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $badFiles.FullName, $script:RegistryPath -Force -ErrorAction SilentlyContinue

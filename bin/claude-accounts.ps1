@@ -2,6 +2,7 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { 
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-credentials.ps1")) { . (Join-Path $PSScriptRoot "claude-credentials.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-account-add.ps1")) { . (Join-Path $PSScriptRoot "claude-account-add.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-registry.ps1")) { . (Join-Path $PSScriptRoot "claude-registry.ps1") }
 $script:HomeDir = Get-HomeDir
 $script:RegistryPath = Get-StatePath "accounts.json"
 $script:ClaudeExe = Find-ClaudeExe
@@ -13,29 +14,6 @@ function Get-ClaudeVersion {
 }
 $script:SharedDirs = @("agents", "commands", "hooks", "plugins", "rules", "skills")
 $script:SharedFiles = @("ANTI-EMPREINTE.md", "CLAUDE.md", "settings.local.json", "statusline.json")
-
-function Get-Accounts {
-  if (Test-Path -LiteralPath $script:RegistryPath) {
-    try {
-      $data = Get-Content -LiteralPath $script:RegistryPath -Raw | ConvertFrom-Json
-      return @($data | ForEach-Object { $_ })
-    } catch {
-      Copy-Item -LiteralPath $script:RegistryPath -Destination ($script:RegistryPath + ".bad") -Force
-    }
-  }
-  $list = @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
-  foreach ($n in 2..9) {
-    $d = ".claude-compte" + $n
-    if (Test-Path -LiteralPath (Join-Path $script:HomeDir $d)) { $list += [PSCustomObject]@{ Label = "compte" + $n; Dir = $d } }
-  }
-  Save-Registry $list
-  return $list
-}
-
-function Save-Registry {
-  param($List)
-  ConvertTo-Json -InputObject @($List) -Depth 3 | Set-Content -LiteralPath $script:RegistryPath -Encoding UTF8
-}
 
 function Get-AccountPath {
   param($Acc)
