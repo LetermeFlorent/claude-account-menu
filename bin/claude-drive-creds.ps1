@@ -5,6 +5,7 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (
 $script:CredentialMarginMs = 60000
 $script:CredLockPath = Get-StatePath "drive-creds.lock"
 $script:CredLockWaitMs = 15000
+$script:CredentialUnknownOwner = "adresse locale inconnue, jeton du Drive refuse"
 
 function Get-CredentialExpiry {
   param($Cred)
@@ -38,7 +39,8 @@ function Assert-CredentialOwner {
   if ($null -eq $Remote -or $null -eq $Remote.Props) { return }
   $who = [string]$Remote.Props["who"]
   $mine = Get-AccountEmail $Acc
-  if ($who -and $mine -and $who -ne $mine) { throw ("jeton du Drive pour une autre adresse (" + $who + ")") }
+  if ($who -and -not $mine) { throw $script:CredentialUnknownOwner }
+  if ($who -and $who -ne $mine) { throw ("jeton du Drive pour une autre adresse (" + $who + ")") }
 }
 
 function Read-RemoteCredential {

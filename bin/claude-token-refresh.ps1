@@ -15,6 +15,12 @@ function Get-OauthUserAgent {
   return "claude-cli/" + (Get-ClaudeVersion) + " (external, cli)"
 }
 
+function Save-RefreshedCredential {
+  param($Acc, $Cred)
+  $credFile = Join-Path (Get-AccountPath $Acc) ".credentials.json"
+  Invoke-WithFileLock $script:CredLockPath $script:CredLockWaitMs "jetons en cours de synchro" { Write-CredentialFile $credFile $Cred }
+}
+
 function Update-AccountToken {
   param($Acc, $Cred)
   if ($script:OsName -eq "MacOS") { return $null }
@@ -35,7 +41,7 @@ function Update-AccountToken {
   } catch { return $null }
   if ([string]::IsNullOrEmpty($r.access_token) -or $null -eq $r.expires_in) { return $null }
   $new = ConvertTo-RefreshedCredential $Cred $r ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
-  try { Write-CredentialFile (Join-Path (Get-AccountPath $Acc) ".credentials.json") $new } catch { return $null }
+  try { Save-RefreshedCredential $Acc $new } catch { return $null }
   Send-DriveCredential $Acc
   return $new
 }

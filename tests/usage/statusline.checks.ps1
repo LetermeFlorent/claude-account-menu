@@ -8,8 +8,10 @@ Assert-Equal "compt_" (Get-StateTag ("/x/Compt" + [char]0x00E9)) "tag, lettre ac
 Assert-Equal "a_b" (Get-StateTag ("/x/a" + [char]0xD83D + [char]0xDE00 + "b")) "tag, caractere hors BMP compte pour un"
 
 $statusAge = $null
+$statusNoRefresh = $false
 function Get-AccountUsage {
-  param($Acc)
+  param($Acc, [switch]$NoRefresh)
+  $script:statusNoRefresh = $NoRefresh.IsPresent
   return [PSCustomObject]@{ Error = $null; Pct5 = 42; Reset5 = "2030-01-01T00:00:00Z"; Pct7 = 7; Reset7 = "2030-01-03T00:00:00Z"; Age = $statusAge }
 }
 
@@ -18,6 +20,7 @@ New-Item -ItemType Directory -Force -Path (Split-Path $statePath) | Out-Null
 $before = @("theme dark", "q5_at 1", "q5_pct 99", "q_at 5", "q7_at@claude 1", "q7_pct@claude 1", "q5_at@claude-compte2 111", "q_at@claude-compte2 222", "q5_at@claudex 3")
 [IO.File]::WriteAllText($statePath, (($before -join "`n") + "`n"), (New-Object Text.UTF8Encoding($false)))
 Update-StatusState ([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
+Assert-True $statusNoRefresh "crochet de session : lecture sans renouvellement du jeton"
 $raw = [IO.File]::ReadAllText($statePath)
 $lines = @($raw.TrimEnd("`n").Split("`n"))
 Assert-True (-not $raw.Contains("`r")) "etat en LF"

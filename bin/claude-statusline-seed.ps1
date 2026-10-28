@@ -23,7 +23,7 @@ function Update-StatusState {
   param($Acc)
   $state = Get-StatusStatePath
   if (-not (Test-Path -LiteralPath (Split-Path $state))) { return }
-  $u = Get-AccountUsage $Acc
+  $u = Get-AccountUsage $Acc -NoRefresh
   if ($null -ne $u.Error) { return }
   $tag = Get-StateTag (Get-AccountPath $Acc)
   $mine = "^(q5_at|q5_pct|q7_at|q7_pct|q_at)(@" + [regex]::Escape($tag) + ")? "

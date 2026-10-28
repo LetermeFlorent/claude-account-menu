@@ -21,10 +21,15 @@ function Get-RetryAfter {
 }
 
 function Get-UsageToken {
-  param($Acc, $Cred)
+  param($Acc, $Cred, [switch]$NoRefresh)
   if ($null -eq $Cred -or [string]::IsNullOrEmpty($Cred.claudeAiOauth.accessToken)) { return @{ Error = "non connecte" } }
   $expMs = [long]$Cred.claudeAiOauth.expiresAt
-  if ($expMs -le 0 -or $expMs -ge [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()) { return @{ Token = $Cred.claudeAiOauth.accessToken } }
+  $nowMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+  if ($expMs -le 0 -or $expMs -ge $nowMs + $script:CredentialMarginMs) { return @{ Token = $Cred.claudeAiOauth.accessToken } }
+  if ($NoRefresh) {
+    if ($expMs -ge $nowMs) { return @{ Token = $Cred.claudeAiOauth.accessToken } }
+    return @{ Error = "jeton expire, lancer le compte une fois" }
+  }
   $fresh = Update-AccountToken $Acc $Cred
   if ($null -eq $fresh) { return @{ Error = "compte deconnecte, lancer le compte une fois" } }
   return @{ Token = $fresh.claudeAiOauth.accessToken }
@@ -57,7 +62,7 @@ function Register-UsageRefusal {
 }
 
 function Get-AccountUsage {
-  param($Acc, [int]$MaxAge = $script:UsageCacheTtl)
+  param($Acc, [int]$MaxAge = $script:UsageCacheTtl, [switch]$NoRefresh)
   $out = [PSCustomObject]@{Label=$Acc.Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null; Expired=$false; LimitedUntil=$null}
   $cred = Read-AccountCredential $Acc
   if ($null -ne $cred) { $out.Plan = Get-PlanName $cred.claudeAiOauth }
@@ -66,7 +71,7 @@ function Get-AccountUsage {
   $left = Get-CooldownLeft $known
   if ($left -gt 0) { Set-UsageLimited $out $known $left; return $out }
   try {
-    $tok = Get-UsageToken $Acc $cred
+    $tok = Get-UsageToken $Acc $cred -NoRefresh:$NoRefresh
     if ($tok.Error) { $out.Error = $tok.Error; return $out }
     $h = @{"Authorization"="Bearer " + $tok.Token; "anthropic-beta"="oauth-2025-04-20"; "Accept"="application/json"}
     $ProgressPreference = "SilentlyContinue"
