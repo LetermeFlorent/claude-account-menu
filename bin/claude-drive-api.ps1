@@ -1,4 +1,5 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-auth.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-auth.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-retry.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-retry.ps1") }
 $script:DriveApi = "https://www.googleapis.com/drive/v3/files"
 $script:DriveUpload = "https://www.googleapis.com/upload/drive/v3/files"
 $script:DriveFolderMime = "application/vnd.google-apps.folder"
@@ -15,14 +16,10 @@ function Invoke-DriveWeb {
   return Invoke-WebRequest @Request
 }
 
-function Get-HttpStatus {
-  param($ErrorRecord)
-  try { return [int]$ErrorRecord.Exception.Response.StatusCode } catch { return 0 }
-}
-
 function Invoke-DriveRequest {
   param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
   $renew = $false
+  $attempt = 0
   while ($true) {
     $h = @{ Authorization = "Bearer " + (Get-DriveToken -Renew:$renew) }
     if ($null -ne $Headers) { foreach ($k in $Headers.Keys) { $h[$k] = $Headers[$k] } }
@@ -32,8 +29,13 @@ function Invoke-DriveRequest {
     if ($OutFile) { $req.OutFile = $OutFile; $req.PassThru = $true }
     try { return Invoke-DriveWeb $req }
     catch {
-      if ($renew -or (Get-HttpStatus $_) -ne 401) { throw }
-      $renew = $true
+      $failure = $_
+      if (-not $renew -and (Get-HttpStatus $failure) -eq 401) { $renew = $true; continue }
+      $body = Get-DriveErrorBody $failure
+      $waitMs = Get-RetryAfterMs $failure
+      if ($attempt -ge $script:DriveRetryMax -or $waitMs -gt $script:DriveRetryAfterMaxMs -or -not (Test-DriveRetryable $failure $body)) { throw (New-DriveFailure $failure $body) }
+      & $script:DriveRetrySleep (Get-DriveRetryDelayMs $attempt $waitMs)
+      $attempt++
     }
   }
 }
