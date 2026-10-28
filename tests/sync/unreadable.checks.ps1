@@ -19,23 +19,25 @@ $r = Invoke-DriveSync
 Assert-True $r.Ok ("etat absent : premiere synchro " + $r.Error)
 
 $presenceName = "PX.json"
-$script:FakePresence[$presenceName] = @{ Id = "p-px"; Name = $presenceName; Props = @{}; Bytes = [Text.Encoding]::UTF8.GetBytes("pas du json"); Md5 = "m1" }
-Assert-Null (Read-PcFile "p-px") "fiche de PC illisible : rien lu"
-$script:FakePresence[$presenceName].Bytes = [Text.Encoding]::UTF8.GetBytes("[1]")
-Assert-Null (Read-PcFile "p-px") "fiche de PC qui n'est pas un objet : rien lu"
-$script:FakePresence[$presenceName].Bytes = [Text.Encoding]::UTF8.GetBytes("{}")
-Assert-True ($null -ne (Read-PcFile "p-px")) "fiche de PC vide mais valide : lue"
-$script:FakePresence[$presenceName].Bytes = [Text.Encoding]::UTF8.GetBytes("pas du json")
+$script:FakePresence[$presenceName] = @{ Id = "p-px"; Name = $presenceName; Props = @{ k = $script:TestSyncKeys.Id }; Md5 = "m1" }
+$pxSeal = "presence/" + $presenceName
+Set-FakePcText $presenceName "pas du json"
+Assert-Null (Read-PcFile "p-px" $pxSeal $script:TestSyncKeys) "fiche de PC illisible : rien lu"
+Set-FakePcText $presenceName "[1]"
+Assert-Null (Read-PcFile "p-px" $pxSeal $script:TestSyncKeys) "fiche de PC qui n'est pas un objet : rien lu"
+Set-FakePcText $presenceName "{}"
+Assert-True ($null -ne (Read-PcFile "p-px" $pxSeal $script:TestSyncKeys)) "fiche de PC vide mais valide : lue"
+Set-FakePcText $presenceName "pas du json"
 $catalog = New-SyncCatalog
 $known = New-PcContent
 $known.Md5 = "m0"
 $known.Mcp["k"] = @{ At = [long]5; Deleted = $false; Os = "Windows"; Def = '{"command":"x"}' }
 $catalog.Pcs["PX"] = $known
-Update-PcFiles $catalog (Get-DriveListing "P")
+Update-PcFiles $catalog (Get-DriveListing "P") $script:TestSyncKeys
 Assert-Equal "m0" $catalog.Pcs["PX"].Md5 "fiche de PC illisible : contenu connu garde"
 Assert-True $catalog.Pcs["PX"].Mcp.ContainsKey("k") "fiche de PC illisible : serveurs MCP connus gardes"
 $script:FakePresence.Remove($presenceName)
-Update-PcFiles $catalog (Get-DriveListing "P")
+Update-PcFiles $catalog (Get-DriveListing "P") $script:TestSyncKeys
 Assert-True (-not $catalog.Pcs.ContainsKey("PX")) "fiche de PC disparue du Drive : retiree du catalogue"
 
 Restore-FakeDrive

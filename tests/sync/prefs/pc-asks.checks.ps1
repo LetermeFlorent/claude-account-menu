@@ -15,7 +15,7 @@ function Get-AskProjectNames {
 
 function Get-AskPcData {
   param([string]$Pc)
-  return ConvertFrom-PcData (ConvertFrom-JsonText ([Text.Encoding]::UTF8.GetString($script:FakePresence[$Pc + ".json"].Bytes))) $false
+  return ConvertFrom-PcData (ConvertFrom-JsonText (Get-FakePcText ($Pc + ".json"))) $false
 }
 
 function Invoke-AskSync {

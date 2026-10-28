@@ -2,12 +2,12 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-globals.ps1"))
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-asks.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-asks.ps1") }
 
 function Start-SyncPrefs {
-  param($Folders, $Presence, [string]$Pc, $Accs, $Res)
-  $prefs = @{ Folders = $Folders; Presence = $Presence; Pc = $Pc; Catalog = (Read-SyncCatalog); Choice = (Read-SyncChoice) }
+  param($Folders, $Presence, [string]$Pc, $Accs, $Res, $Keys)
+  $prefs = @{ Folders = $Folders; Presence = $Presence; Pc = $Pc; Catalog = (Read-SyncCatalog); Choice = (Read-SyncChoice); Keys = $Keys }
   $prefs.Catalog.Waiting = Get-WaitingPcs $Presence $script:McpFormat
   $script:McpPerPc = $prefs.Catalog.Waiting.Count -eq 0
   $prefs.Catalog.PerPc = $script:McpPerPc
-  Update-PcFiles $prefs.Catalog $Presence
+  Update-PcFiles $prefs.Catalog $Presence $Keys $Res
   $prefs.Sent = Get-OwnPcText $prefs.Catalog $Pc
   Receive-PcAsks $prefs
   Update-OwnAsks $prefs

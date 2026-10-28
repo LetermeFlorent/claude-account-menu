@@ -1,13 +1,15 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-projects.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-projects.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-skills.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-skills.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-sealed.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-sealed.ps1") }
 $script:PcFileExt = ".json"
+$script:PcFileArea = "presence/"
 $script:PcFileMax = 1048576
 $script:ErasedKeepMs = [long]30 * 24 * 3600 * 1000
 $script:McpPerPc = $false
 
 function Read-PcFile {
-  param([string]$Id)
-  $text = Get-DriveText $Id
+  param([string]$Id, [string]$Seal, $Keys)
+  $text = Get-SealedText $Id $Seal $Keys
   if ($text.Length -gt $script:PcFileMax) { return $null }
   try { $data = ConvertFrom-JsonText $text } catch { $data = $null }
   if ($data -isnot [Collections.IDictionary]) { return $null }
@@ -15,7 +17,7 @@ function Read-PcFile {
 }
 
 function Update-PcFiles {
-  param($Catalog, $Presence)
+  param($Catalog, $Presence, $Keys, $Res)
   $seen = New-PathMap
   foreach ($name in $Presence.Keys) {
     if (-not $name.EndsWith($script:PcFileExt, [StringComparison]::Ordinal)) { continue }
@@ -24,7 +26,15 @@ function Update-PcFiles {
     $seen[$pc] = $true
     $old = $Catalog.Pcs[$pc]
     if ($null -ne $old -and $md5 -and $old.Md5 -eq $md5) { continue }
-    $c = Read-PcFile $Presence[$name].Id
+    if ([string]$Presence[$name].Props["k"] -ne $Keys.Id) {
+      if ($null -eq $old) { $Catalog.Pcs[$pc] = New-PcContent }
+      continue
+    }
+    try { $c = Read-PcFile $Presence[$name].Id ($script:PcFileArea + $name) $Keys }
+    catch {
+      if (-not (Test-SealRefusal $_) -or $null -eq $Res) { throw }
+      $Res.Failed++; $Res.Refused.Add($script:PcFileArea + $name); continue
+    }
     if ($null -eq $c) { continue }
     $c.Md5 = $md5
     $Catalog.Pcs[$pc] = $c
@@ -81,12 +91,15 @@ function Add-ErasedSkills {
 function Save-OwnPcFile {
   param($Prefs, [string]$Before)
   $text = Get-OwnPcText $Prefs.Catalog $Prefs.Pc
-  if ($text -ceq $Before) { return }
   $name = $Prefs.Pc + $script:PcFileExt
+  $own = $Prefs.Presence[$name]
+  $sameKey = $null -ne $own -and $null -ne $own.Props -and [string]$own.Props["k"] -eq $Prefs.Keys.Id
+  if ($text -ceq $Before -and $sameKey) { return }
   $id = ""
-  if ($null -ne $Prefs.Presence[$name]) { $id = [string]$Prefs.Presence[$name].Id }
-  $props = @{ $script:SyncFormatKey = ("" + $script:SyncFormat) }
-  $r = Send-DriveText $Prefs.Folders.Presence $name $text $props $id
+  if ($null -ne $own) { $id = [string]$own.Id }
+  $props = @{ $script:SyncFormatKey = ("" + $script:SyncFormat); k = $Prefs.Keys.Id }
+  $r = Send-SealedText $Prefs.Folders.Presence $name ($script:PcFileArea + $name) $text $props $id $Prefs.Keys
+  if ($null -ne $own -and $null -ne $own.Props) { $own.Props["k"] = $Prefs.Keys.Id }
   (Get-OwnPcContent $Prefs.Catalog $Prefs.Pc).Md5 = [string]$r.Md5
   $Prefs.Sent = $text
 }

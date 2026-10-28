@@ -23,7 +23,7 @@ function Get-ProjectNames {
 
 function Get-PcFileData {
   param([string]$Pc)
-  return ConvertFrom-PcData (ConvertFrom-JsonText ([Text.Encoding]::UTF8.GetString($script:FakePresence[$Pc + ".json"].Bytes))) $false
+  return ConvertFrom-PcData (ConvertFrom-JsonText (Get-FakePcText ($Pc + ".json"))) $false
 }
 
 function Invoke-PcSync {
@@ -65,7 +65,7 @@ Assert-Equal "loc,own" (Get-ProjectNames ".claude-c2/.claude.json") "MCP ajoute 
 Assert-Equal "glob" (Get-McpNames ".claude.json") "globaux d'un autre PC jamais recus"
 
 $far = '{"mcp": {"Documents/p|loin": {"at": 5, "os": "Autre", "def": "{\"command\":\"z\"}"}}, "erased": {}}'
-$null = Send-FakePresence "MZ.json" ([Text.Encoding]::UTF8.GetBytes($far)) @{ fmt = ("" + $script:SyncFormat) }
+$null = Send-FakeSealedPc "MZ.json" $far
 Invoke-PcSync "MA" "MCP d'un autre systeme"
 Assert-Equal "loc,own" (Get-ProjectNames ".claude.json") "MCP d'un autre systeme decoche par defaut"
 $null = Update-SyncChoice { param($c) Set-ChoiceCheck $c "mcp" "Documents/p|loin" $true $false }

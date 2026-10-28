@@ -1,6 +1,6 @@
 $script:AwaySeconds = 12 * 3600
 $script:SyncFormatKey = "fmt"
-$script:SyncFormat = 4
+$script:SyncFormat = 5
 $script:McpFormat = 3
 
 function Get-PresenceProps {
@@ -59,7 +59,7 @@ function Get-AwayMap {
     if ($other -eq $Pc) { continue }
     $props = $Listing[$name].Props
     foreach ($dir in $props.Keys) {
-      if ($dir -eq $script:SyncFormatKey) { continue }
+      if ($dir -eq $script:SyncFormatKey -or $dir -eq "k") { continue }
       $t = [long]$props[$dir]
       if ($t -gt 0 -and $NowSec - $t -lt $script:AwaySeconds) { $map[$dir] = $other }
     }
