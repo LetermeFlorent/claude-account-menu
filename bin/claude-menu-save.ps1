@@ -1,13 +1,14 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-archive.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-archive.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-self-version.ps1")) { . (Join-Path $PSScriptRoot "claude-self-version.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-machine-settings.ps1")) { . (Join-Path $PSScriptRoot "claude-machine-settings.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-registry.ps1")) { . (Join-Path $PSScriptRoot "claude-registry.ps1") }
 $script:SaveExcludes = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide", "*.lock", ".local/bin/*.exe") + $script:SkipConversations
 $script:ArchiveRegistryName = ".claude-accounts.json"
 
 function Get-AccountItems {
   param($Accs)
   $names = @()
-  foreach ($a in $Accs) {
+  foreach ($a in @(Select-ValidAccounts $Accs)) {
     $names += $a.Dir
     if ($a.Dir -eq ".claude") { $names += @(".claude.json", ".mcp.json") }
   }
@@ -33,7 +34,7 @@ function New-RegistryStage {
 function Get-SaveExcludes {
   param($Accs)
   $ex = @($script:SaveExcludes)
-  foreach ($acc in $Accs) {
+  foreach ($acc in @(Select-ValidAccounts $Accs)) {
     $ex += $acc.Dir + "/skills/.*"
     if ($acc.Dir -eq ".claude") { continue }
     foreach ($s in $script:SharedDirs + $script:SharedFiles) { $ex += $acc.Dir + "/" + $s }

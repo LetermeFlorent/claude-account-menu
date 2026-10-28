@@ -95,6 +95,7 @@ function Get-LocalFiles {
     foreach ($i in $items) {
       $rel = $d[0] + "/" + $i.Name
       if ($rx.IsMatch($rel)) { continue }
+      if (-not (Test-SafeSyncPath $rel)) { $res.Skipped.Add($rel); continue }
       if ($i.Attributes -band [IO.FileAttributes]::ReparsePoint) { $res.Skipped.Add($rel); continue }
       if ($i -is [IO.DirectoryInfo]) { $stack.Push(@($rel, $i.FullName)); continue }
       $b = $Base[$rel]

@@ -6,10 +6,8 @@ function Select-RemoteFiles {
   $out = New-PathMap
   $rx = Get-ExcludeRegex $Patterns
   $inRoots = Get-RootsRegex $Roots
-  $safe = $script:SafeSyncRoot
-  $unsafe = $script:UnsafeSyncPath
   foreach ($k in $Listing.Keys) {
-    if ($inRoots.IsMatch($k) -and -not $rx.IsMatch($k) -and $safe.IsMatch($k) -and -not $unsafe.IsMatch($k)) { $out[$k] = $Listing[$k] }
+    if ($inRoots.IsMatch($k) -and -not $rx.IsMatch($k) -and (Test-SafeSyncPath $k)) { $out[$k] = $Listing[$k] }
   }
   return $out
 }

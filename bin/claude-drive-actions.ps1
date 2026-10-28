@@ -6,6 +6,7 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-prefetch.ps1
 $script:DriveFailLimit = 3
 $script:DriveEchoEvery = 25
 $script:DriveSaveEveryMs = 60000
+$script:LocalActionKinds = @("upload", "download", "delete-local", "keep-local", "keep-remote")
 
 function Get-SyncLocalPath {
   param([string]$Rel)
@@ -89,6 +90,7 @@ function Save-LocalConflict {
 function Invoke-SyncAction {
   param($Ctx, $Action)
   $p = $Action.Path
+  if ($script:LocalActionKinds -contains $Action.Kind -and -not (Test-SafeSyncPath $p)) { throw ("chemin refuse : " + $p) }
   $res = $Ctx.Res
   switch ($Action.Kind) {
     "upload" { Send-SyncFile $Ctx $p; $res.Up++ }

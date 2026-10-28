@@ -2,7 +2,7 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (J
 $script:ExcludeRegexMemo = New-PathMap
 $script:RootsRegexMemo = New-PathMap
 $script:ExcludeRegexOptions = [Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant, Singleline"
-$script:SafeSyncRoot = New-Object regex '^\.(?:claude[^/]*|mcp\.json)(?:/|\z)', ([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant")
+$script:SafeSyncRoot = New-Object regex '^\.(?:claude(?:-[A-Za-z0-9_-]+)?(?:/|\z)|(?:claude|mcp|claude-accounts)\.json\z)', ([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant")
 $script:UnsafeSyncPath = [regex]'[\\:]|(?:^|/)\.{0,2}(?:/|\z)'
 
 function ConvertTo-WildcardRegex {
@@ -50,4 +50,9 @@ function Get-RootsRegex {
   $rx = New-Object regex $text, ([Text.RegularExpressions.RegexOptions]::CultureInvariant)
   $script:RootsRegexMemo[$key] = $rx
   return $rx
+}
+
+function Test-SafeSyncPath {
+  param([string]$Rel)
+  return $script:SafeSyncRoot.IsMatch($Rel) -and -not $script:UnsafeSyncPath.IsMatch($Rel)
 }
