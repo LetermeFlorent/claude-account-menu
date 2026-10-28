@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-transfer.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-transfer.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-sealed.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-sealed.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-folders.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-folders.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-presence.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-presence.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
@@ -9,6 +9,7 @@ $script:CredentialUnknownOwner = "adresse locale inconnue, jeton du Drive refuse
 $script:CredentialNoOwner = "jeton du Drive sans adresse, refuse"
 $script:CredentialTooFar = "jeton du Drive refuse : expiration trop lointaine"
 $script:CredentialMaxAheadMs = [long]30 * 24 * 3600 * 1000
+$script:CredentialArea = "credentials/"
 
 function Get-CredentialExpiry {
   param($Cred)
@@ -56,58 +57,62 @@ function Assert-RemoteCredentialTrusted {
 }
 
 function Read-RemoteCredential {
-  param($Remote)
-  try { $cred = (Get-DriveText $Remote.Id) | ConvertFrom-Json } catch { throw "jeton du Drive invalide" }
+  param($Acc, $Remote, $Keys)
+  $text = Get-SealedText $Remote.Id ($script:CredentialArea + (Get-CredentialName $Acc)) $Keys
+  try { $cred = $text | ConvertFrom-Json } catch { throw "jeton du Drive invalide" }
   if ($null -eq $cred -or [string]::IsNullOrEmpty([string]$cred.claudeAiOauth.accessToken)) { throw "jeton du Drive invalide" }
   if ((Get-CredentialExpiry $cred) -ne [long]$Remote.Exp) { throw "jeton du Drive invalide" }
   return $cred
 }
 
 function Send-LocalCredential {
-  param($Acc, $Folders, $Remote, $Local)
+  param($Acc, $Folders, $Remote, $Local, $Keys)
   $id = ""
   if ($null -ne $Remote) { $id = $Remote.Id }
   $props = @{ exp = ("" + (Get-CredentialExpiry $Local)) }
   $who = Get-AccountEmail $Acc
   if ($who) { $props["who"] = $who }
   $json = $Local | ConvertTo-Json -Depth 10 -Compress
-  $null = Send-DriveText $Folders.Credentials (Get-CredentialName $Acc) $json $props $id
+  $name = Get-CredentialName $Acc
+  $null = Send-SealedText $Folders.Credentials $name ($script:CredentialArea + $name) $json $props $id $Keys
 }
 
 function Sync-CredentialUnlocked {
-  param($Acc, $Folders, $Listing)
+  param($Acc, $Folders, $Listing, $Keys)
   $local = Read-LocalCredential $Acc
   $remote = $Listing[(Get-CredentialName $Acc)]
   Assert-CredentialOwner $Acc $remote
   $remoteExp = [long]0
   if ($null -ne $remote) { $remoteExp = [long]$remote.Exp }
   $pick = Select-FresherCredential (Get-CredentialExpiry $local) $remoteExp
-  if ($pick -eq "local") { Send-LocalCredential $Acc $Folders $remote $local }
+  if ($pick -eq "local") { Send-LocalCredential $Acc $Folders $remote $local $Keys }
   if ($pick -ne "remote") { return $pick }
   Assert-RemoteCredentialTrusted $Acc $remote
-  $cred = Read-RemoteCredential $remote
+  $cred = Read-RemoteCredential $Acc $remote $Keys
   if ((Get-CredentialExpiry (Read-LocalCredential $Acc)) -ge $remoteExp) { return "same" }
   Write-AccountCredential $Acc $cred
   return "remote"
 }
 
 function Sync-AccountCredential {
-  param($Acc, $Folders, $Listing)
-  return Invoke-WithFileLock $script:CredLockPath $script:CredLockWaitMs "jetons en cours de synchro" { Sync-CredentialUnlocked $Acc $Folders $Listing }
+  param($Acc, $Folders, $Listing, $Keys = $null)
+  if ($null -eq $Keys) { $Keys = Get-SyncKeys }
+  return Invoke-WithFileLock $script:CredLockPath $script:CredLockWaitMs "jetons en cours de synchro" { Sync-CredentialUnlocked $Acc $Folders $Listing $Keys }
 }
 
 function Sync-DriveCredentials {
-  param($Folders, $Accs)
+  param($Folders, $Accs, $Keys)
   $listing = Get-DriveListing $Folders.Credentials
   $failed = 0
-  foreach ($a in $Accs) { try { $null = Sync-AccountCredential $a $Folders $listing } catch { $failed++ } }
+  foreach ($a in $Accs) { try { $null = Sync-AccountCredential $a $Folders $listing $Keys } catch { $failed++ } }
   return $failed
 }
 
 function Sync-OneCredential {
   param($Acc)
+  $keys = Get-SyncKeys
   $f = Get-DriveFolders
-  return Sync-AccountCredential $Acc $f (Get-DriveListing $f.Credentials)
+  return Sync-AccountCredential $Acc $f (Get-DriveListing $f.Credentials) $keys
 }
 
 function Receive-DriveCredential {

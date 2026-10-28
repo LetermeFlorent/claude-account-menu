@@ -7,8 +7,7 @@ $null = New-SandboxFile ".claude-credtest/.claude.json" '{"oauthAccount":{"email
 $fold = @{ Root = "R"; Files = "F"; Credentials = "C"; Presence = "P" }
 $script:Sent = New-Object 'System.Collections.Generic.List[object]'
 $script:RemoteText = ""
-function Get-DriveText { param([string]$Id) return $script:RemoteText }
-function Send-DriveText { param([string]$FolderId, [string]$Name, [string]$Text, $Props, [string]$Id) $script:Sent.Add(@{ Folder = $FolderId; Name = $Name; Text = $Text; Props = $Props; Id = $Id }); return @{ Id = "n"; Md5 = "" } }
+. (Join-Path $PSScriptRoot "fake-creds.ps1")
 
 Assert-Equal 0 (Get-CredentialExpiry $null) "sans jeton, expiration 0"
 Assert-Equal "remote" (Select-FresherCredential 100 200) "distant plus frais"
@@ -70,10 +69,10 @@ $null = Sync-AccountCredential $acc $fold @{}
 Assert-Equal "a@x.fr" $script:Sent[0].Props["who"] "adresse du compte envoyee avec le jeton"
 $script:RemoteText = ((New-TestCred 200 "distant") | ConvertTo-Json -Depth 10 -Compress)
 Write-CredentialFile $credPath (New-TestCred 100 "vieux")
-function Get-DriveText { param([string]$Id) Write-CredentialFile $credPath (New-TestCred 900 "claude"); return $script:RemoteText }
+function Get-DriveBytes { param([string]$Id) Write-CredentialFile $credPath (New-TestCred 900 "claude"); return ,(Get-CredTestBytes) }
 $null = Sync-AccountCredential $acc $fold $listing
 Assert-Equal "claude" (Read-AccountCredential $acc).claudeAiOauth.accessToken "jeton renouvele par Claude pendant le telechargement : garde"
-function Get-DriveText { param([string]$Id) return $script:RemoteText }
+function Get-DriveBytes { param([string]$Id) return ,(Get-CredTestBytes) }
 $hold = [IO.File]::Open($script:CredLockPath, "OpenOrCreate", "ReadWrite", "None")
 $script:CredLockWaitMs = 0
 try { $err = ""; try { $null = Sync-AccountCredential $acc $fold $listing } catch { $err = $_.Exception.Message } } finally { $hold.Dispose(); $script:CredLockWaitMs = 15000 }
@@ -210,4 +209,4 @@ Assert-Equal "florent" $userKeys "trousseau : jeton ecrit sous le nom de compte 
 Assert-Equal "simple" $best.claudeAiOauth.accessToken "trousseau : jeton le plus frais lu entre morceaux et element simple"
 Assert-Equal 0 $cleared "trousseau : compte retire, tous ses elements effaces"
 $script:OsName = $credOs
-Remove-Item -LiteralPath (Join-Path $script:Sandbox ".claude-credtest/.claude.json") -Force
+Remove-Item -LiteralPath (Join-Path $script:Sandbox ".claude-credtest/.claude.json") -Force; Remove-SyncKeys
