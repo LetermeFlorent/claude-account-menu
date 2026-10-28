@@ -25,7 +25,7 @@ function Send-MwAsk {
   param([string]$Line, [string]$Body = "")
   $c = New-Object Net.Sockets.TcpClient
   $c.Connect([Net.IPAddress]::Loopback, $script:Web.Port)
-  $t = $Line + " HTTP/1.1`r`nHost: " + $script:Web.Host + "`r`nX-Clm-Token: " + $script:Web.Token + "`r`n"
+  $t = $Line + " HTTP/1.1`r`nHost: " + $script:Web.Host + "`r`nCookie: " + (Get-WebCookieName $script:Web) + "=" + $script:Web.Token + "`r`n"
   if ($Body) { $t += "Content-Type: application/json`r`nContent-Length: " + $Body.Length + "`r`n" }
   $b = [Text.Encoding]::UTF8.GetBytes($t + "`r`n" + $Body)
   $c.GetStream().Write($b, 0, $b.Length)

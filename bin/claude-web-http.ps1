@@ -4,8 +4,8 @@ $script:WebBodyMax = 65536
 $script:WebReadMs = 5000
 $script:WebSendMs = 2000
 $script:WebLatin = [Text.Encoding]::GetEncoding(28591)
-$script:WebSingle = @("host", "content-length", "content-type", "origin", "x-clm-token", "sec-fetch-site")
-$script:WebStatus = @{ 200 = "OK"; 400 = "Bad Request"; 403 = "Forbidden"; 404 = "Not Found"; 405 = "Method Not Allowed"; 409 = "Conflict"; 413 = "Payload Too Large"; 415 = "Unsupported Media Type"; 500 = "Internal Server Error" }
+$script:WebSingle = @("host", "content-length", "content-type", "origin", "cookie", "sec-fetch-site")
+$script:WebStatus = @{ 200 = "OK"; 303 = "See Other"; 400 = "Bad Request"; 403 = "Forbidden"; 404 = "Not Found"; 405 = "Method Not Allowed"; 409 = "Conflict"; 413 = "Payload Too Large"; 415 = "Unsupported Media Type"; 500 = "Internal Server Error" }
 $script:WebHeaders = "Cache-Control: no-store`r`nX-Content-Type-Options: nosniff`r`nReferrer-Policy: no-referrer`r`nX-Frame-Options: DENY`r`nCross-Origin-Opener-Policy: same-origin`r`nCross-Origin-Resource-Policy: same-origin`r`nContent-Security-Policy: default-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`r`n"
 
 function New-WebConn {
@@ -29,7 +29,10 @@ function ConvertFrom-WebHead {
   param([string]$Head)
   $lines = $Head -split "`r`n"
   if ($lines[0] -cnotmatch '^([A-Z]{3,7}) (/[^\s]*) HTTP/1\.[01]$') { return $null }
-  $req = @{ Status = 0; Method = $Matches[1]; Path = $Matches[2].Split("?")[0]; Headers = @{}; Body = "" }
+  $target = $Matches[2].Split([char[]]"?", 2)
+  $query = ""
+  if ($target.Count -eq 2) { $query = $target[1] }
+  $req = @{ Status = 0; Method = $Matches[1]; Path = $target[0]; Query = $query; Headers = @{}; Body = "" }
   for ($i = 1; $i -lt $lines.Count; $i++) {
     if ($lines[$i] -notmatch '^([A-Za-z0-9-]+):[ \t]*(.*?)[ \t]*$') { return $null }
     $name = $Matches[1].ToLowerInvariant()
@@ -76,9 +79,9 @@ function Read-WebConn {
 }
 
 function Send-WebResponse {
-  param($Conn, [int]$Code, [string]$Type, [byte[]]$Body)
+  param($Conn, [int]$Code, [string]$Type, [byte[]]$Body, [string]$Extra = "")
   if ($null -eq $Body) { $Body = [byte[]]@() }
-  $head = "HTTP/1.1 " + $Code + " " + $script:WebStatus[$Code] + "`r`nContent-Type: " + $Type + "`r`nContent-Length: " + $Body.Length + "`r`n" + $script:WebHeaders + "Connection: close`r`n`r`n"
+  $head = "HTTP/1.1 " + $Code + " " + $script:WebStatus[$Code] + "`r`nContent-Type: " + $Type + "`r`nContent-Length: " + $Body.Length + "`r`n" + $script:WebHeaders + $Extra + "Connection: close`r`n`r`n"
   try {
     $h = [Text.Encoding]::ASCII.GetBytes($head)
     $Conn.Stream.Write($h, 0, $h.Length)

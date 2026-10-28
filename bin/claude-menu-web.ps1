@@ -15,7 +15,7 @@ function Open-MenuWeb {
     return
   }
   $script:UiPoll = { Receive-WebRequests $script:WebOpen }
-  $url = Get-WebUrl
+  $url = New-WebUrl
   $null = Open-Browser $url
   $State.Msg = @(("  page web : " + $url), $script:Levels["7d"][0])
   $State.Dirty = $true

@@ -30,12 +30,12 @@ try {
   $script:UiPoll = $null
 
   Open-MenuWeb $script:MenuState
-  $url = Get-WebUrl
-  Assert-True ($url -match '^http://127\.0\.0\.1:[0-9]+/\?t=[0-9a-f]{48}$') "menu web : adresse locale avec jeton"
+  $url = $script:MwUrls[0]
+  Assert-True ($url -match '^http://127\.0\.0\.1:[0-9]+/boot\?c=[0-9a-f]{32}$') "menu web : adresse locale avec un code d'entree"
   Assert-Equal ($url + " |   page web : " + $url) ($script:MwUrls[0] + " | " + $script:MenuState.Msg[0]) "menu web : navigateur ouvert, adresse dans le menu"
   Assert-True ($null -ne $script:UiPoll) "menu web : requetes suivies"
   Open-MenuWeb $script:MenuState
-  Assert-Equal ($url + " " + $url) ($script:MwUrls -join " ") "menu web : seconde touche w, meme page"
+  Assert-True ($script:MwUrls.Count -eq 2 -and $script:MwUrls[1] -ne $url -and $script:MwUrls[1].StartsWith($url.Substring(0, $url.IndexOf("?")))) "menu web : seconde touche w, meme page avec un nouveau code"
 
   $c = Send-MwAsk "GET /api/state"
   $a = Wait-MwAction

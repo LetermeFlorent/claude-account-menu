@@ -1,7 +1,6 @@
 "use strict";
 
 const clm = {
-  token: new URLSearchParams(location.search).get("t") || "",
   pollMs: 2000,
   readMs: 4000,
   state: null,
@@ -34,10 +33,10 @@ function clmFail(err) {
 async function clmFetch(path, init, timeoutMs) {
   const ctrl = new AbortController();
   const timer = timeoutMs > 0 ? setTimeout(() => ctrl.abort(), timeoutMs) : 0;
-  const headers = Object.assign({ "X-Clm-Token": clm.token }, init.headers);
+  const headers = Object.assign({}, init.headers);
   let res;
   try {
-    res = await fetch(path, Object.assign({}, init, { headers, cache: "no-store", credentials: "omit", signal: ctrl.signal }));
+    res = await fetch(path, Object.assign({}, init, { headers, cache: "no-store", credentials: "same-origin", signal: ctrl.signal }));
   } catch (err) {
     throw err.name === "AbortError" ? new ClmBusy() : new ClmGone();
   } finally {

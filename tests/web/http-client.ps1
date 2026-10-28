@@ -51,6 +51,10 @@ function New-WebAsk {
   return $t + "`r`n" + $Body
 }
 
+function Get-WebTestCookie {
+  return "Cookie: " + (Get-WebCookieName $script:Web) + "=" + $script:Web.Token
+}
+
 function Get-WebCode {
   param([string]$Reply)
   if ($Reply -match '^HTTP/1\.1 ([0-9]{3}) ') { return $Matches[1] }

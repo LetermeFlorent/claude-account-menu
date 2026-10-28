@@ -3,9 +3,10 @@
 try {
   $web = Start-WebServer @{ state = { @{ ok = $true; n = 3 } }; boom = { throw "panne" } }
   Assert-True ($web.Port -gt 0) "web : port choisi par le systeme"
-  Assert-True ((Get-WebUrl) -cmatch '^http://127\.0\.0\.1:[0-9]+/\?t=[0-9a-f]{48}$') "web : adresse locale avec jeton"
+  Assert-True ((New-WebUrl) -cmatch '^http://127\.0\.0\.1:[0-9]+/boot\?c=[0-9a-f]{32}$') "web : adresse locale avec un code d'entree"
+  Assert-True ($web.Token -cmatch '^[0-9a-f]{48}$') "web : jeton de session long"
   Assert-True ($web.Listener.LocalEndpoint.Address.Equals([Net.IPAddress]::Loopback)) "web : ecoute sur 127.0.0.1 seulement"
-  $tok = "X-Clm-Token: " + $web.Token
+  $tok = Get-WebTestCookie
   $json = "Content-Type: application/json"
   $act = '{"do":"rename","acc":".claude","name":"Pro"}'
 
@@ -29,7 +30,7 @@ try {
   $r = Invoke-WebTest (New-WebAsk "GET /api/state" @($tok))
   Assert-True ((Get-WebCode $r) -eq "200" -and $r -match '"n": 3') "web : donnees avec le jeton"
   $r = Invoke-WebTest (New-WebAsk "GET /api/boom" @($tok))
-  Assert-True ((Get-WebCode $r) -eq "500" -and $r -match "panne") "web : erreur de lecture renvoyee"
+  Assert-True ((Get-WebCode $r) -eq "500" -and $r -match "W1" -and $r -notmatch "panne") "web : erreur de lecture renvoyee sans son detail"
   Assert-Equal "404" (Get-WebCode (Invoke-WebTest (New-WebAsk "GET /api/rien" @($tok)))) "web : donnee inconnue"
   Assert-Equal "403" (Get-WebCode (Invoke-WebTest (New-WebAsk "GET /api/state" @($tok, "Sec-Fetch-Site: cross-site")))) "web : appel d'un autre site refuse"
   Assert-Equal "403" (Get-WebCode (Invoke-WebTest (New-WebAsk "POST /api/action" @($tok, $json, "Origin: http://evil.com") $act))) "web : action d'une autre origine refusee"

@@ -2,7 +2,7 @@
 
 try {
   $web = Start-WebServer @{ state = { @{ ok = $true; n = 3 } } }
-  $tok = "X-Clm-Token: " + $web.Token
+  $tok = Get-WebTestCookie
   $json = "Content-Type: application/json"
   $act = '{"do":"rename","acc":".claude","name":"Pro"}'
 
@@ -46,7 +46,7 @@ try {
   try {
     ${function:Send-WebFile} = { throw "lecture ratee" }
     $r = Invoke-WebTest (New-WebAsk "GET /")
-    Assert-True ((Get-WebCode $r) -eq "500" -and $r -match "lecture ratee") "web : erreur imprevue rendue en 500, le menu continue"
+    Assert-True ((Get-WebCode $r) -eq "500" -and $r -match "W2" -and $r -notmatch "lecture ratee") "web : erreur imprevue rendue en 500 sans detail, le menu continue"
   } finally { ${function:Send-WebFile} = $webSavedFile }
 
   $c = Connect-WebTest

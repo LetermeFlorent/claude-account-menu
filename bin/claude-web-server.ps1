@@ -1,5 +1,7 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-http.ps1")) { . (Join-Path $PSScriptRoot "claude-web-http.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-auth.ps1")) { . (Join-Path $PSScriptRoot "claude-web-auth.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-errors.ps1")) { . (Join-Path $PSScriptRoot "claude-web-errors.ps1") }
 $script:Web = $null
 $script:WebRoot = Join-Path $PSScriptRoot "clm-web"
 $script:WebFiles = @("index.html", "style.css", "api.js", "ui.js", "tabs.js", "accounts.js", "prefs.js", "sync.js", "backups.js", "display.js")
@@ -7,13 +9,6 @@ $script:WebTypes = @{ ".html" = "text/html; charset=utf-8"; ".css" = "text/css; 
 $script:WebMaxConns = 16
 $script:WebMaxActions = 8
 $script:WebBusyText = "clm est occupe dans le terminal, reessayer quand il revient au menu"
-
-function New-WebToken {
-  $bytes = New-Object byte[] 24
-  $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
-  try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
-  return -join ($bytes | ForEach-Object { $_.ToString("x2") })
-}
 
 function New-WebListener {
   $l = New-Object Net.Sockets.TcpListener([Net.IPAddress]::Loopback, 0)
@@ -28,7 +23,7 @@ function Start-WebServer {
   $l = New-WebListener
   $port = $l.LocalEndpoint.Port
   $script:Web = @{
-    Listener = $l; Port = $port; Token = (New-WebToken); Host = "127.0.0.1:" + $port; Origin = "http://127.0.0.1:" + $port; Views = $Views
+    Listener = $l; Port = $port; Token = (New-WebSecret $script:WebTokenBytes); Boot = $null; BootUntil = 0; Host = "127.0.0.1:" + $port; Origin = "http://127.0.0.1:" + $port; Views = $Views
     Conns = (New-Object 'System.Collections.Generic.List[object]'); Actions = (New-Object 'System.Collections.Generic.Queue[object]')
   }
   return $script:Web
@@ -41,24 +36,6 @@ function Stop-WebServer {
   foreach ($c in $w.Conns) { Close-WebConn $c }
   while ($w.Actions.Count -gt 0) { Send-WebJson $w.Actions.Dequeue().Conn 409 @{ ok = $false; msg = "clm a quitte le menu" } }
   try { $w.Listener.Stop() } catch { Write-Verbose $_.Exception.Message }
-}
-
-function Get-WebUrl {
-  if ($null -eq $script:Web) { return "" }
-  return "http://" + $script:Web.Host + "/?t=" + $script:Web.Token
-}
-
-function Get-WebRefusal {
-  param($Web, $Req)
-  if ($Req.Headers["host"] -cne $Web.Host) { return 403 }
-  if (-not $Req.Path.StartsWith("/api/")) { return 0 }
-  if ($Req.Headers["x-clm-token"] -cne $Web.Token) { return 403 }
-  $site = $Req.Headers["sec-fetch-site"]
-  if ($null -ne $site -and $site -cne "same-origin") { return 403 }
-  $origin = $Req.Headers["origin"]
-  if ($null -ne $origin -and $origin -cne $Web.Origin) { return 403 }
-  if ($Req.Method -eq "POST" -and $Req.Headers["content-type"] -notmatch '^application/json(;|$)') { return 415 }
-  return 0
 }
 
 function Send-WebFile {
@@ -74,7 +51,7 @@ function Send-WebFile {
 function Send-WebView {
   param($Web, $Conn, [string]$Name)
   if ($null -eq $Web.Views -or -not $Web.Views.ContainsKey($Name)) { Send-WebJson $Conn 404 @{ ok = $false; msg = "donnee inconnue" }; return }
-  try { $data = & $Web.Views[$Name] } catch { Send-WebJson $Conn 500 @{ ok = $false; msg = $_.Exception.Message }; return }
+  try { $data = & $Web.Views[$Name] } catch { Send-WebJson $Conn 500 @{ ok = $false; msg = (Get-WebHiddenText $_ "W1") }; return }
   Send-WebJson $Conn 200 $data
 }
 
@@ -94,6 +71,7 @@ function Send-WebAnswer {
   $no = Get-WebRefusal $Web $req
   if ($no -ne 0) { Send-WebJson $Conn $no @{ ok = $false; msg = "acces refuse" }; return }
   $api = $req.Path.StartsWith("/api/")
+  if ($req.Method -eq "GET" -and $req.Path -ceq $script:WebBootPath) { Send-WebBoot $Web $Conn; return }
   if ($req.Method -eq "GET" -and -not $api) { Send-WebFile $Conn $req.Path; return }
   if ($req.Method -eq "GET") { Send-WebView $Web $Conn $req.Path.Substring(5); return }
   if ($req.Method -eq "POST" -and $req.Path -ceq "/api/action") { Add-WebAction $Web $Conn $Open; return }
@@ -112,7 +90,7 @@ function Receive-WebRequests {
     if ($state -eq "wait") { continue }
     $w.Conns.RemoveAt($i)
     if ($state -eq "closed") { Close-WebConn $c; continue }
-    try { Send-WebAnswer $w $c $Open } catch { Send-WebJson $c 500 @{ ok = $false; msg = $_.Exception.Message } }
+    try { Send-WebAnswer $w $c $Open } catch { Send-WebJson $c 500 @{ ok = $false; msg = (Get-WebHiddenText $_ "W2") } }
   }
 }
 

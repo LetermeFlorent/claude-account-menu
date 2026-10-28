@@ -114,7 +114,8 @@ try {
   Assert-Equal "perso Pro" (@($r.Data | ForEach-Object { $_.label }) -join " ") "web action : comptes d'une sauvegarde"
   $r = Invoke-ActTest @{ do = "restore"; name = "claude-comptes-20261003-100000.zip"; accs = @(".claude-compte2") }
   Assert-Equal "True restauration terminee claude-comptes-20261003-100000.zip:.claude-compte2" ("" + $r.Ok + " " + $r.Msg + " " + $script:ActRestored) "web action : restauration"
-  Assert-True ((Invoke-ActTest @{ do = "restore"; name = "..\x.zip"; accs = @(".claude") }).Msg -like "sauvegarde introuvable*") "web action : sauvegarde hors du dossier refusee"
+  Assert-True ((Invoke-ActTest @{ do = "restore"; name = "..\x.zip"; accs = @(".claude") }).Msg -like "erreur de clm (W3)*") "web action : sauvegarde hors du dossier refusee, sans chemin dans la page"
+  Assert-True ($script:MenuState.Msg[0] -like "*W3*sauvegarde introuvable*") "web action : detail du refus dans le terminal"
   Assert-Equal "compte inconnu : .claude-compte3" (Invoke-ActTest @{ do = "restore"; name = "claude-comptes-20261003-100000.zip"; accs = @(".claude-compte3") }).Msg "web action : compte absent de la sauvegarde"
 
   Assert-Equal "aucune mise a jour de clm en attente" (Invoke-ActTest @{ do = "selfupdate" }).Msg "web action : pas de mise a jour"

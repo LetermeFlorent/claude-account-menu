@@ -1,4 +1,5 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-actions-sync.ps1")) { . (Join-Path $PSScriptRoot "claude-web-actions-sync.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-errors.ps1")) { . (Join-Path $PSScriptRoot "claude-web-errors.ps1") }
 $script:WebFree = @("backups-of")
 $script:WebStartupText = "clm finit de demarrer, reessayer dans un instant"
 $script:WebHandlers = @{
@@ -112,8 +113,11 @@ function Invoke-WebAction {
   try {
     if (-not $script:WebHandlers.ContainsKey($name)) { throw ("action inconnue : " + $name) }
     $r = & $script:WebHandlers[$name] $Item.Args
-  } catch { $r = @{ ok = $false; msg = $_.Exception.Message; data = $null; next = $null } }
-  if ($null -ne $script:MenuState -and $r.msg -and $name -ne "backups-of") { Set-WebMenuMsg $r.msg (-not $r.ok) }
+  } catch {
+    $text = Get-WebErrorText $_ "W3"
+    $r = @{ ok = $false; msg = $text; data = $null; next = $null; told = ($text -cne $_.Exception.Message) }
+  }
+  if ($null -ne $script:MenuState -and $r.msg -and -not $r.told -and $name -ne "backups-of") { Set-WebMenuMsg $r.msg (-not $r.ok) }
   Send-WebJson $Item.Conn 200 ([ordered]@{ ok = $r.ok; msg = $r.msg; data = $r.data })
   if ($null -eq $r.next) { return @{ Name = "none" } }
   return $r.next
