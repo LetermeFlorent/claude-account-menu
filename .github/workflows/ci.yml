@@ -2,7 +2,6 @@ name: ci
 
 on:
   push:
-    branches: [main]
   pull_request:
 
 permissions:
@@ -17,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
 
       - name: tests (pwsh)
         shell: pwsh
@@ -28,23 +27,26 @@ jobs:
         shell: powershell
         run: ./tests/run.ps1
 
-      - name: tag de l'etat (Pester)
+      - name: state tag (Pester)
         shell: pwsh
         run: |
           $r = Invoke-Pester -Path ./tests/StateTag.Tests.ps1 -PassThru
           if ($r.FailedCount -gt 0) { exit 1 }
 
       - name: lint (PSScriptAnalyzer)
-        if: runner.os == 'Linux'
         shell: pwsh
         run: |
-          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Force
           $r = @(foreach ($p in "bin", "tests", "install.ps1", "install-hook.ps1") { Invoke-ScriptAnalyzer -Path $p -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 })
           $r | Format-Table -AutoSize
           if ($r.Count -gt 0) { exit 1 }
 
-      - name: scripts sh
+      - name: shell scripts
         if: runner.os != 'Windows'
         run: |
           sh -n bin/clm
           sh -n install.sh
+
+      - name: install smoke test
+        shell: pwsh
+        run: ./tests/smoke/install.ps1
