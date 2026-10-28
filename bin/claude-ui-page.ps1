@@ -64,6 +64,7 @@ function Get-ListRows {
 
 function Select-OneRow {
   param([string]$Title, [string[]]$Items, [int]$Pos, [string[]]$Pairs, [string]$Sub = "")
+  if (@($Items).Count -eq 0) { return $null }
   $pos = [math]::Max(0, [math]::Min($Pos, $Items.Count - 1))
   while ($true) {
     $k = Read-PageKey { Get-PageRows $Title (Get-ListRows $Items $pos) $Pairs $Sub }

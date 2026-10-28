@@ -71,6 +71,7 @@ function Set-UsageResult {
 
 function Start-MenuLoader {
   param($State, $Indices = $null)
+  if ($State.Entries.Count -eq 0) { return }
   if ($null -eq $Indices) { $Indices = 0..($State.Entries.Count - 1) }
   $accs = New-Object 'System.Collections.Generic.List[object]'
   $reader = "Get-AccountUsage"
@@ -87,6 +88,7 @@ function Start-MenuLoader {
 function Request-EntryRead {
   param($State, [double]$Now, [long]$UnixNow = 0, [int]$Index = -1)
   if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
+  if ($State.Entries.Count -eq 0) { return }
   if ($Index -lt 0) { $Index = $State.Sel }
   $e = $State.Entries[$Index]
   $pause = [long]$e.U.LimitedUntil - $UnixNow

@@ -1,5 +1,6 @@
 function Select-Items {
   param([string]$Title, [string[]]$Items)
+  if (@($Items).Count -eq 0) { return $null }
   $on = New-Object bool[] $Items.Count
   for ($i = 0; $i -lt $on.Count; $i++) { $on[$i] = $true }
   $pos = 0
