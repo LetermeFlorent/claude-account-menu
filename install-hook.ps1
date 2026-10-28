@@ -14,7 +14,7 @@ foreach ($d in $dirs) {
   if ($fixed -ceq $raw -and [regex]::IsMatch($raw, $script:SeedTokenPattern)) { continue }
   Copy-Item -LiteralPath $f -Destination ($f + ".bak-seed") -Force
   if ($fixed -cne $raw) {
-    [IO.File]::WriteAllText($f, $fixed, (New-Object Text.UTF8Encoding($false)))
+    Write-TextFileAtomic $f $fixed
     Write-Host ("commande du hook de la barre d'etat remplacee dans " + $f)
     continue
   }
@@ -23,6 +23,6 @@ foreach ($d in $dirs) {
   if (-not $j.PSObject.Properties["hooks"]) { $j | Add-Member -NotePropertyName hooks -NotePropertyValue ([PSCustomObject]@{}) }
   if ($j.hooks.PSObject.Properties["SessionStart"]) { $j.hooks.SessionStart = @($j.hooks.SessionStart) + $entry }
   else { $j.hooks | Add-Member -NotePropertyName SessionStart -NotePropertyValue @($entry) }
-  [IO.File]::WriteAllText($f, ($j | ConvertTo-Json -Depth 30), (New-Object Text.UTF8Encoding($false)))
+  Write-TextFileAtomic $f ($j | ConvertTo-Json -Depth 30)
   Write-Host ("rafraichissement des quotas de la barre d'etat actif dans " + $f)
 }

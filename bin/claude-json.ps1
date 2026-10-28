@@ -1,3 +1,4 @@
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-file-io.ps1")) { . (Join-Path $PSScriptRoot "claude-file-io.ps1") }
 function Read-JsonFile {
   param([string]$Path)
   if (-not (Test-Path -LiteralPath $Path)) { return $null }
@@ -48,15 +49,7 @@ function Write-JsonFile {
   param([string]$Path, $Data)
   $bak = $Path + ".bak-sync"
   if ((Test-Path -LiteralPath $Path) -and -not (Test-Path -LiteralPath $bak)) { [IO.File]::Copy($Path, $bak) }
-  [IO.File]::WriteAllText($Path, (ConvertTo-JsonText $Data) + "`n", (New-Object Text.UTF8Encoding $false))
-}
-
-function Write-TextFileAtomic {
-  param([string]$Path, [string]$Text)
-  $tmp = $Path + "." + [guid]::NewGuid().ToString("N") + ".tmp"
-  [IO.File]::WriteAllText($tmp, $Text, (New-Object Text.UTF8Encoding $false))
-  if (Test-Path -LiteralPath $Path) { [IO.File]::Replace($tmp, $Path, [NullString]::Value) }
-  else { [IO.File]::Move($tmp, $Path) }
+  Write-TextFileAtomic $Path ((ConvertTo-JsonText $Data) + "`n")
 }
 
 function New-PathMap {

@@ -3,17 +3,12 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (
 $script:AccountKeys = @("model", "modelSettings", "theme")
 $script:SyncStatePath = Get-StatePath "sync-state.json"
 $script:SyncLockPath = Get-StatePath "sync.lock"
+$script:SyncLockWaitMs = 5000
 
 function Invoke-WithSyncLock {
   param([scriptblock]$Action)
-  $deadline = (Get-Date).AddSeconds(5)
-  while ($true) {
-    try { $fs = [IO.File]::Open($script:SyncLockPath, "OpenOrCreate", "ReadWrite", "None"); break }
-    catch {
-      if ((Get-Date) -gt $deadline) { Write-Host "  sync ignoree : un autre lancement synchronise deja" -ForegroundColor DarkYellow; return }
-      Start-Sleep -Milliseconds 200
-    }
-  }
+  $fs = Enter-FileLock $script:SyncLockPath $script:SyncLockWaitMs
+  if ($null -eq $fs) { Write-Host "  sync ignoree : un autre lancement synchronise deja" -ForegroundColor DarkYellow; return }
   try { & $Action } finally { $fs.Dispose() }
 }
 
@@ -75,7 +70,7 @@ function Sync-Accounts {
       $configs = @($accs | ForEach-Object { Get-AccountConfigFile $_ })
       Sync-Domain "settings" $settings ${function:Get-SharedSettings} ${function:Merge-Settings} $state
       Sync-Domain "mcpServers" $configs ${function:Get-McpServers} ${function:Merge-Mcp} $state
-      [IO.File]::WriteAllText($script:SyncStatePath, (ConvertTo-JsonText $state), (New-Object Text.UTF8Encoding $false))
+      Write-TextFileAtomic $script:SyncStatePath (ConvertTo-JsonText $state)
     } catch {
       Write-Host ("  sync echouee : " + $_.Exception.Message) -ForegroundColor DarkYellow
     }

@@ -39,8 +39,7 @@ function Save-SyncCatalog {
   foreach ($rel in $sorted.Keys) { $applied[$rel] = ConvertTo-SortedMap $sorted[$rel] }
   $data = [ordered]@{ perPc = [bool]$Catalog.PerPc; waiting = [string[]]$Catalog.Waiting; skills = [string[]]$Catalog.Skills; pcs = $pcs; applied = $applied; parked = (ConvertTo-SortedMap $Catalog.Parked) }
   if ($null -ne $Catalog.Globals) { $data.globals = [string[]]$Catalog.Globals }
-  Write-TextFileAtomic $script:SyncCatalogPath ((ConvertTo-JsonText $data) + "`n")
-  if ($script:OsName -ne "Windows") { try { & chmod 600 $script:SyncCatalogPath } catch { Write-Verbose $_.Exception.Message } }
+  Write-TextFileAtomic $script:SyncCatalogPath ((ConvertTo-JsonText $data) + "`n") -Private
 }
 
 function Get-McpCatalog {

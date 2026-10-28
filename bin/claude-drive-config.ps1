@@ -15,11 +15,7 @@ function Save-DriveConfig {
   param($Config)
   $ordered = [ordered]@{}
   foreach ($k in @($Config.Keys | Sort-Object)) { $ordered[$k] = $Config[$k] }
-  $tmp = $script:DriveConfigPath + "." + [guid]::NewGuid().ToString("N") + ".tmp"
-  [IO.File]::WriteAllText($tmp, (ConvertTo-JsonText $ordered) + "`n", (New-Object Text.UTF8Encoding $false))
-  if ($script:OsName -ne "Windows") { try { & chmod 600 $tmp } catch {} }
-  if (Test-Path -LiteralPath $script:DriveConfigPath) { [IO.File]::Replace($tmp, $script:DriveConfigPath, [NullString]::Value) }
-  else { [IO.File]::Move($tmp, $script:DriveConfigPath) }
+  Write-TextFileAtomic $script:DriveConfigPath ((ConvertTo-JsonText $ordered) + "`n") -Private
 }
 
 function Test-DriveConnected {
@@ -49,17 +45,4 @@ function Get-DrivePcName {
 function Clear-DriveFolders {
   param($Config)
   foreach ($k in @("folderRoot", "folderFiles", "folderCredentials", "folderPresence", "lastSync")) { $Config.Remove($k) }
-}
-
-function Invoke-WithFileLock {
-  param([string]$Path, [int]$WaitMs, [string]$Message, [scriptblock]$Action)
-  $deadline = [DateTime]::UtcNow.AddMilliseconds($WaitMs)
-  while ($true) {
-    try { $fs = [IO.File]::Open($Path, "OpenOrCreate", "ReadWrite", "None"); break }
-    catch {
-      if ([DateTime]::UtcNow -ge $deadline) { throw $Message }
-      Start-Sleep -Milliseconds 200
-    }
-  }
-  try { & $Action } finally { $fs.Dispose() }
 }

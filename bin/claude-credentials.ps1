@@ -1,3 +1,4 @@
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-file-io.ps1")) { . (Join-Path $PSScriptRoot "claude-file-io.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-keychain.ps1")) { . (Join-Path $PSScriptRoot "claude-keychain.ps1") }
 
 function Read-AccountCredential {
@@ -16,12 +17,7 @@ function Read-AccountCredential {
 
 function Write-CredentialFile {
   param([string]$Path, $Cred)
-  $tmp = $Path + "." + [guid]::NewGuid().ToString("N") + ".tmp"
-  $json = $Cred | ConvertTo-Json -Depth 10 -Compress
-  [IO.File]::WriteAllText($tmp, $json, (New-Object Text.UTF8Encoding($false)))
-  if ($script:OsName -ne "Windows") { try { & chmod 600 $tmp } catch {} }
-  if (Test-Path -LiteralPath $Path) { [IO.File]::Replace($tmp, $Path, [NullString]::Value) }
-  else { [IO.File]::Move($tmp, $Path) }
+  Write-TextFileAtomic $Path ($Cred | ConvertTo-Json -Depth 10 -Compress) -Private
 }
 
 function Write-AccountCredential {

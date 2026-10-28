@@ -1,3 +1,4 @@
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-file-io.ps1")) { . (Join-Path $PSScriptRoot "claude-file-io.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
 $script:UsageCachePath = Get-UsageCachePath
 $script:UsageCacheTtl = 180
@@ -5,6 +6,7 @@ $script:ForcedReadMaxAge = 30
 $script:CooldownBaseSec = 60
 $script:CooldownMaxSec = 600
 $script:RetryAfterMaxSec = 3600
+$script:UsageCacheLockMs = 3000
 
 function Read-UsageCache {
   if (-not (Test-Path -LiteralPath $script:UsageCachePath)) { return @{} }
@@ -18,41 +20,57 @@ function Read-UsageCache {
 
 function Write-UsageCache {
   param($Map)
+  Write-TextFileAtomic $script:UsageCachePath (([PSCustomObject]$Map | ConvertTo-Json -Depth 4) + "`n")
+}
+
+function Update-UsageCache {
+  param([scriptblock]$Change)
   $dir = Split-Path $script:UsageCachePath
-  if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
-  [PSCustomObject]$Map | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $script:UsageCachePath -Encoding UTF8
+  if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+  $fs = Enter-FileLock ($script:UsageCachePath + ".lock") $script:UsageCacheLockMs
+  if ($null -eq $fs) { return }
+  try {
+    $map = Read-UsageCache
+    & $Change $map
+    Write-UsageCache $map
+  } finally { $fs.Dispose() }
 }
 
 function Save-UsageEntry {
   param([string]$Label, $Usage)
-  $map = Read-UsageCache
-  $map[$Label] = [PSCustomObject]@{
-    At = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-    Pct5 = $Usage.Pct5; Reset5 = $Usage.Reset5; Pct7 = $Usage.Pct7; Reset7 = $Usage.Reset7
-    Fails = 0; Until = 0
+  $at = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+  Update-UsageCache {
+    param($map)
+    $map[$Label] = [PSCustomObject]@{
+      At = $at
+      Pct5 = $Usage.Pct5; Reset5 = $Usage.Reset5; Pct7 = $Usage.Pct7; Reset7 = $Usage.Reset7
+      Fails = 0; Until = 0
+    }
   }
-  Write-UsageCache $map
 }
 
 function Save-UsageCooldown {
   param([string]$Label, [int]$Seconds, [int]$Fails)
-  $map = Read-UsageCache
-  $old = $map[$Label]
-  $map[$Label] = [PSCustomObject]@{
-    At = [long]$old.At; Pct5 = $old.Pct5; Reset5 = $old.Reset5; Pct7 = $old.Pct7; Reset7 = $old.Reset7
-    Fails = $Fails; Until = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() + $Seconds
+  $until = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() + $Seconds
+  Update-UsageCache {
+    param($map)
+    $old = $map[$Label]
+    $map[$Label] = [PSCustomObject]@{
+      At = [long]$old.At; Pct5 = $old.Pct5; Reset5 = $old.Reset5; Pct7 = $old.Pct7; Reset7 = $old.Reset7
+      Fails = $Fails; Until = $until
+    }
   }
-  Write-UsageCache $map
 }
 
 function Rename-UsageEntry {
   param([string]$Old, [string]$New)
-  $map = Read-UsageCache
-  if (-not $map.ContainsKey($Old)) { return }
-  $entry = $map[$Old]
-  $map.Remove($Old)
-  $map[$New] = $entry
-  Write-UsageCache $map
+  Update-UsageCache {
+    param($map)
+    if (-not $map.ContainsKey($Old)) { return }
+    $entry = $map[$Old]
+    $map.Remove($Old)
+    $map[$New] = $entry
+  }
 }
 
 function Get-CooldownSeconds {
