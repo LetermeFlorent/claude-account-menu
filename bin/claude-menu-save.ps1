@@ -93,7 +93,7 @@ function Get-ZipAccounts {
   foreach ($d in $dirs) {
     $hit = @($reg | Where-Object { $_.Dir -eq $d })
     $label = $d
-    if ($hit.Count -gt 0) { $label = $hit[0].Label }
+    if ($hit.Count -gt 0 -and (ConvertTo-AccountLabel $hit[0].Label)) { $label = ConvertTo-AccountLabel $hit[0].Label }
     elseif ($d -eq ".claude") { $label = "compte1" }
     $out += [PSCustomObject]@{ Label = $label; Dir = $d }
   }

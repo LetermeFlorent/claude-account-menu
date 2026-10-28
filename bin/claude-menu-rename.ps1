@@ -7,7 +7,7 @@ function Assert-AccountName {
 
 function Rename-Account {
   param($Acc, [string]$Name)
-  $name = $Name.Trim()
+  $name = ConvertTo-AccountLabel $Name
   $list = @(Get-Accounts)
   Assert-AccountName $name $Acc.Dir $list
   $old = $Acc.Label

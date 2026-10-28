@@ -3,8 +3,9 @@ function New-AccountSlot {
   $list = @(Get-Accounts)
   $n = $list.Count + 1
   while (Test-Path -LiteralPath (Join-Path $script:HomeDir (".claude-compte" + $n))) { $n++ }
-  if ([string]::IsNullOrWhiteSpace($Label)) { $Label = "compte" + $n }
-  $acc = [PSCustomObject]@{ Label = $Label.Trim(); Dir = ".claude-compte" + $n }
+  $Label = ConvertTo-AccountLabel $Label
+  if ($Label -eq "") { $Label = "compte" + $n }
+  $acc = [PSCustomObject]@{ Label = $Label; Dir = ".claude-compte" + $n }
   Repair-SharedLinks $acc
   $dir = Get-AccountPath $acc
   $settings = [IO.Path]::Combine($script:HomeDir, ".claude", "settings.json")
