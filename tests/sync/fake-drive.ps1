@@ -1,7 +1,9 @@
-$syncSaved = @($script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs, $script:DriveParallel, $script:DriveSessionDir, $script:SyncChoicePath, $script:SyncChoiceLockPath, $script:SyncCatalogPath, $script:SyncChoiceWaitMs)
+$syncSaved = @($script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs, $script:DriveParallel, $script:DriveSessionDir, $script:SyncChoicePath, $script:SyncChoiceLockPath, $script:SyncCatalogPath, $script:SyncChoiceWaitMs, $script:SyncKeyStorePath, $script:SyncKeyStoreOs)
 $script:DriveParallel = 1
 $script:Fake = New-PathMap
 $script:FakePresence = New-PathMap
+$script:FakeRootFiles = New-PathMap
+$script:TestSyncKeys = New-SyncKeys ([byte[]](10..41)) ([byte[]](1..16)) 600000
 $script:FakeSeq = 0
 $script:FailSend = @()
 $script:StopAfter = 0
@@ -34,12 +36,14 @@ function Get-DriveListing {
   $m = New-PathMap
   if ($FolderId -eq "F") { foreach ($k in $script:Fake.Keys) { $m[$k] = $script:Fake[$k] } }
   if ($FolderId -eq "P") { foreach ($k in $script:FakePresence.Keys) { $m[$k] = $script:FakePresence[$k] } }
+  if ($FolderId -eq $script:FakeRoot) { foreach ($k in $script:FakeRootFiles.Keys) { $m[$k] = $script:FakeRootFiles[$k] } }
   return $m
 }
 function Get-DriveFilesListing { param($Folders, [string]$Pc) return Get-DriveListing $Folders.Files }
 function Send-DriveContent {
   param([string]$FolderId, [string]$Name, [byte[]]$Bytes, $Props, [string]$Id)
   if ($FolderId -eq "P") { return Send-FakePresence $Name $Bytes $Props }
+  if ($FolderId -eq $script:FakeRoot) { return Send-FakeRoot $Name $Bytes $Props }
   if ($null -ne $script:OnSend) { & $script:OnSend $Name }
   if ($script:FailSend -contains $Name) { throw "panne reseau" }
   if ($Id) { $Name = Find-FakeName $Id } else { $script:FakeSeq++; $Id = "id" + $script:FakeSeq }
@@ -50,6 +54,13 @@ function Send-DriveContent {
     if ($script:StopAfter -eq 0) { $script:StopCtl.Stop = $true }
   }
   return @{ Id = $Id; Md5 = $md5 }
+}
+function Send-FakeRoot {
+  param([string]$Name, [byte[]]$Bytes, $Props)
+  $copy = @{}
+  foreach ($k in $Props.Keys) { $copy[$k] = [string]$Props[$k] }
+  $script:FakeRootFiles[$Name] = @{ Id = ("k-" + $Name); Name = $Name; Props = $copy; Bytes = $Bytes }
+  return @{ Id = ("k-" + $Name); Md5 = "" }
 }
 function Send-FakePresence {
   param([string]$Name, [byte[]]$Bytes, $Props)
@@ -102,6 +113,9 @@ function Use-Pc {
   $script:SyncChoiceLockPath = Join-Path $state "sync-choice.lock"
   $script:SyncCatalogPath = Join-Path $state "sync-catalog.json"
   $script:SyncChoiceWaitMs = 0
+  $script:SyncKeyStorePath = Join-Path $state "sync-key"
+  $script:SyncKeyStoreOs = "Linux"
+  Save-SyncKeys $script:TestSyncKeys
   Save-DriveConfig @{ refreshToken = "r"; pc = $Name }
 }
 
@@ -123,6 +137,6 @@ function Get-PcText {
 $script:DriveLockWaitMs = 0
 
 function Restore-FakeDrive {
-  $script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs, $script:DriveParallel, $script:DriveSessionDir, $script:SyncChoicePath, $script:SyncChoiceLockPath, $script:SyncCatalogPath, $script:SyncChoiceWaitMs = $syncSaved
+  $script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs, $script:DriveParallel, $script:DriveSessionDir, $script:SyncChoicePath, $script:SyncChoiceLockPath, $script:SyncCatalogPath, $script:SyncChoiceWaitMs, $script:SyncKeyStorePath, $script:SyncKeyStoreOs = $syncSaved
   $script:McpPerPc = $false
 }
