@@ -12,6 +12,8 @@ if (Test-Path -LiteralPath $versionFile) { Remove-Item -LiteralPath $versionFile
 if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath (Join-Path $PSScriptRoot ".git"))) {
   $version = (& git -C $PSScriptRoot log -1 --format="%H %ct") + " " + (& git -C $PSScriptRoot rev-list --count HEAD)
   if ($LASTEXITCODE -eq 0 -and $version) { [IO.File]::WriteAllText($versionFile, $version + "`n", (New-Object Text.UTF8Encoding($false))) }
+} elseif (Test-Path -LiteralPath (Join-Path $PSScriptRoot "clm.version")) {
+  Copy-Item -LiteralPath (Join-Path $PSScriptRoot "clm.version") -Destination $versionFile -Force
 }
 
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")

@@ -1,4 +1,6 @@
 $script:ClmVersionFile = "clm.version"
+$script:ClmRepo = "LetermeFlorent/claude-account-menu"
+$script:ClmUnknownText = "version de clm inconnue, pas de mise a jour automatique : telecharge la derniere version sur https://github.com/" + $script:ClmRepo + "/releases, puis lance install.ps1 (install.sh hors Windows)"
 
 function ConvertFrom-ClmVersion {
   param([string]$Text)
@@ -13,12 +15,9 @@ function Read-ClmVersion {
   return ConvertFrom-ClmVersion ([IO.File]::ReadAllText($p))
 }
 
-function Write-ClmVersion {
-  param($Version, [string]$Dir = $PSScriptRoot)
-  $text = $Version.Sha + " " + $Version.Time
-  if ([int]$Version.Number -gt 0) { $text += " " + $Version.Number }
-  $text += "`n"
-  [IO.File]::WriteAllText((Join-Path $Dir $script:ClmVersionFile), $text, (New-Object Text.UTF8Encoding $false))
+function Test-ClmVersionKnown {
+  param($Version)
+  return $null -ne $Version -and [int]$Version.Number -gt 0
 }
 
 function Format-ClmVersion {
@@ -30,9 +29,8 @@ function Format-ClmVersion {
 
 function Test-ClmOutdated {
   param($Installed, $Latest)
-  if ($null -eq $Latest) { return $false }
-  if ($null -eq $Installed) { return $true }
-  return ($Latest.Sha -ne $Installed.Sha) -and ($Latest.Time -gt $Installed.Time)
+  if ($null -eq $Latest -or -not (Test-ClmVersionKnown $Installed)) { return $false }
+  return [int]$Latest.Number -gt [int]$Installed.Number
 }
 
 function Get-BackupVersion {
@@ -47,7 +45,7 @@ function Get-BackupVersionError {
   param($Installed, $Backup)
   if ($null -eq $Backup) { return $null }
   $hint = " : relance clm pour qu'il se mette a jour, puis restaure"
-  if ($null -eq $Installed) { return "sauvegarde faite avec clm " + (Format-ClmVersion $Backup) + ", version installee inconnue" + $hint }
+  if ($null -eq $Installed) { return "sauvegarde faite avec clm " + (Format-ClmVersion $Backup) + ", version installee inconnue : reinstalle clm depuis https://github.com/" + $script:ClmRepo + "/releases, puis restaure" }
   if ($Backup.Time -le $Installed.Time) { return $null }
   return "sauvegarde faite avec clm " + (Format-ClmVersion $Backup) + ", plus recent que clm " + (Format-ClmVersion $Installed) + $hint
 }

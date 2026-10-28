@@ -86,9 +86,9 @@ L'archive n'est pas chiffrée et contient les jetons en clair. La transférer pa
 
 ## Mettre à jour
 
-`clm` se met à jour tout seul. À l'ouverture du menu, à un lancement direct comme `clm -2` et avant `clm --restore`, il compare sa version au dernier commit publié sur GitHub, installe la nouvelle s'il y en a une, puis redémarre. Quand une version sort pendant que le menu est ouvert, un bouton "[maj dispo]" apparaît à côté du numéro de version, "clm v34" : un clic dessus, ou la touche `u`, l'installe et relance `clm`. Le détail est dans le [README](README.md#mise-à-jour-de-clm).
+`clm` se met à jour tout seul. À l'ouverture du menu, à un lancement direct comme `clm -2` et avant `clm --restore`, il compare sa version à la dernière release publiée sur GitHub, installe la nouvelle s'il y en a une après avoir vérifié son empreinte SHA-256, puis redémarre. Quand une version sort pendant que le menu est ouvert, un bouton "[maj dispo]" apparaît à côté du numéro de version, "clm v34" : un clic dessus, ou la touche `u`, l'installe et relance `clm`. Le détail est dans le [README](README.md#mise-à-jour-de-clm).
 
-À la main, ça reste possible : `git pull` dans le dossier cloné, puis relancer `install.ps1`, ou `install.sh` sous Linux et macOS. Les comptes, leurs jetons et la liste des comptes ne sont pas modifiés, et le hook déjà en place n'est pas ajouté une seconde fois. Comme chaque mise à jour, automatique ou à la main, repasse par l'installeur, une commande de hook périmée est corrigée à cette occasion.
+À la main, ça reste possible : `git pull` dans le dossier cloné, puis relancer `install.ps1`, ou `install.sh` sous Linux et macOS. Autre voie, télécharger l'archive `clm-v<numéro>.zip` de la dernière release, l'ouvrir et lancer son installeur. C'est la seule voie quand `clm` annonce une version inconnue. Les comptes, leurs jetons et la liste des comptes ne sont pas modifiés, et le hook déjà en place n'est pas ajouté une seconde fois. Comme chaque mise à jour, automatique ou à la main, repasse par l'installeur, une commande de hook périmée est corrigée à cette occasion.
 
 Claude Code lui-même est mis à jour par `clm`, avec `claude update`, à chaque ouverture du menu et à chaque lancement direct comme `clm -2`. Pour sauter les deux mises à jour une fois, lancer `clm --no-update`.
 

@@ -11,6 +11,8 @@ echo "scripts copies dans $dst"
 rm -f "$dst/clm.version"
 if command -v git >/dev/null 2>&1 && [ -e "$src/.git" ]; then
   echo "$(git -C "$src" log -1 --format='%H %ct') $(git -C "$src" rev-list --count HEAD)" > "$dst/clm.version" || rm -f "$dst/clm.version"
+elif [ -f "$src/clm.version" ]; then
+  cp "$src/clm.version" "$dst/clm.version"
 fi
 
 case ":$PATH:" in
@@ -27,9 +29,10 @@ fi
 if [ "$(uname)" = "Linux" ] && ! command -v bsdtar >/dev/null 2>&1; then
   echo "bsdtar absent : les sauvegardes seront des .tar.gz, et un .zip venu de Windows ne pourra pas etre restaure (paquet libarchive-tools)"
 fi
-if ! command -v pwsh >/dev/null 2>&1; then
+pwsh_bin=${CLM_PWSH:-pwsh}
+if ! command -v "$pwsh_bin" >/dev/null 2>&1; then
   echo "pwsh introuvable : installe PowerShell 7 (voir INSTALL.md), puis relance ce script pour le hook de la barre d'etat"
   exit 1
 fi
-pwsh -NoProfile -File "$src/install-hook.ps1"
+"$pwsh_bin" -NoProfile -File "$src/install-hook.ps1"
 echo "termine, lance clm"
