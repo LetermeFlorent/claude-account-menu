@@ -3,7 +3,7 @@ $script:ExcludeRegexMemo = New-PathMap
 $script:RootsRegexMemo = New-PathMap
 $script:ExcludeRegexOptions = [Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant, Singleline"
 $script:SafeSyncRoot = New-Object regex '^\.(?:claude(?:-[A-Za-z0-9_-]+)?(?:/|\z)|(?:claude|mcp|claude-accounts)\.json\z)', ([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant")
-$script:UnsafeSyncPath = [regex]'[\\:]|(?:^|/)\.{0,2}(?:/|\z)'
+$script:UnsafeSyncPath = New-Object regex '[\\:]|(?:^|/)(?:/|\z)|[. ](?:/|\z)|(?:^|/)(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.[^/]*)?(?:/|\z)', ([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant")
 
 function ConvertTo-WildcardRegex {
   param([string]$Pattern, [string]$Star, [string]$One)
