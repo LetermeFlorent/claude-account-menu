@@ -15,7 +15,9 @@ function Get-CliDriveLines {
   $last = "jamais"
   $at = Get-DriveLastSync
   if ($at -gt 0) { $last = [DateTimeOffset]::FromUnixTimeSeconds($at).LocalDateTime.ToString($script:CliDateFormat) }
-  $lines = @("Drive connecte", ("PC : " + (Get-DrivePcName)), ("synchro auto : " + $auto), ("derniere synchro : " + $last))
+  $key = "absente, clm --sync-key"
+  if (Test-SyncKeyStored) { $key = "enregistree" }
+  $lines = @("Drive connecte", ("PC : " + (Get-DrivePcName)), ("synchro auto : " + $auto), ("derniere synchro : " + $last), ("phrase de synchro : " + $key))
   if (Test-DriveLockHeld) { $lines += "synchro en cours dans une autre fenetre" }
   return ,[string[]]@($lines + (Get-CliMcpModeLine (Read-SyncCatalog)))
 }

@@ -29,8 +29,11 @@ try {
   $at = [DateTimeOffset]::new(2026, 10, 21, 8, 30, 0, [TimeSpan]::Zero).ToUnixTimeSeconds()
   $atText = [DateTimeOffset]::FromUnixTimeSeconds($at).LocalDateTime.ToString("dd/MM/yyyy HH:mm")
   Save-DriveConfig @{ refreshToken = "r"; auto = $false; pc = "BUREAU"; lastSync = $at }
-  $want = "Drive connecte|PC : BUREAU|synchro auto : coupee|derniere synchro : " + $atText + "|MCP reglables par PC apres la prochaine synchro"
-  Assert-Equal $want ((Get-CliDriveLines) -join "|") "etat Drive : PC, synchro auto, derniere synchro, MCP"
+  $want = "Drive connecte|PC : BUREAU|synchro auto : coupee|derniere synchro : " + $atText + "|phrase de synchro : absente, clm --sync-key|MCP reglables par PC apres la prochaine synchro"
+  Assert-Equal $want ((Get-CliDriveLines) -join "|") "etat Drive : PC, synchro auto, derniere synchro, phrase, MCP"
+  Save-SyncKeys (New-SyncKeys ([byte[]](1..32)) ([byte[]](1..16)) 600000)
+  Assert-True ((Get-CliDriveLines) -contains "phrase de synchro : enregistree") "etat Drive : phrase de synchro enregistree"
+  Remove-SyncKeys
   Assert-Equal 0 (Invoke-PrefsCli @("--drive-status")) "--drive-status : reussi"
 
   $cat = New-SyncCatalog

@@ -67,7 +67,7 @@ function Invoke-MenuPage {
 
 function Connect-MenuDrive {
   Exit-UiScreen
-  try { $msg = Invoke-DriveLogin } finally { Enter-UiScreen }
+  try { $msg = Invoke-DriveSetup } finally { Enter-UiScreen }
   $script:DriveJob = $null
   Open-DriveJob
   $null = Request-DriveSync $script:DriveJob
@@ -135,7 +135,7 @@ function Invoke-MenuLoop {
     elseif ($act.Name -eq "quit" -or $act.Name -eq "restart") { return Close-AccountMenu $null }
     elseif ($act.Name -eq "offline") { $script:MenuOffline = $true; return Close-AccountMenu $null }
     elseif ($act.Name -eq "refresh") { Request-EntryRead $st $now }
-    elseif ($act.Name -eq "drivesync" -and -not $script:DriveJob.Connected) { Invoke-MenuCommand "drivelogin" }
+    elseif ($act.Name -eq "drivesync" -and (-not $script:DriveJob.Connected -or -not (Test-SyncKeyStored))) { Invoke-MenuCommand "drivelogin" }
     elseif ($act.Name -eq "drivesync") { $st.Msg = Request-DriveSync $script:DriveJob; $st.Dirty = $true }
     elseif ($act.Name -eq "selfupdate") {
       if (Test-ClmUpdateReady) { $script:MenuRestart = $true; return Close-AccountMenu $null }

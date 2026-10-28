@@ -2,11 +2,13 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-job.ps1")) {
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-passphrase.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-passphrase.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-login.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-login.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-watch-launch.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-watch-launch.ps1") }
+$script:DriveCliRuns = @{ login = { Invoke-DriveSetup }; key = { Set-SyncPassphrase }; "key-reset" = { Reset-SyncPassphrase }; "key-forget" = { Clear-SyncPassphrase } }
+$script:DriveCliFlags = @{ "--drive-login" = "login"; "--sync-key" = "key"; "--sync-key-reset" = "key-reset"; "--sync-key-forget" = "key-forget" }
 
 function Get-DriveCliAction {
   param([object[]]$ArgList)
   foreach ($a in $ArgList) {
-    if ($a -eq "--drive-login") { return @{ Name = "login" } }
+    if ($script:DriveCliFlags.ContainsKey([string]$a)) { return @{ Name = $script:DriveCliFlags[[string]$a] } }
     if ($a -eq "--sync") { return @{ Name = "sync"; Force = (@($ArgList) -contains "--force") } }
     if ($a -match "^--sync-auto=(on|off)$") { return @{ Name = "auto"; On = ($Matches[1] -eq "on") } }
     if ($a -match "^--sync-auto") { return @{ Name = "error"; Msg = "--sync-auto attend on ou off" } }
@@ -32,7 +34,7 @@ function Invoke-DriveCli {
     if ($Action.On) { Write-Host "synchro automatique activee" } else { Write-Host "synchro automatique coupee" }
     return 0
   }
-  try { Write-Host (Invoke-DriveLogin) } catch { Write-Host $_.Exception.Message; return 1 }
+  try { Write-Host (& $script:DriveCliRuns[$Action.Name]) } catch { Write-Host $_.Exception.Message; return 1 }
   return 0
 }
 

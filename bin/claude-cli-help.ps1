@@ -41,7 +41,12 @@ Mises a jour
 Drive
   clm --drive-status             connexion, nom du PC, synchro auto,
                                  derniere synchro
-  clm --drive-login              connecte ce PC a Google Drive
+  clm --drive-login              connecte ce PC a Google Drive, puis
+                                 demande la phrase de synchro
+  clm --sync-key                 saisit la phrase de synchro sur ce PC
+  clm --sync-key-reset           nouvelle phrase de synchro pour tous
+                                 les PC
+  clm --sync-key-forget          oublie la phrase de synchro sur ce PC
   clm --sync                     synchro Drive tout de suite
   clm --sync --force             meme chose, au-dela du garde-fou des
                                  suppressions

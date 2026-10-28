@@ -13,7 +13,7 @@ function Get-Accounts { return @(foreach ($l in @("a", "b", "c")) { [PSCustomObj
 function Update-UiTick { param([double]$Now, [bool]$Busy) return $false }
 $script:FakeLatest = $null
 function New-ClmCheck { return @{ Loader = $null; NextAt = $null; Installed = $null; Latest = $script:FakeLatest } }
-$softMocked = @("Invoke-DriveLogin", "Test-DriveConnected", "Test-DriveAuto", "Get-DriveLastSync", "Start-DriveJob", "Start-ClaudeUpdate", "Step-ClaudeUpdate")
+$softMocked = @("Invoke-DriveLogin", "Test-DriveConnected", "Test-DriveAuto", "Get-DriveLastSync", "Start-DriveJob", "Start-ClaudeUpdate", "Step-ClaudeUpdate", "Set-SyncPassphrase", "Test-SyncKeyStored")
 $softKept = @{}
 foreach ($n in $softMocked) { $f = Get-Item ("function:" + $n) -ErrorAction SilentlyContinue; if ($f) { $softKept[$n] = $f.ScriptBlock } }
 $script:ClaudeStarts = 0
@@ -29,9 +29,15 @@ function Invoke-DriveLogin {
   $script:LoginCalls++
   $script:UiAtLogin = $script:UiOn
   if ($script:LoginFails) { throw "refus" }
+  $script:DriveOn = $true
   return "Drive connecte sur pc"
 }
-function Test-DriveConnected { return -not $script:LoginFails }
+$script:DriveOn = $true
+$script:KeyStored = $true
+$script:PassCalls = 0
+function Test-DriveConnected { return $script:DriveOn }
+function Test-SyncKeyStored { return $script:KeyStored }
+function Set-SyncPassphrase { $script:PassCalls++; $script:KeyStored = $true; return "phrase de synchro enregistree sur ce PC" }
 function Test-DriveAuto { return $false }
 function Get-DriveLastSync { return [long]0 }
 $script:SyncStarts = 0
@@ -66,6 +72,7 @@ try {
   $script:DriveJob = New-DriveJob $false 0
   $script:LoginCalls = 0
   $script:LoginFails = $true
+  $script:DriveOn = $false
   Assert-Null (Invoke-WithKeys @("y", [ConsoleKey]::Escape)) "y sans Drive : menu garde"
   Assert-Equal "  connexion Drive impossible : refus" $script:MenuState.Msg[0] "y sans Drive : echec affiche"
   Assert-True (-not $script:DriveJob.Connected) "y sans Drive : echec, toujours deconnecte"
@@ -79,6 +86,11 @@ try {
   Assert-True $script:DriveJob.Notify "y sans Drive : resultat de la synchro annonce"
   $null = Invoke-WithKeys @("y", [ConsoleKey]::Escape)
   Assert-Equal 2 $script:LoginCalls "y avec Drive : pas de nouvelle connexion"
+  Assert-Equal 0 $script:PassCalls "y avec Drive et phrase : phrase jamais redemandee"
+  $script:KeyStored = $false
+  $null = Invoke-WithKeys @("y", [ConsoleKey]::Escape)
+  Assert-Equal "2 1" ("" + $script:LoginCalls + " " + $script:PassCalls) "y avec Drive sans phrase : phrase demandee, pas de nouvelle connexion"
+  Assert-Equal "  phrase de synchro enregistree sur ce PC" $script:MenuState.Msg[0] "y avec Drive sans phrase : phrase annoncee"
   Assert-Equal " 1" ("" + (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter, [ConsoleKey]::Escape) $true).Label + " " + $script:ClaudeStarts) "pendant la mise a jour : Entree puis Echap, aucun compte lance"
   Assert-Null (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Escape) $true) "Echap pendant la mise a jour : menu quitte a la fin"
   Assert-Equal "2   a, b, c : Claude Code a jour (2.1.292)" ("" + $script:ClaudeStarts + " " + $script:MenuState.Msg[0]) "Echap pendant la mise a jour : mise a jour menee au bout"
