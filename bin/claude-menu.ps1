@@ -24,7 +24,7 @@ Set-BootBarReady
 
 function Start-Account {
   param($Acc, $Extra)
-  try { Update-StatusState $Acc } catch {}
+  try { Update-StatusState $Acc } catch { Write-Verbose $_.Exception.Message }
   Sync-Accounts
   Sync-DriveBeforeLaunch $Acc
   Repair-AccountConfig $Acc

@@ -30,7 +30,7 @@ function Set-UiSize {
 
 function Enter-UiScreen {
   if (-not $script:MotionRead) { $script:MotionOn = Get-MotionEnabled; $script:MotionRead = $true }
-  try { $script:UiCtrlC = [Console]::TreatControlCAsInput; [Console]::TreatControlCAsInput = $true } catch {}
+  try { $script:UiCtrlC = [Console]::TreatControlCAsInput; [Console]::TreatControlCAsInput = $true } catch { Write-Verbose $_.Exception.Message }
   Set-UiSize (Get-UiSize)
   $e = $script:Esc
   Write-Ui ($e + "[?1049h" + $e + "[?25l" + $e + "[0m" + $e + "[2J")
@@ -48,7 +48,7 @@ function Exit-UiScreen {
   Disable-UiMouse
   $e = $script:Esc
   Write-Ui ($e + "[0m" + $e + "[?2026l" + $e + "[?25h" + $e + "[?1049l")
-  try { [Console]::TreatControlCAsInput = $script:UiCtrlC } catch {}
+  try { [Console]::TreatControlCAsInput = $script:UiCtrlC } catch { Write-Verbose $_.Exception.Message }
 }
 
 function Update-UiTick {

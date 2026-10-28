@@ -94,7 +94,7 @@ function Get-DriveListing {
     }
     $token = [string]$r.nextPageToken
   } while ($token)
-  foreach ($id in $dups) { try { Remove-DriveFile $id } catch {} }
+  foreach ($id in $dups) { try { Remove-DriveFile $id } catch { Write-Verbose $_.Exception.Message } }
   return $map
 }
 

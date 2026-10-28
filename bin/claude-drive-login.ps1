@@ -50,7 +50,7 @@ function Open-Browser {
     if ($script:OsName -eq "Windows") { Start-Process $Url }
     elseif ($script:OsName -eq "MacOS") { & open $Url }
     else { & xdg-open $Url 2>$null }
-  } catch {}
+  } catch { Write-Verbose $_.Exception.Message }
 }
 
 function Invoke-DriveLogin {

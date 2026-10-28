@@ -17,7 +17,7 @@ function New-WebConn {
 
 function Close-WebConn {
   param($Conn)
-  try { $Conn.Client.Close() } catch {}
+  try { $Conn.Client.Close() } catch { Write-Verbose $_.Exception.Message }
 }
 
 function Test-WebGone {
@@ -84,7 +84,7 @@ function Send-WebResponse {
     $Conn.Stream.Write($h, 0, $h.Length)
     if ($Body.Length -gt 0) { $Conn.Stream.Write($Body, 0, $Body.Length) }
     $Conn.Stream.Flush()
-  } catch {} finally { Close-WebConn $Conn }
+  } catch { Write-Verbose $_.Exception.Message } finally { Close-WebConn $Conn }
 }
 
 function Send-WebJson {

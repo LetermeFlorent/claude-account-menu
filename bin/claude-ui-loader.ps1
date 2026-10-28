@@ -46,7 +46,7 @@ function Test-UsageLoaderHeld {
 function Close-UsageLoader {
   param($Loader)
   if ($null -eq $Loader.Ps -or -not $Loader.Ctl.Done) { return }
-  try { [void]$Loader.Ps.EndInvoke($Loader.Handle) } catch {}
+  try { [void]$Loader.Ps.EndInvoke($Loader.Handle) } catch { Write-Verbose $_.Exception.Message }
   $Loader.Ps.Dispose()
   $Loader.Ps = $null
 }

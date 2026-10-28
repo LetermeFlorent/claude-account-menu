@@ -123,7 +123,7 @@ function Stop-TransferPrefetch {
   $sw = [Diagnostics.Stopwatch]::StartNew()
   while ((Test-PrefetchRunning $Pre) -and $sw.ElapsedMilliseconds -lt $script:DrivePrefetchStopMs) { Start-Sleep -Milliseconds $script:DrivePrefetchPollMs }
   foreach ($w in $Pre.Workers) {
-    try { if (-not $w.Handle.IsCompleted) { $w.Ps.Stop() } else { [void]$w.Ps.EndInvoke($w.Handle) } } catch {}
+    try { if (-not $w.Handle.IsCompleted) { $w.Ps.Stop() } else { [void]$w.Ps.EndInvoke($w.Handle) } } catch { Write-Verbose $_.Exception.Message }
     $w.Ps.Dispose()
   }
   foreach ($i in $Pre.Planned.Values) { if ($i.Kind -eq "download") { Remove-DriveTemp $i.Tmp } }

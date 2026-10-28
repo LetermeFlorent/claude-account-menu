@@ -11,7 +11,7 @@ function Remove-LinkOrTree {
     [IO.Directory]::Delete($item.FullName, $false)
     return
   }
-  try { [IO.File]::Delete($item.FullName); return } catch [UnauthorizedAccessException] {}
+  try { [IO.File]::Delete($item.FullName); return } catch [UnauthorizedAccessException] { Write-Verbose $_.Exception.Message }
   $item.Attributes = [IO.FileAttributes]::Normal
   [IO.File]::Delete($item.FullName)
 }

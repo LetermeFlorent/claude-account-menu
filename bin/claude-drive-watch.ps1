@@ -12,7 +12,7 @@ function Write-WatchLog {
     $path = Join-Path $script:DriveSessionDir $script:DriveWatchLogName
     if ([IO.File]::Exists($path) -and (New-Object IO.FileInfo $path).Length -gt $script:DriveWatchLogMaxBytes) { [IO.File]::Delete($path) }
     [IO.File]::AppendAllText($path, ([DateTime]::Now.ToString("yyyy-MM-dd HH:mm:ss") + " " + $Text + "`n"))
-  } catch {}
+  } catch { Write-Verbose $_.Exception.Message }
 }
 
 function Update-WatchFs {

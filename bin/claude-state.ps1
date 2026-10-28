@@ -23,7 +23,7 @@ function Get-StateDir {
   if ($Os -eq "Windows") { $dir = Join-OsPath $Os @((Get-LocalAppData $Vars), $script:StateDirName) }
   elseif ($Os -eq "MacOS") { $dir = Join-OsPath $Os @((Get-HomeDir $Vars), "Library", "Application Support", $script:StateDirName) }
   else { $dir = Join-OsPath $Os @((Get-XdgDir "XDG_STATE_HOME" @(".local", "state") $Vars), $script:StateDirName) }
-  if ($Os -eq $script:OsName) { try { $null = [IO.Directory]::CreateDirectory($dir) } catch {} }
+  if ($Os -eq $script:OsName) { try { $null = [IO.Directory]::CreateDirectory($dir) } catch { Write-Verbose $_.Exception.Message } }
   return $dir
 }
 

@@ -46,10 +46,10 @@ function Open-DriveSession {
 function Submit-DriveSession {
   param([string]$Session)
   $ended = ""
-  try { $ended = Close-DriveSession $Session } catch {}
+  try { $ended = Close-DriveSession $Session } catch { Write-Verbose $_.Exception.Message }
   if (-not $ended) { return $false }
   if (Wait-DriveWatcher $ended) { return $true }
-  try { [IO.File]::Delete($ended) } catch {}
+  try { [IO.File]::Delete($ended) } catch { Write-Verbose $_.Exception.Message }
   return $false
 }
 

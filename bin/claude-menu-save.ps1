@@ -88,7 +88,7 @@ function Get-ZipAccounts {
   Assert-ArchiveReadable $Zip
   $dirs = @(& $script:Tar -tf $Zip | ForEach-Object { ($_ -split "/")[0] } | Where-Object { $_ -match "^\.claude(-[^.]+)?$" } | Sort-Object -Unique)
   $reg = @()
-  try { $reg = @(((& $script:Tar -xOf $Zip $script:ArchiveRegistryName 2>$null | Out-String) -replace "^[^\[\{]*", "") | ConvertFrom-Json | ForEach-Object { $_ }) } catch {}
+  try { $reg = @(((& $script:Tar -xOf $Zip $script:ArchiveRegistryName 2>$null | Out-String) -replace "^[^\[\{]*", "") | ConvertFrom-Json | ForEach-Object { $_ }) } catch { Write-Verbose $_.Exception.Message }
   $out = @()
   foreach ($d in $dirs) {
     $hit = @($reg | Where-Object { $_.Dir -eq $d })

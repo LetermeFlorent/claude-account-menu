@@ -39,7 +39,7 @@ function Get-BackupVersion {
   param([string]$Zip)
   Initialize-Tar
   $text = ""
-  try { $text = (& $script:Tar -xOf $Zip (".local/bin/" + $script:ClmVersionFile) 2>$null | Out-String) } catch {}
+  try { $text = (& $script:Tar -xOf $Zip (".local/bin/" + $script:ClmVersionFile) 2>$null | Out-String) } catch { Write-Verbose $_.Exception.Message }
   return ConvertFrom-ClmVersion $text
 }
 

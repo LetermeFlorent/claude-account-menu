@@ -98,14 +98,14 @@ function Sync-OneCredential {
 function Receive-DriveCredential {
   param($Acc)
   if (-not (Test-DriveConnected)) { return $null }
-  try { if ((Sync-OneCredential $Acc) -eq "remote") { return Read-AccountCredential $Acc } } catch {}
+  try { if ((Sync-OneCredential $Acc) -eq "remote") { return Read-AccountCredential $Acc } } catch { Write-Verbose $_.Exception.Message }
   return $null
 }
 
 function Send-DriveCredential {
   param($Acc)
   if (-not (Test-DriveConnected)) { return }
-  try { $null = Sync-OneCredential $Acc } catch {}
+  try { $null = Sync-OneCredential $Acc } catch { Write-Verbose $_.Exception.Message }
 }
 
 function Test-CredentialUsable {

@@ -4,7 +4,7 @@ $script:ReleaseBase = "https://storage.googleapis.com/claude-code-dist-86c565f3-
 function Get-HostArch {
   $a = "" + $env:PROCESSOR_ARCHITEW6432
   if ($a -eq "") { $a = "" + $env:PROCESSOR_ARCHITECTURE }
-  if ($a -eq "") { try { $a = "" + [Runtime.InteropServices.RuntimeInformation]::OSArchitecture } catch {} }
+  if ($a -eq "") { try { $a = "" + [Runtime.InteropServices.RuntimeInformation]::OSArchitecture } catch { Write-Verbose $_.Exception.Message } }
   return $a.ToLower()
 }
 
@@ -76,19 +76,19 @@ function Start-UpdateProcess {
   $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
   $psi.StandardErrorEncoding = [Text.Encoding]::UTF8
   try { $p = [Diagnostics.Process]::Start($psi) } catch { return $null }
-  try { $p.PriorityClass = "BelowNormal" } catch {}
-  try { $p.StandardInput.Close() } catch {}
+  try { $p.PriorityClass = "BelowNormal" } catch { Write-Verbose $_.Exception.Message }
+  try { $p.StandardInput.Close() } catch { Write-Verbose $_.Exception.Message }
   return $p
 }
 
 function Stop-UpdateProcess {
   param($Proc)
-  try { $Proc.Kill($true); return } catch {}
+  try { $Proc.Kill($true); return } catch { Write-Verbose $_.Exception.Message }
   if ($script:OsName -eq "Windows") {
     & taskkill.exe /T /F /PID $Proc.Id 2>&1 | Out-Null
     $null = $Proc.WaitForExit(2000)
   }
-  if (-not $Proc.HasExited) { try { $Proc.Kill() } catch {} }
+  if (-not $Proc.HasExited) { try { $Proc.Kill() } catch { Write-Verbose $_.Exception.Message } }
 }
 
 function New-LineSource {
@@ -101,7 +101,7 @@ function Receive-Lines {
   $out = @()
   while (-not $Src.Eof -and $Src.Task.IsCompleted) {
     $l = $null
-    try { $l = $Src.Task.Result } catch {}
+    try { $l = $Src.Task.Result } catch { Write-Verbose $_.Exception.Message }
     if ($null -eq $l) { $Src.Eof = $true }
     else { $out += $l; $Src.Task = $Src.Reader.ReadLineAsync() }
   }

@@ -80,7 +80,7 @@ function Enable-UiMouse {
 
 function Disable-UiMouse {
   if ($script:MouseMode -lt 0) { return }
-  try { [ClmConIn]::Restore($script:MouseMode) } catch {}
+  try { [ClmConIn]::Restore($script:MouseMode) } catch { Write-Verbose $_.Exception.Message }
   $script:MouseMode = -1
 }
 
@@ -143,7 +143,7 @@ function Read-UiInput {
       return $null
     }
     $top = 0
-    try { $top = [Console]::WindowTop } catch {}
+    try { $top = [Console]::WindowTop } catch { Write-Verbose $_.Exception.Message }
     $m = ConvertFrom-MouseEvent $ev $script:LastRows $top
     if ($null -ne $m) { return $m }
   }

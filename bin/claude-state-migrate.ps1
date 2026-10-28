@@ -27,7 +27,7 @@ function Move-StateEntry {
     if (Test-Path -LiteralPath $New) { Remove-Item -LiteralPath $Old -Recurse -Force -ErrorAction Stop }
     elseif ([IO.Directory]::Exists($Old)) { [IO.Directory]::Move($Old, $New) }
     else { [IO.File]::Move($Old, $New) }
-  } catch {}
+  } catch { Write-Verbose $_.Exception.Message }
 }
 
 function Test-StateLeftover {
@@ -43,7 +43,7 @@ function Remove-StateLeftovers {
   try { $files = [IO.Directory]::GetFiles($HomeDir, "*" + $script:StateTmpExt) } catch { return }
   foreach ($f in $files) {
     if (-not (Test-StateLeftover ([IO.Path]::GetFileName($f)))) { continue }
-    try { if ([IO.File]::GetLastWriteTimeUtc($f) -lt $limit) { [IO.File]::Delete($f) } } catch {}
+    try { if ([IO.File]::GetLastWriteTimeUtc($f) -lt $limit) { [IO.File]::Delete($f) } } catch { Write-Verbose $_.Exception.Message }
   }
 }
 

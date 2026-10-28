@@ -7,7 +7,7 @@ function New-ThemeWatch {
   if ($null -eq $Probe) { $Probe = { param($O, $V) Get-SystemTheme $O $V } }
   $fixed = $null -ne (Get-FixedTheme $Vars)
   $last = $null
-  if (-not $fixed) { try { $last = & $Probe $Os $Vars } catch {} }
+  if (-not $fixed) { try { $last = & $Probe $Os $Vars } catch { Write-Verbose $_.Exception.Message } }
   return @{ Fixed = $fixed; Last = $last; Next = $Now + 2000; Probe = $Probe }
 }
 
@@ -16,7 +16,7 @@ function Update-ThemeWatch {
   if ($Watch.Fixed -or $Now -lt $Watch.Next) { return $null }
   $Watch.Next = $Now + 2000
   $t = $null
-  try { $t = & $Watch.Probe $Os $Vars } catch {}
+  try { $t = & $Watch.Probe $Os $Vars } catch { Write-Verbose $_.Exception.Message }
   if (-not $t -or $t -eq $Watch.Last) { return $null }
   $Watch.Last = $t
   return $t

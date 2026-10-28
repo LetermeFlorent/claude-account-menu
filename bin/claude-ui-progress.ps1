@@ -43,13 +43,13 @@ function Receive-UiKeys {
     while ($null -ne ($k = Read-UiInput)) {
       if ($k -is [ConsoleKeyInfo] -and [int]$k.KeyChar -eq 3) { $script:UiQuit = $true } else { $script:UiKeys.Enqueue($k) }
     }
-  } catch {}
+  } catch { Write-Verbose $_.Exception.Message }
 }
 
 function Read-UiKey {
   Invoke-UiPoll
   if ($script:UiKeys.Count -gt 0) { return $script:UiKeys.Dequeue() }
-  try { return Read-UiInput } catch {}
+  try { return Read-UiInput } catch { Write-Verbose $_.Exception.Message }
   return $null
 }
 

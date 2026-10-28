@@ -75,7 +75,7 @@ function Stop-BootBar {
   param($Bar = $script:BootBar)
   if ($null -eq $Bar -or $null -eq $Bar.Ps) { return }
   $Bar.Ctl.Stop = $true
-  try { [void]$Bar.Ps.EndInvoke($Bar.Handle) } catch {}
+  try { [void]$Bar.Ps.EndInvoke($Bar.Handle) } catch { Write-Verbose $_.Exception.Message }
   $Bar.Ps.Dispose()
   $Bar.Ps = $null
 }

@@ -40,7 +40,7 @@ function Stop-WebServer {
   $script:Web = $null
   foreach ($c in $w.Conns) { Close-WebConn $c }
   while ($w.Actions.Count -gt 0) { Send-WebJson $w.Actions.Dequeue().Conn 409 @{ ok = $false; msg = "clm a quitte le menu" } }
-  try { $w.Listener.Stop() } catch {}
+  try { $w.Listener.Stop() } catch { Write-Verbose $_.Exception.Message }
 }
 
 function Get-WebUrl {
@@ -104,7 +104,7 @@ function Receive-WebRequests {
   param([bool]$Open, [double]$Now = (Get-NowMs))
   $w = $script:Web
   if ($null -eq $w) { return }
-  try { while ($w.Conns.Count -lt $script:WebMaxConns -and $w.Listener.Pending()) { $w.Conns.Add((New-WebConn $w.Listener.AcceptTcpClient() $Now)) } } catch {}
+  try { while ($w.Conns.Count -lt $script:WebMaxConns -and $w.Listener.Pending()) { $w.Conns.Add((New-WebConn $w.Listener.AcceptTcpClient() $Now)) } } catch { Write-Verbose $_.Exception.Message }
   for ($i = $w.Conns.Count - 1; $i -ge 0; $i--) {
     $c = $w.Conns[$i]
     $state = "closed"

@@ -29,7 +29,7 @@ function Start-HiddenWindowsProcess {
   $psi.UseShellExecute = $false
   $psi.CreateNoWindow = $true
   $p = [Diagnostics.Process]::Start($psi)
-  try { $p.PriorityClass = "BelowNormal" } catch {}
+  try { $p.PriorityClass = "BelowNormal" } catch { Write-Verbose $_.Exception.Message }
   $p.Dispose()
 }
 

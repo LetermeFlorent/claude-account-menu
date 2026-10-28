@@ -84,7 +84,7 @@ function ConvertTo-KeychainLine {
 
 function Remove-KeychainItems {
   param([string]$Service, [string[]]$Accounts)
-  foreach ($a in $Accounts) { try { & security delete-generic-password -a $a -s $Service 2>$null | Out-Null } catch {} }
+  foreach ($a in $Accounts) { try { & security delete-generic-password -a $a -s $Service 2>$null | Out-Null } catch { Write-Verbose $_.Exception.Message } }
 }
 
 function Invoke-SecurityBatch {
@@ -101,7 +101,7 @@ function Invoke-SecurityBatch {
     foreach ($l in $Lines) { $p.StandardInput.WriteLine($l) }
     $p.StandardInput.Close()
     if ($p.WaitForExit($script:KeychainWaitMs)) { return }
-    try { $p.Kill() } catch {}
+    try { $p.Kill() } catch { Write-Verbose $_.Exception.Message }
     throw "trousseau : security ne repond pas"
   } finally { $p.Dispose() }
 }

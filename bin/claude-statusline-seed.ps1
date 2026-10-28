@@ -44,6 +44,6 @@ if ($MyInvocation.InvocationName -ne ".") {
   try {
     $acc = Find-CurrentAccount
     if ($null -ne $acc) { Update-StatusState $acc }
-  } catch {}
+  } catch { Write-Verbose $_.Exception.Message }
   exit 0
 }

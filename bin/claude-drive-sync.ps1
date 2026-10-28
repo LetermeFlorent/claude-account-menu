@@ -117,7 +117,7 @@ function Sync-DriveBeforeLaunch {
 function Sync-DriveAfterExit {
   param($Acc, [long]$DeadlineMs)
   if (-not (Test-DriveConnected)) { return }
-  try { Set-DrivePresence $Acc $false } catch {}
+  try { Set-DrivePresence $Acc $false } catch { Write-Verbose $_.Exception.Message }
   if (-not (Test-DriveAuto)) { Send-DriveCredential $Acc; return }
   Write-Host "  synchro Drive..." -ForegroundColor DarkGray
   $r = Invoke-DriveSync $null $DeadlineMs

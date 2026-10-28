@@ -4,7 +4,6 @@
     "PSAvoidUsingWriteHost",
     "PSUseShouldProcessForStateChangingFunctions",
     "PSUseSingularNouns",
-    "PSAvoidUsingEmptyCatchBlock",
     "PSReviewUnusedParameter",
     "PSAvoidUsingPlainTextForPassword",
     "PSAvoidInvokingEmptyMembers"

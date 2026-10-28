@@ -61,7 +61,7 @@ function Get-WindowsDownloads {
   try {
     $raw = (Get-Item -LiteralPath $key).GetValue("{374DE290-123F-4565-9164-39C4925E467B}", $null, "DoNotExpandEnvironmentNames")
     if ($raw) { return [Environment]::ExpandEnvironmentVariables($raw) }
-  } catch {}
+  } catch { Write-Verbose $_.Exception.Message }
   return $null
 }
 
@@ -83,7 +83,7 @@ function Invoke-Tar {
   $err = $base + ".err.log"
   $quoted = @("-v") + $Argv | ForEach-Object { if ($_ -match "^-") { $_ } else { '"' + $_ + '"' } }
   $p = Start-Process -FilePath $script:Tar -ArgumentList $quoted -NoNewWindow -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
-  try { $p.PriorityClass = "BelowNormal" } catch {}
+  try { $p.PriorityClass = "BelowNormal" } catch { Write-Verbose $_.Exception.Message }
   Wait-Tar $p $out $err $Total $Label
   $warn = @(Read-TarLog $err | Where-Object { $_ -notmatch "^[ax] " })
   foreach ($f in @($out, $err)) { if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force } }

@@ -103,11 +103,11 @@ function Invoke-Captured {
   $psi.RedirectStandardError = $true
   try { $p = [Diagnostics.Process]::Start($psi) } catch { return $null }
   try {
-    try { $p.StandardInput.Close() } catch {}
+    try { $p.StandardInput.Close() } catch { Write-Verbose $_.Exception.Message }
     $out = $p.StandardOutput.ReadToEndAsync()
     $null = $p.StandardError.ReadToEndAsync()
     if (-not $p.WaitForExit($TimeoutMs)) {
-      try { $p.Kill() } catch {}
+      try { $p.Kill() } catch { Write-Verbose $_.Exception.Message }
       return $null
     }
     $p.WaitForExit()
