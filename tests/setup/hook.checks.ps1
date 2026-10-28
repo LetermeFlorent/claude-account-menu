@@ -16,3 +16,8 @@ Assert-Equal (Get-SeedHookCommand $script:OsName) $added.hooks.SessionStart[0].h
 Assert-Equal "opus" $added.model "reglages gardes a l'ajout du hook"
 Assert-Equal $goodText ([IO.File]::ReadAllText($goodPath)) "hook deja juste : fichier intact"
 Assert-True (-not (Test-Path -LiteralPath ($goodPath + ".bak-seed"))) "hook deja juste : aucune copie"
+Assert-True ($added.hooks.SessionStart[0].hooks[0].command -match '^(?:[A-Za-z]:/|/)\S+ -NoProfile ') "hook : interpreteur par chemin absolu"
+Assert-True ($added.hooks.SessionStart[0].hooks[0].command.Contains('"$HOME/.local/bin/claude-statusline-seed.ps1"')) "hook : script sous le dossier perso de chaque PC"
+foreach ($cmdName in @("clm.cmd", "claude-menu.cmd")) {
+  Assert-True ([IO.File]::ReadAllText((Join-Path $bin $cmdName)).Contains('"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile')) ($cmdName + " : powershell par chemin absolu")
+}

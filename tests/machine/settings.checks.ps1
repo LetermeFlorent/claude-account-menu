@@ -26,8 +26,18 @@ Assert-Equal $sl $got[0] "statusLine lu tel quel"
 Assert-Equal 0 (Get-MachineSettings 'a1').Count "JSON invalide : aucun reglage lu"
 
 $winSeed = Get-SeedHookCommand "Windows"
-Assert-Equal 'powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME/.local/bin/claude-statusline-seed.ps1"' $winSeed "commande du hook sous Windows"
-Assert-Equal 'pwsh -NoProfile -File "$HOME/.local/bin/claude-statusline-seed.ps1"' (Get-SeedHookCommand "MacOS") "commande du hook sous macOS"
+Assert-Equal 'C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$HOME/.local/bin/claude-statusline-seed.ps1"' $winSeed "commande du hook sous Windows"
+Assert-Equal '/usr/local/bin/pwsh -NoProfile -File "$HOME/.local/bin/claude-statusline-seed.ps1"' (Get-SeedHookCommand "MacOS" "/usr/local/bin/pwsh") "commande du hook sous macOS"
+$savedRoot = $env:SystemRoot
+try {
+  $env:SystemRoot = "C:\WINDOWS"
+  $upperRoot = Get-PowerShellExe "Windows"
+  $env:SystemRoot = "D:\WinNT\"
+  $otherRoot = Get-PowerShellExe "Windows"
+} finally { $env:SystemRoot = $savedRoot }
+Assert-Equal "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe" $upperRoot "powershell : chemin absolu, casse de Windows sans effet"
+Assert-Equal "D:/WinNT/System32/WindowsPowerShell/v1.0/powershell.exe" $otherRoot "powershell : chemin absolu sous un autre dossier Windows"
+if ($script:OsName -ne "Windows") { Assert-True ((Get-PowerShellExe $script:OsName).StartsWith("/")) "pwsh : chemin absolu" }
 $stale = New-SettingsText @((New-SeedHooksMember 'powershell -NoProfile -ExecutionPolicy Bypass -File "C:/Users/perso/.local/bin/claude-statusline-seed.ps1"'))
 $canon = New-SettingsText @((New-SeedHooksMember $winSeed))
 Assert-Equal $canon (Remove-MachineSettings $stale) "hook d'un autre PC remis sous forme canonique"

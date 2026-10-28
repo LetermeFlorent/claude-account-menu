@@ -2,26 +2,11 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { 
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json-members.ps1")) { . (Join-Path $PSScriptRoot "claude-json-members.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-projects.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-projects.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-seed-hook.ps1")) { . (Join-Path $PSScriptRoot "claude-seed-hook.ps1") }
 $script:SettingsMachine = @{ Keys = [string[]]@("statusLine"); Seed = $true; Fallback = ".claude/settings.json"; Projects = $false }
 $script:McpMachineKeys = [string[]]@("mcpServers")
 $script:McpConfigPattern = [regex]'^(\.claude\.json|\.mcp\.json|\.claude[^/]*/\.claude\.json)$'
-$script:SeedFile = "claude-statusline-seed.ps1"
-$script:SeedTokenPattern = '(?<="command"\s*:\s*)"(?:[^"\\]|\\.)*claude-statusline-seed\.ps1(?:[^"\\]|\\.)*"'
 $script:Utf8Bom = [byte[]](0xEF, 0xBB, 0xBF)
-
-function Get-SeedHookCommand {
-  param([string]$Os)
-  $seed = '"$HOME/.local/bin/' + $script:SeedFile + '"'
-  if ($Os -eq "Windows") { return "powershell -NoProfile -ExecutionPolicy Bypass -File " + $seed }
-  return "pwsh -NoProfile -File " + $seed
-}
-
-function Set-SeedCommand {
-  param([string]$Text, [string]$Command)
-  if (-not $Text.Contains($script:SeedFile)) { return $Text }
-  $json = ConvertTo-JsonString $Command
-  return [regex]::Replace($Text, $script:SeedTokenPattern, { param($m) $json }.GetNewClosure())
-}
 
 function Get-MachineSettings {
   param([string]$Text, $Kind = $script:SettingsMachine)
@@ -43,7 +28,7 @@ function Remove-MachineSettings {
   }
   if ($Kind.Projects) { $out = Remove-ProjectMcp $out }
   if (-not $Kind.Seed) { return $out }
-  return Set-SeedCommand $out (Get-SeedHookCommand "Windows")
+  return Set-SeedCommand $out (Get-SeedHookCommand "Windows" $script:WindowsPowerShellCanon)
 }
 
 function Add-MachineSettings {
