@@ -3,7 +3,7 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-keychain.ps1")) { 
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-file-io.ps1")) { . (Join-Path $PSScriptRoot "claude-file-io.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
 $script:SyncKeyStorePath = Get-StatePath "sync-key"
-$script:SyncKeyStoreOs = $script:OsName
+if ($null -eq $script:SyncKeyStoreOs) { $script:SyncKeyStoreOs = $script:OsName }
 $script:SyncKeyService = "clm-sync-key"
 $script:SyncKeyAccount = "clm"
 $script:SyncKeyMissing = "phrase de synchro absente sur ce PC : la saisir par y dans le menu ou clm --sync-key"
