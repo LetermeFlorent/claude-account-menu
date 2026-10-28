@@ -6,6 +6,9 @@ $script:CredentialMarginMs = 60000
 $script:CredLockPath = Get-StatePath "drive-creds.lock"
 $script:CredLockWaitMs = 15000
 $script:CredentialUnknownOwner = "adresse locale inconnue, jeton du Drive refuse"
+$script:CredentialNoOwner = "jeton du Drive sans adresse, refuse"
+$script:CredentialTooFar = "jeton du Drive refuse : expiration trop lointaine"
+$script:CredentialMaxAheadMs = [long]30 * 24 * 3600 * 1000
 
 function Get-CredentialExpiry {
   param($Cred)
@@ -43,6 +46,15 @@ function Assert-CredentialOwner {
   if ($who -and $who -ne $mine) { throw ("jeton du Drive pour une autre adresse (" + $who + ")") }
 }
 
+function Assert-RemoteCredentialTrusted {
+  param($Acc, $Remote)
+  $who = ""
+  if ($null -ne $Remote.Props) { $who = [string]$Remote.Props["who"] }
+  if (-not $who) { throw $script:CredentialNoOwner }
+  if (-not (Get-AccountEmail $Acc)) { throw $script:CredentialUnknownOwner }
+  if ([long]$Remote.Exp -gt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + $script:CredentialMaxAheadMs) { throw $script:CredentialTooFar }
+}
+
 function Read-RemoteCredential {
   param($Remote)
   try { $cred = (Get-DriveText $Remote.Id) | ConvertFrom-Json } catch { throw "jeton du Drive invalide" }
@@ -72,6 +84,7 @@ function Sync-CredentialUnlocked {
   $pick = Select-FresherCredential (Get-CredentialExpiry $local) $remoteExp
   if ($pick -eq "local") { Send-LocalCredential $Acc $Folders $remote $local }
   if ($pick -ne "remote") { return $pick }
+  Assert-RemoteCredentialTrusted $Acc $remote
   $cred = Read-RemoteCredential $remote
   if ((Get-CredentialExpiry (Read-LocalCredential $Acc)) -ge $remoteExp) { return "same" }
   Write-AccountCredential $Acc $cred

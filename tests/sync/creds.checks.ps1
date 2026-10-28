@@ -3,6 +3,7 @@ if ($credOs -eq "MacOS") { $script:OsName = "Linux" }
 function New-TestCred { param([long]$Exp, [string]$Tok = "t") return ('{"claudeAiOauth":{"accessToken":"' + $Tok + '","refreshToken":"r","expiresAt":' + $Exp + ',"scopes":["user:inference"]}}' | ConvertFrom-Json) }
 $acc = [PSCustomObject]@{ Label = "ct"; Dir = ".claude-credtest" }
 $credPath = Join-Path $script:Sandbox ".claude-credtest/.credentials.json"
+$null = New-SandboxFile ".claude-credtest/.claude.json" '{"oauthAccount":{"emailAddress":"a@x.fr"}}'
 $fold = @{ Root = "R"; Files = "F"; Credentials = "C"; Presence = "P" }
 $script:Sent = New-Object 'System.Collections.Generic.List[object]'
 $script:RemoteText = ""
@@ -14,7 +15,7 @@ Assert-Equal "remote" (Select-FresherCredential 100 200) "distant plus frais"
 Assert-Equal "local" (Select-FresherCredential 300 200) "local plus frais"
 Assert-Equal "same" (Select-FresherCredential 200 200) "egalite"
 
-$listing = @{ ".claude-credtest.json" = @{ Id = "c1"; Exp = 200 } }
+$listing = @{ ".claude-credtest.json" = @{ Id = "c1"; Exp = 200; Props = @{ exp = "200"; who = "a@x.fr" } } }
 $script:RemoteText = ((New-TestCred 200 "distant") | ConvertTo-Json -Depth 10 -Compress)
 Assert-Equal "remote" (Sync-AccountCredential $acc $fold $listing) "compte jamais connecte ici : jeton distant pris"
 Assert-Equal "distant" (Read-AccountCredential $acc).claudeAiOauth.accessToken "jeton distant ecrit localement"
@@ -55,11 +56,18 @@ $script:RemoteText = ((New-TestCred 200 "intrus") | ConvertTo-Json -Depth 10 -Co
 $err = ""; try { $null = Sync-AccountCredential $acc $fold @{ ".claude-credtest.json" = @{ Id = "c1"; Exp = 200; Props = @{ exp = "200"; who = "b@y.fr" } } } } catch { $err = $_.Exception.Message }
 Assert-Equal "jeton du Drive pour une autre adresse (b@y.fr)" $err "jeton d'une autre adresse : refuse"
 Assert-Equal "tenu" (Read-AccountCredential $acc).claudeAiOauth.accessToken "jeton d'une autre adresse : jeton local garde"
+$err = ""; try { $null = Sync-AccountCredential $acc $fold @{ ".claude-credtest.json" = @{ Id = "c1"; Exp = 200; Props = @{ exp = "200" } } } } catch { $err = $_.Exception.Message }
+Assert-Equal "jeton du Drive sans adresse, refuse" $err "jeton du Drive sans adresse : refuse"
+$far = [DateTimeOffset]::UtcNow.AddDays(31).ToUnixTimeMilliseconds()
+$script:RemoteText = ((New-TestCred $far "lointain") | ConvertTo-Json -Depth 10 -Compress)
+$err = ""; try { $null = Sync-AccountCredential $acc $fold @{ ".claude-credtest.json" = @{ Id = "c1"; Exp = $far; Props = @{ exp = ("" + $far); who = "a@x.fr" } } } } catch { $err = $_.Exception.Message }
+Assert-Equal "jeton du Drive refuse : expiration trop lointaine" $err "jeton du Drive valable plus de 30 jours : refuse"
+Assert-Equal "tenu" (Read-AccountCredential $acc).claudeAiOauth.accessToken "jetons du Drive refuses : jeton local garde"
+$script:RemoteText = ((New-TestCred 200 "intrus") | ConvertTo-Json -Depth 10 -Compress)
 $script:Sent.Clear()
 Write-CredentialFile $credPath (New-TestCred 600 "moi")
 $null = Sync-AccountCredential $acc $fold @{}
 Assert-Equal "a@x.fr" $script:Sent[0].Props["who"] "adresse du compte envoyee avec le jeton"
-Remove-Item -LiteralPath (Join-Path $script:Sandbox ".claude-credtest/.claude.json") -Force
 $script:RemoteText = ((New-TestCred 200 "distant") | ConvertTo-Json -Depth 10 -Compress)
 Write-CredentialFile $credPath (New-TestCred 100 "vieux")
 function Get-DriveText { param([string]$Id) Write-CredentialFile $credPath (New-TestCred 900 "claude"); return $script:RemoteText }
@@ -115,7 +123,7 @@ Assert-True $true "Drive non connecte : rien envoye, aucune erreur"
 Save-DriveConfig @{ refreshToken = "r" }
 $fut = [DateTimeOffset]::UtcNow.AddHours(2).ToUnixTimeMilliseconds()
 function Get-DriveFolders { return @{ Root = "R"; Files = "F"; Credentials = "C"; Presence = "P" } }
-function Get-DriveListing { param([string]$FolderId) return @{ ".claude-credtest.json" = @{ Id = "c1"; Exp = $fut } } }
+function Get-DriveListing { param([string]$FolderId) return @{ ".claude-credtest.json" = @{ Id = "c1"; Exp = $fut; Props = @{ who = "a@x.fr" } } } }
 $script:RemoteText = ((New-TestCred $fut "frais") | ConvertTo-Json -Depth 10 -Compress)
 Write-CredentialFile $credPath (New-TestCred 1000 "expire")
 $got = Update-AccountToken $acc (New-TestCred 1000 "expire")
@@ -202,3 +210,4 @@ Assert-Equal "florent" $userKeys "trousseau : jeton ecrit sous le nom de compte 
 Assert-Equal "simple" $best.claudeAiOauth.accessToken "trousseau : jeton le plus frais lu entre morceaux et element simple"
 Assert-Equal 0 $cleared "trousseau : compte retire, tous ses elements effaces"
 $script:OsName = $credOs
+Remove-Item -LiteralPath (Join-Path $script:Sandbox ".claude-credtest/.claude.json") -Force
