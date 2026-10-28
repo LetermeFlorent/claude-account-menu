@@ -38,3 +38,9 @@ function Invoke-WithFileLock {
   if ($null -eq $fs) { throw $Message }
   try { & $Action } finally { $fs.Dispose() }
 }
+
+function Test-ReparsePath {
+  param([string]$Path)
+  try { $attr = [IO.File]::GetAttributes($Path) } catch [IO.IOException] { return $false }
+  return [bool]($attr -band [IO.FileAttributes]::ReparsePoint)
+}

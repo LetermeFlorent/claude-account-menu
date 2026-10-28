@@ -90,3 +90,10 @@ function Invoke-Tar {
   foreach ($f in @($out, $err)) { if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force } }
   return $warn
 }
+
+function Get-TarLinkRoots {
+  param($Lines)
+  foreach ($l in @($Lines)) {
+    if ([string]$l -match '^[lh]\S*\s.*?\s(\.[^/\s]+)/?(?: -> | link to )') { $Matches[1] }
+  }
+}

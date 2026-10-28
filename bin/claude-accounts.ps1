@@ -55,6 +55,9 @@ function Repair-SharedLinks {
   if ($Acc.Dir -eq ".claude") { return }
   $main = Join-Path $script:HomeDir ".claude"
   $dir = Get-AccountPath $Acc
+  foreach ($root in @($main, $dir)) {
+    if (Test-ReparsePath $root) { Write-Warning ("dossier de compte en lien, laisse tel quel : " + $root); return }
+  }
   if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
   foreach ($d in $script:SharedDirs) {
     $src = Join-Path $main $d; $dst = Join-Path $dir $d

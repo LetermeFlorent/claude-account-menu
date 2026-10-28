@@ -84,6 +84,7 @@ function Get-LocalFiles {
   foreach ($r in $Roots) {
     if ($rx.IsMatch($r)) { continue }
     $full = Get-SyncRootPath $Root $r
+    if (Test-ReparsePath $full) { $res.Skipped.Add($r); continue }
     if ([IO.File]::Exists($full)) { Add-LocalFile $res $r ([IO.FileInfo]$full) $Base }
     elseif ([IO.Directory]::Exists($full)) { $stack.Push(@($r, $full)) }
   }

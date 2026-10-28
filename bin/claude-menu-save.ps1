@@ -111,11 +111,16 @@ function Restore-Accounts {
   $top = @($entries | Sort-Object -Unique)
   $Accs = @($Accs | Where-Object { $top -contains $_.Dir })
   if ($Accs.Count -eq 0) { throw "aucun compte a restaurer dans cette sauvegarde" }
+  $items = @(Get-AccountItems $Accs | Where-Object { $top -contains $_ })
+  $links = @(Get-TarLinkRoots @(& $script:Tar -tvf $Zip))
+  foreach ($i in $items) {
+    if ($links -contains $i) { throw ("sauvegarde refusee : " + $i + " y est un lien") }
+    if (Test-ReparsePath (Join-Path $script:HomeDir $i)) { throw ("restauration refusee : " + $i + " est un lien sur ce PC") }
+  }
   $current = @(Get-Accounts)
   $present = @($current | Where-Object { $d = $_.Dir; @($Accs | Where-Object { $_.Dir -eq $d }).Count -gt 0 })
   $safety = ""
   if ($present.Count -gt 0) { $safety = Save-Accounts "avant-restauration" $present }
-  $items = @(Get-AccountItems $Accs | Where-Object { $top -contains $_ })
   $total = @($entries | Where-Object { $items -contains $_ }).Count
   $script:Sizes = @{}
   $machine = Get-MachineSnapshot @($Accs | ForEach-Object { Join-Path (Get-AccountPath $_) "settings.json" }) (Join-Path (Join-Path $script:HomeDir ".claude") "settings.json")
