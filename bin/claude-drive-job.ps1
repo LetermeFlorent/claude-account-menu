@@ -30,7 +30,7 @@ function Update-DriveElsewhere {
 }
 
 function Get-DriveLastSync {
-  $c = Read-DriveConfig
+  try { $c = Read-DriveConfig } catch { return [long]0 }
   if ($null -eq $c) { return [long]0 }
   return [long]$c["lastSync"]
 }

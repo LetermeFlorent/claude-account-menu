@@ -2,10 +2,12 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { 
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
 $script:DriveConfigPath = Get-StatePath "drive.json"
+$script:DriveConfigUnreadable = "drive.json illisible, a corriger ou a supprimer : "
 
 function Read-DriveConfig {
-  try { $data = Read-JsonFile $script:DriveConfigPath } catch { return $null }
-  if ($null -eq $data) { return $null }
+  if (-not (Test-Path -LiteralPath $script:DriveConfigPath)) { return $null }
+  try { $data = Read-JsonFile $script:DriveConfigPath } catch { $data = $null }
+  if ($data -isnot [Collections.IDictionary]) { throw ($script:DriveConfigUnreadable + $script:DriveConfigPath) }
   $out = @{}
   foreach ($k in @($data.Keys)) { $out[$k] = $data[$k] }
   return $out
@@ -19,7 +21,7 @@ function Save-DriveConfig {
 }
 
 function Test-DriveConnected {
-  $c = Read-DriveConfig
+  try { $c = Read-DriveConfig } catch { return $false }
   return $null -ne $c -and -not [string]::IsNullOrEmpty([string]$c["refreshToken"])
 }
 
@@ -37,7 +39,7 @@ function Set-DriveAuto {
 }
 
 function Get-DrivePcName {
-  $c = Read-DriveConfig
+  try { $c = Read-DriveConfig } catch { return [Environment]::MachineName }
   if ($null -ne $c -and -not [string]::IsNullOrEmpty([string]$c["pc"])) { return [string]$c["pc"] }
   return [Environment]::MachineName
 }

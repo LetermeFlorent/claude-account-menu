@@ -8,8 +8,9 @@ $script:McpPerPc = $false
 function Read-PcFile {
   param([string]$Id)
   $text = Get-DriveText $Id
-  if ($text.Length -gt $script:PcFileMax) { return New-PcContent }
+  if ($text.Length -gt $script:PcFileMax) { return $null }
   try { $data = ConvertFrom-JsonText $text } catch { $data = $null }
+  if ($data -isnot [Collections.IDictionary]) { return $null }
   return ConvertFrom-PcData $data $false
 }
 
@@ -24,6 +25,7 @@ function Update-PcFiles {
     $old = $Catalog.Pcs[$pc]
     if ($null -ne $old -and $md5 -and $old.Md5 -eq $md5) { continue }
     $c = Read-PcFile $Presence[$name].Id
+    if ($null -eq $c) { continue }
     $c.Md5 = $md5
     $Catalog.Pcs[$pc] = $c
   }

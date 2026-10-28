@@ -80,6 +80,11 @@ Assert-Equal '{"u":1}' $back.Applied[".claude.json"]["|d"] "catalogue relu : bas
 Assert-Equal 8 $back.Pcs["B"].Erased["s"] "catalogue relu : skills effaces"
 Assert-Null (New-SyncCatalog).Globals "catalogue neuf : globaux jamais vus"
 [IO.File]::WriteAllText($script:SyncCatalogPath, "{casse")
-Assert-Equal 0 (Read-SyncCatalog).Pcs.Count "catalogue illisible : vide"
+Assert-Throws { Read-SyncCatalog } "illisible" "catalogue illisible : lecture en erreur, pas catalogue vide"
+Assert-Equal "{casse" ([IO.File]::ReadAllText($script:SyncCatalogPath)) "catalogue illisible : fichier intact"
+Remove-Item -LiteralPath $script:SyncCatalogPath -Force
+Assert-Equal 0 (Read-SyncCatalog).Pcs.Count "catalogue absent : vide"
+[IO.File]::WriteAllText($script:SyncCatalogPath, "")
+Assert-Throws { Read-SyncCatalog } "illisible" "catalogue vide : lecture en erreur"
 Remove-Item -LiteralPath $script:SyncCatalogPath -Force
 $script:SyncCatalogPath = $catalogSaved

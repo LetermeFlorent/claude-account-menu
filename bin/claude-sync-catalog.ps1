@@ -1,6 +1,7 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-pcdata.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-pcdata.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
 $script:SyncCatalogPath = Get-StatePath "sync-catalog.json"
+$script:SyncCatalogUnreadable = "sync-catalog.json illisible, a corriger ou a supprimer : "
 
 function New-SyncCatalog {
   return @{ PerPc = $false; Waiting = [string[]]@(); Skills = [string[]]@(); Pcs = (New-PathMap); Applied = (New-PathMap); Parked = (New-PathMap); Globals = $null }
@@ -15,8 +16,9 @@ function Read-StringMap {
 
 function Read-SyncCatalog {
   $cat = New-SyncCatalog
+  if (-not (Test-Path -LiteralPath $script:SyncCatalogPath)) { return $cat }
   try { $data = Read-JsonFile $script:SyncCatalogPath } catch { $data = $null }
-  if ($data -isnot [Collections.IDictionary]) { return $cat }
+  if ($data -isnot [Collections.IDictionary]) { throw ($script:SyncCatalogUnreadable + $script:SyncCatalogPath) }
   $keys = Get-JsonKeys $data
   if ($keys -contains "perPc") { $cat.PerPc = $data["perPc"] -eq $true }
   if ($keys -contains "waiting") { $cat.Waiting = [string[]]@($data["waiting"] | Where-Object { $_ -is [string] -and $_ }) }

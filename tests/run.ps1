@@ -29,6 +29,14 @@ function Assert-True {
   Assert-Equal $true $Value $Name
 }
 
+function Assert-Throws {
+  param([scriptblock]$Action, [string]$Contains, [string]$Name)
+  $msg = $null
+  try { $null = & $Action } catch { $msg = $_.Exception.Message }
+  if ($null -ne $msg -and $msg.Contains($Contains)) { $script:Passed++; return }
+  $script:Failed += ($Name + " : attendu une erreur contenant [" + $Contains + "], obtenu [" + $msg + "]")
+}
+
 function New-SandboxFile {
   param([string]$Rel, [string]$Text)
   $p = [IO.Path]::Combine($script:Sandbox, $Rel)

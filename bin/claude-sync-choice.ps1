@@ -5,6 +5,7 @@ $script:SyncChoicePath = Get-StatePath "sync-choice.json"
 $script:SyncChoiceLockPath = Get-StatePath "sync-choice.lock"
 $script:SyncChoiceWaitMs = 5000
 $script:SyncChoiceBusyText = "reglages de synchro en cours d'ecriture"
+$script:SyncChoiceUnreadable = "sync-choice.json illisible, a corriger ou a supprimer : "
 $script:SyncChoiceKinds = @("skills", "mcp", "globals")
 
 function New-SyncChoice {
@@ -21,8 +22,9 @@ function Get-JsonKeys {
 
 function Read-SyncChoice {
   $c = New-SyncChoice
+  if (-not (Test-Path -LiteralPath $script:SyncChoicePath)) { return $c }
   try { $data = Read-JsonFile $script:SyncChoicePath } catch { $data = $null }
-  if ($data -isnot [Collections.IDictionary]) { return $c }
+  if ($data -isnot [Collections.IDictionary]) { throw ($script:SyncChoiceUnreadable + $script:SyncChoicePath) }
   if ((Get-JsonKeys $data) -contains "stamps") { $c.Stamps = ConvertFrom-KindMaps $data["stamps"] { param($v) Read-StampValue $v } }
   if ((Get-JsonKeys $data) -contains "asks") { $c.Asks = ConvertFrom-AsksData $data["asks"] }
   foreach ($kind in $script:SyncChoiceKinds) {

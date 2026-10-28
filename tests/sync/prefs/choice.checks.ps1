@@ -32,7 +32,13 @@ Assert-Equal "b" (@($c.skills.Keys) -join ",") "fichier abime : seules les cases
 Assert-Equal 0 $c.mcp.Count "fichier abime : MCP ignores"
 Assert-Equal "c" ($c.Erase.skills -join ",") "fichier abime : demandes valides gardees"
 [IO.File]::WriteAllText($script:SyncChoicePath, "pas du json")
-Assert-Equal 0 (Read-SyncChoice).skills.Count "fichier illisible : choix vide"
+Assert-Throws { Read-SyncChoice } "illisible" "fichier illisible : lecture en erreur, pas choix vide"
+Assert-Throws { Update-SyncChoice { param($x) Set-ChoiceCheck $x "skills" "z" $false $true } } "illisible" "fichier illisible : changement refuse"
+Assert-Equal "pas du json" ([IO.File]::ReadAllText($script:SyncChoicePath)) "fichier illisible : fichier intact"
+[IO.File]::WriteAllText($script:SyncChoicePath, "[1]")
+Assert-Throws { Read-SyncChoice } "illisible" "fichier qui n'est pas un objet : lecture en erreur"
+Remove-Item -LiteralPath $script:SyncChoicePath -Force
+Assert-Equal 0 (Read-SyncChoice).skills.Count "fichier absent : choix vide"
 
 $held = [IO.File]::Open($script:SyncChoiceLockPath, "OpenOrCreate", "ReadWrite", "None")
 $err = ""
