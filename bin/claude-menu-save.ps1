@@ -87,7 +87,7 @@ function Get-Backups {
 function Get-ZipAccounts {
   param([string]$Zip)
   Assert-ArchiveReadable $Zip
-  $dirs = @(& $script:Tar -tf $Zip | ForEach-Object { ($_ -split "/")[0] } | Where-Object { $_ -match "^\.claude(-[^.]+)?$" } | Sort-Object -Unique)
+  $dirs = @(& $script:Tar -tf $Zip | ForEach-Object { ($_ -split "/")[0] } | Where-Object { Test-AccountDir $_ } | Sort-Object -Unique)
   $reg = @()
   try { $reg = @(((& $script:Tar -xOf $Zip $script:ArchiveRegistryName 2>$null | Out-String) -replace "^[^\[\{]*", "") | ConvertFrom-Json | ForEach-Object { $_ }) } catch { Write-Verbose $_.Exception.Message }
   $out = @()
@@ -106,6 +106,7 @@ function Restore-Accounts {
   Assert-ArchiveReadable $Zip
   Assert-BackupVersion $Zip
   if ($null -eq $Accs) { $Accs = @(Get-ZipAccounts $Zip) }
+  $Accs = @(Select-ValidAccounts $Accs)
   $entries = @(& $script:Tar -tf $Zip | ForEach-Object { ($_ -split "/")[0] })
   $top = @($entries | Sort-Object -Unique)
   $Accs = @($Accs | Where-Object { $top -contains $_.Dir })

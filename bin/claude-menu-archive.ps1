@@ -1,5 +1,6 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-progress.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-progress.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-process-args.ps1")) { . (Join-Path $PSScriptRoot "claude-process-args.ps1") }
 $script:Tar = $null
 $script:TarFlavor = $null
 
@@ -81,8 +82,8 @@ function Invoke-Tar {
   $base = Join-Path ([IO.Path]::GetTempPath()) ("claude-tar-" + [guid]::NewGuid().ToString("N"))
   $out = $base + ".out.log"
   $err = $base + ".err.log"
-  $quoted = @("-v") + $Argv | ForEach-Object { if ($_ -match "^-") { $_ } else { '"' + $_ + '"' } }
-  $p = Start-Process -FilePath $script:Tar -ArgumentList $quoted -NoNewWindow -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
+  $line = ConvertTo-ProcessCommandLine (@("-v") + $Argv)
+  $p = Start-Process -FilePath $script:Tar -ArgumentList $line -NoNewWindow -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
   try { $p.PriorityClass = "BelowNormal" } catch { Write-Verbose $_.Exception.Message }
   Wait-Tar $p $out $err $Total $Label
   $warn = @(Read-TarLog $err | Where-Object { $_ -notmatch "^[ax] " })
