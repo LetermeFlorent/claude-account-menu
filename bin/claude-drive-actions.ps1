@@ -135,6 +135,7 @@ function Invoke-SyncPlan {
         $fails = 0
       } catch {
         $Ctx.Res.Failed++
+        if (-not $Ctx.Res.Failure) { $Ctx.Res.Failure = $a.Path + " : " + $_.Exception.Message }
         $fails++
         if ($fails -ge $script:DriveFailLimit) { $Ctx.Res.Left = $Plan.Count - $done + $later; throw }
       }

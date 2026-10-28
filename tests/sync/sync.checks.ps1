@@ -101,7 +101,7 @@ $script:FailSend = @(".claude/tard/t1.md")
 $r = Invoke-DriveSync
 Assert-Equal 2 $r.Up "echec d'un fichier : les autres partent"
 Assert-Equal 1 $r.Failed "echec d'un fichier compte"
-Assert-Equal "1 fichier(s) en echec, nouvel essai a la prochaine synchro" $r.Error "echec d'un fichier : message"
+Assert-Equal "1 fichier(s) en echec (.claude/tard/t1.md : panne reseau), nouvel essai a la prochaine synchro" $r.Error "echec d'un fichier : message"
 foreach ($i in 1..4) { Set-PcFile (".claude/panne/p" + $i + ".md") ("p" + $i) }
 $script:FailSend = @(".claude/panne/p1.md", ".claude/panne/p2.md", ".claude/panne/p3.md", ".claude/tard/t1.md")
 $r = Invoke-DriveSync

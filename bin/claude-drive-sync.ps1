@@ -17,7 +17,7 @@ function Invoke-WithDriveLock {
 }
 
 function New-SyncResult {
-  return @{ Ok = $false; Error = ""; Busy = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Total = 0; Away = @{}; Again = $false }
+  return @{ Ok = $false; Error = ""; Busy = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Failure = ""; Total = 0; Away = @{}; Again = $false }
 }
 
 function Set-DriveLastSync {
@@ -26,6 +26,12 @@ function Set-DriveLastSync {
   if ($null -eq $c) { return }
   $c["lastSync"] = $At
   Save-DriveConfig $c
+}
+
+function Get-FailureSuffix {
+  param($Res)
+  if (-not $Res.Failure) { return "" }
+  return " (" + $Res.Failure + ")"
 }
 
 function Invoke-DriveSyncPass {
@@ -52,13 +58,14 @@ function Invoke-DriveSyncPass {
   $Res.Total = $plan.Count
   $registry = Get-RegistryMd5 $local.Files
   $ctx = @{ Folder = $folders.Files; Pc = $pc; State = $state; Local = $local.Files; Remote = $remote; Res = $Res }
-  try { Invoke-SyncPlan $ctx $plan $Ctl $DeadlineMs }
+  $completed = $false
+  try { Invoke-SyncPlan $ctx $plan $Ctl $DeadlineMs; $completed = $true }
   finally {
-    if ($Res.Left -eq 0 -and $Res.Failed -eq 0) { $state.At = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
+    if ($completed -and $Res.Left -eq 0 -and $Res.Failed -eq 0) { $state.At = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
     Save-DriveState $state
   }
   Remove-SyncedOffSkills $prefs.Choice $patterns $state.Files
-  if ($Res.Failed -gt 0) { $Res.Error = "" + $Res.Failed + " fichier(s) en echec, nouvel essai a la prochaine synchro"; return }
+  if ($Res.Failed -gt 0) { $Res.Error = "" + $Res.Failed + " fichier(s) en echec" + (Get-FailureSuffix $Res) + ", nouvel essai a la prochaine synchro"; return }
   if ($Res.Left -eq 0 -and (Test-AllPcsCurrent $presence)) { $Res.Deleted += Remove-OwnLeftovers $listing $pc (Get-SyncPatterns $accs) $Ctl $DeadlineMs }
   $Res.Ok = $true
   $Res.Again = (Get-RegistryMd5 $state.Files) -ne $registry
