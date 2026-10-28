@@ -38,11 +38,7 @@ Assert-Equal (New-SettingsText @($sonnet, $localHooks, $slB)) (Get-PcText $rel) 
 Assert-Equal (New-SettingsText @($opus, $slB)) (Get-PcText ".claude-compte2/settings.json") "nouveau compte : statusLine du premier compte de ce PC"
 Assert-Equal 0 (Invoke-DriveSync).Total "modification recue : rien a renvoyer"
 
-$e = $script:Fake[$rel]
-$e.Bytes = [Text.Encoding]::UTF8.GetBytes((New-SettingsText @($opus, $foreignHooks, $slA)))
-$e.Md5 = Get-FakeMd5 $e.Bytes
-$e.M = 1700000200
-$e.Pc = "ANCIEN"
+Add-FakeSealed $rel (Get-FakeEntry $rel).Id (New-SettingsText @($opus, $foreignHooks, $slA)) 1700000200 "ANCIEN"
 $r = Invoke-DriveSync
 Assert-Equal 1 $r.Down "ancien CLM : reglages bruts recus"
 Assert-Equal (New-SettingsText @($opus, $localHooks, $slB)) (Get-PcText $rel) "ancien CLM : statusLine et hook de ce PC gardes"

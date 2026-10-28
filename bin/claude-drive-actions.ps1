@@ -3,6 +3,8 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-state.ps1"))
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-plan.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-plan.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-transfer.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-transfer.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-prefetch.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-prefetch.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-sealed.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-sealed.ps1") }
+if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-conflict.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-conflict.ps1") }
 $script:DriveFailLimit = 3
 $script:DriveEchoEvery = 25
 $script:DriveSaveEveryMs = 60000
@@ -38,7 +40,7 @@ function Send-SyncFile {
   param($Ctx, [string]$Rel)
   $L = $Ctx.Local[$Rel]
   $r = Get-PrefetchedUpload $Ctx.Prefetch $Rel
-  if ($null -eq $r) { $r = Send-DriveContent $Ctx.Folder $Rel (Get-SyncBytes $Rel $L.Full) (Get-UploadProps $Ctx $Rel) (Get-RemoteId $Ctx $Rel) }
+  if ($null -eq $r) { $r = Send-SealedFile $Ctx.Folder $Rel (Get-SyncBytes $Rel $L.Full) (Get-UploadProps $Ctx $Rel) (Get-RemoteId $Ctx $Rel) $Ctx.Keys }
   $md5 = $r.Md5
   if (-not $md5) { $md5 = $L.Md5 }
   $Ctx.State.Files[$Rel] = @{ Md5 = $md5; M = $L.M; Size = $L.Size; Id = $r.Id }
@@ -63,7 +65,7 @@ function Receive-SyncFile {
   $R = $Ctx.Remote[$Rel]
   $path = Get-SyncLocalPath $Rel
   $tmp = Get-PrefetchedTemp $Ctx.Prefetch $Rel
-  if (-not $tmp) { $tmp = Receive-DriveTemp $R.Id $path }
+  if (-not $tmp) { $tmp = Receive-DriveTemp $R.Id $path ($script:SealedFilesArea + $Rel) $Ctx.Keys }
   try {
     if (-not (Test-LocalAsScanned $Ctx $Rel)) { return $false }
     Restore-LocalMachineSettings $tmp $path $Rel
@@ -72,19 +74,6 @@ function Receive-SyncFile {
   if ([long]$R.M -gt 0) { [IO.File]::SetLastWriteTimeUtc($path, [DateTimeOffset]::FromUnixTimeSeconds([long]$R.M).UtcDateTime) }
   $Ctx.State.Files[$Rel] = New-BaseEntry $path $R.Md5 $R.Id
   return $true
-}
-
-function Save-RemoteConflict {
-  param($Ctx, [string]$Rel)
-  $R = $Ctx.Remote[$Rel]
-  $pc = $R.Pc
-  if (-not $pc) { $pc = "drive" }
-  Receive-DriveFile $R.Id (Get-SyncLocalPath (Get-ConflictPath $Rel $pc))
-}
-
-function Save-LocalConflict {
-  param($Ctx, [string]$Rel)
-  [IO.File]::WriteAllBytes((Get-SyncLocalPath (Get-ConflictPath $Rel $Ctx.Pc)), (Read-SharedBytes $Ctx.Local[$Rel].Full))
 }
 
 function Invoke-SyncAction {
@@ -100,7 +89,8 @@ function Invoke-SyncAction {
       Remove-SyncLocalFile $p
       $Ctx.State.Files.Remove($p); $res.Deleted++
     }
-    "delete-remote" { Remove-DriveFile $Ctx.Remote[$p].Id; $Ctx.State.Files.Remove($p); $res.Deleted++ }
+    "delete-remote" { foreach ($id in (Get-RemoteIds $Ctx.Remote[$p])) { Remove-DriveFile $id }; $Ctx.State.Files.Remove($p); $res.Deleted++ }
+    "refuse" { throw (New-SealRefusal) }
     "forget" { $Ctx.State.Files.Remove($p) }
     "adopt" {
       $L = $Ctx.Local[$p]
@@ -137,9 +127,12 @@ function Invoke-SyncPlan {
         $fails = 0
       } catch {
         $Ctx.Res.Failed++
-        if (-not $Ctx.Res.Failure) { $Ctx.Res.Failure = $a.Path + " : " + $_.Exception.Message }
-        $fails++
-        if ($fails -ge $script:DriveFailLimit) { $Ctx.Res.Left = $Plan.Count - $done + $later; throw }
+        if (Test-SealRefusal $_) { $Ctx.Res.Refused.Add($a.Path) }
+        else {
+          if (-not $Ctx.Res.Failure) { $Ctx.Res.Failure = $a.Path + " : " + $_.Exception.Message }
+          $fails++
+          if ($fails -ge $script:DriveFailLimit) { $Ctx.Res.Left = $Plan.Count - $done + $later; throw }
+        }
       }
       Set-SyncProgress $Ctl $done $Plan.Count
     }

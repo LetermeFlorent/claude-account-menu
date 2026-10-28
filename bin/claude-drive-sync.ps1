@@ -17,7 +17,7 @@ function Invoke-WithDriveLock {
 }
 
 function New-SyncResult {
-  return @{ Ok = $false; Error = ""; Busy = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Failure = ""; Total = 0; Away = @{}; Again = $false }
+  return @{ Ok = $false; Error = ""; Busy = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Failure = ""; Total = 0; Away = @{}; Again = $false; Refused = (New-Object 'System.Collections.Generic.List[string]'); Late = @() }
 }
 
 function Set-DriveLastSync {
@@ -36,28 +36,32 @@ function Get-FailureSuffix {
 
 function Invoke-DriveSyncPass {
   param($Res, $Ctl, [long]$DeadlineMs, [bool]$Force)
+  $keys = Get-SyncKeys
   $folders = Get-DriveFolders
+  Assert-SyncKeysMatch $folders $keys
   $pc = Get-DrivePcName
   $accs = @(Get-Accounts)
-  $Res.Failed += [int](Sync-DriveCredentials $folders $accs)
+  $Res.Failed += [int](Sync-DriveCredentials $folders $accs $keys)
   $presence = Get-DriveListing $folders.Presence
   Set-PresenceFormat $folders $presence $pc
+  $Res.Late = Get-WaitingPcs $presence
   $Res.Away = Get-AwayMap $presence $pc ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
-  $prefs = Start-SyncPrefs $folders $presence $pc $accs $Res
+  $prefs = Start-SyncPrefs $folders $presence $pc $accs $Res $keys
   $roots = Get-SyncRoots $accs
   $state = Read-SyncBase $folders.Root $roots
   $patterns = @(Get-SyncPatterns $accs) + @($prefs.Excludes)
   $local = Get-LocalFiles $script:HomeDir $roots $patterns $state.Files $Ctl $DeadlineMs
   if ($local.Stopped) { $Res.Ok = $true; $Res.Stopped = $true; return }
   $local.Skipped.AddRange([string[]]@(Get-HeldPaths))
-  $listing = Get-DriveFilesListing $folders $pc
+  $sealed = ConvertFrom-SealedListing (Get-DriveFilesListing $folders $pc) $keys
+  $listing = $sealed.Files
   Complete-SyncPrefs $prefs $listing $Ctl $DeadlineMs
   $remote = Select-RemoteFiles $listing $patterns $roots
   $plan = Get-SyncPlan $local.Files $state.Files $remote $local.Skipped -Joining:($state.At -eq 0) -CaseFold:($script:OsName -ne "Linux")
   Assert-DeleteLimit $plan $state.Files.Count $Force $prefs.Erased
   $Res.Total = $plan.Count
   $registry = Get-RegistryMd5 $local.Files
-  $ctx = @{ Folder = $folders.Files; Pc = $pc; State = $state; Local = $local.Files; Remote = $remote; Res = $Res }
+  $ctx = @{ Folder = $folders.Files; Pc = $pc; State = $state; Local = $local.Files; Remote = $remote; Res = $Res; Keys = $keys }
   $completed = $false
   try { Invoke-SyncPlan $ctx $plan $Ctl $DeadlineMs; $completed = $true }
   finally {
@@ -66,7 +70,10 @@ function Invoke-DriveSyncPass {
   }
   Remove-SyncedOffSkills $prefs.Choice $patterns $state.Files
   if ($Res.Failed -gt 0) { $Res.Error = "" + $Res.Failed + " fichier(s) en echec" + (Get-FailureSuffix $Res) + ", nouvel essai a la prochaine synchro"; return }
-  if ($Res.Left -eq 0 -and (Test-AllPcsCurrent $presence)) { $Res.Deleted += Remove-OwnLeftovers $listing $pc (Get-SyncPatterns $accs) $Ctl $DeadlineMs }
+  if ($Res.Left -eq 0 -and (Test-AllPcsCurrent $presence)) {
+    $Res.Deleted += Remove-OwnLeftovers $listing $pc (Get-SyncPatterns $accs) $Ctl $DeadlineMs
+    $null = Remove-DriveFiles $sealed.Twins $Ctl $DeadlineMs
+  }
   $Res.Ok = $true
   $Res.Again = (Get-RegistryMd5 $state.Files) -ne $registry
   if ($Res.Left -eq 0) { $Res.At = $state.At; Set-DriveLastSync $state.At }
@@ -103,13 +110,23 @@ function Invoke-DriveSync {
   return $res
 }
 
+function Get-SyncNotice {
+  param($Result)
+  $t = ""
+  $refused = @($Result.Refused | Where-Object { $_ })
+  $late = @($Result.Late | Where-Object { $_ })
+  if ($refused.Count -gt 0) { $t += " ; refuses : " + (@($refused | Select-Object -First 3) -join ", ") }
+  if ($late.Count -gt 0) { $t += " ; PC sur une ancienne version de clm : " + ($late -join ", ") }
+  return $t
+}
+
 function Get-DriveSyncMsg {
   param($Result)
-  if ($Result.Error) { return "synchro Drive : " + $Result.Error }
+  if ($Result.Error) { return "synchro Drive : " + $Result.Error + (Get-SyncNotice $Result) }
   if ($Result.Stopped) { return "synchro Drive : interrompue pendant l'analyse, reprise a la prochaine synchro" }
   $t = "synchro Drive : " + $Result.Up + " envoyes, " + $Result.Down + " recus, " + $Result.Deleted + " supprimes, " + $Result.Conflicts + " conflits"
   if ($Result.Left -gt 0) { $t += ", " + $Result.Left + " restants pour la prochaine synchro" }
-  return $t
+  return $t + (Get-SyncNotice $Result)
 }
 
 function Sync-DriveBeforeLaunch {

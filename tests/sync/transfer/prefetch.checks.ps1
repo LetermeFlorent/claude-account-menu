@@ -8,8 +8,7 @@ Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
 
 function Add-FakeRemote {
   param([string]$Name, [string]$Id, [string]$Text)
-  $b = [Text.Encoding]::UTF8.GetBytes($Text)
-  $script:Fake[$Name] = @{ Id = $Id; Name = $Name; Md5 = (Get-FakeMd5 $b); M = 1700000000; Pc = "PCB"; Exp = 0; Props = @{ m = "1700000000"; pc = "PCB" }; Bytes = $b }
+  Add-FakeSealed $Name $Id $Text
 }
 
 function Get-TempCount {

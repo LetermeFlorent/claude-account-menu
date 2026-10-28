@@ -3,9 +3,8 @@ Use-Pc "PCR"
 Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
 $null = Invoke-DriveSync
 
-$same = [Text.Encoding]::UTF8.GetBytes("meme")
 Set-PcFile ".claude/pareil.md" "meme"
-$script:Fake[".claude/pareil.md"] = @{ Id = "pareil"; Name = ".claude/pareil.md"; Md5 = (Get-FakeMd5 $same); M = 0; Pc = "PCB"; Bytes = $same }
+Add-FakeSealed ".claude/pareil.md" "pareil" "meme"
 Set-PcFile ".claude/nouveau.md" "neuf"
 $script:SeenBase = $false
 $script:OnSend = { param($Name) $script:SeenBase = (Read-DriveState).Files.ContainsKey(".claude/pareil.md") }

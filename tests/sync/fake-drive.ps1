@@ -11,16 +11,12 @@ $script:StopCtl = $null
 $script:FakeRoot = "R"
 $script:OnMedia = $null
 $script:OnSend = $null
+. (Join-Path $PSScriptRoot "fake-sealed.ps1")
 
 function Get-FakeMd5 {
   param([byte[]]$Bytes)
   $md5 = [Security.Cryptography.MD5]::Create()
   try { return -join ($md5.ComputeHash($Bytes) | ForEach-Object { $_.ToString("x2") }) } finally { $md5.Dispose() }
-}
-
-function Get-FakeText {
-  param([string]$Name)
-  return [Text.Encoding]::UTF8.GetString($script:Fake[$Name].Bytes)
 }
 
 function Find-FakeName {
@@ -44,10 +40,12 @@ function Send-DriveContent {
   param([string]$FolderId, [string]$Name, [byte[]]$Bytes, $Props, [string]$Id)
   if ($FolderId -eq "P") { return Send-FakePresence $Name $Bytes $Props }
   if ($FolderId -eq $script:FakeRoot) { return Send-FakeRoot $Name $Bytes $Props }
-  if ($null -ne $script:OnSend) { & $script:OnSend $Name }
-  if ($script:FailSend -contains $Name) { throw "panne reseau" }
+  $rel = $Name -replace ("^" + [regex]::Escape($script:SealedPrefix)), ""
+  if ($null -ne $script:OnSend) { & $script:OnSend $rel }
+  if ($script:FailSend -contains $rel) { throw "panne reseau" }
   if ($Id) { $Name = Find-FakeName $Id } else { $script:FakeSeq++; $Id = "id" + $script:FakeSeq }
   $md5 = Get-FakeMd5 $Bytes
+  if ($Props["h"]) { $md5 = [string]$Props["h"] }
   $script:Fake[$Name] = @{ Id = $Id; Name = $Name; Md5 = $md5; M = [long]$Props["m"]; Pc = [string]$Props["pc"]; Exp = 0; Props = $Props; Bytes = $Bytes }
   if ($script:StopAfter -gt 0) {
     $script:StopAfter--
@@ -72,20 +70,17 @@ function Send-FakePresence {
   $script:FakePresence[$Name] = @{ Id = ("p-" + $Name); Name = $Name; Props = $all; Bytes = $Bytes; Md5 = $md5 }
   return @{ Id = ("p-" + $Name); Md5 = $md5 }
 }
-function Get-DriveText {
+function Get-DriveBytes {
   param([string]$Id)
   foreach ($k in $script:FakePresence.Keys) {
     $e = $script:FakePresence[$k]
     if ($e.Id -ne $Id) { continue }
-    if ($null -eq $e.Bytes) { return "{}" }
-    return [Text.Encoding]::UTF8.GetString($e.Bytes)
+    if ($null -eq $e.Bytes) { return ,[Text.Encoding]::UTF8.GetBytes("{}") }
+    return ,$e.Bytes
   }
-  return Get-FakeText (Find-FakeName $Id)
-}
-function Save-DriveMedia {
-  param([string]$Id, [string]$Path)
-  [IO.File]::WriteAllBytes($Path, $script:Fake[(Find-FakeName $Id)].Bytes)
+  $bytes = $script:Fake[(Find-FakeName $Id)].Bytes
   if ($null -ne $script:OnMedia) { & $script:OnMedia }
+  return ,$bytes
 }
 function Remove-DriveFile { param([string]$Id) $script:Fake.Remove((Find-FakeName $Id)) }
 function Remove-DriveFiles {

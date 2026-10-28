@@ -62,8 +62,7 @@ function Get-SkillDriveIds {
   param($Listing, [string]$Name)
   $ids = New-Object 'System.Collections.Generic.List[string]'
   foreach ($k in (Get-SkillDriveKeys $Listing $Name)) {
-    $id = [string]$Listing[$k].Id
-    if ($id -match $script:DriveIdPattern) { $ids.Add($id) }
+    foreach ($id in (Get-RemoteIds $Listing[$k])) { if ($id -match $script:DriveIdPattern) { $ids.Add($id) } }
   }
   return ,$ids.ToArray()
 }

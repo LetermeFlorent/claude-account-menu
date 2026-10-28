@@ -1,5 +1,6 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-api.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-api.ps1") }
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-crypto.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-crypto.ps1") }
+$script:SealRequired = "telechargement refuse sans cle de synchro"
 
 function New-MultipartBody {
   param([string]$MetaJson, [byte[]]$Bytes, [string]$Boundary)
@@ -71,30 +72,24 @@ function Send-DriveText {
   return Send-DriveContent $FolderId $Name ([Text.Encoding]::UTF8.GetBytes($Text)) $Props $Id
 }
 
-function Get-PlainParentDir {
-  param([string]$Path)
-  $dir = Split-Path -Parent $Path
-  while ($dir -and [WildcardPattern]::ContainsWildcardCharacters($dir)) { $dir = Split-Path -Parent $dir }
-  if (-not $dir) { throw ("telechargement impossible, aucun dossier utilisable pour " + $Path) }
-  return $dir
+function Get-DriveBytes {
+  param([string]$Id)
+  $r = Invoke-DriveRequest "GET" ($script:DriveApi + "/" + $Id + "?alt=media") $null "" $script:DriveDataTimeout
+  if ($null -eq $r -or $null -eq $r.RawContentStream) { return ,(New-Object byte[] 0) }
+  return ,$r.RawContentStream.ToArray()
 }
 
-function Save-DriveMedia {
-  param([string]$Id, [string]$Path)
-  $uri = $script:DriveApi + "/" + $Id + "?alt=media"
-  if (-not [WildcardPattern]::ContainsWildcardCharacters($Path)) { $null = Invoke-DriveRequest "GET" $uri $null "" $script:DriveDataTimeout $Path; return }
-  $plain = Join-Path (Get-PlainParentDir $Path) ("clm-" + [guid]::NewGuid().ToString("N") + ".tmp")
-  try {
-    $null = Invoke-DriveRequest "GET" $uri $null "" $script:DriveDataTimeout $plain
-    [IO.File]::Copy($plain, $Path, $true)
-  } finally { [IO.File]::Delete($plain) }
+function Save-SealedMedia {
+  param([string]$Id, [string]$Path, [string]$Seal, $Keys)
+  if ($null -eq $Keys) { throw $script:SealRequired }
+  [IO.File]::WriteAllBytes($Path, (Unprotect-SyncBytes $Keys $Seal (Get-DriveBytes $Id)))
 }
 
 function Receive-DriveTemp {
-  param([string]$Id, [string]$Path)
+  param([string]$Id, [string]$Path, [string]$Seal, $Keys)
   $null = [IO.Directory]::CreateDirectory((Split-Path -Parent $Path))
   $tmp = $Path + "." + [guid]::NewGuid().ToString("N") + ".tmp"
-  try { Save-DriveMedia $Id $tmp } catch { Remove-DriveTemp $tmp; throw }
+  try { Save-SealedMedia $Id $tmp $Seal $Keys } catch { Remove-DriveTemp $tmp; throw }
   return $tmp
 }
 
@@ -115,12 +110,7 @@ function Install-DriveTemp {
 }
 
 function Receive-DriveFile {
-  param([string]$Id, [string]$Path)
-  $tmp = Receive-DriveTemp $Id $Path
+  param([string]$Id, [string]$Path, [string]$Seal, $Keys)
+  $tmp = Receive-DriveTemp $Id $Path $Seal $Keys
   try { Install-DriveTemp $tmp $Path } finally { Remove-DriveTemp $tmp }
-}
-
-function Get-DriveText {
-  param([string]$Id)
-  return Get-ResponseText (Invoke-DriveRequest "GET" ($script:DriveApi + "/" + $Id + "?alt=media") $null "" $script:DriveDataTimeout)
 }

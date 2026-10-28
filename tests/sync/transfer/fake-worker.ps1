@@ -1,13 +1,15 @@
-function Save-DriveMedia {
-  param([string]$Id, [string]$Path)
+function Save-SealedMedia {
+  param([string]$Id, [string]$Path, [string]$Seal, $Keys)
+  if ($null -eq $Keys -or -not $Seal.StartsWith("files/")) { throw "cle ou chemin scelle absent" }
   if ($Id.StartsWith("panne")) { throw "panne reseau" }
   if ($Id.StartsWith("lent")) { Start-Sleep -Seconds 20 }
   [IO.File]::WriteAllText($Path, "pre-" + $Id)
 }
 
-function Send-DriveContent {
-  param([string]$FolderId, [string]$Name, [byte[]]$Bytes, $Props, [string]$Id)
-  return @{ Id = "up-" + $Name + "-" + $Bytes.Length + "-" + $Props["pc"]; Md5 = "" }
+function Send-SealedFile {
+  param([string]$FolderId, [string]$Rel, [byte[]]$Bytes, $Props, [string]$Id, $Keys)
+  if ($null -eq $Keys) { throw "cle absente" }
+  return @{ Id = "up-" + $Rel + "-" + $Bytes.Length + "-" + $Props["pc"]; Md5 = "" }
 }
 
 function Get-SyncBytes {

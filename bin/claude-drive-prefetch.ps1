@@ -13,10 +13,10 @@ $script:PrefetchWorkerScript = {
     try {
       if ($item.Kind -eq "download") {
         $null = [IO.Directory]::CreateDirectory((Split-Path -Parent $item.Tmp))
-        Save-DriveMedia $item.Id $item.Tmp
+        Save-SealedMedia $item.Id $item.Tmp $item.Seal $Ctl.Keys
         $out = @{ Ok = $true }
       } else {
-        $out = @{ Ok = $true; Sent = (Send-DriveContent $item.Folder $item.Rel (Get-SyncBytes $item.Rel $item.Full) $item.Props $item.Id) }
+        $out = @{ Ok = $true; Sent = (Send-SealedFile $item.Folder $item.Rel (Get-SyncBytes $item.Rel $item.Full) $item.Props $item.Id $Ctl.Keys) }
       }
     } catch {
       if ($item.Kind -eq "download") { Remove-DriveTemp $item.Tmp }
@@ -35,7 +35,7 @@ function Get-RemoteId {
   param($Ctx, [string]$Rel)
   $R = $Ctx.Remote[$Rel]
   if ($null -eq $R) { return "" }
-  return [string]$R.Id
+  return [string]$R.SealedId
 }
 
 function Test-Prefetchable {
@@ -48,7 +48,7 @@ function New-PrefetchItem {
   param($Ctx, $Action)
   $rel = $Action.Path
   if ($Action.Kind -eq "download") {
-    return @{ Kind = "download"; Rel = $rel; Id = (Get-RemoteId $Ctx $rel); Tmp = (Get-SyncLocalPath $rel) + "." + [guid]::NewGuid().ToString("N") + ".tmp" }
+    return @{ Kind = "download"; Rel = $rel; Id = [string]$Ctx.Remote[$rel].Id; Seal = ($script:SealedFilesArea + $rel); Tmp = (Get-SyncLocalPath $rel) + "." + [guid]::NewGuid().ToString("N") + ".tmp" }
   }
   return @{ Kind = "upload"; Rel = $rel; Full = $Ctx.Local[$rel].Full; Folder = $Ctx.Folder; Props = (Get-UploadProps $Ctx $rel); Id = (Get-RemoteId $Ctx $rel) }
 }
@@ -74,7 +74,7 @@ function Start-TransferPrefetch {
   Set-DriveConnectionLimit
   $pre = @{ Work = (New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'); Planned = (New-PathMap); Workers = @() }
   $pre.Results = [System.Collections.Concurrent.ConcurrentDictionary[string, object]]::new([StringComparer]::Ordinal)
-  $pre.Ctl = [hashtable]::Synchronized(@{ Stop = $false; Deadline = $DeadlineMs })
+  $pre.Ctl = [hashtable]::Synchronized(@{ Stop = $false; Deadline = $DeadlineMs; Keys = $Ctx.Keys })
   foreach ($i in $items) { $pre.Work.Enqueue($i); $pre.Planned[$i.Rel] = $i }
   $pre.Workers = @(for ($n = 0; $n -lt $script:DriveParallel; $n++) { Start-PrefetchWorker $pre })
   return $pre

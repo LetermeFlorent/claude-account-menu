@@ -26,13 +26,13 @@ Start-Sleep -Milliseconds 1100
 Save-Registry @([PSCustomObject]@{ Label = "c1"; Dir = ".claude" })
 $r = Invoke-DriveSync
 Assert-Equal 0 $r.Deleted "compte retire de la liste : rien supprime du Drive"
-Assert-True $script:Fake.ContainsKey(".claude-compte2/notes.md") "compte retire : fichiers gardes sur le Drive"
+Assert-True (Test-FakeFile ".claude-compte2/notes.md") "compte retire : fichiers gardes sur le Drive"
 Assert-Equal "n2" (Get-PcText ".claude-compte2/notes.md") "compte retire : dossier garde sur ce PC"
 Use-Pc "GB"
 $null = Invoke-DriveSync
 $null = Invoke-DriveSync
 Assert-Equal "n2" (Get-PcText ".claude-compte2/notes.md") "compte retire sur un autre PC : dossier garde ici"
-Assert-True $script:Fake.ContainsKey(".claude-compte2/notes.md") "compte retire sur un autre PC : Drive intact"
+Assert-True (Test-FakeFile ".claude-compte2/notes.md") "compte retire sur un autre PC : Drive intact"
 
 $script:Fake = New-PathMap
 Start-GuardPc "RA"
@@ -43,7 +43,7 @@ $script:FakeRoot = "R2"
 $r = Invoke-DriveSync
 Assert-Equal 0 $r.Deleted "dossier Drive remplace : rien supprime ici"
 Assert-Equal "s" (Get-PcText ".claude/settings.json") "dossier Drive remplace : fichier local garde"
-Assert-True $script:Fake.ContainsKey(".claude/settings.json") "dossier Drive remplace : tout renvoye"
+Assert-True (Test-FakeFile ".claude/settings.json") "dossier Drive remplace : tout renvoye"
 $script:FakeRoot = "R"
 
 $script:Fake = New-PathMap
@@ -90,7 +90,7 @@ New-GuardLink (Join-Path $script:HomeDir ".claude/commands") $dots
 $null = Invoke-DriveSync
 $null = Invoke-DriveSync
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $dots "x.md"))) "dossier lie : rien ecrit a travers le lien"
-Assert-True $script:Fake.ContainsKey(".claude/commands/x.md") "dossier lie : fichiers du Drive gardes"
+Assert-True (Test-FakeFile ".claude/commands/x.md") "dossier lie : fichiers du Drive gardes"
 (Get-Item -LiteralPath (Join-Path $script:HomeDir ".claude/commands")).Delete()
 
 if ($script:OsName -ne "Linux") {

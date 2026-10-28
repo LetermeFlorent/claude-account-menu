@@ -72,7 +72,16 @@ function ConvertTo-RemoteEntry {
   param($File)
   $props = @{}
   if ($null -ne $File.appProperties) { foreach ($p in $File.appProperties.PSObject.Properties) { $props[$p.Name] = [string]$p.Value } }
-  return New-RemoteEntry ([string]$File.id) ([string]$File.name) ([string]$File.md5Checksum) $props
+  $md5 = [string]$File.md5Checksum
+  if ($props["h"]) { $md5 = $props["h"] }
+  return New-RemoteEntry ([string]$File.id) ([string]$File.name) $md5 $props
+}
+
+function Get-RemoteIds {
+  param($Entry)
+  $ids = [string[]]@(@($Entry.SealedId, $Entry.PlainId) | Where-Object { $_ })
+  if ($ids.Count -eq 0 -and $Entry.Id) { $ids = [string[]]@($Entry.Id) }
+  return ,$ids
 }
 
 function Get-DriveListing {

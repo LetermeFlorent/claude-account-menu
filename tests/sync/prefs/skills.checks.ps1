@@ -46,7 +46,7 @@ Assert-True ($script:Sizes.ContainsKey(".claude/skills/garde/SKILL.md") -and -no
 foreach ($i in 1..22) { Set-PcFile (".claude/skills/efface/f" + $i + ".md") "e" }
 $r = Invoke-DriveSync
 Assert-True $r.Ok ("skills envoyes " + $r.Error)
-Assert-True (-not $script:Fake.ContainsKey(".claude/skills/.trash/vieux/SKILL.md")) "dossier masque des skills : jamais envoye"
+Assert-True (-not (Test-FakeFile ".claude/skills/.trash/vieux/SKILL.md")) "dossier masque des skills : jamais envoye"
 
 Use-Pc "SKB"
 Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
@@ -57,7 +57,7 @@ Set-PcFile ".claude/skills/perso/SKILL.md" "p"
 $r = Invoke-DriveSync
 Assert-True $r.Ok ("skill decoche " + $r.Error)
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/off"))) "skill decoche present sur le Drive : retire ici"
-Assert-True $script:Fake.ContainsKey(".claude/skills/off/SKILL.md") "skill decoche : garde sur le Drive"
+Assert-True (Test-FakeFile ".claude/skills/off/SKILL.md") "skill decoche : garde sur le Drive"
 Assert-Equal "p" (Get-FakeText ".claude/skills/perso/SKILL.md") "skill decoche absent du Drive : envoye d'abord"
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/perso"))) "skill decoche absent du Drive : retire ici une fois envoye"
 Assert-Equal "efface,garde,off" ((Read-SyncCatalog).Skills -join ",") "liste des skills du Drive gardee"
@@ -67,10 +67,10 @@ Set-PcFile ".claude/skills/off/SKILL.md" "o2"
 $null = Update-SyncChoice { param($c) Add-EraseRequest $c "skills" "efface" }
 $r = Invoke-DriveSync
 Assert-True $r.Ok ("effacement " + $r.Error)
-Assert-Equal 0 @($script:Fake.Keys | Where-Object { $_.StartsWith(".claude/skills/efface/") }).Count "skill efface : retire du Drive"
+Assert-Equal 0 @((Get-FakeRels) | Where-Object { $_.StartsWith(".claude/skills/efface/") }).Count "skill efface : retire du Drive"
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/efface"))) "skill efface : retire ici"
 Assert-Equal 0 (Read-SyncChoice).Erase.skills.Count "effacement fait : demande retiree"
-Assert-True ([Text.Encoding]::UTF8.GetString($script:FakePresence["SKA.json"].Bytes).Contains('"efface"')) "skill efface annonce aux autres PC"
+Assert-True ((Get-FakePcText "SKA.json").Contains('"efface"')) "skill efface annonce aux autres PC"
 Assert-Equal "garde,off,perso" ((Read-SyncCatalog).Skills -join ",") "liste des skills sans le skill efface"
 Assert-Equal "p" (Get-PcText ".claude/skills/perso/SKILL.md") "skill decoche sur un autre PC : recu ici"
 
@@ -88,11 +88,11 @@ Assert-True $r.Ok ("decoche ici apres une modification " + $r.Error)
 Assert-Equal "g2" (Get-FakeText ".claude/skills/garde/SKILL.md") "skill decoche modifie ici : modification envoyee avant le retrait"
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/garde"))) "skill decoche modifie ici : retire une fois envoye"
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude/skills/perso"))) "skill decoche partout : retire ici d'abord"
-Assert-True $script:Fake.ContainsKey(".claude/skills/perso/SKILL.md") "skill decoche partout : reste sur le Drive tant qu'il est ici"
+Assert-True (Test-FakeFile ".claude/skills/perso/SKILL.md") "skill decoche partout : reste sur le Drive tant qu'il est ici"
 $r = Invoke-DriveSync
 Assert-True $r.Ok ("decoche partout " + $r.Error)
-Assert-Equal 0 @($script:Fake.Keys | Where-Object { $_.StartsWith(".claude/skills/perso/") }).Count "skill decoche partout : retire du Drive"
-Assert-True $script:Fake.ContainsKey(".claude/skills/garde/SKILL.md") "skill coche sur un autre PC : garde sur le Drive"
+Assert-Equal 0 @((Get-FakeRels) | Where-Object { $_.StartsWith(".claude/skills/perso/") }).Count "skill decoche partout : retire du Drive"
+Assert-True (Test-FakeFile ".claude/skills/garde/SKILL.md") "skill coche sur un autre PC : garde sur le Drive"
 Assert-True (-not (Read-SyncChoice).skills.ContainsKey("perso")) "skill parti du Drive : case oubliee ici"
 Assert-True ((Read-SyncChoice).skills.ContainsKey("garde")) "skill encore sur le Drive : case gardee"
 

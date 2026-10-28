@@ -42,12 +42,12 @@ Set-PcFile ".claude-compte2/.claude.json" '{"theme":"light"}' 1700000000
 Set-PcFile ".claude/settings.json" "s" 1700000000
 $r = Invoke-DriveSync
 Assert-True $r.Ok ("synchro avec un compte ouvert " + $r.Error)
-Assert-True ($script:Fake.ContainsKey(".claude.json")) "compte ferme : config envoyee"
-Assert-True (-not $script:Fake.ContainsKey(".claude-compte2/.claude.json")) "compte ouvert : config gardee pour la sortie"
+Assert-True (Test-FakeFile ".claude.json") "compte ferme : config envoyee"
+Assert-True (-not (Test-FakeFile ".claude-compte2/.claude.json")) "compte ouvert : config gardee pour la sortie"
 $null = Close-DriveSession $first
 $r = Invoke-DriveSync
 Assert-True $r.Ok ("synchro apres la sortie " + $r.Error)
-Assert-True ($script:Fake.ContainsKey(".claude-compte2/.claude.json")) "sortie : config du compte envoyee"
+Assert-True (Test-FakeFile ".claude-compte2/.claude.json") "sortie : config du compte envoyee"
 
 Restore-FakeDrive
 . (Join-Path $bin "claude-drive-creds.ps1")

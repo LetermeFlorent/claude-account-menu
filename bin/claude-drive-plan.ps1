@@ -12,6 +12,11 @@ function Get-PathAction {
     if ($null -ne $B) { return "forget" }
     return $null
   }
+  if ($null -ne $R -and $R.Plain) {
+    if ($null -ne $L) { return "upload" }
+    if ($null -ne $B -and $B.Md5 -eq $R.Md5) { return "delete-remote" }
+    return "refuse"
+  }
   $localChanged = $null -ne $L -and ($null -eq $B -or $L.Md5 -ne $B.Md5)
   $remoteChanged = $null -ne $R -and ($null -eq $B -or $R.Md5 -ne $B.Md5)
   if ($null -eq $R) {
@@ -54,7 +59,7 @@ function Get-SyncPlan {
   foreach ($p in $paths) {
     if ($anySkipped -and (Test-UnderSkipped $p $skip)) { continue }
     $l = $Local[$p]; $b = $Base[$p]; $r = $Remote[$p]
-    if ($null -ne $l -and $null -ne $b -and $null -ne $r -and $l.Md5 -eq $b.Md5 -and $r.Md5 -eq $b.Md5 -and $r.Id -eq $b.Id) { continue }
+    if ($null -ne $l -and $null -ne $b -and $null -ne $r -and $l.Md5 -eq $b.Md5 -and $r.Md5 -eq $b.Md5 -and $r.Id -eq $b.Id -and -not $r.Plain) { continue }
     $kind = Get-PathAction $l $b $r -Joining:$Joining
     if ($null -eq $kind) { continue }
     $a = @{ Kind = $kind; Path = $p }

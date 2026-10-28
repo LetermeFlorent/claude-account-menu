@@ -72,23 +72,26 @@ function Invoke-DriveRequest {
   return New-FakeResponse "{}"
 }
 Assert-Equal "k2" (Get-DriveListing "creds")["c.json"].Id "jetons en double : expiration la plus lointaine gardee"
+$apiKeys = New-SyncKeys ([byte[]](50..81)) ([byte[]](1..16)) 600000
+$script:MediaBody = Protect-SyncBytes $apiKeys "files/.claude/notes [v2].md" ([Text.Encoding]::UTF8.GetBytes("media"))
 function Invoke-DriveRequest {
   param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
-  $script:MediaOut = $OutFile
-  if ([WildcardPattern]::ContainsWildcardCharacters($OutFile)) { throw "chemin pris pour un motif" }
-  [IO.File]::WriteAllText($OutFile, "media")
+  if ($OutFile) { throw "telechargement direct vers un fichier" }
+  return [PSCustomObject]@{ RawContentStream = (New-Object IO.MemoryStream(, $script:MediaBody)) }
 }
 $media = Join-Path $script:Sandbox "notes [v2].md"
-Save-DriveMedia "m1" $media
-Assert-Equal "media" ([IO.File]::ReadAllText($media)) "telechargement vers un nom avec crochets"
-Assert-True (-not (Test-Path -LiteralPath $script:MediaOut)) "telechargement : fichier intermediaire retire"
-Assert-Equal (Split-Path -Parent $media) (Split-Path -Parent $script:MediaOut) "telechargement : fichier intermediaire a cote de la cible"
-$mediaDeep = Join-Path (Join-Path $script:Sandbox "dossier [x]") "n.md"
-$null = New-Item -ItemType Directory -Path (Split-Path -Parent $mediaDeep) -Force
-Save-DriveMedia "m1" $mediaDeep
-Assert-Equal "media" ([IO.File]::ReadAllText($mediaDeep)) "telechargement sous un dossier avec crochets"
-Assert-Equal $script:Sandbox (Split-Path -Parent $script:MediaOut) "telechargement : fichier intermediaire dans le dossier parent le plus proche"
-Remove-Item -LiteralPath (Split-Path -Parent $mediaDeep) -Recurse -Force
+Save-SealedMedia "m1" $media "files/.claude/notes [v2].md" $apiKeys
+Assert-Equal "media" ([IO.File]::ReadAllText($media)) "telechargement dechiffre vers un nom avec crochets"
+$refusedPath = Join-Path $script:Sandbox "refuse.md"
+Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/.claude/autre.md" $apiKeys } $script:SealRefused "telechargement sous un autre nom refuse"
+$script:MediaBody = [Text.Encoding]::UTF8.GetBytes("en clair")
+Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/.claude/notes [v2].md" $apiKeys } $script:SealRefused "telechargement en clair refuse"
+Assert-True (-not [IO.File]::Exists($refusedPath)) "fichier refuse jamais ecrit"
+Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/x" $null } $script:SealRequired "telechargement sans cle refuse"
+$entry = ConvertTo-RemoteEntry ([PSCustomObject]@{ id = "s1"; name = "clm-enc/a"; md5Checksum = "ffff"; appProperties = [PSCustomObject]@{ h = "abc"; m = "5" } })
+Assert-Equal "abc|5" ($entry.Md5 + "|" + $entry.M) "fichier chiffre : empreinte en clair lue dans ses proprietes"
+Assert-Equal "a1,b2" ((Get-RemoteIds @{ Id = "a1"; SealedId = "a1"; PlainId = "b2" }) -join ",") "suppression : fichier chiffre et copie en clair"
+Assert-Equal "c3" ((Get-RemoteIds @{ Id = "c3" }) -join ",") "suppression : fichier simple"
 . (Join-Path $bin "claude-drive-transfer.ps1")
 Assert-True ($script:Calls[0].Body -is [byte[]]) "metadonnees envoyees en octets, pas en liste de nombres"
 
