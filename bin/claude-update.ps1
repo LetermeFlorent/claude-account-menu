@@ -92,25 +92,10 @@ function Invoke-ClaudeUpdate {
   return $run.Outcome
 }
 
-function Get-AccountExe {
-  param($Acc)
-  return $script:ClaudeExe
-}
-
 function Get-UpdateGroups {
   param($Accounts)
-  $groups = @(); $index = @{}
-  foreach ($a in $Accounts) {
-    $exe = "" + (Get-AccountExe $a)
-    $key = ConvertTo-PathKey $exe
-    if (-not $index.ContainsKey($key)) {
-      $index[$key] = $groups.Count
-      $groups += [PSCustomObject]@{ Exe = $exe; Accounts = @() }
-    }
-    $g = $groups[$index[$key]]
-    $g.Accounts += $a
-  }
-  return $groups
+  if (@($Accounts).Count -eq 0) { return @() }
+  return @([PSCustomObject]@{ Exe = "" + $script:ClaudeExe; Accounts = @($Accounts) })
 }
 
 function Format-UpdateMessage {

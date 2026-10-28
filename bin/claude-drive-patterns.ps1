@@ -40,11 +40,6 @@ function Get-ExcludeRegex {
   return $rx
 }
 
-function Test-SyncExcluded {
-  param([string]$Rel, $Patterns)
-  return (Get-ExcludeRegex $Patterns).IsMatch($Rel)
-}
-
 function Get-RootsRegex {
   param($Roots)
   $key = @($Roots) -join "`n"
