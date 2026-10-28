@@ -99,7 +99,7 @@ La désinstallation se fait à la main, en quatre étapes :
 1. Retirer du `settings.json` de chaque compte l'entrée `SessionStart` qui mentionne `claude-statusline-seed.ps1`. Remettre `settings.json.bak-seed` à la place marche aussi, mais perd les réglages changés depuis l'installation. Supprimer ensuite les fichiers `settings.json.bak-seed`.
 2. Supprimer de `%USERPROFILE%\.local\bin`, ou de `~/.local/bin`, les fichiers `clm`, `clm.cmd`, `clm.version`, `claude-menu.cmd` et `claude-*.ps1`, et le dossier `clm-web`, sans toucher à `claude.exe` ni à `claude`, qui sont Claude Code. Sous Windows, l'installeur a ajouté ce dossier au PATH de l'utilisateur : l'en retirer seulement si plus rien n'y vit, Claude Code s'y installant aussi.
 3. Supprimer le cache des quotas : `%LOCALAPPDATA%\claude-menu` sous Windows, qui garde aussi le lecteur de la souris `clm-conin-*.dll`, `~/Library/Caches/claude-menu` sous macOS, `${XDG_CACHE_HOME:-~/.cache}/claude-menu` sous Linux.
-4. Supprimer le dossier de `clm`, `%LOCALAPPDATA%\clm`, `~/.local/state/clm` ou `~/Library/Application Support/clm`, qui garde la liste des comptes propre au menu et la connexion Drive, et les archives `claude-comptes-*` du dossier Téléchargements, qui contiennent des jetons.
+4. Supprimer le dossier de `clm`, `%LOCALAPPDATA%\clm`, `~/.local/state/clm` ou `~/Library/Application Support/clm`, qui garde la liste des comptes propre au menu, la connexion Drive et la phrase de synchro (sous macOS, lancer d'abord `clm --sync-key-forget` pour la retirer du trousseau), et les archives `claude-comptes-*` du dossier Téléchargements, qui contiennent des jetons.
 
 Les dossiers de comptes (`.claude`, `.claude-compte2`, etc.) restent en place : ils appartiennent à Claude Code, qui continue de les utiliser avec `CLAUDE_CONFIG_DIR`. Les clés écrites dans le fichier d'état de la barre d'état restent aussi, sans effet une fois périmées.
 
@@ -120,5 +120,7 @@ Si la sauvegarde signale des avertissements, ou si la restauration annonce des f
 Sous Linux, "GNU tar ne lit pas les zip" demande d'installer `bsdtar` (paquet `libarchive-tools`) pour restaurer un `.zip` venu d'un autre poste.
 
 Si la barre d'état n'a pas ses quotas au lancement d'un compte avec `claude`, vérifier que le `settings.json` de ce compte contient le hook, et que son dossier figure dans la liste des comptes, `accounts.json` : le hook ne fait rien pour un dossier absent de la liste.
+
+Si la synchro Drive répond "phrase de synchro absente", saisir la phrase avec `y` dans le menu ou `clm --sync-key`. "phrase de synchro changee sur un autre PC" demande de saisir la nouvelle. "refuses : ..." nomme des fichiers du Drive laissés en clair par un ancien `clm`, modifiés ou chiffrés avec une autre phrase : ils ne sont pas écrits. Mettre `clm` à jour sur les PC nommés en retard règle le premier cas.
 
 Si la barre d'état a disparu d'un PC après une synchro Drive ou une restauration, son `settings.json` n'a plus d'entrée `statusLine`. `clm` garde celle du PC mais n'en crée pas : c'est le cas d'un PC où la barre n'a pas encore été installée, ou d'un PC qui avait encore un ancien `clm` quand il a reçu les réglages. Relancer sur ce PC l'installeur de la [barre d'état](https://github.com/LetermeFlorent/claude-statusline) la remet.

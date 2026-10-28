@@ -57,7 +57,7 @@ Le pied du menu rappelle les touches principales, sur deux lignes de longueur pr
 | `n` | renommer un compte |
 | `m` | relire tout de suite les quotas du compte sélectionné |
 | `u` | installer la nouvelle version de clm signalée par "[maj dispo]" et relancer le menu |
-| `y` | lancer une synchro Drive, ou connecter le Drive si ce PC ne l'est pas (voir "Synchronisation entre PC") |
+| `y` | lancer une synchro Drive, ou connecter le Drive et saisir la phrase de synchro si ce PC ne l'a pas encore (voir "Synchronisation entre PC") |
 | `p` | choisir les skills et les MCP synchronisés sur ce PC et sur les autres PC reliés (voir "Réglages de synchro par PC") |
 | `s` | sauvegarder des comptes |
 | `r` | restaurer une sauvegarde |
@@ -154,7 +154,10 @@ clm --restore=<fichier> --only=compte2
 clm --version                versions de clm et de Claude Code
 clm --update                 met à jour clm puis Claude Code de chaque compte
 clm --drive-status           connexion Drive, nom du PC, synchro auto, dernière synchro
-clm --drive-login            connecte ce PC à Google Drive
+clm --drive-login            connecte ce PC à Google Drive, puis demande la phrase de synchro
+clm --sync-key               saisit la phrase de synchro sur ce PC, ou la crée sur un Drive neuf
+clm --sync-key-reset         change la phrase de synchro pour tous les PC
+clm --sync-key-forget        oublie la phrase sur ce PC, la synchro s'y arrête
 clm --sync                   synchro Drive tout de suite
 clm --sync --force           même chose, au-delà du garde-fou des suppressions
 clm --sync-auto=off          coupe la synchro Drive automatique, on la remet
@@ -281,6 +284,14 @@ Juste avant de lancer un compte, `clm` vérifie deux réglages dont l'absence fa
 Dans le menu, la touche `y` connecte le PC tant qu'il ne l'est pas : le navigateur s'ouvre sur la page Google qui demande l'accès au Drive, il suffit d'autoriser, puis une première synchro démarre. `clm --drive-login` fait la même connexion en ligne de commande. Si le navigateur ne s'ouvre pas, le lien est affiché, et la réponse est attendue 5 minutes. La connexion est rangée dans `clm/drive.json`, lisible par son seul propriétaire hors Windows, avec le nom du PC, celui de la machine.
 
 `clm` passe par sa propre application Google, `clm`, de type application de bureau, déjà en production : rien à créer dans la console Google Cloud. La portée demandée, `drive.file`, ne donne accès qu'aux fichiers créés par `clm`. Le secret d'une application de bureau n'en est pas un pour Google, il est donc écrit dans `bin/claude-drive-auth.ps1`. Pour passer par une autre application, mettre `clientId` et `clientSecret` dans `clm/drive.json` avant de se connecter.
+
+### Phrase de synchro
+
+Tout ce que `clm` dépose sur le Drive est chiffré par une phrase de synchro, la même sur tous les PC, qui ne quitte jamais le PC. Après la connexion, `clm` la demande deux fois, masquée, 12 caractères au moins. Sur un Drive neuf, elle est créée. Sur un Drive déjà utilisé, elle est vérifiée avant d'être gardée. `clm --sync-key` fait la même saisie. Chaque PC la garde sous une forme dérivée : protégée par Windows dans `clm/sync-key`, dans le trousseau sous macOS, dans `clm/sync-key` lisible par son seul propriétaire sous Linux. Le Drive garde à sa racine `clm-key.json`, qui permet de vérifier la phrase sans la révéler.
+
+Chaque fichier est chiffré (AES-256) et signé avec son chemin, ce qui fait refuser un fichier modifié, déplacé ou chiffré avec une autre phrase. Les fichiers synchronisés sont rangés sous des noms en `clm-enc/`, que les anciennes versions de `clm` ne lisent pas. Un fichier refusé, ou laissé en clair par une ancienne version, n'est jamais écrit sur le disque : la synchro le compte en échec et le nomme, "refuses : ...", sans s'arrêter pour autant. Le premier PC à jour qui possède ce fichier le renvoie chiffré, et la copie en clair part à la corbeille quand tous les PC sont à jour. D'ici là, la synchro nomme les PC en retard. Restent lisibles sur le Drive : les noms des fichiers, leurs dates, le nom des PC, l'expiration des jetons et l'adresse e-mail de chaque compte.
+
+Sans phrase sur le PC, rien ne se synchronise. Le menu le signale et `y` la demande. Le veilleur et le hook ne posent jamais de question. `clm --sync-key-reset` change la phrase : ce PC renvoie tout avec la nouvelle, et les autres doivent la saisir. `clm --sync-key-forget` l'efface de ce PC.
 
 Le premier PC envoie tout. Sur un PC qui rejoint, la première synchro prend ce qui est sur le Drive quand un fichier existe des deux côtés : un PC neuf n'écrase pas les comptes des autres avec ses réglages par défaut. L'ancienne version locale est gardée sous `<fichier>.conflit-<PC>`.
 
@@ -418,6 +429,7 @@ Les fichiers propres à `clm` vivent dans un dossier par utilisateur, noté `clm
 | `claude-comptes-*.zip` ou `.tar.gz` dans Téléchargements | sauvegardes |
 | `clm/display.json` | couleurs et animations choisies pour ce PC |
 | `clm/drive.json` | connexion Google Drive, nom du PC, synchro automatique |
+| `clm/sync-key`, ou le trousseau sous macOS | phrase de synchro de ce PC, sous forme dérivée |
 | `clm/drive-state.json` et `clm/drive*.lock` | état de la dernière synchro Drive, verrous de la synchro, des dossiers Drive, des jetons et du veilleur |
 | `clm/drive-remote.json` | liste du Drive gardée entre deux synchros |
 | `clm/sync-choice.json` et `clm/sync-choice.lock` | cases décochées de la page `p`, effacements en attente, demandes aux autres PC, et leur verrou |
