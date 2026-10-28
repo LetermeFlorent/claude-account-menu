@@ -93,7 +93,7 @@ if ($null -ne $driveCli) { exit (Invoke-DriveCli $driveCli) }
 if ($restoreZip) {
   try {
     $sel = Select-ByLabel @(Get-ZipAccounts $restoreZip) $only
-    Write-Output (Restore-Accounts $restoreZip $sel)
+    Write-Output (Restore-Accounts $restoreZip $sel -AllowForeign -Yes:($args -contains "--yes"))
   } catch { Write-Output $_.Exception.Message; exit 1 }
   exit 0
 }

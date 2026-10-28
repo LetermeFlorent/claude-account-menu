@@ -26,6 +26,7 @@ $actDl = Join-Path $script:Sandbox "web-act-dl"
 New-Item -ItemType Directory -Path $actDl -Force | Out-Null
 $actZip = Join-Path $actDl "claude-comptes-20261003-100000.zip"
 [IO.File]::WriteAllText($actZip, "zip")
+Add-BackupMark $actZip
 
 function Send-WebJson { param($Conn, [int]$Code, $Data) $script:ActSent = @{ Code = $Code; Data = $Data } }
 function Stop-MenuLoader { param([int]$TimeoutMs) $script:ActStops++ }

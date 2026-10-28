@@ -28,9 +28,10 @@ Comptes
                                  apres une archive dans Telechargements
   clm --save[=nom,nom]           archive des comptes dans Telechargements
   clm --backups                  archives trouvees, la plus recente d'abord
-  clm --restore=<archive> [--only=nom,nom]
+  clm --restore=<archive> [--only=nom,nom] [--yes]
                                  restaure des comptes, l'etat actuel est
-                                 archive avant
+                                 archive avant ; --yes accepte les hooks,
+                                 MCP, env et permissions qui changent
 
 Mises a jour
   clm --version                  versions de clm et de Claude Code

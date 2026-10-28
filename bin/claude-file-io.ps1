@@ -2,16 +2,20 @@ if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { 
 $script:LockPollMs = 200
 $script:PrivateModeFailed = "droits du fichier prive impossibles a poser"
 
+function Set-PrivateMode {
+  param([string]$Path)
+  if ($script:OsName -eq "Windows") { return }
+  $global:LASTEXITCODE = 0
+  & chmod 600 $Path
+  if ($LASTEXITCODE -ne 0) { throw $script:PrivateModeFailed }
+}
+
 function Write-TextFileAtomic {
   param([string]$Path, [string]$Text, [switch]$Private, [switch]$Bom)
   $tmp = $Path + "." + [guid]::NewGuid().ToString("N") + ".tmp"
   try {
     [IO.File]::WriteAllBytes($tmp, [byte[]]@())
-    if ($Private -and $script:OsName -ne "Windows") {
-      $global:LASTEXITCODE = 0
-      & chmod 600 $tmp
-      if ($LASTEXITCODE -ne 0) { throw $script:PrivateModeFailed }
-    }
+    if ($Private) { Set-PrivateMode $tmp }
     [IO.File]::WriteAllText($tmp, $Text, (New-Object Text.UTF8Encoding ([bool]$Bom)))
     if (Test-Path -LiteralPath $Path) { [IO.File]::Replace($tmp, $Path, [NullString]::Value) }
     else { [IO.File]::Move($tmp, $Path) }

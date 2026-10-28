@@ -73,7 +73,7 @@ $null = New-SandboxFile "ancienne/.claude-compte3/.credentials.json" "C1"
 $old = Join-Path $script:BackupDl ("claude-comptes-ancienne" + (Get-ArchiveExtension $script:TarFlavor))
 & $script:Tar -a -c -f $old -C (Join-Path $script:Sandbox "ancienne") ".claude-accounts.json" ".claude-compte3"
 Assert-Equal "vieux" ((@(Get-ZipAccounts $old) | ForEach-Object { $_.Label }) -join "|") "ancienne archive : noms des comptes relus"
-$null = Restore-Accounts $old
+$null = Restore-Accounts $old -AllowForeign 3>$null
 Assert-Equal "C1" (Get-HomeText ".claude-compte3/.credentials.json") "ancienne archive : compte remis"
 Assert-True ([IO.File]::ReadAllText($script:RegistryPath).Contains("vieux")) "ancienne archive : liste ecrite dans le dossier de clm"
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir ".claude-accounts.json"))) "ancienne archive : liste hors du dossier perso"

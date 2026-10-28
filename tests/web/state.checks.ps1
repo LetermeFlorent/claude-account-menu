@@ -124,6 +124,8 @@ try {
   [IO.File]::WriteAllText((Join-Path $webDl "autre.zip"), "x")
   (Get-Item $f1).LastWriteTime = [datetime]"2026-10-01 10:00"
   (Get-Item $f2).LastWriteTime = [datetime]"2026-10-02 10:00"
+  Add-BackupMark $f1
+  Add-BackupMark $f2
   $b = Get-WebBackups
   Assert-Equal "claude-comptes-20261002-100000.tar.gz claude-comptes-20261001-100000.zip" (@($b.items | ForEach-Object { $_.name }) -join " ") "web listes : sauvegardes, la plus recente en haut"
   Assert-Equal "02/10/2026 10:00" @($b.items)[0].date "web listes : date de la sauvegarde"
