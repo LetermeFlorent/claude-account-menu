@@ -42,9 +42,9 @@ function Get-ClmInstallerCommand {
   param([string]$Src, [string]$Os = $script:OsName)
   if ($Os -eq "Windows") {
     $exe = $env:SystemRoot + "\System32\WindowsPowerShell\v1.0\powershell.exe"
-    return @{ Exe = $exe; Arguments = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $Src "install.ps1")) }
+    return @{ Exe = $exe; Arguments = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", [IO.Path]::Combine($Src, "install.ps1")) }
   }
-  return @{ Exe = "/bin/sh"; Arguments = @((Join-Path $Src "install.sh")) }
+  return @{ Exe = "/bin/sh"; Arguments = @([IO.Path]::Combine($Src, "install.sh")) }
 }
 
 function Invoke-ClmProcess {
