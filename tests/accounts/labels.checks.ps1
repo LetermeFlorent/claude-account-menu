@@ -20,7 +20,6 @@ $labelErr = $null
 try { $null = Rename-Account (@(Get-Accounts))[1] ($esc + [char]9) } catch { $labelErr = $_.Exception.Message }
 Assert-Equal "nom vide" $labelErr "renommage : nom fait que de controle refuse"
 
-$slotHome = $script:HomeDir
 $slotFns = @{ r = ${function:Repair-SharedLinks}; v = ${function:Get-ClaudeVersion} }
 function Repair-SharedLinks { param($Acc, [switch]$Force) $null = New-Item -ItemType Directory -Path (Get-AccountPath $Acc) -Force }
 function Get-ClaudeVersion { return "1.0.0" }
