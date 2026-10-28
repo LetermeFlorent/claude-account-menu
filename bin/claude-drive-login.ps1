@@ -27,7 +27,7 @@ function Send-AuthPage {
 }
 
 function Receive-AuthCode {
-  param($Listener, [int]$TimeoutSec)
+  param($Listener, [int]$TimeoutSec, [string]$State)
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
   while ((Get-Date) -lt $deadline) {
     if (-not $Listener.Pending()) { Start-Sleep -Milliseconds 200; continue }
@@ -39,8 +39,10 @@ function Receive-AuthCode {
       $stream = $client.GetStream()
       $reader = New-Object IO.StreamReader($stream, [Text.Encoding]::ASCII, $false, 4096, $true)
       $res = ConvertFrom-AuthRequest ([string]$reader.ReadLine())
-      $text = "clm : Drive connecte, tu peux fermer cet onglet"
-      if ($res.Error) { $text = "clm : connexion refusee (" + $res.Error + ")" }
+      if ($res.State -cne $State) { $res = $null }
+      $text = "clm : reponse ignoree"
+      if ($null -ne $res -and $res.Code) { $text = "clm : Drive connecte, tu peux fermer cet onglet" }
+      if ($null -ne $res -and $res.Error) { $text = "clm : connexion refusee (" + $res.Error + ")" }
       Send-AuthPage $stream $text
     } catch [IO.IOException] { Write-Verbose $_.Exception.Message }
     finally { $client.Close() }
@@ -71,7 +73,7 @@ function Invoke-DriveLogin {
     Write-Host "  connexion Google dans le navigateur, sinon ouvrir ce lien :"
     Write-Host ("  " + $url)
     Open-Browser $url
-    $res = Receive-AuthCode $listener $script:DriveLoginSeconds
+    $res = Receive-AuthCode $listener $script:DriveLoginSeconds $state
   } finally { $listener.Stop() }
   if ($res.Error) { throw ("connexion refusee : " + $res.Error) }
   if ($res.State -ne $state) { throw "reponse Google inattendue" }

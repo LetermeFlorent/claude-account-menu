@@ -18,7 +18,7 @@ try {
   $loginBytes = [Text.Encoding]::ASCII.GetBytes("GET /?code=abc&state=st HTTP/1.1`r`n`r`n")
   $loginReal.GetStream().Write($loginBytes, 0, $loginBytes.Length)
   $loginWatch = [Diagnostics.Stopwatch]::StartNew()
-  $loginRes = Receive-AuthCode $loginListener 20
+  $loginRes = Receive-AuthCode $loginListener 20 "st"
   $loginWatch.Stop()
   Assert-Equal "abc" $loginRes.Code "connexion muette : la vraie reponse est quand meme lue"
   Assert-True ($loginWatch.ElapsedMilliseconds -lt 10000) ("connexion muette : abandonnee au bout du delai de lecture, " + $loginWatch.ElapsedMilliseconds + " ms")
@@ -27,4 +27,26 @@ try {
   $loginReal.Close()
   $loginListener.Stop()
   $script:DriveLoginReadMs = $loginSaved
+}
+
+$loginListener = New-Object Net.Sockets.TcpListener([Net.IPAddress]::Loopback, 0)
+$loginListener.Start()
+$loginForged = New-Object Net.Sockets.TcpClient
+$loginGood = New-Object Net.Sockets.TcpClient
+try {
+  $loginPort = $loginListener.LocalEndpoint.Port
+  $loginForged.Connect("127.0.0.1", $loginPort)
+  $loginBytes = [Text.Encoding]::ASCII.GetBytes("GET /?error=access_denied&state=autre HTTP/1.1`r`n`r`n")
+  $loginForged.GetStream().Write($loginBytes, 0, $loginBytes.Length)
+  $loginGood.Connect("127.0.0.1", $loginPort)
+  $loginBytes = [Text.Encoding]::ASCII.GetBytes("GET /?code=bon&state=st HTTP/1.1`r`n`r`n")
+  $loginGood.GetStream().Write($loginBytes, 0, $loginBytes.Length)
+  $loginRes = Receive-AuthCode $loginListener 20 "st"
+  Assert-Equal "bon|" ($loginRes.Code + "|" + $loginRes.Error) "connexion : erreur d'un autre etat ignoree"
+  $loginForgedText = (New-Object IO.StreamReader($loginForged.GetStream())).ReadToEnd()
+  Assert-True (-not $loginForgedText.Contains("refusee")) "connexion : reponse d'un autre etat sans effet affiche"
+} finally {
+  $loginForged.Close()
+  $loginGood.Close()
+  $loginListener.Stop()
 }
