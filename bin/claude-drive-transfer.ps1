@@ -70,11 +70,19 @@ function Send-DriveText {
   return Send-DriveContent $FolderId $Name ([Text.Encoding]::UTF8.GetBytes($Text)) $Props $Id
 }
 
+function Get-PlainParentDir {
+  param([string]$Path)
+  $dir = Split-Path -Parent $Path
+  while ($dir -and [WildcardPattern]::ContainsWildcardCharacters($dir)) { $dir = Split-Path -Parent $dir }
+  if (-not $dir) { throw ("telechargement impossible, aucun dossier utilisable pour " + $Path) }
+  return $dir
+}
+
 function Save-DriveMedia {
   param([string]$Id, [string]$Path)
   $uri = $script:DriveApi + "/" + $Id + "?alt=media"
   if (-not [WildcardPattern]::ContainsWildcardCharacters($Path)) { $null = Invoke-DriveRequest "GET" $uri $null "" $script:DriveDataTimeout $Path; return }
-  $plain = Join-Path ([IO.Path]::GetTempPath()) ("clm-" + [guid]::NewGuid().ToString("N") + ".tmp")
+  $plain = Join-Path (Get-PlainParentDir $Path) ("clm-" + [guid]::NewGuid().ToString("N") + ".tmp")
   try {
     $null = Invoke-DriveRequest "GET" $uri $null "" $script:DriveDataTimeout $plain
     [IO.File]::Copy($plain, $Path, $true)

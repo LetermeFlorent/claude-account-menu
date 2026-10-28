@@ -82,6 +82,13 @@ $media = Join-Path $script:Sandbox "notes [v2].md"
 Save-DriveMedia "m1" $media
 Assert-Equal "media" ([IO.File]::ReadAllText($media)) "telechargement vers un nom avec crochets"
 Assert-True (-not (Test-Path -LiteralPath $script:MediaOut)) "telechargement : fichier intermediaire retire"
+Assert-Equal (Split-Path -Parent $media) (Split-Path -Parent $script:MediaOut) "telechargement : fichier intermediaire a cote de la cible"
+$mediaDeep = Join-Path (Join-Path $script:Sandbox "dossier [x]") "n.md"
+$null = New-Item -ItemType Directory -Path (Split-Path -Parent $mediaDeep) -Force
+Save-DriveMedia "m1" $mediaDeep
+Assert-Equal "media" ([IO.File]::ReadAllText($mediaDeep)) "telechargement sous un dossier avec crochets"
+Assert-Equal $script:Sandbox (Split-Path -Parent $script:MediaOut) "telechargement : fichier intermediaire dans le dossier parent le plus proche"
+Remove-Item -LiteralPath (Split-Path -Parent $mediaDeep) -Recurse -Force
 . (Join-Path $bin "claude-drive-transfer.ps1")
 Assert-True ($script:Calls[0].Body -is [byte[]]) "metadonnees envoyees en octets, pas en liste de nombres"
 
