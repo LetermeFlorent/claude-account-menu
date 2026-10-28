@@ -1,5 +1,6 @@
 if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-auth.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-auth.ps1") }
 $script:DriveLoginSeconds = 300
+$script:DriveLoginReadMs = 5000
 
 function ConvertFrom-AuthRequest {
   param([string]$RequestLine)
@@ -18,7 +19,7 @@ function ConvertFrom-AuthRequest {
 
 function Send-AuthPage {
   param($Stream, [string]$Text)
-  $body = [Text.Encoding]::UTF8.GetBytes("<html><body><p>" + $Text + "</p></body></html>")
+  $body = [Text.Encoding]::UTF8.GetBytes("<html><body><p>" + [Net.WebUtility]::HtmlEncode($Text) + "</p></body></html>")
   $head = [Text.Encoding]::ASCII.GetBytes("HTTP/1.1 200 OK`r`nContent-Type: text/html; charset=utf-8`r`nContent-Length: " + $body.Length + "`r`nConnection: close`r`n`r`n")
   $Stream.Write($head, 0, $head.Length)
   $Stream.Write($body, 0, $body.Length)
@@ -31,15 +32,19 @@ function Receive-AuthCode {
   while ((Get-Date) -lt $deadline) {
     if (-not $Listener.Pending()) { Start-Sleep -Milliseconds 200; continue }
     $client = $Listener.AcceptTcpClient()
+    $res = $null
     try {
+      $client.ReceiveTimeout = $script:DriveLoginReadMs
+      $client.SendTimeout = $script:DriveLoginReadMs
       $stream = $client.GetStream()
       $reader = New-Object IO.StreamReader($stream, [Text.Encoding]::ASCII, $false, 4096, $true)
       $res = ConvertFrom-AuthRequest ([string]$reader.ReadLine())
       $text = "clm : Drive connecte, tu peux fermer cet onglet"
       if ($res.Error) { $text = "clm : connexion refusee (" + $res.Error + ")" }
       Send-AuthPage $stream $text
-    } finally { $client.Close() }
-    if ($res.Code -or $res.Error) { return $res }
+    } catch [IO.IOException] { Write-Verbose $_.Exception.Message }
+    finally { $client.Close() }
+    if ($null -ne $res -and ($res.Code -or $res.Error)) { return $res }
   }
   throw "delai depasse, aucune reponse de Google"
 }
