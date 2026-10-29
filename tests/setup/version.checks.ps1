@@ -19,9 +19,9 @@ New-Item -ItemType Directory -Path $dir | Out-Null
 Assert-Null (Read-ClmVersion $dir) "pas de fichier de version"
 Write-TestClmVersion $new $dir
 Assert-Equal ($new.Sha + " " + $new.Time) ((Read-ClmVersion $dir).Sha + " " + (Read-ClmVersion $dir).Time) "version ecrite puis relue"
-Assert-True ((Format-ClmVersion $new) -match "^bbbbbbb du \d\d/\d\d/\d{4} \d\d:\d\d$") "version affichee"
-Assert-Equal "inconnue" (Format-ClmVersion $null) "version inconnue affichee"
-Assert-Equal "clm bbbbbbb" (Get-ClmTag $dir) "version courte pour l'en-tete"
+Assert-True (((Format-ClmVersion $new) -match '\d\d/\d\d/\d{4} \d\d:\d\d$') -and ((Format-ClmVersion $new) -like (Get-ClmText "update.self.versionAt" @("bbbbbbb", "??/??/???? ??:??")))) "version affichee"
+Assert-Equal (Get-ClmText "update.self.versionNone") (Format-ClmVersion $null) "version inconnue affichee"
+Assert-Equal (Get-ClmText "update.self.tag" @("bbbbbbb")) (Get-ClmTag $dir) "version courte pour l'en-tete"
 Assert-Equal "" (Get-ClmTag (Join-Path $script:Sandbox "absent")) "pas de version, rien dans l'en-tete"
 
 $v34 = ConvertFrom-ClmVersion ($old.Sha + " 1760000000 34")
@@ -37,8 +37,8 @@ Assert-True (-not (Test-ClmVersionKnown $null) -and -not (Test-ClmVersionKnown $
 Assert-Null (Get-BackupVersionError $new $null) "sauvegarde sans version : acceptee"
 Assert-Null (Get-BackupVersionError $new $new) "sauvegarde de la meme version : acceptee"
 Assert-Null (Get-BackupVersionError $new $old) "sauvegarde plus ancienne : acceptee"
-Assert-True ((Get-BackupVersionError $old $new) -match "^sauvegarde faite avec clm bbbbbbb .*plus recent que clm aaaaaaa .*relance clm") "sauvegarde plus recente : refusee"
-Assert-True ((Get-BackupVersionError $null $new) -match "version installee inconnue") "version installee inconnue : refusee"
+Assert-Equal (Get-ClmText "update.self.backupNewer" @((Format-ClmVersion $new), (Format-ClmVersion $old))) (Get-BackupVersionError $old $new) "sauvegarde plus recente : refusee"
+Assert-Equal (Get-ClmText "update.self.backupInstalledUnknown" @((Format-ClmVersion $new), "https://github.com/LetermeFlorent/claude-account-menu/releases")) (Get-BackupVersionError $null $new) "version installee inconnue : refusee"
 
 
 Initialize-Tar
@@ -64,5 +64,5 @@ $counted = ConvertFrom-ClmVersion ($new.Sha + " 1760090000 34`n")
 Assert-Equal 34 $counted.Number "numero de version lu"
 Assert-Equal 0 $v.Number "ancien fichier sans numero"
 Write-TestClmVersion $counted $dir
-Assert-Equal "clm v34" (Get-ClmTag $dir) "numero de version dans l'en-tete"
-Assert-True ((Format-ClmVersion $counted) -match "^v34 du ") "numero de version dans les messages"
+Assert-Equal (Get-ClmText "update.self.tag" @("v34")) (Get-ClmTag $dir) "numero de version dans l'en-tete"
+Assert-True ((Format-ClmVersion $counted) -like (Get-ClmText "update.self.versionAt" @("v34", "*"))) "numero de version dans les messages"

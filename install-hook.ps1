@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 . (Join-Path (Join-Path $PSScriptRoot "bin") "claude-import.ps1")
 . (Join-Path (Join-Path $PSScriptRoot "bin") "claude-machine-settings.ps1")
+. Import-ClmModule claude-text
 $hookCommand = Get-SeedHookCommand $script:OsName
 $homeDir = $env:USERPROFILE
 if (-not $homeDir) { $homeDir = $env:HOME }
@@ -16,7 +17,7 @@ foreach ($d in $dirs) {
   Copy-Item -LiteralPath $f -Destination ($f + ".bak-seed") -Force
   if ($fixed -cne $raw) {
     Write-TextFileAtomic $f $fixed
-    Write-Host ("commande du hook de la barre d'etat remplacee dans " + $f)
+    Write-Host (Get-ClmText "install.hookReplaced" @($f))
     continue
   }
   $j = $raw | ConvertFrom-Json @readArgs
@@ -25,5 +26,5 @@ foreach ($d in $dirs) {
   if ($j.hooks.PSObject.Properties["SessionStart"]) { $j.hooks.SessionStart = @($j.hooks.SessionStart) + $entry }
   else { $j.hooks | Add-Member -NotePropertyName SessionStart -NotePropertyValue @($entry) }
   Write-TextFileAtomic $f ($j | ConvertTo-Json -Depth 30)
-  Write-Host ("rafraichissement des quotas de la barre d'etat actif dans " + $f)
+  Write-Host (Get-ClmText "install.hookQuota" @($f))
 }
