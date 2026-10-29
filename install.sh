@@ -86,7 +86,8 @@ write_manifest() {
 write_version() {
   pending="$dst/.clm.version.$$.tmp"
   if command -v git >/dev/null 2>&1 && [ -e "$src/.git" ]; then
-    if echo "$(git -C "$src" log -1 --format='%H %ct') $(git -C "$src" rev-list --count HEAD)" > "$pending"; then
+    if head=$(git -C "$src" log -1 --format='%H %ct') && count=$(git -C "$src" rev-list --count HEAD) && [ -n "$head" ] && printf '%s %s
+' "$head" "$count" > "$pending"; then
       mv -f "$pending" "$stamp"
     else
       rm -f "$pending" "$stamp"
