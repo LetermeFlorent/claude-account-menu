@@ -1,4 +1,6 @@
 . Import-ClmModule claude-platform, claude-display
+$script:ThemePersonalizeKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+$script:ThemeGtkDark = New-Object regex '(?i)[-:]dark$'
 
 function ConvertTo-ThemeName {
   param($Value, [switch]$French)
@@ -36,32 +38,56 @@ function Get-KdeTheme {
   return $null
 }
 
+function Test-GtkDarkName {
+  param([string]$Name)
+  return $script:ThemeGtkDark.IsMatch(("" + $Name).Trim().Trim("'"))
+}
+
 function Get-LinuxTheme {
   param([string]$GnomeScheme, [string]$GtkTheme, [string]$KdeFile)
   if ($GnomeScheme -match "dark") { return "dark" }
-  if ($GtkTheme -match ":dark") { return "dark" }
+  if (Test-GtkDarkName $GtkTheme) { return "dark" }
   return Get-KdeTheme $KdeFile
+}
+
+function Read-WindowsLightTheme {
+  try { return (Get-ItemProperty -LiteralPath $script:ThemePersonalizeKey -Name AppsUseLightTheme -ErrorAction Stop).AppsUseLightTheme } catch { return $null }
+}
+
+function Read-MacAppearance {
+  return Invoke-Captured "defaults" "read -g AppleInterfaceStyle" 3000
+}
+
+function Read-GnomeSetting {
+  param([string]$Name)
+  if (-not (Get-Command gsettings -CommandType Application -ErrorAction SilentlyContinue)) { return "" }
+  $r = Invoke-Captured "gsettings" ("get org.gnome.desktop.interface " + $Name) 3000
+  if ($null -eq $r -or $r.Code -ne 0) { return "" }
+  return [string]$r.Out
+}
+
+function Read-LinuxTheme {
+  param([string]$Os, $Vars)
+  $scheme = Read-GnomeSetting "color-scheme"
+  if ($scheme -match "dark") { return "dark" }
+  $gtk = Read-EnvVar "GTK_THEME" $Vars
+  if (-not (Test-GtkDarkName $gtk)) { $gtk = Read-GnomeSetting "gtk-theme" }
+  $kde = Join-OsPath $Os @((Get-XdgDir "XDG_CONFIG_HOME" @(".config") $Vars), "kdeglobals")
+  return Get-LinuxTheme $scheme $gtk $kde
+}
+
+function Read-OsTheme {
+  param([string]$Os, $Vars)
+  if ($Os -eq "Windows") { return ConvertFrom-AppsUseLightTheme (Read-WindowsLightTheme) }
+  if ($Os -ne "MacOS") { return Read-LinuxTheme $Os $Vars }
+  $r = Read-MacAppearance
+  if ($null -eq $r) { return $null }
+  return ConvertFrom-MacAppearance $r.Out $r.Code
 }
 
 function Get-SystemTheme {
   param([string]$Os = $script:OsName, $Vars = $null)
-  if ($Os -eq "Windows") {
-    $key = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
-    try { $v = (Get-ItemProperty -LiteralPath $key -Name AppsUseLightTheme -ErrorAction Stop).AppsUseLightTheme } catch { $v = $null }
-    return ConvertFrom-AppsUseLightTheme $v
-  }
-  if ($Os -eq "MacOS") {
-    $r = Invoke-Captured "defaults" "read -g AppleInterfaceStyle" 3000
-    if ($null -eq $r) { return $null }
-    return ConvertFrom-MacAppearance $r.Out $r.Code
-  }
-  $scheme = ""
-  if (Get-Command gsettings -CommandType Application -ErrorAction SilentlyContinue) {
-    $r = Invoke-Captured "gsettings" "get org.gnome.desktop.interface color-scheme" 3000
-    if ($null -ne $r -and $r.Code -eq 0) { $scheme = $r.Out }
-  }
-  $kde = Join-OsPath $Os @((Get-XdgDir "XDG_CONFIG_HOME" @(".config") $Vars), "kdeglobals")
-  return Get-LinuxTheme $scheme (Read-EnvVar "GTK_THEME" $Vars) $kde
+  try { return [string](Read-OsTheme $Os $Vars) } catch { return "" }
 }
 
 function Get-FixedTheme {
