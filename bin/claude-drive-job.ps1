@@ -44,12 +44,14 @@ function Test-DriveJobRunning {
 function Complete-DriveJob {
   param($Job)
   $res = Receive-UsageResults $Job.Loader
+  $replaced = $Job.Loader.Ctl.Replaced -eq $true
   $err = $Job.Loader.Ctl.Error
   Close-UsageLoader $Job.Loader
   $Job.Loader = $null
   $r = $null
   if ($res.Count -gt 0) { $r = $res[0][1]; if ($res[0][2]) { $err = $res[0][2] } }
   if ($r -isnot [hashtable]) { $r = @{ Ok = $false; Error = ("" + $err) } }
+  if ($replaced) { $r = @{ Ok = $false; Busy = $true; Error = $script:DriveBusyText } }
   if (-not $r.Error -and -not $r.Ok) { $r.Error = "synchro interrompue" }
   $Job.Busy = [bool]$r.Busy
   $Job.RetryAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + $script:DriveRetryMs

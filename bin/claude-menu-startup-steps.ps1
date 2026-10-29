@@ -1,4 +1,5 @@
 $script:StartupPollMs = 250
+$script:LoaderReplacedText = "clm remplace par une autre installation pendant la lecture"
 $script:StartupBarMs = 350
 $script:DriveStartupBusyMs = 60000
 
@@ -26,6 +27,7 @@ function Receive-LoaderValue {
   Close-UsageLoader $Loader
   $r = @{ Value = $null; Error = ("" + $Loader.Ctl.Error) }
   if ($res.Count -gt 0) { $r.Value = $res[0][1]; if ($res[0][2]) { $r.Error = "" + $res[0][2] } }
+  if ($Loader.Ctl.Replaced -eq $true) { $r.Error = $script:LoaderReplacedText }
   return $r
 }
 
