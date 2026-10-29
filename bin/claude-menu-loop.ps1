@@ -92,6 +92,7 @@ function Invoke-MenuCommand {
   catch { $msg = @(($script:MenuFails[$Name] + $_.Exception.Message), $script:Ink.Alert) }
   if (-not $script:UiQuit) { Hide-Screen }
   Reset-MenuState $msg $sel
+  if (-not $script:UiQuit) { Open-MenuFrame }
 }
 
 function Read-MenuAction {
@@ -116,6 +117,7 @@ function Invoke-AccountMenu {
   Enter-UiScreen
   try {
     if ($Web) { Open-MenuWeb $script:MenuState }
+    Open-MenuFrame
     Invoke-MenuLoop
   } finally { Close-MenuWeb }
 }

@@ -116,8 +116,7 @@ if ($fallback) {
   Invoke-TextStartup ($update -and -not $script:MenuUpdated) (-not $script:DriveChecked)
   $usages = @(Get-AllUsages)
   foreach ($u in $usages) { Write-Host (Format-Row $u) }
-  $n = Read-Host ("Numero du compte (1-" + $usages.Count + ")")
-  if ($n -match "^[1-9]$" -and [int]$n -le $usages.Count) { $chosen = $usages[[int]$n - 1].Acc }
+  $chosen = Read-AccountNumber $usages
 }
 
 if ($script:MenuRestart) {

@@ -10,3 +10,20 @@ $err = $null
 $missing = Join-Path $script:Sandbox "absent.zip"
 try { Assert-ArchiveReadable $missing } catch { $err = $_.Exception.Message }
 Assert-Equal ("sauvegarde introuvable : " + $missing) $err "restauration d'un fichier absent refusee"
+$clearKept = Get-Item function:Clear-ConsoleInput -ErrorAction SilentlyContinue
+$script:ChoiceLog = New-Object 'System.Collections.Generic.List[string]'
+function Clear-ConsoleInput { $script:ChoiceLog.Add("flush") }
+function Read-Host { param($Prompt) $script:ChoiceLog.Add("prompt"); return $script:ChoiceAnswer }
+try {
+  $usages = @($accs | ForEach-Object { [PSCustomObject]@{ Acc = $_ } })
+  $script:ChoiceAnswer = "2"
+  Assert-Equal "Pro" (Read-AccountNumber $usages).Label "liste texte : numero tape apres la question, compte choisi"
+  Assert-Equal "flush prompt" ($script:ChoiceLog -join " ") "liste texte : console videe avant la question"
+  $script:ChoiceAnswer = "4"
+  Assert-Null (Read-AccountNumber $usages) "liste texte : numero hors de la liste, aucun compte"
+  $script:ChoiceAnswer = ""
+  Assert-Null (Read-AccountNumber $usages) "liste texte : Entree seule, aucun compte"
+} finally {
+  Remove-Item -Path function:Read-Host
+  if ($clearKept) { Set-Item -Path function:Clear-ConsoleInput -Value $clearKept.ScriptBlock } else { Remove-Item -Path function:Clear-ConsoleInput }
+}

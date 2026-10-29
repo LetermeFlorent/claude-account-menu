@@ -39,3 +39,8 @@ $st.Sel = 2
 $a = Get-MenuMouseAction $st @{ Mouse = "double"; Y = 9 }
 Assert-Equal "pick 2" ($a.Name + " " + $a.Index) "double clic sur le compte choisi, lancement"
 Assert-Equal "none" (Get-MenuMouseAction $st @{ Mouse = "click"; Y = 1 }).Name "clic sur l'en-tete sans effet"
+$one = @{ Sel = 0; Hit = @{ Start = 4; Per = 5; Top = 0; Last = 1 } }
+Assert-Equal "select" (Get-MenuMouseAction $one @{ Mouse = "double"; Y = 4 }).Name "un seul compte : double clic sans premier clic apres l'affichage, aucun lancement"
+$null = Get-MenuMouseAction $one @{ Mouse = "click"; Y = 4 }
+$a = Get-MenuMouseAction $one @{ Mouse = "double"; Y = 4 }
+Assert-Equal "pick 0" ($a.Name + " " + $a.Index) "un seul compte : clic puis double clic, lancement"

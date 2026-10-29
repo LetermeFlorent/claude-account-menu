@@ -53,6 +53,15 @@ function Read-UiKey {
   return $null
 }
 
+function Clear-ConsoleInput {
+  try { while ($null -ne (Read-UiInput)) { } } catch { Write-Verbose $_.Exception.Message }
+}
+
+function Clear-UiInput {
+  $script:UiKeys.Clear()
+  Clear-ConsoleInput
+}
+
 function Wait-Progress {
   param([int]$Ms)
   if (-not $script:UiOn) { Start-Sleep -Milliseconds $Ms; return }

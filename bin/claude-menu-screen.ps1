@@ -108,7 +108,8 @@ function Get-MenuMouseAction {
   param($State, $Ev)
   $i = Get-EntryAt $State $Ev.Y
   if ($i -lt 0) { return @{ Name = "none" } }
-  if ($Ev.Mouse -eq "double" -and $i -eq $State.Sel) { return @{ Name = "pick"; Index = $i } }
+  if ($Ev.Mouse -eq "click") { $State.Armed = $i }
+  elseif ($i -eq $State.Sel -and $State.Armed -eq $i) { return @{ Name = "pick"; Index = $i } }
   return @{ Name = "select"; Index = $i }
 }
 
@@ -119,6 +120,11 @@ function Show-Menu {
   if ($L.Mode -ne "simple") { $f = @{ Rows = (Get-FramedRows $f.Rows $f.Fades $L.W); Fades = $null } }
   Show-UiRows $f.Rows $Now $f.Fades
   $State.Dirty = $false
+}
+
+function Open-MenuFrame {
+  Show-Menu $script:MenuState (Get-NowMs)
+  Clear-UiInput
 }
 
 function Test-MenuAnimating {

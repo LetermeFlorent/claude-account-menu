@@ -31,7 +31,7 @@ function New-MenuState {
   if (-not $moved) { $Sel = Get-ReadyDefault $entries $false }
   $Sel = [math]::Max(0, [math]::Min($Sel, $entries.Count - 1))
   return @{
-    Entries = $entries; Sel = $Sel; SelTween = (New-Tween $Sel $Sel 0 $Now); Moved = $moved; Top = 0
+    Entries = $entries; Sel = $Sel; SelTween = (New-Tween $Sel $Sel 0 $Now); Moved = $moved; Top = 0; Armed = -1
     Msg = @("", $script:Ink.Dim); Busy = $false; Dirty = $true; Loader = $null; LoaderIdx = @(); Clock = $null; Version = (Get-ClmTag)
   }
 }

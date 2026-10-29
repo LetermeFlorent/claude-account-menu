@@ -1,19 +1,34 @@
 . (Join-Path $bin "claude-menu-loop.ps1")
 . (Join-Path $bin "claude-menu-startup.ps1")
 
-$mocked = @("Enter-UiScreen", "Exit-UiScreen", "Hide-Screen", "Show-Menu", "Start-MenuLoader", "Get-Accounts", "Update-UiTick", "New-ClmCheck")
+$mocked = @("Enter-UiScreen", "Exit-UiScreen", "Hide-Screen", "Show-Menu", "Start-MenuLoader", "Get-Accounts", "Update-UiTick", "New-ClmCheck", "Read-UiInput")
 $kept = @{}
 foreach ($n in $mocked) { $kept[$n] = (Get-Item ("function:" + $n)).ScriptBlock }
+$script:InputLog = New-Object 'System.Collections.Generic.List[string]'
+$script:StaleInput = New-Object 'System.Collections.Generic.Queue[object]'
+$script:FreshInput = New-Object 'System.Collections.Generic.Queue[object]'
+$script:OneAccount = $false
 function Enter-UiScreen { $script:UiOn = $true }
 function Exit-UiScreen { $script:UiOn = $false }
 function Hide-Screen {}
-function Show-Menu { param($State, [double]$Now) $State.Dirty = $false }
+function Show-Menu { param($State, [double]$Now) $script:InputLog.Add("draw"); $State.Dirty = $false }
 function Start-MenuLoader { param($State) }
-function Get-Accounts { return @(foreach ($l in @("a", "b", "c")) { [PSCustomObject]@{ Label = $l; Dir = (".claude-" + $l) } }) }
+function Get-Accounts {
+  $labels = @("a", "b", "c")
+  if ($script:OneAccount) { $labels = @("a") }
+  return @(foreach ($l in $labels) { [PSCustomObject]@{ Label = $l; Dir = (".claude-" + $l) } })
+}
+function Read-UiInput {
+  $script:InputLog.Add("read")
+  if ($script:StaleInput.Count -gt 0) { return $script:StaleInput.Dequeue() }
+  if ($script:FreshAfterStartup -and (Test-StepsLeft $script:Startup @())) { return $null }
+  if ($script:FreshInput.Count -gt 0) { return $script:FreshInput.Dequeue() }
+  return $null
+}
 function Update-UiTick { param([double]$Now, [bool]$Busy) return $false }
 $script:FakeLatest = $null
 function New-ClmCheck { return @{ Loader = $null; NextAt = $null; Installed = $null; Latest = $script:FakeLatest } }
-$softMocked = @("Invoke-DriveLogin", "Test-DriveConnected", "Test-DriveAuto", "Get-DriveLastSync", "Start-DriveJob", "Start-ClaudeUpdate", "Step-ClaudeUpdate", "Set-SyncPassphrase", "Test-SyncKeyStored")
+$softMocked = @("Invoke-DriveLogin", "Test-DriveConnected", "Test-DriveAuto", "Get-DriveLastSync", "Start-DriveJob", "Start-ClaudeUpdate", "Step-ClaudeUpdate", "Set-SyncPassphrase", "Test-SyncKeyStored", "Clear-ConsoleInput")
 $softKept = @{}
 foreach ($n in $softMocked) { $f = Get-Item ("function:" + $n) -ErrorAction SilentlyContinue; if ($f) { $softKept[$n] = $f.ScriptBlock } }
 $script:ClaudeStarts = 0
@@ -25,9 +40,11 @@ function Step-ClaudeUpdate {
   $Run.Outcome = New-Outcome "ok" "Claude Code a jour (2.1.292)"
   return $true
 }
+function Clear-ConsoleInput { $script:InputLog.Add("flush"); $script:StaleInput.Clear() }
 function Invoke-DriveLogin {
   $script:LoginCalls++
   $script:UiAtLogin = $script:UiOn
+  if ($script:LoginLeavesEnter) { $script:StaleInput.Enqueue((New-TestKey ([ConsoleKey]::Enter))) }
   if ($script:LoginFails) { throw "refus" }
   $script:DriveOn = $true
   return "Drive connecte sur pc"
@@ -43,16 +60,22 @@ function Get-DriveLastSync { return [long]0 }
 $script:SyncStarts = 0
 function Start-DriveJob { param($Job) $script:SyncStarts++ }
 
+function New-TestKey {
+  param($Key)
+  $c = [char]0
+  if ($Key -is [string]) { $c = [char]$Key; $Key = [ConsoleKey]::D2 }
+  return New-Object System.ConsoleKeyInfo $c, $Key, $false, $false, $false
+}
+
 function Invoke-WithKeys {
-  param([object[]]$Keys, [bool]$Update = $false)
-  $script:UiKeys.Clear()
+  param([object[]]$Keys, [bool]$Update = $false, [object[]]$Stale = @())
   $script:ClmCheck = $null
   $script:MenuRestart = $false
-  foreach ($k in $Keys) {
-    $c = [char]0
-    if ($k -is [string]) { $c = [char]$k; $k = [ConsoleKey]::D2 }
-    $script:UiKeys.Enqueue((New-Object System.ConsoleKeyInfo $c, $k, $false, $false, $false))
-  }
+  $script:InputLog.Clear()
+  $script:StaleInput.Clear()
+  $script:FreshInput.Clear()
+  foreach ($k in $Stale) { $script:StaleInput.Enqueue((New-TestKey $k)) }
+  foreach ($k in $Keys) { $script:FreshInput.Enqueue((New-TestKey $k)) }
   return Invoke-AccountMenu $Update
 }
 
@@ -98,7 +121,24 @@ try {
   Assert-Null (Invoke-WithKeys @([ConsoleKey]::Escape) $true) "Echap avant la mise a jour : menu quitte"
   Assert-Equal 2 $script:ClaudeStarts "Echap avant la mise a jour : rien lance"
   Assert-Equal "b 3" ("" + (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter) $true).Label + " " + $script:ClaudeStarts) "Entree pendant la mise a jour : compte lance a la fin"
+  $script:OneAccount = $true
+  Assert-Null (Invoke-WithKeys @([ConsoleKey]::Escape) $false @([ConsoleKey]::Enter)) "un seul compte : Entree restee dans la console au lancement, aucun compte ouvert"
+  Assert-Equal "draw flush" (@($script:InputLog | Select-Object -First 2) -join " ") "un seul compte : menu affiche puis console videe avant toute lecture"
+  $script:UiKeys.Enqueue((New-TestKey ([ConsoleKey]::Enter)))
+  Assert-Null (Invoke-WithKeys @([ConsoleKey]::Escape)) "un seul compte : Entree lue avant l'affichage, aucun compte ouvert"
+  $script:FreshAfterStartup = $true
+  Assert-Null (Invoke-WithKeys @([ConsoleKey]::Escape) $true @("1")) "un seul compte : 1 reste dans la console au lancement, rien ouvert a la fin des mises a jour"
+  $script:FreshAfterStartup = $false
+  Assert-Equal "a" (Invoke-WithKeys @([ConsoleKey]::Enter) $false @([ConsoleKey]::Enter)).Label "un seul compte : Entree apres l'affichage, compte ouvert"
+  $script:OneAccount = $false
+  $script:DriveJob = New-DriveJob $false 0
+  $script:DriveOn = $false
+  $script:LoginLeavesEnter = $true
+  Assert-Null (Invoke-WithKeys @("y", [ConsoleKey]::Escape)) "Entree laissee par la connexion Drive : retour au menu sans ouvrir de compte"
 } finally {
+  $script:OneAccount = $false
+  $script:LoginLeavesEnter = $false
+  $script:FreshAfterStartup = $false
   foreach ($n in $mocked) { Set-Item -Path ("function:" + $n) -Value $kept[$n] }
   foreach ($n in $softMocked) { if ($softKept[$n]) { Set-Item -Path ("function:" + $n) -Value $softKept[$n] } else { Remove-Item -Path ("function:" + $n) } }
   $script:DriveJob = $null

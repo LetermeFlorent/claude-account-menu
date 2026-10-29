@@ -47,3 +47,11 @@ function Select-ByLabel {
   if ($unknown.Count -gt 0) { throw ("compte inconnu : " + ($unknown -join ", ")) }
   return @($Accs | Where-Object { $want -contains $_.Label })
 }
+
+function Read-AccountNumber {
+  param($Usages)
+  Clear-UiInput
+  $n = Read-Host ("Numero du compte (1-" + $Usages.Count + ")")
+  if ($n -match "^[1-9]$" -and [int]$n -le $Usages.Count) { return $Usages[[int]$n - 1].Acc }
+  return $null
+}
