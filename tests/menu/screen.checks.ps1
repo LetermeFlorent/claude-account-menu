@@ -36,12 +36,12 @@ Assert-Equal 4 (Get-BarCount 51 8) "remplissage au demi-carre pres"
 Assert-Equal 1 (Get-BarCount 0.5 8) "valeur non nulle, une case au moins"
 Assert-Equal 0 (Get-BarCount 0 8) "valeur nulle, aucune case"
 $segs = New-Row
-Add-UsageSegs $segs "7d" (New-Tween 100 100 0 0) "3d07h" $null 8 0 $true
+Add-UsageSegs @{ Segs = $segs; Kind = "7d"; Tween = (New-Tween 100 100 0 0); Left = "3d07h"; Pace = $null; Cells = 8; Now = 0; Wide = $true }
 $pct = @($segs | Where-Object { $_[0] -match "100%" })[0]
 $lastCell = @($segs | Where-Object { $_[0] -eq $script:BarHalf })[0]
 Assert-Equal ($lastCell[1] -join " ") ($pct[1] -join " ") "chiffre a la couleur de la barre a 100 %"
 $segs = New-Row
-Add-UsageSegs $segs "7d" (New-Tween 40 40 0 0) "3d07h" $null 8 0 $true
+Add-UsageSegs @{ Segs = $segs; Kind = "7d"; Tween = (New-Tween 40 40 0 0); Left = "3d07h"; Pace = $null; Cells = 8; Now = 0; Wide = $true }
 $pct = @($segs | Where-Object { $_[0] -match "40%" })[0]
 Assert-Equal ($script:Ink.Text -join " ") ($pct[1] -join " ") "chiffre a la couleur du texte sous 100 %"
 Assert-Equal "45m" (Format-Left ([DateTimeOffset]::Now.AddMinutes(45).AddSeconds(30))) "moins d'une heure en minutes"
@@ -81,7 +81,7 @@ Assert-Equal 23 $f.Rows.Count "trois cartes completes en 120x40"
 Assert-Equal 23 $f.Fades.Count "un fondu par rangee"
 Assert-True (@($texts | Where-Object { $_.Length -gt $L.Clip }).Count -eq 0) "aucune rangee au-dela du bord"
 Assert-True ($texts[4].StartsWith("  " + $script:Mark + " 1  perso")) "repere sur le compte choisi"
-Assert-True ($texts[4].EndsWith("quota 7d atteint  Max 5x")) "badge et offre a droite"
+Assert-True ($texts[4].EndsWith((Get-ClmText "menu.usage.quota_7d_reached") + "  Max 5x")) "badge et offre a droite"
 Assert-Equal ($L.W - 2) $texts[4].Length "texte de droite cale sur la largeur"
 Assert-True ($texts[6] -match "^  . {4}5h ") "barre 5h sous le repere"
 Assert-True ($texts[11] -match "jeton refuse") "erreur a la place des barres"
@@ -129,7 +129,7 @@ Assert-True (-not (Test-TweenRunning $st.Entries[1].T7 3100)) "autre barre incha
 Assert-True ($st.Entries[1].NextAt -gt 3000) "compte relu, prochaine lecture planifiee"
 
 $st.Version = "clm abcdef1"
-Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 60)) -match "Comptes Claude Code  clm abcdef1 +\d\d:\d\d$") "version dans l'en-tete"
+Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 60)) -match ([regex]::Escape((Get-ClmText "menu.screen.title")) + "  clm abcdef1 +\d\d:\d\d$")) "version dans l'en-tete"
 Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 40)) -notmatch "clm") "fenetre etroite, version retiree"
 foreach ($w in 30, 40, 60) { Assert-True ((Get-SegsText (Get-MenuHeaderRow $st $w)).Length -le $w - 2) ("en-tete dans la largeur " + $w) }
 

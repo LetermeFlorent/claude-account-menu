@@ -1,19 +1,24 @@
-. Import-ClmModule claude-menu-startup-steps, claude-menu-startup-claude, claude-menu-startup-clm, claude-menu-startup-fade
+. Import-ClmModule claude-text, claude-menu-startup-steps, claude-menu-startup-claude, claude-menu-startup-clm, claude-menu-startup-fade
 $script:ClmUpdated = $false
 $script:ClmChecked = $false
 $script:DriveChecked = $false
 $script:Startup = $null
-$script:StartupLabels = @{ clm = "clm"; claude = "Claude Code"; drive = "Drive" }
+$script:StartupLabelKeys = @{ clm = "menu.startup.label.clm"; claude = "menu.startup.label.claude"; drive = "menu.startup.label.drive" }
 $script:StartupFree = @("none", "refresh")
 $script:StartupOpen = @("up", "down", "select", "drivesync", "web")
 $script:StartupHiding = @("clm")
 $script:StartupQuitWaits = @("clm", "claude")
 
+function Get-StartupLabel {
+  param([string]$Name)
+  return Get-ClmText $script:StartupLabelKeys[$Name]
+}
+
 function New-StartupStep {
   param([string]$Name, [string]$After)
   $text = ""
-  if ($After) { $text = "apres " + $script:StartupLabels[$After] }
-  return @{ Name = $Name; After = $After; Label = $script:StartupLabels[$Name]; State = "wait"; Pct = -1; Text = $text; Kind = ""; Bar = (New-Tween 0 0 0 0); Work = $null; HideAt = $null; Fade = $null; Gone = $false }
+  if ($After) { $text = Get-ClmText "menu.startup.after" @((Get-StartupLabel $After)) }
+  return @{ Name = $Name; After = $After; Label = (Get-StartupLabel $Name); State = "wait"; Pct = -1; Text = $text; Kind = ""; Bar = (New-Tween 0 0 0 0); Work = $null; HideAt = $null; Fade = $null; Gone = $false }
 }
 
 function Close-StartupLock {
@@ -125,18 +130,18 @@ function Get-StartupGate {
     if (-not (Test-QuitWaits $Su)) { return $Act }
     $Su.Quit = $true
     $Su.Pending = $null
-    return Get-HeldAction $State "  arret demande, fin de la mise a jour en cours..."
+    return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.stop_requested"))
   }
-  if (Test-StartupBlocking $Su) { return Get-HeldAction $State "  comptes affiches apres la verification de clm" }
+  if (Test-StartupBlocking $Su) { return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.accounts_after_clm_check")) }
   if ($script:StartupOpen -contains $Act.Name) { return $Act }
   if ($Act.Name -eq "launch") { $Act = @{ Name = "pick"; Index = $State.Sel } }
-  if ($Act.Name -ne "pick") { return Get-HeldAction $State "  disponible a la fin des mises a jour" }
+  if ($Act.Name -ne "pick") { return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.available_after_updates")) }
   $Su.Pending = $Act
-  return Get-HeldAction $State ("  " + $State.Entries[$Act.Index].Acc.Label + " lance a la fin des mises a jour...")
+  return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.launch_after_updates" @($State.Entries[$Act.Index].Acc.Label)))
 }
 
 function Add-ClmFailure {
   param($Msg, [string]$Err)
   if (-not $Err) { return $Msg }
-  return @(("  mise a jour de clm impossible : " + $Err + "   " + ([string]$Msg[0]).Trim()).TrimEnd(), $script:Ink.Alert)
+  return @(("  " + (Get-ClmText "menu.startup.clm_update_failed" @($Err)) + "   " + ([string]$Msg[0]).Trim()).TrimEnd(), $script:Ink.Alert)
 }

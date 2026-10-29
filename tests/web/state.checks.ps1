@@ -47,7 +47,7 @@ try {
   $a = @($s.accounts)
   Assert-Equal "1 perso .claude perso@mail.fr Max" ("" + $a[0].n + " " + $a[0].label + " " + $a[0].dir + " " + $a[0].email + " " + $a[0].plan) "web etat : fiche du compte"
   Assert-Equal "42 100" ("" + $a[0].q5.pct + " " + $a[0].q7.pct) "web etat : quotas en pour cent"
-  Assert-Equal "quota 7d atteint" $a[0].badge "web etat : quota atteint signale"
+  Assert-Equal (Get-ClmText "menu.usage.quota_7d_reached") $a[0].badge "web etat : quota atteint signale"
   Assert-True ($a[0].q5.left -match '^[0-9]h[0-9]{2}m$') "web etat : temps restant 5h"
   Assert-True ($a[0].q7.left -match '^[0-9]d[0-9]{2}h$') "web etat : temps restant 7d"
   Assert-Equal "epuise alert" ($a[0].q7.pace + " " + $a[0].q7.tone) "web etat : rythme du quota plein"

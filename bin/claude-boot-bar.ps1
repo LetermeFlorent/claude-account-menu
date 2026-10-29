@@ -1,6 +1,5 @@
-. Import-ClmModule claude-display, claude-ui-palette, claude-ui-color-depth, claude-ui-console-theme, claude-ui-motion
+. Import-ClmModule claude-display, claude-ui-palette, claude-ui-color-depth, claude-ui-console-theme, claude-ui-motion, claude-ui-width, claude-text
 $script:BootBarFlags = @("--no-update", "--updated", "--web")
-$script:BootBarLabel = "demarrage"
 $script:BootBarCells = 20
 $script:BootBarWidth = 45
 $script:BootBarMaxMs = 20000
@@ -21,7 +20,7 @@ try {
     $a = $Cells; $b = $Cells
     if ($Motion) { $a = [int][math]::Floor(($sw.ElapsedMilliseconds % 1200) / 1200 * ($Cells + $w)) - $w; $b = $a + $w }
     $sb = New-Object Text.StringBuilder
-    [void]$sb.Append("`r  " + $Label.PadRight(13) + $Look.Fill + ($Look.FillGlyph * $n))
+    [void]$sb.Append("`r  " + $Label + $Look.Fill + ($Look.FillGlyph * $n))
     for ($i = $n; $i -lt $Cells; $i++) {
       if ($i -ge $a -and $i -lt $b) { [void]$sb.Append($Look.Sweep + $Look.EmptyGlyph) }
       else { [void]$sb.Append($Look.Empty + $Look.EmptyGlyph) }
@@ -66,6 +65,11 @@ function Get-BootBarSetup {
   return @{ Motion = (Get-MotionEnabled $Os $Vars); Look = $look }
 }
 
+function Get-BootBarLabel {
+  $text = Get-ClmText "menu.boot.starting"
+  return $text + (" " * [math]::Max(0, 13 - (Get-DisplayWidth $text)))
+}
+
 function Start-BootBar {
   param([object[]]$ArgList, [string]$Dir, $Loaded)
   if (-not (Test-BootBarWanted $ArgList)) { return $null }
@@ -73,7 +77,7 @@ function Start-BootBar {
   $ctl = [hashtable]::Synchronized(@{ Stop = $false; Ready = $false; Done = $false; MaxMs = $script:BootBarMaxMs })
   $setup = Get-BootBarSetup
   $ps = [PowerShell]::Create()
-  [void]$ps.AddScript($script:BootBarScript).AddArgument($Host).AddArgument($ctl).AddArgument($Loaded).AddArgument($total).AddArgument($script:BootBarLabel).AddArgument($script:BootBarCells).AddArgument($setup.Motion).AddArgument($setup.Look)
+  [void]$ps.AddScript($script:BootBarScript).AddArgument($Host).AddArgument($ctl).AddArgument($Loaded).AddArgument($total).AddArgument((Get-BootBarLabel)).AddArgument($script:BootBarCells).AddArgument($setup.Motion).AddArgument($setup.Look)
   return @{ Ps = $ps; Handle = $ps.BeginInvoke(); Ctl = $ctl }
 }
 

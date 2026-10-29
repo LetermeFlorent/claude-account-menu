@@ -1,3 +1,4 @@
+. Import-ClmModule claude-ui-width
 $script:StartupLabelWidth = 13
 $script:StartupCellsMax = 20
 
@@ -36,10 +37,15 @@ function Add-StartupBarSegs {
   Add-BarSegs $Row "7d" (Get-TweenValue $Step.Bar $Now) $base $C
 }
 
+function Get-PaddedLabel {
+  param([string]$Text, [int]$Width)
+  return $Text + (" " * [math]::Max(0, $Width - (Get-DisplayWidth $Text)))
+}
+
 function Get-StartupRow {
   param($Step, $L, [double]$Now)
   $r = New-Row
-  $r.Add(@(("  " + $Step.Label.PadRight($script:StartupLabelWidth)), $script:Ink.Text, $true))
+  $r.Add(@(("  " + (Get-PaddedLabel $Step.Label $script:StartupLabelWidth)), $script:Ink.Text, $true))
   Add-StartupBarSegs $r $Step ([math]::Min($script:StartupCellsMax, $L.Cells)) $Now
   $pct = Get-StartupPct $Step $Now
   if ($pct) { $r.Add(@(("  " + $pct.PadLeft(4)), $script:Ink.Text, $true)) }

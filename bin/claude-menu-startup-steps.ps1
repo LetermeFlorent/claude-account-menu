@@ -1,5 +1,5 @@
+. Import-ClmModule claude-text
 $script:StartupPollMs = 250
-$script:LoaderReplacedText = "clm remplace par une autre installation pendant la lecture"
 $script:StartupBarMs = 350
 $script:DriveStartupBusyMs = 60000
 
@@ -27,7 +27,7 @@ function Receive-LoaderValue {
   Close-UsageLoader $Loader
   $r = @{ Value = $null; Error = ("" + $Loader.Ctl.Error) }
   if ($res.Count -gt 0) { $r.Value = $res[0][1]; if ($res[0][2]) { $r.Error = "" + $res[0][2] } }
-  if ($Loader.Ctl.Replaced -eq $true) { $r.Error = $script:LoaderReplacedText }
+  if ($Loader.Ctl.Replaced -eq $true) { $r.Error = Get-ClmText "menu.startup.loader_replaced" }
   return $r
 }
 
@@ -39,21 +39,21 @@ function Step-DriveStartup {
     $Step.BusyEnd = $Now + $script:DriveStartupBusyMs
     Start-DriveJob $job
     $Step.State = "run"
-    $null = Set-StartupProgress $Step -1 "preparation" $Now
+    $null = Set-StartupProgress $Step -1 (Get-ClmText "menu.startup.preparing") $Now
     return $true
   }
   if (Test-DriveJobRunning $job) {
     $p = "" + $job.Ctl.Progress
-    if ($p -match "^(\d+)/(\d+)$" -and [int]$Matches[2] -gt 0) { return Set-StartupProgress $Step ([int][math]::Floor([int]$Matches[1] * 100 / [int]$Matches[2])) ($p + " fichiers") $Now }
-    return Set-StartupProgress $Step -1 "preparation" $Now
+    if ($p -match "^(\d+)/(\d+)$" -and [int]$Matches[2] -gt 0) { return Set-StartupProgress $Step ([int][math]::Floor([int]$Matches[1] * 100 / [int]$Matches[2])) (Get-ClmText "menu.startup.files" @($p)) $Now }
+    return Set-StartupProgress $Step -1 (Get-ClmText "menu.startup.preparing") $Now
   }
   if ($job.Busy -and $Now -lt $Step.BusyEnd) {
     if ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() -ge $job.RetryAt) { Start-DriveJob $job }
-    return Set-StartupProgress $Step -1 "attente de la synchro en cours" $Now
+    return Set-StartupProgress $Step -1 (Get-ClmText "menu.startup.waiting_sync") $Now
   }
-  if ($job.Failed) { Complete-StartupStep $Step "failed" "erreur" $Now }
-  elseif ($job.Busy) { Complete-StartupStep $Step "ok" "laissee a un autre clm" $Now }
-  else { Complete-StartupStep $Step "ok" "a jour" $Now }
+  if ($job.Failed) { Complete-StartupStep $Step "failed" (Get-ClmText "menu.startup.error") $Now }
+  elseif ($job.Busy) { Complete-StartupStep $Step "ok" (Get-ClmText "menu.startup.left_to_other_clm") $Now }
+  else { Complete-StartupStep $Step "ok" (Get-ClmText "menu.startup.up_to_date") $Now }
   return $true
 }
 

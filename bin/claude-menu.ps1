@@ -5,7 +5,7 @@ $script:ClmEntryStamp = Wait-ClmInstall
 try {
   . Import-ClmModule claude-state-migrate
   if (-not (Test-ClmReloadNeeded $script:ClmEntryStamp)) { $null = Invoke-StateMigration }
-  . Import-ClmModule claude-boot-bar
+  . Import-ClmModule claude-boot-bar, claude-text
   $script:BootBar = Start-BootBar $args $PSScriptRoot $script:ClmOnce
   . Import-ClmModule claude-usage, claude-menu-view, claude-menu-save, claude-menu-restore, claude-menu-select,
     claude-menu-remove, claude-menu-rename, claude-menu-prefs, claude-statusline-seed, claude-update, claude-self-update,
@@ -16,6 +16,9 @@ if (Test-ClmReloadNeeded $script:ClmEntryStamp) {
   Invoke-ClmReload $PSCommandPath $args
 }
 Set-BootBarReady
+. Import-ClmModule claude-console-utf8
+$script:ConsoleEncodingBefore = Use-ConsoleUtf8
+try {
 
 function Start-Account {
   param($Acc, $Extra)
@@ -67,7 +70,7 @@ foreach ($a in $args) {
   }
   elseif ($a -match "^--save(=(.+))?$") {
     try { $sel = Select-ByLabel @(Get-Accounts) $Matches[2] } catch { Write-Output $_.Exception.Message; exit 1 }
-    Write-Output ("sauvegarde : " + (Save-Accounts "" $sel))
+    Write-Output (Get-ClmText "menu.cli.backup.done" @((Save-Accounts "" $sel)))
     exit 0
   }
   elseif ($a -match "^--only=(.+)$") { $only = $Matches[1] }
@@ -78,7 +81,7 @@ foreach ($a in $args) {
 $driveCli = Get-DriveCliAction $args
 $menuMode = $null -eq $driveCli -and -not $restoreZip -and $null -eq $direct -and (Test-RichTerminal)
 if ($openWeb -and -not $menuMode) {
-  Write-Output "  --web ouvre la page avec le menu de clm, dans un terminal interactif"
+  Write-Output ("  " + (Get-ClmText "menu.cli.web.needs.terminal"))
   exit 1
 }
 if ($null -eq $driveCli -and -not $restoreZip) { Assert-Online }
@@ -95,7 +98,7 @@ if ($restoreZip) {
 
 if ($null -ne $direct) {
   $accs = @(Get-Accounts)
-  if ($direct -ge $accs.Count) { Write-Output ("pas de compte " + ($direct + 1)); exit 1 }
+  if ($direct -ge $accs.Count) { Write-Output (Get-ClmText "menu.cli.no.account.number" @(($direct + 1))); exit 1 }
   Invoke-TextStartup $update $true
   Start-Account $accs[$direct] $rest
   exit $LASTEXITCODE
@@ -108,7 +111,7 @@ if ($menuMode) {
   catch {
     Exit-UiScreen
     $fallback = $true
-    Write-Host ("  interface indisponible : " + $_.Exception.Message) -ForegroundColor DarkGray
+    Write-Host ("  " + (Get-ClmText "menu.cli.ui.unavailable" @($_.Exception.Message))) -ForegroundColor DarkGray
   }
 }
 if ($script:MenuOffline) {
@@ -116,7 +119,7 @@ if ($script:MenuOffline) {
   exit 1
 }
 if ($script:ClmUpdated) {
-  Write-Host "  clm mis a jour, redemarrage" -ForegroundColor DarkGray
+  Write-Host ("  " + (Get-ClmText "menu.cli.clm.updated.restarting")) -ForegroundColor DarkGray
   Restart-Clm $PSCommandPath (Get-WebRestartArgs $args)
 }
 if ($fallback) {
@@ -137,3 +140,4 @@ if ($null -eq $chosen) { exit 0 }
 Clear-Host
 Start-Account $chosen $rest
 exit $LASTEXITCODE
+} finally { Restore-ConsoleEncoding $script:ConsoleEncodingBefore }

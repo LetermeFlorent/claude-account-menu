@@ -11,9 +11,17 @@ try {
   Assert-Equal 0 $textUsages.Count "texte sans compte : aucune ligne de quota"
   $textErr = ""
   $textPick = "x"
-  try { $textPick = Read-AccountNumber $textUsages } catch { $textErr = $_.Exception.Message }
+  $textShown = ""
+  try {
+    $textOut = @(Read-AccountNumber $textUsages 6>&1)
+    $textPick = $textOut | Where-Object { $_ -isnot [Management.Automation.InformationRecord] } | Select-Object -First 1
+    $textShown = (@($textOut | Where-Object { $_ -is [Management.Automation.InformationRecord] } | ForEach-Object { [string]$_.MessageData.Message }) -join "`n")
+  } catch { $textErr = $_.Exception.Message }
   Assert-Equal "" $textErr "texte sans compte : choix d'un compte sans erreur"
   Assert-Null $textPick "texte sans compte : aucun compte choisi"
+  Assert-Equal 0 $script:TextPrompts.Count "texte sans compte : aucune question posee"
+  Assert-True (-not ($script:TextPrompts -match "1-0")) "texte sans compte : pas de question 1-0"
+  Assert-True ($textShown.Contains((Get-ClmText "menu.select.noAccount"))) "texte sans compte : message clair affiche"
   $textErr = ""
   $textPick = "x"
   try { $textPick = Read-AccountNumber $null } catch { $textErr = $_.Exception.Message }

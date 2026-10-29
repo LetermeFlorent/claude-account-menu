@@ -1,8 +1,7 @@
-. Import-ClmModule claude-menu-web, claude-boot-bar, claude-menu-idle
+. Import-ClmModule claude-menu-web, claude-boot-bar, claude-menu-idle, claude-menu-fails, claude-text
 $script:MenuState = $null
 $script:MenuUpdated = $false
 $script:MenuRestart = $false
-$script:MenuFails = @{ save = "  sauvegarde impossible : "; restore = "  restauration impossible : "; add = "  ajout impossible : "; remove = "  retrait impossible : "; rename = "  renommage impossible : "; drivelogin = "  connexion Drive impossible : "; prefs = "  reglages de synchro impossibles : " }
 
 function Step-MenuFrame {
   $now = Get-NowMs
@@ -34,7 +33,7 @@ function Stop-MenuLoader {
   $st.Busy = $true
   Stop-UsageLoader $st.Loader $TimeoutMs {
     param($Ms)
-    if ($Ms -ge 250) { $script:MenuState.Msg = @("  fin de la lecture en cours...", $script:Ink.Dim); $script:MenuState.Dirty = $true }
+    if ($Ms -ge 250) { $script:MenuState.Msg = @(("  " + (Get-ClmText "menu.loop.reading.finishing")), $script:Ink.Dim); $script:MenuState.Dirty = $true }
     $null = Step-MenuFrame
   }
   $st.Loader = $null
@@ -89,7 +88,7 @@ function Invoke-MenuCommand {
   $sel = $script:MenuState.Sel
   Hide-Screen
   try { $msg = @(("  " + (Invoke-MenuPage $Name $sel $Arg)), $script:Levels["7d"][0]) }
-  catch { $msg = @(($script:MenuFails[$Name] + $_.Exception.Message), $script:Ink.Alert) }
+  catch { $msg = @((Get-MenuFailText $Name $_.Exception.Message), $script:Ink.Alert) }
   if (-not $script:UiQuit) { Hide-Screen }
   Reset-MenuState $msg $sel
   if (-not $script:UiQuit) { Open-MenuFrame }
@@ -141,7 +140,7 @@ function Invoke-MenuLoop {
     elseif ($act.Name -eq "drivesync") { $st.Msg = Request-DriveSync $script:DriveJob; $st.Dirty = $true }
     elseif ($act.Name -eq "selfupdate") {
       if (Test-ClmUpdateReady) { $script:MenuRestart = $true; return Close-AccountMenu $null }
-      $st.Msg = @("  aucune mise a jour de clm en attente", $script:Ink.Dim); $st.Dirty = $true
+      $st.Msg = @(("  " + (Get-ClmText "menu.loop.no.clm.update")), $script:Ink.Dim); $st.Dirty = $true
     }
     elseif ($act.Name -eq "web") { Open-MenuWeb $st }
     elseif ($act.Name -ne "none") { Invoke-MenuCommand $act.Name $act.Arg }

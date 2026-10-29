@@ -15,7 +15,7 @@ try {
   try {
     $null = Invoke-StartupTicks 2
     Assert-Equal "" ($script:Loads -join "|") "autre clm en pleine mise a jour : pas de recherche en double"
-    Assert-Equal ("lock|" + $script:ClmWaitStepText + "|apres clm") ($script:Su.Steps[0].State + "|" + (Get-StepList "Text")) "autre clm en pleine mise a jour : attente affichee"
+    Assert-Equal ("lock|" + $script:ClmWaitStepText + "|" + (Get-ClmText "menu.startup.after" @("clm"))) ($script:Su.Steps[0].State + "|" + (Get-StepList "Text")) "autre clm en pleine mise a jour : attente affichee"
     Assert-True (Test-StartupBlocking $script:Su) "autre clm en pleine mise a jour : comptes caches"
     Assert-Equal "quit" (Send-StartupAct "quit").Name "autre clm en pleine mise a jour : arret sans attendre"
   } finally { Close-MachineLock $held }
@@ -40,7 +40,7 @@ try {
   New-StartupCase @("clm", "claude")
   $held = Open-MachineLock $script:ClmUpdateLock
   try { $null = Invoke-StartupTicks 6 } finally { Close-MachineLock $held }
-  Assert-Equal "ok laissee a un autre clm" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "autre clm bloque trop longtemps : recherche laissee, sans erreur"
+  Assert-Equal ("ok " + (Get-ClmText "menu.startup.left_to_other_clm")) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "autre clm bloque trop longtemps : recherche laissee, sans erreur"
   Assert-Equal 1 $script:ClaudeStarts "autre clm bloque trop longtemps : Claude Code continue"
 
   $script:LockShaFail = "version illisible"
