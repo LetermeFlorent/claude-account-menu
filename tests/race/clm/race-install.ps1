@@ -7,14 +7,19 @@ $ErrorActionPreference = "Stop"
 $dst = Join-Path (Join-Path $env:USERPROFILE ".local") "bin"
 [IO.File]::WriteAllText((Join-Path $env:CLM_RACE_LOG ("install-" + $PID)), "x")
 Start-Sleep -Milliseconds 1500
+EXTRA
 [IO.File]::WriteAllText((Join-Path $dst "clm.version"), "VERSION`n")
 '@
 
 $script:RaceInstallerSh = @'
 touch "$CLM_RACE_LOG/install-$$"
 sleep 2
+EXTRA
 printf '%s\n' "VERSION" > "$HOME/.local/bin/clm.version"
 '@
+
+$script:RaceCopyPs1 = 'Copy-Item -Path (Join-Path (Join-Path $PSScriptRoot "bin") "*") -Destination $dst -Force'
+$script:RaceCopySh = 'cp "$(dirname "$0")"/bin/* "$HOME/.local/bin/"'
 
 function New-RaceHome {
   param([string]$Name)
@@ -27,11 +32,15 @@ function New-RaceHome {
 }
 
 function New-RaceRelease {
-  param([string]$Dir)
+  param([string]$Dir, [hashtable]$Extra = @{})
   $pkg = Join-Path $Dir "pkg"
   New-Item -ItemType Directory -Path (Join-Path $pkg "bin") -Force | Out-Null
-  [IO.File]::WriteAllText((Join-Path $pkg "install.ps1"), $script:RaceInstallerPs1.Replace("VERSION", $script:RaceNewVersion))
-  [IO.File]::WriteAllText((Join-Path $pkg "install.sh"), $script:RaceInstallerSh.Replace("VERSION", $script:RaceNewVersion))
+  foreach ($k in $Extra.Keys) { [IO.File]::WriteAllText((Join-Path (Join-Path $pkg "bin") $k), $Extra[$k]) }
+  $copyPs1 = ""
+  $copySh = ""
+  if ($Extra.Count -gt 0) { $copyPs1 = $script:RaceCopyPs1; $copySh = $script:RaceCopySh }
+  [IO.File]::WriteAllText((Join-Path $pkg "install.ps1"), $script:RaceInstallerPs1.Replace("VERSION", $script:RaceNewVersion).Replace("EXTRA", $copyPs1))
+  [IO.File]::WriteAllText((Join-Path $pkg "install.sh"), $script:RaceInstallerSh.Replace("VERSION", $script:RaceNewVersion).Replace("EXTRA", $copySh))
   $zip = Join-Path $Dir "clm.zip"
   Compress-Archive -Path (Join-Path $pkg "*") -DestinationPath $zip
   $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLower()
