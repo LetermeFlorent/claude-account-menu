@@ -21,6 +21,11 @@ $keyHolder = Start-LockHolder "backup-key" 1500 $keyPath $otherKey
 $mineKey = Get-BackupKey
 $null = Wait-RaceChild $keyHolder
 Assert-Equal $otherKey ([Convert]::ToBase64String($mineKey)) "cle des archives creee par un autre clm en meme temps : la meme pour tous"
+[IO.File]::Delete($keyPath)
+$null = Get-BackupKey
+if ($script:OsName -ne "Windows") {
+  Assert-Equal "-rw-------" (Get-Item -LiteralPath $keyPath).UnixMode "cle des archives creee par clm : lisible par son seul proprietaire"
+}
 
 $markFile = New-SandboxFile "verrous dl/claude-comptes-marque.zip" "x"
 $markHolder = Start-LockHolder $script:BackupMarksName 6500
