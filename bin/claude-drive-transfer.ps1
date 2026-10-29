@@ -1,4 +1,4 @@
-. Import-ClmModule claude-drive-api, claude-sync-crypto, claude-drive-transfer-chunks
+. Import-ClmModule claude-drive-api, claude-sync-crypto, claude-drive-transfer-chunks, claude-drive-transfer-open
 $script:SealRequired = "telechargement refuse sans cle de synchro"
 
 function New-MultipartBody {
@@ -68,10 +68,19 @@ function Get-DriveBytes {
   return ,$r.RawContentStream.ToArray()
 }
 
+function Save-DriveMedia {
+  param([string]$Id, [string]$OutFile)
+  $null = Invoke-DriveRequest "GET" ($script:DriveApi + "/" + $Id + "?alt=media") $null "" $script:DriveDataTimeout $OutFile
+}
+
 function Save-SealedMedia {
   param([string]$Id, [string]$Path, [string]$Seal, $Keys)
   if ($null -eq $Keys) { throw $script:SealRequired }
-  [IO.File]::WriteAllBytes($Path, (Unprotect-SyncBytes $Keys $Seal (Get-DriveBytes $Id)))
+  $sealed = $Path + ".sealed.tmp"
+  try {
+    Save-DriveMedia $Id $sealed
+    Expand-SealedFile $Keys $Seal $sealed $Path
+  } finally { Remove-DriveTemp $sealed }
 }
 
 function Receive-DriveTemp {

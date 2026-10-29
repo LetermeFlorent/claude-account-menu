@@ -25,7 +25,7 @@ function Invoke-DriveRequest {
     $req = @{ Method = $Method; Uri = $Uri; Headers = $h; TimeoutSec = $Timeout; UseBasicParsing = $true }
     if ($null -ne $Body) { $req.Body = $Body }
     if ($ContentType) { $req.ContentType = $ContentType }
-    if ($OutFile) { $req.OutFile = $OutFile; $req.PassThru = $true }
+    if ($OutFile) { $req.OutFile = $OutFile }
     try { return Invoke-DriveWeb $req }
     catch {
       $failure = $_

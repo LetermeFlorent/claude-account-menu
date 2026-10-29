@@ -82,6 +82,7 @@ function Get-DriveBytes {
   if ($null -ne $script:OnMedia) { & $script:OnMedia }
   return ,$bytes
 }
+function Save-DriveMedia { param([string]$Id, [string]$OutFile) [IO.File]::WriteAllBytes($OutFile, (Get-DriveBytes $Id)) }
 function Remove-DriveFile { param([string]$Id) $script:Fake.Remove((Find-FakeName $Id)) }
 function Remove-DriveFiles {
   param([string[]]$Ids, $Ctl, [long]$DeadlineMs)

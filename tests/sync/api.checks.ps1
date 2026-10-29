@@ -81,8 +81,7 @@ $apiKeys = New-SyncKeys ([byte[]](50..81)) ([byte[]](1..16)) 600000
 $script:MediaBody = Protect-SyncBytes $apiKeys "files/.claude/notes [v2].md" ([Text.Encoding]::UTF8.GetBytes("media"))
 function Invoke-DriveRequest {
   param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
-  if ($OutFile) { throw "telechargement direct vers un fichier" }
-  return [PSCustomObject]@{ RawContentStream = (New-Object IO.MemoryStream(, $script:MediaBody)) }
+  [IO.File]::WriteAllBytes($OutFile, $script:MediaBody)
 }
 $media = Join-Path $script:Sandbox "notes [v2].md"
 Save-SealedMedia "m1" $media "files/.claude/notes [v2].md" $apiKeys
