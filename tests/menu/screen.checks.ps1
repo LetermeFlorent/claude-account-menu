@@ -60,8 +60,8 @@ Add-ProgressSegs $segs 25 20 0
 Assert-Equal 5 (Get-InkCount $segs $script:Levels["7d"][0]) "progression a un quart"
 Assert-Equal (($script:BarFull * 4) + $script:BarHalf + ($script:BarEmpty * 15)) (Get-SegsText $segs) "progression terminee par une case reduite"
 $tw = New-Tween 0 80 400 0
-Assert-Equal "120 110 200" ((Get-BarBase "5h" $tw 0) -join " ") "couleur au depart de l'animation"
-Assert-Equal "200 60 95" ((Get-BarBase "5h" $tw 400) -join " ") "couleur a l'arrivee"
+Assert-Equal ($script:Levels["5h"][0] -join " ") ((Get-BarBase "5h" $tw 0) -join " ") "couleur au depart de l'animation"
+Assert-Equal ($script:Levels["5h"][2] -join " ") ((Get-BarBase "5h" $tw 400) -join " ") "couleur a l'arrivee"
 
 function New-TestCard {
   param([string]$Label, $P5, $P7, $Err = $null, [bool]$Pending = $false)
