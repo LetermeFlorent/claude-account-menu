@@ -12,6 +12,7 @@ EXTRA
 '@
 
 $script:RaceInstallerSh = @'
+set -e
 touch "$CLM_RACE_LOG/install-$$"
 sleep 2
 EXTRA
@@ -40,7 +41,7 @@ function New-RaceRelease {
   $copySh = ""
   if ($Extra.Count -gt 0) { $copyPs1 = $script:RaceCopyPs1; $copySh = $script:RaceCopySh }
   [IO.File]::WriteAllText((Join-Path $pkg "install.ps1"), $script:RaceInstallerPs1.Replace("VERSION", $script:RaceNewVersion).Replace("EXTRA", $copyPs1))
-  [IO.File]::WriteAllText((Join-Path $pkg "install.sh"), $script:RaceInstallerSh.Replace("VERSION", $script:RaceNewVersion).Replace("EXTRA", $copySh))
+  [IO.File]::WriteAllText((Join-Path $pkg "install.sh"), $script:RaceInstallerSh.Replace("`r", "").Replace("VERSION", $script:RaceNewVersion).Replace("EXTRA", $copySh))
   $zip = Join-Path $Dir "clm.zip"
   Compress-Archive -Path (Join-Path $pkg "*") -DestinationPath $zip
   $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLower()
