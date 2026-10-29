@@ -29,51 +29,6 @@ function Receive-LoaderValue {
   return $r
 }
 
-function Start-ClmWork {
-  param($Step, [string]$Reader, $Item, [string]$Text, [double]$Now)
-  $Step.Work = Start-UsageLoader @(, $Item) (Join-Path $PSScriptRoot "claude-self-update.ps1") $Reader
-  $Step.Reader = $Reader
-  $Step.State = "run"
-  $null = Set-StartupProgress $Step -1 $Text $Now
-}
-
-function Complete-ClmFind {
-  param($Su, $Step, $State, $R, [double]$Now)
-  if ($R.Error -eq $script:ClmUnknownText) { $Su.ClmError = $R.Error; $State.Msg = Add-ClmFailure @("", $script:Ink.Dim) $R.Error }
-  if ($R.Error) { Complete-StartupStep $Step "failed" "recherche impossible" $Now; return }
-  if ($null -eq $R.Value) { Complete-StartupStep $Step "ok" "a jour" $Now; return }
-  $Step.Found = $R.Value
-  if ($Su.Quit) { Complete-StartupStep $Step "ok" ((Get-ClmName $R.Value) + " disponible, pas installee") $Now; return }
-  Start-ClmWork $Step "Install-ClmVersion" $R.Value ("installation " + (Format-ClmVersion $R.Value)) $Now
-}
-
-function Complete-ClmInstall {
-  param($Su, $Step, $State, $R, [double]$Now)
-  if ($R.Error) {
-    $Su.ClmError = $R.Error
-    $State.Msg = Add-ClmFailure @("", $script:Ink.Dim) $R.Error
-    Complete-StartupStep $Step "failed" ("installation impossible : " + $R.Error) $Now
-    return
-  }
-  $text = (Get-ClmName $Step.Found) + " installee"
-  if (-not $Su.Quit) { $text += ", redemarrage"; $script:ClmUpdated = $true; $Su.Exit = @{ Name = "restart" } }
-  Complete-StartupStep $Step "updated" $text $Now
-}
-
-function Step-ClmStartup {
-  param($Su, $Step, $State, [double]$Now)
-  if ($Step.State -eq "wait") {
-    $script:ClmChecked = $true
-    Start-ClmWork $Step "Find-ClmUpdate" 0 "recherche d'une nouvelle version" $Now
-    return $true
-  }
-  $r = Receive-LoaderValue $Step.Work
-  if ($null -eq $r) { return $false }
-  if ($Step.Reader -eq "Find-ClmUpdate") { Complete-ClmFind $Su $Step $State $r $Now }
-  else { Complete-ClmInstall $Su $Step $State $r $Now }
-  return $true
-}
-
 function Step-ClaudeStartup {
   param($Su, $Step, $State, [double]$Now)
   if ($Step.State -eq "wait") {

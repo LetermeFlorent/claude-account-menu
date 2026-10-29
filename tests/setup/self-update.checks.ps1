@@ -1,4 +1,5 @@
 . (Join-Path $PSScriptRoot "self-update-fakes.ps1")
+$selfLoaded = $script:ClmLoadedSha
 
 try {
   $published = [DateTimeOffset]::Parse("2026-10-28T08:33:20Z", [Globalization.CultureInfo]::InvariantCulture).ToUnixTimeSeconds()
@@ -24,6 +25,7 @@ try {
   Assert-Throws { Find-ClmUpdate } "version de clm inconnue" "version installee sans numero : recherche refusee"
 
   $script:SelfInstalled = ConvertFrom-ClmVersion "aaaaaaa1111111111111111111111111111111aa 1760000000 34"
+  $script:ClmLoadedSha = $script:SelfInstalled.Sha
   Set-SelfNetwork "" "" (New-TestRelease 40)
   Assert-Equal 40 (Find-ClmUpdate).Number "release plus recente : trouvee"
   Set-SelfNetwork "" "" (New-TestRelease 34)
@@ -33,6 +35,26 @@ try {
   Set-SelfNetwork "" "" $null
   $out = @(Update-Clm 6>&1)
   Assert-Equal "False" ($out -join "|") "reseau coupe : rien affiche, pas de mise a jour"
+  Assert-Equal "" (Get-ClmUpdateSkip $script:ClmLoadedSha) "reseau coupe : aucune verification notee"
+
+  Set-SelfNetwork "" "" (New-TestRelease 34)
+  Assert-Equal "False" (@(Update-Clm 6>&1) -join "|") "clm a jour : rien affiche, pas de mise a jour"
+  Assert-Equal "fresh" (Get-ClmUpdateSkip $script:ClmLoadedSha) "clm a jour : verification notee pour les autres clm"
+  Set-SelfNetwork "" "" (New-TestRelease 40)
+  Assert-Equal "False" (@(Update-Clm 6>&1) -join "|") "verifie a l'instant par un autre clm : rien a faire"
+  Assert-Equal 0 $script:SelfGets.Count "verifie a l'instant par un autre clm : pas de reseau"
+  Set-SelfNetwork "" "" $null
+  $null = Update-Clm -Recheck 6>&1
+  Assert-Equal 1 $script:SelfGets.Count "mise a jour demandee : release relue malgre la verification recente"
+  Assert-Equal "replaced" (Get-ClmUpdateSkip ("b" * 40)) "version du disque differente de celle chargee : remplacee"
+  $script:ClmLoadedSha = "b" * 40
+  Assert-Equal ("  " + $script:ClmReplacedText + "|True") (@(Update-Clm 6>&1) -join "|") "installee par un autre clm : redemarrage sans reinstaller"
+  $script:ClmLoadedSha = $script:SelfInstalled.Sha
+  $held = Open-MachineLock $script:ClmUpdateLock
+  $selfWait = $script:ClmUpdateWaitMs
+  $script:ClmUpdateWaitMs = 300
+  try { $out = @(Update-Clm 6>&1) } finally { Close-MachineLock $held; $script:ClmUpdateWaitMs = $selfWait }
+  Assert-Equal ("  " + $script:ClmWaitText + "|False") ($out -join "|") "autre clm en pleine mise a jour : attente annoncee, pas d'erreur"
 
   $zip = New-TestPackage "clm-v40"
   $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLower()
@@ -87,4 +109,6 @@ try {
 } finally {
   Restore-SelfFakes
   $script:SelfInstalled = $null
+  $script:ClmLoadedSha = $selfLoaded
+  Remove-Item -LiteralPath (Get-StatePath ($script:ClmCheckStamp + ".done")) -Force -ErrorAction SilentlyContinue
 }

@@ -25,7 +25,7 @@ function New-TestPackage {
 }
 
 function Set-SelfNetwork {
-  param([string]$Zip, [string]$Sum, [string]$Release)
+  param([string]$Zip, [string]$Sum, $Release)
   $script:SelfZip = $Zip
   $script:SelfSum = $Sum
   $script:SelfRelease = $Release

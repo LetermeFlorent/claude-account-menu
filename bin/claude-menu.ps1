@@ -121,7 +121,7 @@ if ($fallback) {
 
 if ($script:MenuRestart) {
   Clear-Host
-  if (-not (Update-Clm)) { Start-Sleep -Seconds 3 }
+  if (-not (Update-Clm -Recheck)) { Start-Sleep -Seconds 3 }
   Restart-Clm $PSCommandPath (Get-WebRestartArgs $args)
 }
 

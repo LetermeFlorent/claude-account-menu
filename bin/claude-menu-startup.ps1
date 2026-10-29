@@ -1,4 +1,4 @@
-. Import-ClmModule claude-menu-startup-steps, claude-menu-startup-fade
+. Import-ClmModule claude-menu-startup-steps, claude-menu-startup-clm, claude-menu-startup-fade
 $script:ClmUpdated = $false
 $script:ClmChecked = $false
 $script:DriveChecked = $false

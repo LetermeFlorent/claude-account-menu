@@ -76,7 +76,7 @@ function Invoke-CliRemove {
 function Invoke-CliUpdate {
   param([object[]]$Argv)
   if (-not (Test-Network)) { throw $script:OfflineText }
-  if (@($Argv) -notcontains "--updated" -and (Update-Clm)) { $script:CliRestart = $true; return 0 }
+  if (@($Argv) -notcontains "--updated" -and (Update-Clm -Recheck)) { $script:CliRestart = $true; return 0 }
   Write-Host ("clm " + (Format-ClmVersion (Read-ClmVersion)))
   Update-ClaudeForAccounts @(Get-Accounts)
   return 0
