@@ -1,4 +1,4 @@
-. Import-ClmModule claude-drive-creds
+. Import-ClmModule claude-drive-creds, claude-text
 $script:OauthTokenUrl = "https://platform.claude.com/v1/oauth/token"
 $script:OauthClientId = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 
@@ -18,7 +18,7 @@ function Get-OauthUserAgent {
 function Save-RefreshedCredential {
   param($Acc, $Cred)
   $credFile = Join-Path (Get-AccountPath $Acc) ".credentials.json"
-  Invoke-WithMachineLock $script:DriveCredsLock $script:CredLockWaitMs { Write-CredentialFile $credFile $Cred } "jetons en cours de synchro"
+  Invoke-WithMachineLock $script:DriveCredsLock $script:CredLockWaitMs { Write-CredentialFile $credFile $Cred } (Get-ClmText "ui.token.syncing")
 }
 
 function Update-AccountToken {

@@ -4,7 +4,7 @@ function Get-WebQuota {
   param($Pct, $Pace, [string]$Left)
   $q = [ordered]@{ pct = $null; left = $Left; pace = ""; tone = "dim" }
   if ($null -ne $Pct -and "" + $Pct -ne "") { $q.pct = [int][math]::Round([double]$Pct) }
-  if ($null -ne $Pace) { $q.pace = $Pace.Text; $q.tone = $Pace.Tone }
+  if ($null -ne $Pace) { $q.pace = $Pace.Code; $q.tone = $Pace.Tone }
   return $q
 }
 
