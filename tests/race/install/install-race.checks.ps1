@@ -16,17 +16,19 @@ $null = Install-ClmFiles -Source $irTreeA -Target $irTarget -Version $script:Rac
 $irAppData = Join-Path $irHome "AppData"
 $irEnv = @{ USERPROFILE = $irHome; HOME = $irHome; LOCALAPPDATA = (Join-Path $irAppData "Local"); APPDATA = (Join-Path $irAppData "Roaming"); CLAUDE_CONFIG_DIR = $null }
 $irBase = @{ Bin = $bin; Lab = $raceLab; Dir = $irGate; Target = $irTarget }
-$irInstall = @{ Id = "installer"; TreeA = $irTreeA; TreeB = $irTreeB; StampA = $script:RaceStampA; StampB = $script:RaceStampB; Rounds = 9 }
+$irInstall = @{ Id = "installer"; TreeA = $irTreeA; TreeB = $irTreeB; StampA = $script:RaceStampA; StampB = $script:RaceStampB; Rounds = 9; Loaders = 3 }
 $irKids = @(Start-RaceChild (Join-Path $PSScriptRoot "installer-child.ps1") ($irBase + $irInstall) $irEnv)
 foreach ($irId in @("usage", "prefetch", "sync")) { $irKids += Start-RaceChild (Join-Path $PSScriptRoot ($irId + "-child.ps1")) ($irBase + @{ Id = $irId }) $irEnv }
 Open-RaceGate $irGate $irKids.Count
-$irRuns = @(foreach ($k in $irKids) { Wait-RaceChild $k 90000 })
+$irRuns = @(foreach ($k in $irKids) { Wait-RaceChild $k 150000 })
 
 $irName = "installation pendant le chargement : "
 Assert-Equal "" (Format-RaceFailures $irRuns) ($irName + "aucun processus en echec")
 Assert-Equal "usage=0 prefetch=0 sync=0" (Read-RaceTally $irRuns "mixed") ($irName + "aucun melange")
 Assert-Equal "" (Read-RaceErrors $irRuns) ($irName + "aucune erreur affichee")
 Assert-Equal "usage=B prefetch=B sync=B" (Read-RaceTally $irRuns "last") ($irName + "chaque processus finit sur la nouvelle version")
+Assert-Equal "installer=3" (Read-RaceTally $irRuns "ready") ($irName + "l'installation attend un premier chargement propre de chaque processus")
+Assert-Equal "installer=3" (Read-RaceTally $irRuns "held") ($irName + "l'installation garde son marqueur jusqu'a ce que chaque processus s'y arrete")
 Assert-True ((Get-RaceTotal $irRuns "clean") -ge 3) ($irName + "des chargements propres")
 Assert-True (((Get-RaceTotal $irRuns "stopped") + (Get-RaceTotal $irRuns "mixed")) -gt 0) ($irName + "des chargements ont croise une installation")
 Assert-True ((Get-RaceTotal $irRuns "switches") -gt 0) ($irName + "des chargements ont vu l'ancienne puis la nouvelle version")

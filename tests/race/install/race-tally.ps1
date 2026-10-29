@@ -1,5 +1,6 @@
-$script:RaceLoopMs = 30000
+$script:RaceLoopMs = 90000
 $script:RaceLoopPauseMs = 20
+$script:RaceSignalMs = 30000
 
 function New-RaceTally {
   return @{ Clean = 0; Mixed = 0; Errors = 0; Stopped = 0; Switches = 0; Last = "-"; Notes = (New-Object 'System.Collections.Generic.List[string]') }
@@ -25,6 +26,22 @@ function Add-RaceOutcome {
   }
 }
 
+function Set-RaceSignal {
+  param([string]$Dir, [string]$Name)
+  $p = Join-Path $Dir $Name
+  if (-not [IO.File]::Exists($p)) { [IO.File]::WriteAllText($p, $Name) }
+}
+
+function Wait-RaceSignals {
+  param([string]$Dir, [string]$Prefix, [int]$Count)
+  $sw = [Diagnostics.Stopwatch]::StartNew()
+  do {
+    $found = @(Get-ChildItem -LiteralPath $Dir -Filter ($Prefix + "*")).Count
+    if ($found -ge $Count -or $sw.ElapsedMilliseconds -gt $script:RaceSignalMs) { return $found }
+    Start-Sleep -Milliseconds 10
+  } while ($true)
+}
+
 function Invoke-RaceLoop {
   param([string]$Dir, [string]$Id, [scriptblock]$Run)
   $tally = New-RaceTally
@@ -33,6 +50,8 @@ function Invoke-RaceLoop {
     $last = [IO.File]::Exists((Join-Path $Dir "installed")) -or $sw.ElapsedMilliseconds -gt $script:RaceLoopMs
     try { $outcome = @(& $Run)[-1] } catch { $outcome = @{ Error = $_.Exception.Message } }
     Add-RaceOutcome $tally $outcome
+    if ($tally.Clean -gt 0) { Set-RaceSignal $Dir ("clean-" + $Id) }
+    if ($tally.Stopped -gt 0) { Set-RaceSignal $Dir ("held-" + $Id) }
     Start-Sleep -Milliseconds $script:RaceLoopPauseMs
   } until ($last)
   foreach ($n in $tally.Notes) { "error " + $Id + " " + $n }
