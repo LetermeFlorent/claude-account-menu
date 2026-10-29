@@ -1,3 +1,4 @@
+. Import-ClmModule claude-json
 function New-AccountSlot {
   param([string]$Label)
   $list = @(Get-Accounts)
@@ -10,8 +11,7 @@ function New-AccountSlot {
   $dir = Get-AccountPath $acc
   $settings = [IO.Path]::Combine($script:HomeDir, ".claude", "settings.json")
   if (Test-Path -LiteralPath $settings) { Copy-Item -LiteralPath $settings -Destination $dir }
-  $cfg = [PSCustomObject]@{ hasCompletedOnboarding = $true; lastOnboardingVersion = (Get-ClaudeVersion) }
-  $cfg | ConvertTo-Json | Set-Content -LiteralPath (Get-AccountConfigFile $acc) -Encoding UTF8
+  Write-JsonFile (Get-AccountConfigFile $acc) ([ordered]@{ hasCompletedOnboarding = $true; lastOnboardingVersion = (Get-ClaudeVersion) })
   Save-Registry ($list + $acc)
   return $acc
 }
