@@ -25,30 +25,38 @@ function Find-CurrentAccount {
   return $null
 }
 
-. Import-ClmModule claude-machine-lock
+. Import-ClmModule claude-machine-lock, claude-statusline-lock, claude-statusline-changes
 $script:StatusLockName = "statusline"
-$script:StatusLockWaitMs = 5000
+$script:StatusLockWaitMs = 400
 $script:StatusKeys = "^(q5_at|q5_pct|q7_at|q7_pct|q_at)"
+$script:StatusChangesTag = "clm-"
 
-function Read-StatusLines {
-  param([string]$State)
-  if (-not [IO.File]::Exists($State)) { return @() }
-  $lines = @((Read-SharedText $State) -split "`r?`n")
-  if ($lines[-1] -eq "") { $lines = @($lines | Select-Object -First ($lines.Count - 1)) }
-  return $lines
+function Get-StatusEntries {
+  param([string]$Tag, $Usage)
+  $r5 = Convert-ToEpoch $Usage.Reset5
+  $r7 = Convert-ToEpoch $Usage.Reset7
+  $values = @{ q_at = ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [long]$Usage.Age) }
+  if ($null -ne $r5) { $values["q5_at"] = $r5; $values["q5_pct"] = [int]$Usage.Pct5 }
+  if ($null -ne $r7) { $values["q7_at"] = $r7; $values["q7_pct"] = [int]$Usage.Pct7 }
+  return @(foreach ($k in "q5_at", "q5_pct", "q7_at", "q7_pct", "q_at") {
+      if ($values.ContainsKey($k)) { $k + "@" + $Tag + " " + $values[$k] } else { $k + "@" + $Tag }
+    })
 }
 
 function Write-StatusLines {
   param([string]$State, [string]$Tag, $Usage)
   $mine = $script:StatusKeys + "(@" + [regex]::Escape($Tag) + ")? "
-  $keep = @(Read-StatusLines $State | Where-Object { $_ -cnotmatch $mine })
-  $r5 = Convert-ToEpoch $Usage.Reset5
-  $r7 = Convert-ToEpoch $Usage.Reset7
-  $at = "@" + $Tag + " "
-  if ($null -ne $r5) { $keep += "q5_at" + $at + $r5; $keep += "q5_pct" + $at + [int]$Usage.Pct5 }
-  if ($null -ne $r7) { $keep += "q7_at" + $at + $r7; $keep += "q7_pct" + $at + [int]$Usage.Pct7 }
-  $keep += "q_at" + $at + ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [long]$Usage.Age)
+  $applied = New-Object Collections.Generic.List[string]
+  $lines = @(Merge-StatusChanges @(Read-StateFileLines $State) @(Get-StatusChanges $State) $applied)
+  $keep = @($lines | Where-Object { $_ -cnotmatch $mine })
+  $keep += @(Get-StatusEntries $Tag $Usage | Where-Object { $_.Contains(" ") })
   Write-TextFileAtomic $State (($keep -join "`n") + "`n")
+  Remove-StatusChanges $applied.ToArray()
+}
+
+function Write-StatusFallback {
+  param([string]$State, [string]$Tag, $Usage)
+  Write-StatusChanges $State ($script:StatusChangesTag + $PID) @(Get-StatusEntries $Tag $Usage)
 }
 
 function Update-StatusState {
@@ -59,8 +67,12 @@ function Update-StatusState {
   if ($null -ne $u.Error) { return }
   $tag = Get-StateTag (Get-AccountPath $Acc)
   $lock = Open-MachineLock $script:StatusLockName $script:StatusLockWaitMs
-  if ($null -eq $lock) { return }
-  try { Write-StatusLines $state $tag $u } finally { Close-MachineLock $lock }
+  if ($null -eq $lock) { Write-StatusFallback $state $tag $u; return }
+  try {
+    $bar = Open-StatusStateLock $state $script:StatusStateLockWaitMs
+    if ($null -eq $bar) { Write-StatusFallback $state $tag $u; return }
+    try { Write-StatusLines $state $tag $u } catch { Write-StatusFallback $state $tag $u } finally { Close-StatusStateLock $bar }
+  } finally { Close-MachineLock $lock }
 }
 
 if ($MyInvocation.InvocationName -ne ".") {

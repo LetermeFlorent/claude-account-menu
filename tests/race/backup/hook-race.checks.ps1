@@ -13,7 +13,7 @@ $hookParams = @(foreach ($tag in ($hookAccounts.Keys | Sort-Object)) { @{ Bin = 
 $hookRuns = Invoke-Race $hookChild $hookParams $hookRoot $hookEnv
 Assert-Equal "" (Format-RaceFailures $hookRuns) "trois crochets de session en meme temps : aucune erreur"
 
-$hookLines = @([IO.File]::ReadAllText($hookState).TrimEnd("`n").Split("`n"))
+$hookLines = @(Merge-StatusChanges @([IO.File]::ReadAllText($hookState).TrimEnd("`n").Split("`n")) @(Get-StatusChanges $hookState))
 foreach ($tag in ($hookAccounts.Keys | Sort-Object)) {
   foreach ($key in "q5_at", "q5_pct", "q7_at", "q7_pct", "q_at") {
     $found = @($hookLines | Where-Object { $_ -match ("^" + $key + "@" + [regex]::Escape($tag) + " ") }).Count

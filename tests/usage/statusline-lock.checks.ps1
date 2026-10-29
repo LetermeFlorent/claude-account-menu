@@ -21,11 +21,14 @@ Close-MachineLock $lockHeld
 $script:StatusLockWaitMs = $lockWait
 Assert-Null $lockErr "etat de la barre tenu trop longtemps par un autre clm : abandon sans erreur"
 Assert-Equal "theme dark`n" ([IO.File]::ReadAllText($lockState)) "etat de la barre tenu trop longtemps par un autre clm : fichier laisse tel quel"
+Assert-True ([IO.File]::Exists((Join-Path (Split-Path $lockState) ("state.clm-" + $PID + ".changes")))) "etat de la barre tenu trop longtemps par un autre clm : nos valeurs en fichier de changements"
 
 $lockOther = "theme dark`nq5_at@claude-compte3 77`n"
+$script:StatusLockWaitMs = 5000
 $lockHolder = Start-LockHolder "statusline" 1000 $lockState $lockOther
 Update-StatusState $lockAcc
 $null = Wait-RaceChild $lockHolder
+$script:StatusLockWaitMs = $lockWait
 $lockLines = @([IO.File]::ReadAllText($lockState).TrimEnd("`n").Split("`n"))
 Assert-True ($lockLines -contains "q5_at@claude-compte3 77") "etat de la barre ecrit par un autre clm pendant l'attente : ses lignes gardees"
 Assert-True ($lockLines -contains "q5_pct@claude 42") "etat de la barre ecrit par un autre clm pendant l'attente : nos lignes ajoutees"
