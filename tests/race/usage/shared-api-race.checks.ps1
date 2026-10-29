@@ -6,7 +6,7 @@ function New-UsageRaceBox {
   param([string]$Name)
   $root = Join-Path $script:Sandbox $Name
   foreach ($d in @("calls", "gate1", "gate2")) { New-Item -ItemType Directory -Path (Join-Path $root $d) -Force | Out-Null }
-  return [PSCustomObject]@{ Root = $root; Env = @{ USERPROFILE = $root; HOME = $root; LOCALAPPDATA = (Join-Path $root "AppData") } }
+  return [PSCustomObject]@{ Root = $root; Env = @{ USERPROFILE = $root; HOME = $root; LOCALAPPDATA = (Join-Path $root "AppData"); XDG_CACHE_HOME = $null; XDG_STATE_HOME = $null; XDG_CONFIG_HOME = $null } }
 }
 
 function Invoke-UsageRace {
@@ -33,7 +33,7 @@ Assert-Equal 1 (Get-UsageRaceCalls $sameBox) "trois clm lisent le meme compte : 
 Assert-Equal "42 42 42" ((@(Get-UsageRaceRows $sameRuns | ForEach-Object { $_[2] }) | Sort-Object) -join " ") "trois clm lisent le meme compte : tous ont les chiffres"
 
 $refBox = New-UsageRaceBox "usage-race-refus"
-$refCache = Join-Path (Join-Path $refBox.Env.LOCALAPPDATA "claude-menu") "usage.json"
+$refCache = Get-UsageCachePath $script:OsName $refBox.Env
 New-Item -ItemType Directory -Path (Split-Path $refCache) -Force | Out-Null
 $refOld = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - 1000
 [IO.File]::WriteAllText($refCache, ('{ "course": { "At": ' + $refOld + ', "Pct5": 15, "Reset5": "2030-01-01T00:00:00Z", "Pct7": 2, "Reset7": "2030-01-03T00:00:00Z", "Fails": 0, "Until": 0 } }'), (New-Object Text.UTF8Encoding($false)))

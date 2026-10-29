@@ -5,10 +5,10 @@ $writeChild = Join-Path $PSScriptRoot "shared-cache-child.ps1"
 $wrRoot = Join-Path $script:Sandbox "usage-write-race"
 $wrGate = Join-Path $wrRoot "gate"
 New-Item -ItemType Directory -Path $wrGate -Force | Out-Null
-$wrEnv = @{ USERPROFILE = $wrRoot; HOME = $wrRoot; LOCALAPPDATA = (Join-Path $wrRoot "AppData") }
+$wrEnv = @{ USERPROFILE = $wrRoot; HOME = $wrRoot; LOCALAPPDATA = (Join-Path $wrRoot "AppData"); XDG_CACHE_HOME = $null; XDG_STATE_HOME = $null; XDG_CONFIG_HOME = $null }
 $wrParams = @(foreach ($n in 1..3) { @{ Bin = $bin; Lab = $raceLab; Gate = $wrGate; Id = ("w" + $n); Mode = "write" } })
 $wrRuns = Invoke-Race $writeChild $wrParams $wrGate $wrEnv
-$wrPath = Join-Path (Join-Path $wrEnv.LOCALAPPDATA "claude-menu") "usage.json"
+$wrPath = Get-UsageCachePath $script:OsName $wrEnv
 $wrKeys = @()
 if (Test-Path -LiteralPath $wrPath) { $wrKeys = @(([IO.File]::ReadAllText($wrPath) | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $_.Name }) }
 Assert-Equal "" (Format-RaceFailures $wrRuns) "trois clm ecrivent le cache en meme temps : aucune erreur"
