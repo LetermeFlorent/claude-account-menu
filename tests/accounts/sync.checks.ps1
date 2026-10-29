@@ -40,12 +40,16 @@ Sync-Accounts
 Assert-Equal "c3" (Read-JsonFile $set1)["enabledPlugins"]["a"] "sync settings, modification suivante propagee"
 Assert-Equal "sonnet" (Read-JsonFile $set2)["model"] "sync settings, model garde au second tour"
 
-$fs = [IO.File]::Open($script:SyncLockPath, "OpenOrCreate", "ReadWrite", "None")
+$savedLockWait = $script:SyncLockWaitMs
+$script:SyncLockWaitMs = 0
+$held = Open-MachineLock "sync"
 try {
   [IO.File]::WriteAllText($set2, '{"model":"sonnet","enabledPlugins":{"a":"bloque"}}')
   [IO.File]::SetLastWriteTimeUtc($set2, (Get-Date).ToUniversalTime().AddMinutes(30))
-  $null = Sync-Accounts 6>$null
+  $shown = Sync-Accounts *>&1 | Out-String
   Assert-Equal "c3" (Read-JsonFile $set1)["enabledPlugins"]["a"] "verrou tenu, pas de sync"
-} finally { $fs.Dispose() }
+  Assert-Equal "" $shown "verrou tenu : rien affiche"
+} finally { Close-MachineLock $held }
+$script:SyncLockWaitMs = $savedLockWait
 
 if ($null -ne $savedRegistry) { [IO.File]::WriteAllText($script:RegistryPath, $savedRegistry) } else { Remove-Item -LiteralPath $script:RegistryPath -Force }

@@ -1,15 +1,7 @@
-. Import-ClmModule claude-json, claude-state
+. Import-ClmModule claude-json, claude-state, claude-drive-lock
 $script:AccountKeys = @("model", "modelSettings", "theme")
 $script:SyncStatePath = Get-StatePath "sync-state.json"
-$script:SyncLockPath = Get-StatePath "sync.lock"
 $script:SyncLockWaitMs = 5000
-
-function Invoke-WithSyncLock {
-  param([scriptblock]$Action)
-  $fs = Enter-FileLock $script:SyncLockPath $script:SyncLockWaitMs
-  if ($null -eq $fs) { Write-Host "  sync ignoree : un autre lancement synchronise deja" -ForegroundColor DarkYellow; return }
-  try { & $Action } finally { $fs.Dispose() }
-}
 
 function Get-SharedSettings {
   param($Data)
@@ -59,7 +51,7 @@ function Sync-Domain {
 }
 
 function Sync-Accounts {
-  Invoke-WithSyncLock {
+  $null = Invoke-MachineOnce $script:AccountsSyncLock $script:SyncLockWaitMs {
     try {
       $accs = @(Get-Accounts)
       foreach ($a in $accs) { Repair-SharedLinks $a }
@@ -70,6 +62,7 @@ function Sync-Accounts {
       Sync-Domain "settings" $settings ${function:Get-SharedSettings} ${function:Merge-Settings} $state
       Sync-Domain "mcpServers" $configs ${function:Get-McpServers} ${function:Merge-Mcp} $state
       Write-TextFileAtomic $script:SyncStatePath (ConvertTo-JsonText $state)
+      $true
     } catch {
       Write-Host ("  sync echouee : " + $_.Exception.Message) -ForegroundColor DarkYellow
     }

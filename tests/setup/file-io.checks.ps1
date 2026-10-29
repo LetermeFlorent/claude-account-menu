@@ -86,17 +86,3 @@ Rename-UsageEntry "un" "trois"
 Assert-True ((Read-UsageCache).ContainsKey("trois") -and -not (Read-UsageCache).ContainsKey("un")) "cache d'usage : entree renommee"
 $script:UsageCachePath = $savedCachePath
 $script:UsageCacheLockMs = $savedCacheWait
-
-. (Join-Path $bin "claude-sync.ps1")
-$savedSyncLock = $script:SyncLockPath
-$savedSyncWait = $script:SyncLockWaitMs
-$script:SyncLockPath = Join-Path $ioDir "sync.lock"
-$script:SyncLockWaitMs = 100
-$script:SyncRan = 0
-Invoke-WithSyncLock { $script:SyncRan++ }
-$syncHeld = Enter-FileLock $script:SyncLockPath 100
-$null = Invoke-WithSyncLock { $script:SyncRan++ } 6>&1
-$syncHeld.Dispose()
-$script:SyncLockPath = $savedSyncLock
-$script:SyncLockWaitMs = $savedSyncWait
-Assert-Equal 1 $script:SyncRan "verrou de synchro : action lancee une fois, pas pendant qu'un autre la tient"
