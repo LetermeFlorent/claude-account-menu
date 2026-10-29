@@ -1,0 +1,101 @@
+button,
+input,
+select {
+  font: inherit;
+  color: var(--text);
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--target);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+button:not(:disabled):hover { background: var(--hover); }
+button:not(:disabled):active { background: var(--selected); }
+button.small { padding: 0 var(--space-3); font-size: var(--text-caption); }
+button.accent { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+button.accent:not(:disabled):hover { background: var(--accent); filter: brightness(0.9); }
+button.accent:not(:disabled):active { background: var(--accent); filter: brightness(0.8); }
+button.danger { border-color: var(--alert); color: var(--alert); }
+button.danger:not(:disabled):hover { background: var(--alert-soft); }
+button.icon { width: var(--target); padding: 0; border-color: transparent; background: transparent; }
+button.more[aria-expanded="true"] { background: var(--selected); }
+button.cross { width: var(--target-min); min-height: var(--target-min); padding: 0; border-color: transparent; background: transparent; }
+.glyph { display: block; font-size: var(--text-subtitle); line-height: 1; pointer-events: none; }
+
+input[type="text"],
+input[type="search"],
+input[type="number"],
+select {
+  min-height: var(--target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+select { cursor: pointer; }
+::placeholder { color: var(--muted); opacity: 1; }
+input[type="text"],
+input[type="search"] { width: 100%; }
+input[type="number"] { width: 8em; }
+
+input[type="checkbox"] {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: var(--space-4);
+  height: var(--space-4);
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+input[type="checkbox"]:checked,
+input[type="checkbox"]:indeterminate { border-color: var(--accent); background: var(--accent); }
+
+input[type="checkbox"]:checked::after,
+input[type="checkbox"]:indeterminate::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:indeterminate::after { left: 3px; top: 6px; width: 8px; height: 2px; border: 0; background: var(--on-accent); transform: none; }
+
+button:disabled,
+input:disabled,
+select:disabled { opacity: 0.7; cursor: default; }
+
+label:has(:disabled) { opacity: 0.7; cursor: default; }
+label input:disabled { opacity: 1; }
+fieldset:disabled label { opacity: 0.7; cursor: default; }
+
+@media (forced-colors: active) {
+  button.accent { border-color: Highlight; background: Highlight; color: HighlightText; forced-color-adjust: none; }
+  button.icon, button.cross { border-color: ButtonText; }
+  button:disabled, input:disabled, select:disabled { opacity: 1; color: GrayText; border-color: GrayText; }
+  input[type="checkbox"] { forced-color-adjust: none; border-color: CanvasText; background: Canvas; }
+
+  input[type="checkbox"]:checked,
+  input[type="checkbox"]:indeterminate { border-color: Highlight; background: Highlight; }
+
+  input[type="checkbox"]:checked::after { border-color: HighlightText; }
+  input[type="checkbox"]:indeterminate::after { background: HighlightText; }
+}

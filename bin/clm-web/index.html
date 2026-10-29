@@ -1,85 +1,144 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>clm</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="style.css">
-<script src="api.js" defer></script>
-<script src="ui.js" defer></script>
-<script src="tabs.js" defer></script>
-<script src="accounts.js" defer></script>
-<script src="prefs.js" defer></script>
-<script src="sync.js" defer></script>
-<script src="display.js" defer></script>
-<script src="backups.js" defer></script>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/controls.css">
+<link rel="stylesheet" href="css/forms.css">
+<link rel="stylesheet" href="css/accounts.css">
+<link rel="stylesheet" href="css/drive.css">
+<link rel="stylesheet" href="css/backups.css">
+<script src="core/api.js" defer></script>
+<script src="core/dom.js" defer></script>
+<script src="core/morph.js" defer></script>
+<script src="core/poll.js" defer></script>
+<script src="core/ask.js" defer></script>
+<script src="core/menu.js" defer></script>
+<script src="shell/i18n.js" defer></script>
+<script src="shell/look.js" defer></script>
+<script src="shell/nav.js" defer></script>
+<script src="shell/header.js" defer></script>
+<script src="accounts/quota.js" defer></script>
+<script src="accounts/actions.js" defer></script>
+<script src="accounts/row.js" defer></script>
+<script src="accounts/list.js" defer></script>
+<script src="drive/prefs-item.js" defer></script>
+<script src="drive/prefs-list.js" defer></script>
+<script src="drive/prefs-view.js" defer></script>
+<script src="drive/drive.js" defer></script>
+<script src="backups/backups.js" defer></script>
+<script src="settings/settings.js" defer></script>
+<script src="settings/usage-poll.js" defer></script>
 </head>
 <body>
-<div id="app" hidden>
-  <header class="top">
-    <div class="row">
-      <h1 id="version">clm</h1>
-      <button id="update" type="button" hidden>Installer la mise à jour</button>
+<div id="shell" class="shell" hidden>
+  <header class="appbar">
+    <div class="brand">
+      <h1 id="version" class="brand-name">clm</h1>
+      <span class="brand-sub" data-text="header.subtitle"></span>
     </div>
-    <p id="drive-tag" class="dim"></p>
-    <p id="status" class="status dim" role="status" aria-live="polite"></p>
-    <p id="busy" class="notice" hidden></p>
-    <nav id="tabs" class="tabs" role="tablist" aria-label="Parties de la page">
-      <button id="tab-accounts" type="button" role="tab" aria-controls="part-accounts">Comptes</button>
-      <button id="tab-drive" type="button" role="tab" aria-controls="part-drive">Drive</button>
-      <button id="tab-display" type="button" role="tab" aria-controls="part-display">Affichage</button>
-      <button id="tab-backups" type="button" role="tab" aria-controls="part-backups">Sauvegardes</button>
-    </nav>
+    <div class="appbar-tools">
+      <button id="update" type="button" class="accent" hidden></button>
+      <label class="pick" for="lang-pick"><span data-text="header.language"></span>
+        <select id="lang-pick">
+          <option value="auto" data-text="lang.auto"></option>
+          <option value="en" data-text="lang.en"></option>
+          <option value="fr" data-text="lang.fr"></option>
+        </select>
+      </label>
+      <label class="pick" for="theme-pick"><span data-text="header.theme"></span>
+        <select id="theme-pick">
+          <option value="system" data-text="theme.system"></option>
+          <option value="light" data-text="theme.light"></option>
+          <option value="dark" data-text="theme.dark"></option>
+        </select>
+      </label>
+    </div>
   </header>
-  <fieldset id="controls" class="plain">
-    <main>
-      <section id="part-accounts" role="tabpanel" aria-labelledby="tab-accounts">
-        <h2 class="sr">Comptes</h2>
-        <ul id="account-list" class="accounts"></ul>
-        <div class="row">
-          <input id="add-name" type="text" maxlength="40" placeholder="nom du nouveau compte, vide pour le nom par défaut" aria-label="Nom du nouveau compte">
-          <button id="add-btn" type="button">Ajouter un compte</button>
-        </div>
-        <p class="dim">La connexion à Claude se termine ensuite dans le terminal et le navigateur.</p>
-      </section>
-      <section id="part-drive" role="tabpanel" aria-labelledby="tab-drive" hidden>
-        <h2 class="sr">Synchro Drive</h2>
-        <div id="drive"></div>
-        <div id="prefs"></div>
-      </section>
-      <section id="part-display" role="tabpanel" aria-labelledby="tab-display" hidden>
-        <h2 class="sr">Affichage</h2>
-        <p class="dim">Couleurs et animations du menu, pour ce PC seulement.</p>
-        <div class="row">
-          <label class="field" for="palette">Couleurs</label>
-          <select id="palette"></select>
-        </div>
-        <p id="palette-env" class="dim" hidden>STATUSLINE_BG est définie sur ce PC et passe avant ce choix.</p>
-        <div class="row">
-          <label class="field" for="anim">Animations</label>
-          <select id="anim"></select>
-        </div>
-        <p id="anim-env" class="dim" hidden>CLM_ANIM est définie sur ce PC et passe avant ce choix.</p>
-      </section>
-      <section id="part-backups" role="tabpanel" aria-labelledby="tab-backups" hidden>
-        <h2 class="sr">Sauvegardes</h2>
-        <p class="dim">Une archive des comptes cochés part dans Téléchargements.</p>
-        <div id="save-list" class="checks"></div>
-        <button id="save-btn" type="button">Sauvegarder</button>
-        <p id="backup-dir" class="dim"></p>
-        <ul id="backup-list" class="backups"></ul>
-      </section>
-    </main>
-  </fieldset>
+  <nav class="sidenav">
+    <div id="tabs" class="tabs" role="tablist" aria-orientation="vertical" data-label="nav.label">
+      <button id="tab-accounts" type="button" role="tab" aria-controls="part-accounts"><span data-text="nav.accounts"></span></button>
+      <button id="tab-drive" type="button" role="tab" aria-controls="part-drive"><span data-text="nav.drive"></span></button>
+      <button id="tab-backups" type="button" role="tab" aria-controls="part-backups"><span data-text="nav.backups"></span></button>
+      <button id="tab-settings" type="button" role="tab" aria-controls="part-settings"><span data-text="nav.settings"></span></button>
+    </div>
+    <p id="drive-tag" class="nav-foot muted"></p>
+  </nav>
+  <main class="main">
+    <div class="main-inner">
+      <p id="busy" class="notice quiet" role="status"></p>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <fieldset id="controls" class="plain">
+        <section id="part-accounts" class="part" role="tabpanel" aria-labelledby="tab-accounts">
+          <div class="part-head">
+            <h2 data-text="accounts.title"></h2>
+            <button id="add-btn" type="button" class="accent" data-text="accounts.add"></button>
+          </div>
+          <p class="muted" data-text="accounts.intro"></p>
+          <ul id="account-list" class="account-list"></ul>
+          <p id="account-empty" class="card empty muted" data-text="accounts.none" hidden></p>
+        </section>
+        <section id="part-drive" class="part" role="tabpanel" aria-labelledby="tab-drive" hidden>
+          <div class="part-head"><h2 data-text="drive.title"></h2></div>
+          <div id="drive" class="card"></div>
+          <div id="prefs"></div>
+        </section>
+        <section id="part-backups" class="part" role="tabpanel" aria-labelledby="tab-backups" hidden>
+          <div class="part-head"><h2 data-text="backups.title"></h2></div>
+          <div class="card">
+            <fieldset class="group">
+              <legend data-text="backups.pick"></legend>
+              <p class="muted" data-text="backups.intro"></p>
+              <div id="save-list" class="checks"></div>
+            </fieldset>
+            <div class="actions"><button id="save-btn" type="button" class="accent" data-text="backups.save"></button></div>
+          </div>
+          <h3 data-text="backups.list"></h3>
+          <p id="backup-dir" class="muted"></p>
+          <ul id="backup-list" class="backup-list"></ul>
+        </section>
+        <section id="part-settings" class="part" role="tabpanel" aria-labelledby="tab-settings" hidden>
+          <div class="part-head"><h2 data-text="settings.title"></h2></div>
+          <div class="card">
+            <h3 data-text="settings.terminal"></h3>
+            <p class="muted" data-text="settings.intro"></p>
+            <div class="setting">
+              <label for="palette" data-text="settings.palette"></label>
+              <select id="palette"></select>
+            </div>
+            <p id="palette-env" class="muted" data-text="settings.paletteEnv" hidden></p>
+            <div class="setting">
+              <label for="anim" data-text="settings.anim"></label>
+              <select id="anim"></select>
+            </div>
+            <p id="anim-env" class="muted" data-text="settings.animEnv" hidden></p>
+          </div>
+          <div class="card">
+            <h3 data-text="settings.usage"></h3>
+            <div class="setting">
+              <label for="usage-poll" data-text="settings.usagePoll"></label>
+              <input id="usage-poll" type="number" inputmode="numeric" step="1">
+              <button id="usage-poll-save" type="button" data-text="settings.usagePollSave"></button>
+            </div>
+            <p id="usage-poll-hint" class="muted"></p>
+          </div>
+        </section>
+      </fieldset>
+    </div>
+  </main>
 </div>
 <dialog id="ask" aria-labelledby="ask-title">
   <h3 id="ask-title"></h3>
   <div id="ask-body"></div>
-  <div class="row end">
-    <button id="ask-no" type="button">Annuler</button>
-    <button id="ask-yes" type="button">Confirmer</button>
+  <div class="actions end">
+    <button id="ask-yes" type="button" class="accent"></button>
+    <button id="ask-no" type="button" data-text="ask.cancel"></button>
   </div>
 </dialog>
 </body>
