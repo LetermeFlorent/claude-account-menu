@@ -50,7 +50,7 @@ function Select-ByLabel {
 
 function Read-AccountNumber {
   param($Usages)
-  Clear-UiInput
+  Clear-SettledInput
   $n = Read-Host ("Numero du compte (1-" + $Usages.Count + ")")
   if ($n -match "^[1-9]$" -and [int]$n -le $Usages.Count) { return $Usages[[int]$n - 1].Acc }
   return $null
