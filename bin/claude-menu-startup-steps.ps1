@@ -31,48 +31,6 @@ function Receive-LoaderValue {
   return $r
 }
 
-function Step-ClaudeStartup {
-  param($Su, $Step, $State, [double]$Now)
-  if ($Step.State -eq "wait") {
-    $Step.Groups = @(Get-UpdateGroups @(Get-Accounts))
-    $Step.Group = 0; $Step.Run = $null; $Step.NextAt = $Now
-    $Step.Parts = @(); $Step.Kinds = @(); $Step.Texts = @()
-    $Step.State = "run"
-    $script:MenuUpdated = $true
-    $null = Set-StartupProgress $Step -1 "recherche de mise a jour" $Now
-    return $true
-  }
-  if ($Now -lt $Step.NextAt) { return $false }
-  $Step.NextAt = $Now + $script:StartupPollMs
-  if ($Su.Quit -and $null -ne $Step.Run) { $Step.Run.CanRetry = $false }
-  if ($null -ne $Step.Run -and -not (Step-ClaudeUpdate $Step.Run)) {
-    $t = Get-UpdateTick $Step.Run.State $Step.Run.Watch
-    return Set-StartupProgress $Step $t.Pct (($t.Label + "  " + $t.Detail).Trim()) $Now
-  }
-  if ($null -ne $Step.Run) { Add-ClaudeOutcome $Step }
-  if ($Step.Group -lt $Step.Groups.Count) {
-    $g = $Step.Groups[$Step.Group]
-    $Step.Group++
-    $Step.Run = Start-ClaudeUpdate $g.Exe $g.Accounts[0]
-    return $false
-  }
-  $State.Msg = Add-ClmFailure (Get-UpdateSummary $Step.Parts $Step.Kinds) $Su.ClmError
-  $kind = Get-UpdateKind $Step.Kinds
-  $text = $Step.Texts -join ", "
-  if ($kind -eq "failed") { $text = "echec" }
-  Complete-StartupStep $Step $kind $text $Now
-  return $true
-}
-
-function Add-ClaudeOutcome {
-  param($Step)
-  $o = $Step.Run.Outcome
-  $Step.Parts += Format-UpdateMessage $Step.Groups[$Step.Group - 1].Accounts $o.Text
-  $Step.Kinds += $o.Kind
-  $Step.Texts += ($o.Text -replace "^Claude Code ", "")
-  $Step.Run = $null
-}
-
 function Step-DriveStartup {
   param($Step, [double]$Now)
   $job = $script:DriveJob

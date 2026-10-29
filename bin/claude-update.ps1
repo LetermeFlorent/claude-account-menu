@@ -1,4 +1,4 @@
-. Import-ClmModule claude-update-watch, claude-update-retry, claude-menu-progress
+. Import-ClmModule claude-update-watch, claude-update-retry, claude-menu-progress, claude-update-lock
 
 function Write-UpdateProgress {
   param([string]$Label, [string]$Bar, [string]$Pct, [string]$Detail)
@@ -122,8 +122,18 @@ function Get-UpdateSummary {
 
 function Update-ClaudeForAccounts {
   param($Accounts)
-  foreach ($g in Get-UpdateGroups $Accounts) {
-    $o = Invoke-ClaudeUpdate $g.Exe $g.Accounts[0]
-    foreach ($a in $g.Accounts) { Write-Segs @(@(("  " + $a.Label + "  "), $script:Ink.Text, $true), @($o.Text, (Get-UpdateInk $o.Kind), $false)) }
-  }
+  $groups = @(Get-UpdateGroups $Accounts)
+  if ($groups.Count -eq 0) { return }
+  $lock = Open-ClaudeTextLock
+  try {
+    $fresh = Get-ClaudeCheckedOutcome
+    if ($null -eq $lock -and $null -eq $fresh) { Write-Host ("  " + $script:ClaudeLeftText) -ForegroundColor DarkGray; return }
+    $kinds = @(); $o = $null
+    foreach ($g in $groups) {
+      $o = $fresh
+      if ($null -eq $o) { $o = Invoke-ClaudeUpdate $g.Exe $g.Accounts[0]; $kinds += $o.Kind }
+      foreach ($a in $g.Accounts) { Write-Segs @(@(("  " + $a.Label + "  "), $script:Ink.Text, $true), @($o.Text, (Get-UpdateInk $o.Kind), $false)) }
+    }
+    if ($null -eq $fresh) { Write-ClaudeChecked $kinds $o }
+  } finally { Close-MachineLock $lock }
 }
