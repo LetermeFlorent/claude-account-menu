@@ -18,11 +18,17 @@ function Get-SealedText {
   return [Text.Encoding]::UTF8.GetString((Unprotect-SyncBytes $Keys $Seal (Get-DriveBytes $Id)))
 }
 
+function New-SealedProps {
+  param($Keys, [string]$Md5, $Props)
+  $p = @{ h = (Protect-ContentMd5 $Keys $Md5); k = $Keys.Id }
+  foreach ($k in $Props.Keys) { $p[$k] = $Props[$k] }
+  return $p
+}
+
 function Send-SealedFile {
   param([string]$FolderId, [string]$Rel, [byte[]]$Bytes, $Props, [string]$Id, $Keys)
   $md5 = Get-BytesMd5 $Bytes
-  $p = @{ h = (Protect-ContentMd5 $Keys $md5); k = $Keys.Id }
-  foreach ($k in $Props.Keys) { $p[$k] = $Props[$k] }
+  $p = New-SealedProps $Keys $md5 $Props
   $r = Send-DriveContent $FolderId ($script:SealedPrefix + $Rel) (Protect-SyncBytes $Keys ($script:SealedFilesArea + $Rel) $Bytes) $p $Id
   return @{ Id = $r.Id; Md5 = $md5 }
 }

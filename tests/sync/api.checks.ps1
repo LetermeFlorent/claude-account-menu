@@ -50,18 +50,23 @@ Assert-Equal "PATCH" $script:Calls[0].Method "fichier existant : PATCH"
 Assert-True ($script:Calls[0].Uri.StartsWith("https://www.googleapis.com/upload/drive/v3/files/ID9?uploadType=multipart")) "fichier existant : par id"
 Assert-True (-not [Text.Encoding]::UTF8.GetString($script:Calls[0].Body).Contains('"parents"')) "fichier existant : dossier inchange"
 $saved = $script:DriveSimpleMax
+$realChunks = ${function:Send-DriveChunks}
+function Send-DriveChunks {
+  param([string]$MetaJson, $Source, [string]$Id)
+  $buffer = New-Object byte[] ([int]$Source.Length + 4)
+  $n = & $Source.Read $Source $buffer 0 $buffer.Length
+  $script:Calls.Add(@{ Meta = $MetaJson; Length = $Source.Length; Text = [Text.Encoding]::UTF8.GetString($buffer, 0, $n); Id = $Id })
+  return @{ Id = "new1"; Md5 = "abc" }
+}
 $script:DriveSimpleMax = 3
 $script:Calls.Clear()
-$r = Send-DriveContent "F1" ".claude/big.txt" $f @{ m = "100"; pc = "PC" } ""
-$script:DriveSimpleMax = $saved
-Assert-Equal 2 $script:Calls.Count "gros fichier : session puis contenu"
-Assert-True ($script:Calls[0].Uri.Contains("uploadType=resumable")) "gros fichier : envoi resumable"
-Assert-Equal "7" $script:Calls[0].Headers["X-Upload-Content-Length"] "gros fichier : taille annoncee"
-Assert-Equal "PUT" $script:Calls[1].Method "gros fichier : contenu en PUT"
-Assert-Equal "https://upload.example/session1" $script:Calls[1].Uri "gros fichier : vers la session"
-Assert-Equal "bonjour" ([Text.Encoding]::UTF8.GetString($script:Calls[1].Body)) "gros fichier : contenu complet"
+try { $r = Send-DriveContent "F1" ".claude/big.txt" $f @{ m = "100"; pc = "PC" } "" }
+finally { $script:DriveSimpleMax = $saved; Set-Item Function:\Send-DriveChunks $realChunks }
+Assert-Equal 1 $script:Calls.Count "gros fichier : envoi par morceaux"
+Assert-Equal 7 $script:Calls[0].Length "gros fichier : taille annoncee"
+Assert-Equal "bonjour" $script:Calls[0].Text "gros fichier : contenu complet"
+Assert-True ($script:Calls[0].Meta.Contains('".claude/big.txt"') -and $script:Calls[0].Meta.Contains('"F1"')) "gros fichier : nom et dossier"
 Assert-Equal "new1" $r.Id "gros fichier : id rendu"
-Assert-True ($script:Calls[0].Body -is [byte[]] -and $script:Calls[1].Body -is [byte[]]) "gros fichier : corps en octets"
 
 $script:Calls.Clear()
 Set-DriveProps "P1" @{ ".claude" = "55" }

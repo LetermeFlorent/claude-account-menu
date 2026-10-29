@@ -1,4 +1,4 @@
-. Import-ClmModule claude-drive-api, claude-sync-crypto
+. Import-ClmModule claude-drive-api, claude-sync-crypto, claude-drive-transfer-chunks
 $script:SealRequired = "telechargement refuse sans cle de synchro"
 
 function New-MultipartBody {
@@ -17,20 +17,6 @@ function Get-DriveMeta {
   return ConvertTo-JsonText $meta
 }
 
-function ConvertTo-UploadResult {
-  param($Response)
-  $r = ConvertFrom-DriveJson $Response
-  return @{ Id = [string]$r.id; Md5 = [string]$r.md5Checksum }
-}
-
-function Get-UploadTarget {
-  param([string]$Id, [string]$Type)
-  $uri = $script:DriveUpload
-  $method = "POST"
-  if ($Id) { $uri += "/" + $Id; $method = "PATCH" }
-  return @{ Method = $method; Uri = $uri + "?uploadType=" + $Type + "&fields=id,md5Checksum" }
-}
-
 function Send-DriveBytes {
   param([string]$MetaJson, [byte[]]$Bytes, [string]$Id)
   $boundary = "clm" + [guid]::NewGuid().ToString("N")
@@ -39,14 +25,18 @@ function Send-DriveBytes {
   return ConvertTo-UploadResult (Invoke-DriveRequest $t.Method $t.Uri $body ("multipart/related; boundary=" + $boundary) $script:DriveDataTimeout)
 }
 
+function Read-ByteSource {
+  param($Source, [byte[]]$Buffer, [int]$Offset, [int]$Count)
+  $n = [int][Math]::Min($Count, $Source.Bytes.Length - $Source.At)
+  if ($n -gt 0) { [Array]::Copy($Source.Bytes, $Source.At, $Buffer, $Offset, $n) }
+  $Source.At += $n
+  return $n
+}
+
 function Send-DriveResumable {
   param([string]$MetaJson, [byte[]]$Bytes, [string]$Id)
-  $t = Get-UploadTarget $Id "resumable"
-  $r = Invoke-DriveRequest $t.Method $t.Uri ([Text.Encoding]::UTF8.GetBytes($MetaJson)) $script:DriveJsonType $script:DriveMetaTimeout "" @{ "X-Upload-Content-Length" = ("" + $Bytes.Length) }
-  $session = [string]@($r.Headers["Location"])[0]
-  if (-not $session) { throw "Drive : session d'envoi refusee" }
-  $timeout = $script:DriveDataTimeout + [int]($Bytes.Length / 100KB)
-  return ConvertTo-UploadResult (Invoke-DriveRequest "PUT" $session $Bytes "application/octet-stream" $timeout)
+  $source = @{ Length = [long]$Bytes.Length; Read = "Read-ByteSource"; Bytes = $Bytes; At = 0 }
+  return Send-DriveChunks $MetaJson $source $Id
 }
 
 function Read-SharedBytes {

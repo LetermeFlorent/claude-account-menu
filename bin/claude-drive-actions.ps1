@@ -1,6 +1,6 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
 . Import-ClmModule claude-drive-files, claude-drive-state, claude-drive-plan, claude-drive-transfer,
-  claude-drive-prefetch, claude-drive-sealed, claude-drive-conflict
+  claude-drive-prefetch, claude-drive-sealed, claude-drive-conflict, claude-drive-transfer-file
 $script:DriveFailLimit = 3
 $script:DriveEchoEvery = 25
 $script:DriveSaveEveryMs = 60000
@@ -36,7 +36,7 @@ function Send-SyncFile {
   param($Ctx, [string]$Rel)
   $L = $Ctx.Local[$Rel]
   $r = Get-PrefetchedUpload $Ctx.Prefetch $Rel
-  if ($null -eq $r) { $r = Send-SealedFile $Ctx.Folder $Rel (Get-SyncBytes $Rel $L.Full) (Get-UploadProps $Ctx $Rel) (Get-RemoteId $Ctx $Rel) $Ctx.Keys }
+  if ($null -eq $r) { $r = Send-LocalFile $Ctx.Folder $Rel $L.Full (Get-UploadProps $Ctx $Rel) (Get-RemoteId $Ctx $Rel) $Ctx.Keys }
   $md5 = $r.Md5
   if (-not $md5) { $md5 = $L.Md5 }
   $Ctx.State.Files[$Rel] = @{ Md5 = $md5; M = $L.M; Size = $L.Size; Id = $r.Id }
