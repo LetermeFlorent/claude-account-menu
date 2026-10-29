@@ -58,13 +58,28 @@ function ConvertTo-MotionFlag {
   return -not ($v -eq "false" -or $v -eq "0")
 }
 
+function ConvertFrom-PreferencesMask {
+  param([byte[]]$Mask)
+  if ($null -eq $Mask -or $Mask.Length -lt 5) { return $true }
+  return (($Mask[4] -band 0x02) -ne 0)
+}
+
+function Read-PreferencesMask {
+  try {
+    $item = Get-ItemProperty -LiteralPath "HKCU:\Control Panel\Desktop" -Name UserPreferencesMask -ErrorAction Stop
+    return ,[byte[]]$item.UserPreferencesMask
+  } catch {
+    Write-Verbose $_.Exception.Message
+    return $null
+  }
+}
+
 function Get-SystemMotion {
-  param([string]$Os = $script:OsName)
+  param([string]$Os = $script:OsName, [scriptblock]$MaskReader = $null)
   try {
     if ($Os -eq "Windows") {
-      Add-Type -AssemblyName PresentationFramework
-      $sp = "System.Windows.SystemParameters" -as [type]
-      return ConvertTo-MotionFlag $Os ($sp::ClientAreaAnimation)
+      if ($null -eq $MaskReader) { $MaskReader = { Read-PreferencesMask } }
+      return ConvertFrom-PreferencesMask ([byte[]](& $MaskReader))
     }
     $r = $null
     if ($Os -eq "MacOS") { $r = Invoke-Captured "defaults" "read com.apple.universalaccess reduceMotion" 3000 }

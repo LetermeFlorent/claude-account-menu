@@ -30,8 +30,6 @@ Set-TweenTarget $tw 40 300 1000
 Assert-Equal 40 (Get-TweenValue $tw 1000) "animations coupees, nouvelle cible tout de suite"
 $script:MotionOn = $true
 
-Assert-True (-not (ConvertTo-MotionFlag "Windows" $false)) "Windows, animations coupees"
-Assert-True (ConvertTo-MotionFlag "Windows" $true) "Windows, animations actives"
 Assert-True (-not (ConvertTo-MotionFlag "Linux" "false`n")) "GNOME, animations coupees"
 Assert-True (ConvertTo-MotionFlag "Linux" "true") "GNOME, animations actives"
 Assert-True (-not (ConvertTo-MotionFlag "MacOS" "1`n")) "macOS, mouvement reduit"
@@ -39,3 +37,14 @@ Assert-True (ConvertTo-MotionFlag "MacOS" "0") "macOS, mouvement normal"
 Assert-True (ConvertTo-MotionFlag "Linux" $null) "reglage absent"
 Assert-True (-not (Get-MotionEnabled $script:OsName @{ CLM_ANIM = "0" })) "CLM_ANIM=0 coupe"
 Assert-True (Get-MotionEnabled $script:OsName @{ CLM_ANIM = "1" }) "CLM_ANIM=1 force"
+
+$maskOn = [byte[]](0x9E, 0x1E, 0x07, 0x80, 0x12, 0, 0, 0)
+$maskOff = [byte[]](0x90, 0x12, 0x03, 0x80, 0x10, 0, 0, 0)
+Assert-True (ConvertFrom-PreferencesMask $maskOn) "masque Windows, effets actifs"
+Assert-True (-not (ConvertFrom-PreferencesMask $maskOff)) "masque Windows, effets coupes"
+Assert-True (ConvertFrom-PreferencesMask $null) "masque absent, effets actifs"
+Assert-True (ConvertFrom-PreferencesMask ([byte[]](0x90, 0x12, 0x03))) "masque trop court, effets actifs"
+Assert-True (-not (Get-SystemMotion "Windows" { return $maskOff })) "animations Windows : masque lu, effets coupes"
+Assert-True (Get-SystemMotion "Windows" { return $maskOn }) "animations Windows : masque lu, effets actifs"
+Assert-True (Get-SystemMotion "Windows" { throw "registre illisible" }) "animations Windows : lecture en echec, effets actifs"
+Assert-True (-not ([IO.File]::ReadAllText((Join-Path $bin "claude-ui-motion.ps1")) -match "PresentationFramework")) "animations Windows : WPF jamais charge"
