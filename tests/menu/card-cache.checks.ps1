@@ -14,10 +14,14 @@ function Get-CacheFrame {
   param($State, $L, [double]$Now)
   $script:CardBuilds = 0
   $f = Get-MenuRows $State $L $Now
-  return (@(foreach ($r in $f.Rows) { @($r | ForEach-Object { $_[0] + ":" + ($_[1] -join ",") + ":" + [int][bool]$_[2] }) -join "" }) -join "`n")
+  $h = $State.Hit
+  $cardRows = $f.Rows.GetRange($h.Start, ($h.Last - $h.Top) * $h.Per)
+  return (@(foreach ($r in $cardRows) { @($r | ForEach-Object { $_[0] + ":" + ($_[1] -join ",") + ":" + [int][bool]$_[2] }) -join "" }) -join "`n")
 }
 
 try {
+  $script:CacheClock = 0
+  Set-Item -Path "function:Get-Date" -Value { $script:CacheClock++; return ("12:{0:D2}" -f ($script:CacheClock % 60)) }
   Set-Item -Path "function:Get-CardBody" -Value { $script:CardBuilds++; & $cardKept @args }
   $cards = @((New-CacheCard "perso" 20 40), (New-CacheCard "pro" 10 5), (New-CacheCard "test" 90 70))
   $st = @{ Entries = $cards; Sel = 1; SelTween = (New-Tween 1 1 0 0); Top = 0; Msg = @("  pret", $script:Ink.Dim); Moved = $false }
@@ -63,6 +67,7 @@ try {
   $cards[1].Remove("CardRows")
   Assert-Equal $fresh (Get-CacheFrame $st $L 4100) "nouvelle valeur lue : meme image que sans cache"
 } finally {
+  Remove-Item -Path "function:Get-Date"
   Set-Item -Path "function:Get-CardBody" -Value $cardKept
   $script:Ink = $cardInk
 }
