@@ -22,9 +22,9 @@ $displayVars.Remove("CLM_ANIM")
 
 $displayErr = ""
 try { $null = Set-DisplayPalette "rouge" $displayVars } catch { $displayErr = $_.Exception.Message }
-Assert-True ($displayErr -like "couleurs inconnues*") "affichage : couleur inconnue refusee"
+Assert-True ($displayErr -like ((Get-ClmText "ui.display.badPalette" "rouge").Split(":")[0] + "*")) "affichage : couleur inconnue refusee"
 try { $null = Set-DisplayAnim "parfois" $displayVars } catch { $displayErr = $_.Exception.Message }
-Assert-True ($displayErr -like "animations inconnues*") "affichage : animation inconnue refusee"
+Assert-True ($displayErr -like ((Get-ClmText "ui.display.badAnim" "parfois").Split(":")[0] + "*")) "affichage : animation inconnue refusee"
 Assert-Equal "light off" ((Read-DisplayConfig $displayVars).palette + " " + (Read-DisplayConfig $displayVars).anim) "affichage : refus sans rien changer"
 
 [IO.File]::WriteAllText((Get-DisplayPath $displayVars), '{"palette":"Dark","anim":"rouge"}')

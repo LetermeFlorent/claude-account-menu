@@ -102,7 +102,7 @@ try {
   $r = Invoke-ActTest @{ do = "display"; anim = "off" }
   $d = Read-DisplayConfig
   Assert-Equal "light off False" ($d.palette + " " + $d.anim + " " + $script:MotionOn) "web action : animations coupees tout de suite"
-  Assert-True ((Invoke-ActTest @{ do = "display"; palette = "rose" }).Msg -like "couleurs inconnues*") "web action : couleur inconnue"
+  Assert-True ((Invoke-ActTest @{ do = "display"; palette = "rose" }).Msg -like ((Get-ClmText "ui.display.badPalette" "rose").Split(",")[0] + "*")) "web action : couleur inconnue"
 
   $r = Invoke-ActTest @{ do = "save"; accs = @(".claude-compte3") }
   Assert-Equal ("True " + (Get-ClmText "server.saved" @("C:\dl\claude-comptes.zip")) + " jeu Sauvegarde") ("" + $r.Ok + " " + $r.Msg + " " + $script:ActBackup + " " + $script:ActWork) "web action : sauvegarde des comptes choisis"

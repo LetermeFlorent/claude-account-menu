@@ -23,8 +23,8 @@ try {
   $raw = ConvertFrom-JsonText ([IO.File]::ReadAllText($dkPath))
   Assert-Equal "dark on 45" ("" + $raw["palette"] + " " + $raw["anim"] + " " + $raw["usagePoll"]) "affichage : reglage seul, cles inconnues gardees"
 
-  Assert-Throws { Set-DisplayValues @{ webTheme = "violet" } $dkVars } "theme de la page inconnu" "affichage : theme de la page inconnu refuse"
-  Assert-Throws { Set-DisplayValues @{ usagePoll = 20 } $dkVars } "reglage d'affichage inconnu" "affichage : cle d'un autre module refusee ici"
+  Assert-Throws { Set-DisplayValues @{ webTheme = "violet" } $dkVars } ((Get-ClmText "ui.display.badWebTheme" "violet").Split(":")[0]) "affichage : theme de la page inconnu refuse"
+  Assert-Throws { Set-DisplayValues @{ usagePoll = 20 } $dkVars } (Get-ClmText "ui.display.badKey" "usagePoll") "affichage : cle d'un autre module refusee ici"
   Assert-Equal "45" (ConvertFrom-JsonText ([IO.File]::ReadAllText($dkPath)))["usagePoll"] "affichage : refus sans ecriture"
 
   [IO.File]::WriteAllText($dkPath, '{"lang":"de","webTheme":"rose"}')

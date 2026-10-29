@@ -1,5 +1,5 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
-. Import-ClmModule claude-ui-input-gate
+. Import-ClmModule claude-ui-input-gate, claude-text
 $script:UiProgress = $null
 $script:UiPulse = $null
 $script:UiKeys = New-Object 'System.Collections.Generic.Queue[object]'
@@ -30,7 +30,7 @@ function Get-ProgressRow {
   Add-ProgressSegs $r $v ([math]::Max(10, [math]::Min(30, $W - 44))) $Now
   if ($p.Pct -ge 0) { $r.Add(@(("  " + [int][math]::Round($v) + " %"), $script:Ink.Text, $false)) }
   $tail = $p.Detail
-  if ($script:UiQuit) { $tail = "arret demande, fin de l'operation en cours..." }
+  if ($script:UiQuit) { $tail = Get-ClmText "ui.progress.stopping" }
   if ($tail) { $r.Add(@(("  " + $tail), $script:Ink.Dim, $false)) }
   return ,$r
 }
