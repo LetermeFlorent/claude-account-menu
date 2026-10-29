@@ -11,7 +11,7 @@ Save-Registry @(
 Save-UsageEntry "Pro" ([PSCustomObject]@{ Pct5 = 12; Reset5 = $null; Pct7 = 34; Reset7 = $null })
 $pro = (Get-Accounts)[1]
 
-Assert-Equal "Pro renomme en travail" (Rename-Account $pro "  travail ") "compte renomme, espaces retires"
+Assert-Equal (Get-ClmText "accounts.rename.done" @("Pro", "travail")) (Rename-Account $pro "  travail ") "compte renomme, espaces retires"
 $accs = @(Get-Accounts)
 Assert-Equal "compte1|travail|perso" (($accs | ForEach-Object { $_.Label }) -join "|") "nom change dans le registre, ordre garde"
 Assert-Equal ".claude-compte2" $accs[1].Dir "dossier inchange"
@@ -19,20 +19,20 @@ $map = Read-UsageCache
 Assert-Equal 12 $map["travail"].Pct5 "quotas en cache suivent le nouveau nom"
 Assert-True (-not $map.ContainsKey("Pro")) "ancien nom retire du cache"
 
-Assert-Equal "travail renomme en Travail" (Rename-Account $accs[1] "Travail") "changement de casse seul accepte"
+Assert-Equal (Get-ClmText "accounts.rename.done" @("travail", "Travail")) (Rename-Account $accs[1] "Travail") "changement de casse seul accepte"
 Assert-Equal 12 (Read-UsageCache)["Travail"].Pct5 "cache garde au changement de casse"
 $accs = @(Get-Accounts)
-Assert-Equal "nom inchange" (Rename-Account $accs[1] "Travail") "meme nom, rien a faire"
+Assert-Equal (Get-ClmText "accounts.rename.unchanged") (Rename-Account $accs[1] "Travail") "meme nom, rien a faire"
 
 $err = $null
 try { $null = Rename-Account $accs[1] "PERSO" } catch { $err = $_.Exception.Message }
-Assert-Equal "le nom PERSO est deja pris" $err "nom d'un autre compte refuse, casse ignoree"
+Assert-Equal (Get-ClmText "accounts.rename.taken" @("PERSO")) $err "nom d'un autre compte refuse, casse ignoree"
 $err = $null
 try { $null = Rename-Account $accs[1] "   " } catch { $err = $_.Exception.Message }
-Assert-Equal "nom vide" $err "nom vide refuse"
+Assert-Equal (Get-ClmText "accounts.rename.empty") $err "nom vide refuse"
 $err = $null
 try { $null = Rename-Account $accs[1] "a,b" } catch { $err = $_.Exception.Message }
-Assert-Equal "la virgule est reservee a --save= et --only=" $err "virgule refusee"
+Assert-Equal (Get-ClmText "accounts.rename.comma") $err "virgule refusee"
 Assert-Equal "compte1|Travail|perso" ((@(Get-Accounts) | ForEach-Object { $_.Label }) -join "|") "refus sans effet sur le registre"
 
 Assert-Equal "rename" (Get-MenuAction (New-KeyInfo "n") 3).Name "n renomme"

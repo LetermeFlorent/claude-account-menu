@@ -1,4 +1,4 @@
-. Import-ClmModule claude-accounts, claude-json
+. Import-ClmModule claude-accounts, claude-json, claude-text
 $script:DefaultTheme = "dark"
 
 function Repair-Onboarding {
@@ -48,5 +48,5 @@ function Repair-AccountConfig {
   try {
     $null = Repair-Onboarding $Acc
     $null = Repair-Theme $Acc @(Get-Accounts)
-  } catch { Write-Host ("  config du compte : " + $_.Exception.Message) -ForegroundColor DarkYellow }
+  } catch { Write-Host ("  " + (Get-ClmText "accounts.guard.configError" @($_.Exception.Message))) -ForegroundColor DarkYellow }
 }

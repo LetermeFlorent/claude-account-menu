@@ -1,3 +1,4 @@
+. Import-ClmModule claude-text
 $script:KeychainAccount = "claude-code-user"
 $script:KeychainChunkSize = 1800
 $script:KeychainWaitMs = 15000
@@ -102,7 +103,7 @@ function Invoke-SecurityBatch {
     $p.StandardInput.Close()
     if ($p.WaitForExit($script:KeychainWaitMs)) { return }
     try { $p.Kill() } catch { Write-Verbose $_.Exception.Message }
-    throw "trousseau : security ne repond pas"
+    throw (Get-ClmText "accounts.keychain.noAnswer")
   } finally { $p.Dispose() }
 }
 
@@ -128,7 +129,7 @@ function Write-KeychainCredential {
     $stale += $acct
   }
   Invoke-SecurityBatch $lines
-  if ((Read-KeychainCredential $ConfigDir) -ne $Json) { throw "trousseau : ecriture refusee" }
+  if ((Read-KeychainCredential $ConfigDir) -ne $Json) { throw (Get-ClmText "accounts.keychain.writeRefused") }
   for ($i = $n; $i -lt $old; $i++) { $stale += $acct + "#" + $i }
   Remove-KeychainItems $svc $stale
 }
