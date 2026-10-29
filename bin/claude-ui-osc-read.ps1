@@ -38,7 +38,11 @@ function Get-TtyScript {
 }
 
 function Read-ReplyText {
-  param([scriptblock]$TestKey, [scriptblock]$ReadKey, [scriptblock]$Clock, [int]$LimitMs = 100, [int]$QuietMs = 50, [int]$MaxMs = 250)
+  param([hashtable]$Request)
+  $r = @{ LimitMs = 100; QuietMs = 50; MaxMs = 250 }
+  foreach ($k in $Request.Keys) { $r[$k] = $Request[$k] }
+  $TestKey = $r.TestKey; $ReadKey = $r.ReadKey; $Clock = $r.Clock
+  $LimitMs = [int]$r.LimitMs; $QuietMs = [int]$r.QuietMs; $MaxMs = [int]$r.MaxMs
   $text = New-Object Text.StringBuilder
   $last = $LimitMs
   try {
@@ -73,7 +77,7 @@ function Read-ConsoleReply {
   }
   $watch = [Diagnostics.Stopwatch]::StartNew()
   $clock = { $watch.ElapsedMilliseconds }.GetNewClosure()
-  return Read-ReplyText -TestKey { $Host.UI.RawUI.KeyAvailable } -ReadKey ${function:Read-ConsoleKeyChar} -Clock $clock
+  return Read-ReplyText @{ TestKey = { $Host.UI.RawUI.KeyAvailable }; ReadKey = ${function:Read-ConsoleKeyChar}; Clock = $clock }
 }
 
 function ConvertFrom-ByteHex {
