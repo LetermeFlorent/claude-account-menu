@@ -1,6 +1,6 @@
-. Import-ClmModule claude-cli-help, claude-cli-accounts, claude-cli-drive, claude-theme
+. Import-ClmModule claude-cli-help, claude-cli-accounts, claude-cli-drive, claude-theme, claude-usage-poll
 $script:CliRestart = $false
-$script:CliCommands = @("--help", "-h", "--version", "--list", "--add", "--rename", "--move", "--remove", "--backups", "--update", "--drive-status", "--prefs", "--prefs-on", "--prefs-off", "--prefs-erase", "--palette", "--anim")
+$script:CliCommands = @("--help", "-h", "--version", "--list", "--add", "--rename", "--move", "--remove", "--backups", "--update", "--drive-status", "--prefs", "--prefs-on", "--prefs-off", "--prefs-erase", "--palette", "--anim", "--usage-poll")
 $script:CliDisplayNeeds = @{ palette = "--palette attend auto, dark ou light"; anim = "--anim attend auto, on ou off" }
 $script:CliDisplayEnv = @{ palette = "STATUSLINE_BG"; anim = "CLM_ANIM" }
 
@@ -44,6 +44,7 @@ function Invoke-CliAction {
     "prefs-erase" { return Invoke-CliPrefsChange "erase" $v $Cmd.Yes }
     "palette" { return Invoke-CliDisplay "palette" $v }
     "anim" { return Invoke-CliDisplay "anim" $v }
+    "usage-poll" { return Invoke-CliUsagePoll $v }
   }
   throw ("option inconnue : --" + $Cmd.Name)
 }
@@ -54,6 +55,14 @@ function Invoke-CliDisplay {
   if ($Name -eq "palette") { $d = Set-DisplayPalette $Values[0] } else { $d = Set-DisplayAnim $Values[0] }
   Write-Host ("affichage de ce PC : couleurs " + $d.palette + ", animations " + $d.anim)
   if ((Get-DisplayForced)[$Name]) { Write-Host ($script:CliDisplayEnv[$Name] + " est definie et passe avant ce reglage") }
+  return 0
+}
+
+function Invoke-CliUsagePoll {
+  param([string[]]$Values)
+  if ($Values.Count -ne 1) { throw "--usage-poll attend un nombre de secondes entre 15 et 600" }
+  $n = Set-DisplayUsagePoll $Values[0]
+  Write-Host ("lecture de l'API de suivi de ce PC : toutes les " + $n + " s")
   return 0
 }
 
