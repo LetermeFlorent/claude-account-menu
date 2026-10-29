@@ -6,6 +6,10 @@ marker="$dst/clm.installing"
 manifest="$dst/clm.files"
 stamp="$dst/clm.version"
 pending=
+if [ -r "$src/bin/clm-text.sh" ]; then . "$src/bin/clm-text.sh"; fi
+type clm_text >/dev/null 2>&1 || clm_text() { printf '%s
+' "$2"; }
+CLM_LANG_DIR="$src/bin/lang"
 
 finish() {
   rm -f "$marker"
@@ -108,7 +112,7 @@ trap 'exit 143' TERM
 echo "$$" > "$marker"
 files=$(list_shipped "$src/bin")
 if [ -z "$files" ]; then
-  echo "aucun fichier a installer dans $src/bin"
+  clm_text install.sh.noFiles "no file to install in {0}" "$src/bin"
   exit 1
 fi
 copy_missing
@@ -116,27 +120,27 @@ copy_changed
 remove_stale
 write_manifest
 chmod +x "$dst/clm"
-echo "scripts copies dans $dst"
+clm_text install.sh.copied "scripts copied to {0}" "$dst"
 write_version
 
 case ":$PATH:" in
   *":$dst:"*) ;;
   *)
-    echo "$dst n'est pas dans le PATH. Ajoute cette ligne a ~/.profile, ~/.bashrc ou ~/.zshrc :"
+    clm_text install.sh.pathMissing "{0} is not in the PATH. Add this line to ~/.profile, ~/.bashrc or ~/.zshrc:" "$dst"
     echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
     ;;
 esac
 
 if ! command -v claude >/dev/null 2>&1 && [ ! -x "$dst/claude" ]; then
-  echo "Claude Code introuvable : installe-le d'abord, puis relance clm"
+  clm_text install.sh.noClaude "Claude Code not found: install it first, then run clm again"
 fi
 if [ "$(uname)" = "Linux" ] && ! command -v bsdtar >/dev/null 2>&1; then
-  echo "bsdtar absent : les sauvegardes seront des .tar.gz, et un .zip venu de Windows ne pourra pas etre restaure (paquet libarchive-tools)"
+  clm_text install.sh.noBsdtar "bsdtar is missing: backups will be .tar.gz files, and a .zip coming from Windows cannot be restored (libarchive-tools package)"
 fi
 pwsh_bin=${CLM_PWSH:-pwsh}
 if ! command -v "$pwsh_bin" >/dev/null 2>&1; then
-  echo "pwsh introuvable : installe PowerShell 7 (voir INSTALL.md), puis relance ce script pour le hook de la barre d'etat"
+  clm_text install.sh.noPwsh "pwsh not found: install PowerShell 7 (see INSTALL.md), then run this script again for the status bar hook"
   exit 1
 fi
 "$pwsh_bin" -NoProfile -File "$src/install-hook.ps1"
-echo "termine, lance clm"
+clm_text install.sh.done "done, run clm"

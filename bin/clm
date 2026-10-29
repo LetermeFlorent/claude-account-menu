@@ -9,9 +9,13 @@ while [ -L "$self" ]; do
 done
 dir=$(cd "$(dirname "$self")" && pwd)
 if ! command -v pwsh >/dev/null 2>&1; then
-  echo "clm a besoin de PowerShell 7 (commande pwsh), introuvable dans le PATH." >&2
-  echo "macOS : brew install powershell" >&2
-  echo "Linux : https://learn.microsoft.com/powershell/scripting/install/linux-overview" >&2
+  if [ -r "$dir/clm-text.sh" ]; then . "$dir/clm-text.sh"; fi
+  type clm_text >/dev/null 2>&1 || clm_text() { printf '%s
+' "$2"; }
+  CLM_LANG_DIR="$dir/lang"
+  clm_text install.launcher.needPwsh "clm needs PowerShell 7 (the pwsh command), which was not found in the PATH." >&2
+  clm_text install.launcher.macHint "macOS: brew install powershell" >&2
+  clm_text install.launcher.linuxHint "Linux: https://learn.microsoft.com/powershell/scripting/install/linux-overview" >&2
   exit 127
 fi
 exec pwsh -NoProfile -File "$dir/claude-menu.ps1" "$@"
