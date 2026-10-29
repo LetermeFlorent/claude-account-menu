@@ -1,4 +1,4 @@
-. Import-ClmModule claude-update-watch, claude-update-retry, claude-menu-progress, claude-update-lock
+. Import-ClmModule claude-update-watch, claude-update-retry, claude-menu-progress, claude-update-lock, claude-text
 
 function Write-UpdateProgress {
   param([string]$Label, [string]$Bar, [string]$Pct, [string]$Detail)
@@ -17,13 +17,13 @@ function Get-UpdateTick {
   param($State, $Watch)
   $ver = "" + $State.Target
   if (-not $State.Mode) {
-    $label = "recherche de mise a jour"
+    $label = Get-ClmText "update.claude.checking"
     if ($State.Retry) { $label = $State.Retry }
     return @{ Label = $label; Pct = -1; Detail = "" }
   }
-  if ($null -eq $Watch -or -not $Watch.Seen) { return @{ Label = ("mise a jour " + $ver).Trim(); Pct = -1; Detail = $State.Last } }
-  if ($Watch.Settled) { return @{ Label = ("installation " + $ver); Pct = 100; Detail = "" } }
-  return @{ Label = ("telechargement " + $ver); Pct = (Get-DownloadPercent $Watch.Bytes $Watch.Size); Detail = (Format-DownloadDetail $Watch.Bytes $Watch.Size) }
+  if ($null -eq $Watch -or -not $Watch.Seen) { return @{ Label = (Get-ClmText "update.claude.updating" @($ver)).Trim(); Pct = -1; Detail = $State.Last } }
+  if ($Watch.Settled) { return @{ Label = (Get-ClmText "update.claude.installing" @($ver)); Pct = 100; Detail = "" } }
+  return @{ Label = (Get-ClmText "update.claude.downloading" @($ver)); Pct = (Get-DownloadPercent $Watch.Bytes $Watch.Size); Detail = (Format-DownloadDetail $Watch.Bytes $Watch.Size) }
 }
 
 function Show-UpdateTick {
@@ -51,7 +51,7 @@ function Step-UpdateRun {
 function Start-ClaudeUpdate {
   param([string]$Exe, $Acc)
   $proc = Start-ClaudeProcess $Exe $Acc
-  if ($null -eq $proc) { return @{ Outcome = (New-Outcome "failed" $script:UpdateMissingText) } }
+  if ($null -eq $proc) { return @{ Outcome = (New-Outcome "failed" (Get-ClmText "update.claude.missing")) } }
   return New-UpdateRun $proc $Exe $Acc
 }
 
@@ -127,7 +127,7 @@ function Update-ClaudeForAccounts {
   $lock = Open-ClaudeTextLock
   try {
     $fresh = Get-ClaudeCheckedOutcome
-    if ($null -eq $lock -and $null -eq $fresh) { Write-Host ("  " + $script:ClaudeLeftText) -ForegroundColor DarkGray; return }
+    if ($null -eq $lock -and $null -eq $fresh) { Write-Host ("  " + (Get-ClmText "update.claude.leftToOther")) -ForegroundColor DarkGray; return }
     $kinds = @(); $o = $null
     foreach ($g in $groups) {
       $o = $fresh

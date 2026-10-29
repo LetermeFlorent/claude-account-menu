@@ -71,7 +71,7 @@ function Step-ClaudeUpdate {
   param($Run)
   $Run.Left = $Run.Left - 1
   if ($Run.Left -gt 0) { return $false }
-  $Run.Outcome = New-Outcome "ok" "Claude Code a jour (2.1.292)"
+  $Run.Outcome = New-Outcome "ok" (Get-ClmText "update.claude.upToDateVersion" @("2.1.292"))
   if ($script:FakeClaudeFail) { $Run.Outcome = New-Outcome "failed" $script:FakeClaudeFail }
   return $true
 }

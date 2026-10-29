@@ -1,7 +1,5 @@
-. Import-ClmModule claude-self-update, claude-machine-lock
+. Import-ClmModule claude-self-update, claude-machine-lock, claude-text
 $script:ClmLockPollMs = 250
-$script:ClmWaitStepText = "attente d'un autre clm"
-$script:ClmByPeerText = "nouvelle version installee par un autre clm"
 $script:ClmStepLock = $null
 
 function Close-ClmStepLock {
@@ -26,16 +24,16 @@ function Complete-ClmStep {
 function Complete-ClmFind {
   param($Su, $Step, $State, $R, [double]$Now)
   if ($R.Error -eq $script:ClmUnknownText) { $Su.ClmError = $R.Error; $State.Msg = Add-ClmFailure @("", $script:Ink.Dim) $R.Error }
-  if ($R.Error) { Complete-ClmStep $Step "failed" "recherche impossible" $Now; return }
-  if ($null -eq $R.Value) { Write-ClmChecked; Complete-ClmStep $Step "ok" "a jour" $Now; return }
+  if ($R.Error) { Complete-ClmStep $Step "failed" (Get-ClmText "update.startup.searchFailed") $Now; return }
+  if ($null -eq $R.Value) { Write-ClmChecked; Complete-ClmStep $Step "ok" (Get-ClmText "update.startup.upToDate") $Now; return }
   $Step.Found = $R.Value
-  if ($Su.Quit) { Complete-ClmStep $Step "ok" ((Get-ClmName $R.Value) + " disponible, pas installee") $Now; return }
-  Start-ClmWork $Step "Install-ClmVersion" $R.Value ("installation " + (Format-ClmVersion $R.Value)) $Now
+  if ($Su.Quit) { Complete-ClmStep $Step "ok" (Get-ClmText "update.startup.availableNotInstalled" @((Get-ClmName $R.Value))) $Now; return }
+  Start-ClmWork $Step "Install-ClmVersion" $R.Value (Get-ClmText "update.startup.installing" @((Format-ClmVersion $R.Value))) $Now
 }
 
 function Complete-ClmRestart {
   param($Su, $Step, [string]$Text, [double]$Now)
-  if (-not $Su.Quit) { $Text += ", redemarrage"; $script:ClmUpdated = $true; $Su.Exit = @{ Name = "restart" } }
+  if (-not $Su.Quit) { $Text = Get-ClmText "update.startup.withRestart" @($Text); $script:ClmUpdated = $true; $Su.Exit = @{ Name = "restart" } }
   Complete-ClmStep $Step "updated" $Text $Now
 }
 
@@ -44,10 +42,10 @@ function Complete-ClmInstall {
   if ($R.Error) {
     $Su.ClmError = $R.Error
     $State.Msg = Add-ClmFailure @("", $script:Ink.Dim) $R.Error
-    Complete-ClmStep $Step "failed" ("installation impossible : " + $R.Error) $Now
+    Complete-ClmStep $Step "failed" (Get-ClmText "update.startup.installFailed" @($R.Error)) $Now
     return
   }
-  Complete-ClmRestart $Su $Step ((Get-ClmName $Step.Found) + " installee") $Now
+  Complete-ClmRestart $Su $Step (Get-ClmText "update.startup.installed" @((Get-ClmName $Step.Found))) $Now
 }
 
 function Enter-ClmStepLock {
@@ -56,8 +54,8 @@ function Enter-ClmStepLock {
   $Step.LockAt = $Now + $script:ClmLockPollMs
   Close-ClmStepLock
   $script:ClmStepLock = Open-MachineLock $script:ClmUpdateLock
-  if ($null -eq $script:ClmStepLock -and $Now -lt $Step.LockEnd) { return Set-StartupProgress $Step -1 $script:ClmWaitStepText $Now }
-  if ($null -eq $script:ClmStepLock) { Complete-ClmStep $Step "ok" "laissee a un autre clm" $Now; return $true }
+  if ($null -eq $script:ClmStepLock -and $Now -lt $Step.LockEnd) { return Set-StartupProgress $Step -1 (Get-ClmText "update.startup.waitOther") $Now }
+  if ($null -eq $script:ClmStepLock) { Complete-ClmStep $Step "ok" (Get-ClmText "update.startup.leftToOther") $Now; return $true }
   try { $null = Start-ClmLocked $Su $Step $Now }
   catch { Close-ClmStepLock; throw }
   return $true
@@ -66,9 +64,9 @@ function Enter-ClmStepLock {
 function Start-ClmLocked {
   param($Su, $Step, [double]$Now)
   $skip = Get-ClmUpdateSkip $script:ClmLoadedSha
-  if ($skip -eq "replaced") { Complete-ClmRestart $Su $Step $script:ClmByPeerText $Now; return }
-  if ($skip -eq "fresh") { Complete-ClmStep $Step "ok" "a jour" $Now; return }
-  Start-ClmWork $Step "Find-ClmUpdate" 0 "recherche d'une nouvelle version" $Now
+  if ($skip -eq "replaced") { Complete-ClmRestart $Su $Step (Get-ClmText "update.startup.byPeer") $Now; return }
+  if ($skip -eq "fresh") { Complete-ClmStep $Step "ok" (Get-ClmText "update.startup.upToDate") $Now; return }
+  Start-ClmWork $Step "Find-ClmUpdate" 0 (Get-ClmText "update.startup.searching") $Now
 }
 
 function Step-ClmStartup {

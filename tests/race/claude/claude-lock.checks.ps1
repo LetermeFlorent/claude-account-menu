@@ -20,34 +20,34 @@ try {
   try {
     $null = Invoke-StartupTicks 3
     Assert-Equal 0 $script:ClaudeStarts "autre clm qui met a jour Claude Code : pas de mise a jour en double"
-    Assert-Equal ("lock|" + $script:ClaudeWaitStepText) ($script:Su.Steps[0].State + "|" + $script:Su.Steps[0].Text) "autre clm qui met a jour Claude Code : attente affichee"
+    Assert-Equal ("lock|" + (Get-ClmText "update.startup.waitOther")) ($script:Su.Steps[0].State + "|" + $script:Su.Steps[0].Text) "autre clm qui met a jour Claude Code : attente affichee"
     Assert-Equal "quit" (Send-StartupAct "quit").Name "autre clm qui met a jour Claude Code : arret sans attendre"
   } finally { Close-MachineLock $held }
   $null = Invoke-StartupTicks 6
   Assert-Equal 1 $script:ClaudeStarts "verrou rendu : Claude Code mis a jour par ce clm"
-  Assert-Equal "ok a jour (2.1.292)" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "verrou rendu : a jour"
+  Assert-Equal ("ok " + ((Get-ClmText "update.claude.upToDateVersion" @("2.1.292")) -replace "^Claude Code ", "")) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "verrou rendu : a jour"
   $again = Open-MachineLock $script:ClaudeUpdateLock
   Assert-True ($null -ne $again) "verrou rendu : libre a la fin"
   Close-MachineLock $again
-  Assert-Equal ("" + $PID + " Claude Code a jour (2.1.292)") ((Read-SharedText $claudeStampPath) -replace "^[0-9]+ ", "") "verification finie : marque posee pour les autres clm"
+  Assert-Equal ("" + $PID + " 2.1.292") ((Read-SharedText $claudeStampPath) -replace "^[0-9]+ ", "") "verification finie : marque posee pour les autres clm"
 
   New-StartupCase @("claude")
   $null = Invoke-StartupTicks 6
   Assert-Equal 1 $script:ClaudeStarts "marque posee par ce meme clm : verification refaite"
 
-  Write-PeerClaudeStamp "Claude Code a jour (2.1.300)"
+  Write-PeerClaudeStamp "2.1.300"
   New-StartupCase @("claude")
   $null = Invoke-StartupTicks
   Assert-Equal 0 $script:ClaudeStarts "Claude Code verifie a l'instant par un autre clm : pas de mise a jour"
-  Assert-Equal "done ok a jour (2.1.300)" ($script:Su.Steps[0].State + " " + $script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Claude Code verifie a l'instant par un autre clm : a jour"
-  Assert-Equal "  a, b, c : Claude Code a jour (2.1.300)" $script:St.Msg[0] "Claude Code verifie a l'instant par un autre clm : resultat sous les comptes"
+  Assert-Equal ("done ok " + ((Get-ClmText "update.claude.upToDateVersion" @("2.1.300")) -replace "^Claude Code ", "")) ($script:Su.Steps[0].State + " " + $script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Claude Code verifie a l'instant par un autre clm : a jour"
+  Assert-Equal ("  a, b, c : " + (Get-ClmText "update.claude.upToDateVersion" @("2.1.300"))) $script:St.Msg[0] "Claude Code verifie a l'instant par un autre clm : resultat sous les comptes"
   Remove-ClaudeStamp
 
   $script:ClaudeUpdateWaitMs = 1000
   New-StartupCase @("claude")
   $held = Open-MachineLock $script:ClaudeUpdateLock
   try { $null = Invoke-StartupTicks 6 } finally { Close-MachineLock $held }
-  Assert-Equal "done ok laissee a un autre clm" ($script:Su.Steps[0].State + " " + $script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "autre clm bloque trop longtemps : Claude Code laisse, sans erreur"
+  Assert-Equal ("done ok " + (Get-ClmText "update.startup.leftToOther")) ($script:Su.Steps[0].State + " " + $script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "autre clm bloque trop longtemps : Claude Code laisse, sans erreur"
   Assert-Equal "0 " ("" + $script:ClaudeStarts + " " + $script:St.Msg[0]) "autre clm bloque trop longtemps : aucun message"
   $script:ClaudeUpdateWaitMs = $claudeWait
 

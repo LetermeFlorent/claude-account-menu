@@ -1,8 +1,8 @@
+. Import-ClmModule claude-text
 $script:UpdateTries = 3
 $script:UpdateRetryPause = 2
 $script:UpdateBusyPause = 5
 $script:UpdateBusyLimit = 60
-$script:UpdateMissingText = "Claude Code introuvable, pas de mise a jour"
 
 function Start-ClaudeProcess {
   param([string]$Exe, $Acc)
@@ -43,9 +43,9 @@ function Get-UpdateRetryPause {
 
 function Get-UpdateRetryLabel {
   param($Run)
-  if (-not $Run.State.Busy) { return "nouvel essai (" + $Run.Tries + "/" + $script:UpdateTries + ")" }
-  if ($Run.State.Holder) { return "attente d'une autre session (PID " + $Run.State.Holder + ")" }
-  return "attente d'une autre session"
+  if (-not $Run.State.Busy) { return Get-ClmText "update.claude.retry" @($Run.Tries, $script:UpdateTries) }
+  if ($Run.State.Holder) { return Get-ClmText "update.claude.waitSessionPid" @($Run.State.Holder) }
+  return Get-ClmText "update.claude.waitSession"
 }
 
 function Request-UpdateRetry {
@@ -69,7 +69,7 @@ function Resume-UpdateTry {
   $Run.RetryAt = -1.0
   $label = $Run.State.Retry
   $proc = Start-ClaudeProcess $Run.Exe $Run.Acc
-  if ($null -eq $proc) { $Run.Outcome = New-Outcome "failed" $script:UpdateMissingText; return $true }
+  if ($null -eq $proc) { $Run.Outcome = New-Outcome "failed" (Get-ClmText "update.claude.missing"); return $true }
   Set-UpdateProc $Run $proc
   $Run.State.Retry = $label
   return $false

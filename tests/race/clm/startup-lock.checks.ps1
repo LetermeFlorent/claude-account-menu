@@ -15,14 +15,14 @@ try {
   try {
     $null = Invoke-StartupTicks 2
     Assert-Equal "" ($script:Loads -join "|") "autre clm en pleine mise a jour : pas de recherche en double"
-    Assert-Equal ("lock|" + $script:ClmWaitStepText + "|apres clm") ($script:Su.Steps[0].State + "|" + (Get-StepList "Text")) "autre clm en pleine mise a jour : attente affichee"
+    Assert-Equal ("lock|" + (Get-ClmText "update.startup.waitOther") + "|apres clm") ($script:Su.Steps[0].State + "|" + (Get-StepList "Text")) "autre clm en pleine mise a jour : attente affichee"
     Assert-True (Test-StartupBlocking $script:Su) "autre clm en pleine mise a jour : comptes caches"
     Assert-Equal "quit" (Send-StartupAct "quit").Name "autre clm en pleine mise a jour : arret sans attendre"
   } finally { Close-MachineLock $held }
   $script:LockDiskSha = "b" * 40
   $null = Invoke-StartupTicks
   Assert-Equal "" ($script:Loads -join "|") "nouvelle version posee par un autre clm : ni recherche ni installation"
-  Assert-Equal ("updated " + $script:ClmByPeerText + ", redemarrage") ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "nouvelle version posee par un autre clm : redemarrage annonce"
+  Assert-Equal ("updated " + (Get-ClmText "update.startup.withRestart" @((Get-ClmText "update.startup.byPeer")))) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "nouvelle version posee par un autre clm : redemarrage annonce"
   Assert-True ($script:ClmUpdated -and "restart" -eq $script:Su.Exit.Name) "nouvelle version posee par un autre clm : menu ferme pour redemarrer"
   $again = Open-MachineLock $script:ClmUpdateLock
   Assert-True ($null -ne $again) "nouvelle version posee par un autre clm : verrou rendu"
@@ -33,14 +33,14 @@ try {
   New-StartupCase @("clm", "claude")
   $null = Invoke-StartupTicks
   Assert-Equal "" ($script:Loads -join "|") "clm verifie a l'instant par un autre clm : pas de recherche"
-  Assert-Equal "ok a jour" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "clm verifie a l'instant par un autre clm : a jour"
+  Assert-Equal ("ok " + (Get-ClmText "update.startup.upToDate")) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "clm verifie a l'instant par un autre clm : a jour"
   Remove-Item -LiteralPath (Get-StatePath ($script:ClmCheckStamp + ".done")) -Force
 
   $script:ClmUpdateWaitMs = 1000
   New-StartupCase @("clm", "claude")
   $held = Open-MachineLock $script:ClmUpdateLock
   try { $null = Invoke-StartupTicks 6 } finally { Close-MachineLock $held }
-  Assert-Equal "ok laissee a un autre clm" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "autre clm bloque trop longtemps : recherche laissee, sans erreur"
+  Assert-Equal ("ok " + (Get-ClmText "update.startup.leftToOther")) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "autre clm bloque trop longtemps : recherche laissee, sans erreur"
   Assert-Equal 1 $script:ClaudeStarts "autre clm bloque trop longtemps : Claude Code continue"
 
   $script:LockShaFail = "version illisible"
