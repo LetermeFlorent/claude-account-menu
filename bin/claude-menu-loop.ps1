@@ -1,4 +1,4 @@
-. Import-ClmModule claude-menu-web, claude-boot-bar
+. Import-ClmModule claude-menu-web, claude-boot-bar, claude-menu-idle
 $script:MenuState = $null
 $script:MenuUpdated = $false
 $script:MenuRestart = $false
@@ -145,6 +145,6 @@ function Invoke-MenuLoop {
     }
     elseif ($act.Name -eq "web") { Open-MenuWeb $st }
     elseif ($act.Name -ne "none") { Invoke-MenuCommand $act.Name $act.Arg }
-    if (Step-MenuFrame) { Start-Sleep -Milliseconds 33 } else { Start-Sleep -Milliseconds 50 }
+    Wait-MenuTurn $act
   }
 }
