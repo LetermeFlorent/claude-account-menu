@@ -11,12 +11,12 @@ Assert-Equal 0 (Unprotect-SyncBytes $sealKeys $sealPath (Protect-SyncBytes $seal
 foreach ($at in @(0, 4, 8, ($box.Length - 40), ($box.Length - 1))) {
   $bad = [byte[]]$box.Clone()
   $bad[$at] = $bad[$at] -bxor 1
-  Assert-Throws { Unprotect-SyncBytes $sealKeys $sealPath $bad } $script:SealRefused ("chiffrement : octet " + $at + " modifie refuse")
+  Assert-Throws { Unprotect-SyncBytes $sealKeys $sealPath $bad } (Get-ClmText "sync.crypto.refused") ("chiffrement : octet " + $at + " modifie refuse")
 }
-Assert-Throws { Unprotect-SyncBytes $sealKeys "files/.claude/CLAUDE.md" $box } $script:SealRefused "chiffrement : fichier renomme refuse"
-Assert-Throws { Unprotect-SyncBytes $sealKeys $sealPath $sealPlain } $script:SealRefused "chiffrement : fichier en clair refuse"
-Assert-Throws { Unprotect-SyncBytes $otherKeys $sealPath $box } $script:SealRefused "chiffrement : autre phrase refusee"
-Assert-Throws { Unprotect-SyncBytes $sealKeys $sealPath ([byte[]]$box[0..40]) } $script:SealRefused "chiffrement : fichier tronque refuse"
+Assert-Throws { Unprotect-SyncBytes $sealKeys "files/.claude/CLAUDE.md" $box } (Get-ClmText "sync.crypto.refused") "chiffrement : fichier renomme refuse"
+Assert-Throws { Unprotect-SyncBytes $sealKeys $sealPath $sealPlain } (Get-ClmText "sync.crypto.refused") "chiffrement : fichier en clair refuse"
+Assert-Throws { Unprotect-SyncBytes $otherKeys $sealPath $box } (Get-ClmText "sync.crypto.refused") "chiffrement : autre phrase refusee"
+Assert-Throws { Unprotect-SyncBytes $sealKeys $sealPath ([byte[]]$box[0..40]) } (Get-ClmText "sync.crypto.refused") "chiffrement : fichier tronque refuse"
 $sealErr = $null
 try { $null = Unprotect-SyncBytes $sealKeys $sealPath $sealPlain } catch { $sealErr = $_ }
 Assert-True (Test-SealRefusal $sealErr) "chiffrement : refus reconnu"

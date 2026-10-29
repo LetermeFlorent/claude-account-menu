@@ -1,7 +1,7 @@
+. Import-ClmModule claude-text
 $script:SealMagic = [byte[]]@(0x43, 0x4C, 0x4D, 0x53, 0x01)
 $script:SealIvSize = 16
 $script:SealMacSize = 32
-$script:SealRefused = "fichier refuse : en clair, modifie ou chiffre avec une autre phrase"
 $script:SyncKeyMinIterations = 600000
 $script:SyncKeyIterations = 600000
 
@@ -81,7 +81,7 @@ function Get-SealMac {
 }
 
 function New-SealRefusal {
-  return New-Object Security.Cryptography.CryptographicException $script:SealRefused
+  return New-Object Security.Cryptography.CryptographicException (Get-ClmText "sync.crypto.refused")
 }
 
 function Test-SealRefusal {

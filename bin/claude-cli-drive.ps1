@@ -51,7 +51,7 @@ function Get-CliPrefsLines {
   $p = Read-CliPrefs
   if ($p.Lines.Count -eq 0) { return ,[string[]]@("aucun skill ni MCP a regler pour l'instant") }
   $out = New-Object 'System.Collections.Generic.List[string]'
-  $out.Add($script:PrefsTitle + ", " + (Get-CliMcpModeLine $p.Catalog))
+  $out.Add((Get-ClmText "sync.prefs.title") + ", " + (Get-CliMcpModeLine $p.Catalog))
   foreach ($l in $p.Lines) {
     if ($l.Head) { $out.Add($l.Label) }
     else { $out.Add((Format-PrefsItem $l)) }
@@ -93,7 +93,7 @@ function Invoke-CliPrefsChange {
   $prefsPicked = @(Resolve-PrefsItems (Read-CliPrefs).Lines $Refs)
   if ($Move -eq "erase" -and @($prefsPicked | Where-Object { $_.All }).Count -gt 0) { throw "un groupe entier ne s'efface pas, donner les ids un par un" }
   if ($Move -eq "erase" -and -not $Yes) {
-    foreach ($i in $prefsPicked) { Write-Host ("effacer " + (Get-PrefsId $i) + " partout : " + $script:PrefsEraseWarn[$i.Kind].Trim()) }
+    foreach ($i in $prefsPicked) { Write-Host ("effacer " + (Get-PrefsId $i) + " partout : " + (Get-PrefsEraseWarn $i.Kind).Trim()) }
     throw "ajouter --yes pour confirmer"
   }
   $prefsMove = $Move

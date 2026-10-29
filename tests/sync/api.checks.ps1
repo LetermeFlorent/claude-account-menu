@@ -87,9 +87,9 @@ $media = Join-Path $script:Sandbox "notes [v2].md"
 Save-SealedMedia "m1" $media "files/.claude/notes [v2].md" $apiKeys
 Assert-Equal "media" ([IO.File]::ReadAllText($media)) "telechargement dechiffre vers un nom avec crochets"
 $refusedPath = Join-Path $script:Sandbox "refuse.md"
-Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/.claude/autre.md" $apiKeys } $script:SealRefused "telechargement sous un autre nom refuse"
+Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/.claude/autre.md" $apiKeys } (Get-ClmText "sync.crypto.refused") "telechargement sous un autre nom refuse"
 $script:MediaBody = [Text.Encoding]::UTF8.GetBytes("en clair")
-Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/.claude/notes [v2].md" $apiKeys } $script:SealRefused "telechargement en clair refuse"
+Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/.claude/notes [v2].md" $apiKeys } (Get-ClmText "sync.crypto.refused") "telechargement en clair refuse"
 Assert-True (-not [IO.File]::Exists($refusedPath)) "fichier refuse jamais ecrit"
 Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/x" $null } $script:SealRequired "telechargement sans cle refuse"
 $entry = ConvertTo-RemoteEntry ([PSCustomObject]@{ id = "s1"; name = "clm-enc/a"; md5Checksum = "ffff"; appProperties = [PSCustomObject]@{ h = "abc"; m = "5" } })

@@ -21,7 +21,7 @@ function Get-WebPcPrefs {
 
 function Get-WebPrefs {
   $out = [ordered]@{ ok = $true; connected = [bool](Test-DriveConnected); sub = ""; warn = [ordered]@{}; lines = @(); me = ""; pcs = @() }
-  foreach ($k in $script:PrefsEraseWarn.Keys) { $out.warn[$k] = $script:PrefsEraseWarn[$k].Trim() }
+  foreach ($k in @("skills", "mcp", "globals")) { $out.warn[$k] = (Get-PrefsEraseWarn $k).Trim() }
   if (-not $out.connected) { return $out }
   $p = Read-CliPrefs
   $out.sub = Get-PrefsSub $p.Catalog

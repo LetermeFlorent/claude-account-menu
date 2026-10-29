@@ -18,7 +18,7 @@ function Test-OpenRefused {
   param([byte[]]$Box, [string]$Seal, [string]$Name)
   $out = Join-Path $script:Sandbox "open-refused.bin"
   $from = New-OpenBox $Box "open-refused.box"
-  Assert-Throws { Expand-SealedFile $script:OpenKeys $Seal $from $out } $script:SealRefused ("dechiffrement en flux : " + $Name + " refuse")
+  Assert-Throws { Expand-SealedFile $script:OpenKeys $Seal $from $out } (Get-ClmText "sync.crypto.refused") ("dechiffrement en flux : " + $Name + " refuse")
   Assert-True (-not [IO.File]::Exists($out)) ("dechiffrement en flux : " + $Name + ", rien ecrit")
 }
 $openSeal = "files/.claude/gros.bin"
@@ -53,7 +53,7 @@ try {
   Assert-True (-not [IO.File]::Exists($openReq.OutFile)) "telechargement en flux : fichier chiffre retire"
   $script:OpenServed = $openBad
   $openRefused = Join-Path $script:Sandbox "open-media-refused.bin"
-  Assert-Throws { Save-SealedMedia "m9" $openRefused $openSeal $script:OpenKeys } $script:SealRefused "telechargement en flux : fichier modifie refuse"
+  Assert-Throws { Save-SealedMedia "m9" $openRefused $openSeal $script:OpenKeys } (Get-ClmText "sync.crypto.refused") "telechargement en flux : fichier modifie refuse"
   Assert-True (-not [IO.File]::Exists($openRefused) -and -not [IO.File]::Exists($script:OpenRequests[1].OutFile)) "telechargement en flux : refuse, aucun fichier laisse"
 } finally {
   . (Join-Path $bin "claude-drive-api.ps1"); if ($script:OpenToken) { Set-Item Function:\Get-DriveToken $script:OpenToken } else { Remove-Item Function:\Get-DriveToken }

@@ -1,9 +1,7 @@
-. Import-ClmModule claude-drive-config, claude-sync-asks, claude-state
+. Import-ClmModule claude-drive-config, claude-sync-asks, claude-state, claude-text
 $script:SyncChoicePath = Get-StatePath "sync-choice.json"
 $script:SyncChoiceLockPath = Get-StatePath "sync-choice.lock"
 $script:SyncChoiceWaitMs = 5000
-$script:SyncChoiceBusyText = "reglages de synchro en cours d'ecriture"
-$script:SyncChoiceUnreadable = "sync-choice.json illisible, a corriger ou a supprimer : "
 $script:SyncChoiceKinds = @("skills", "mcp", "globals")
 
 function New-SyncChoice {
@@ -22,7 +20,7 @@ function Read-SyncChoice {
   $c = New-SyncChoice
   if (-not (Test-Path -LiteralPath $script:SyncChoicePath)) { return $c }
   try { $data = Read-JsonFile $script:SyncChoicePath } catch { $data = $null }
-  if ($data -isnot [Collections.IDictionary]) { throw ($script:SyncChoiceUnreadable + $script:SyncChoicePath) }
+  if ($data -isnot [Collections.IDictionary]) { throw (Get-ClmText "sync.choice.unreadable" @($script:SyncChoicePath)) }
   if ((Get-JsonKeys $data) -contains "stamps") { $c.Stamps = ConvertFrom-KindMaps $data["stamps"] { param($v) Read-StampValue $v } }
   if ((Get-JsonKeys $data) -contains "asks") { $c.Asks = ConvertFrom-AsksData $data["asks"] }
   foreach ($kind in $script:SyncChoiceKinds) {
@@ -62,7 +60,7 @@ function Save-SyncChoice {
 
 function Update-SyncChoice {
   param([scriptblock]$Change)
-  return Invoke-WithFileLock $script:SyncChoiceLockPath $script:SyncChoiceWaitMs $script:SyncChoiceBusyText {
+  return Invoke-WithFileLock $script:SyncChoiceLockPath $script:SyncChoiceWaitMs (Get-ClmText "sync.choice.busy") {
     $c = Read-SyncChoice
     $null = & $Change $c
     Save-SyncChoice $c

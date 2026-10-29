@@ -99,8 +99,8 @@ try {
   Assert-True ($p.warn["skills"] -like "Le skill part a la corbeille*") "web listes : avertissement d'effacement"
   $script:WebDriveOn = $true
   function Read-CliPrefs {
-    $skill = New-PrefsItem "skills" "dessin" "dessin" "" $true $false
-    $mcp = New-PrefsItem "mcp" "|chrome" "chrome" "perso, Windows" $false $true
+    $skill = New-PrefsItem @{ Kind = "skills"; Key = "dessin"; Label = "dessin"; Tag = ""; On = $true; Erasing = $false }
+    $mcp = New-PrefsItem @{ Kind = "mcp"; Key = "|chrome"; Label = "chrome"; Tag = "perso, Windows"; On = $false; Erasing = $true }
     $all = New-PrefsAll "mcp" "tous les MCP" @($mcp)
     return @{ Catalog = @{ Waiting = @(); PerPc = $true }; Lines = @((New-PrefsHead "Skills"), $skill, (New-PrefsHead "MCP"), $all, $mcp) }
   }
@@ -110,7 +110,7 @@ try {
   Assert-Equal "skill:dessin True False" ($l[1].id + " " + $l[1].on + " " + $l[1].erasing) "web listes : skill coche"
   Assert-Equal "mcp:|chrome perso, Windows True" ($l[4].id + " " + $l[4].tag + " " + $l[4].erasing) "web listes : MCP en cours d'effacement"
   Assert-True $l[3].all "web listes : case de groupe"
-  Assert-Equal $script:PrefsOffWarn.skills.Trim() (@($l[1].off) -join "|") "web listes : texte montre avant de decocher"
+  Assert-Equal (Get-PrefsOffWarn "skills").Trim() (@($l[1].off) -join "|") "web listes : texte montre avant de decocher"
   Assert-Equal 0 @($l[4].off).Count "web listes : MCP en cours d'effacement, rien a decocher"
   Assert-True ((ConvertTo-JsonText $p) -match '"off"\s*:\s*\[\s*"Le skill') "web listes : texte avant de decocher envoye en liste"
   Assert-Equal "case cochee : synchronise sur ce PC" $p.sub "web listes : explication"

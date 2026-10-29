@@ -37,7 +37,7 @@ function Set-AskCheck {
   $askTestCat = Read-SyncCatalog
   $askTestPc = $Pc
   $askTestOn = $On
-  $null = Update-SyncChoice { param($c) Set-PcPrefsCheck $c $askTestCat "PA" $askTestPc $askTestItem $askTestOn }
+  $null = Update-SyncChoice { param($c) Set-PcPrefsCheck @{ Choice = $c; Catalog = $askTestCat; Me = "PA"; Pc = $askTestPc; Item = $askTestItem; On = $askTestOn } }
 }
 
 $oneAcc = @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
@@ -84,7 +84,7 @@ Assert-Equal "False False" ("" + $l.On + " " + $l.Wait) "case relue depuis le ch
 Set-AskCheck "PB" "skill:outil" $true
 Start-Sleep -Milliseconds 5
 Use-Pc "PB"
-$null = Update-SyncChoice { param($c) Set-PrefsState $c (New-PrefsItem "skills" "outil" "outil" "" $false $false) $false }
+$null = Update-SyncChoice { param($c) Set-PrefsState $c (New-PrefsItem @{ Kind = "skills"; Key = "outil"; Label = "outil"; Tag = ""; On = $false; Erasing = $false }) $false }
 Invoke-AskSync "PA" "demande plus ancienne envoyee"
 Invoke-AskSync "PB" "choix local plus recent"
 Assert-True (-not (Test-SkillChecked (Read-SyncChoice) "outil")) "choix local plus recent garde"
@@ -92,7 +92,7 @@ Invoke-AskSync "PA" "demande ignoree"
 Assert-True (-not (Read-SyncChoice).Asks.ContainsKey("PB")) "demande ignoree : retiree quand meme"
 
 $old = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() - $script:AskKeepMs - 1000
-$null = Update-SyncChoice { param($c) Add-PcAsk $c "PARTI" "skills" "outil" $true 0; $c.Asks["PB"] = New-AskMaps; $c.Asks["PB"].skills["dessin"] = @{ On = $false; At = [long]$old } }
+$null = Update-SyncChoice { param($c) Add-PcAsk @{ Choice = $c; Pc = "PARTI"; Kind = "skills"; Name = "outil"; On = $true; After = 0 }; $c.Asks["PB"] = New-AskMaps; $c.Asks["PB"].skills["dessin"] = @{ On = $false; At = [long]$old } }
 Invoke-AskSync "PA" "demandes perimees"
 Assert-Equal 0 (Read-SyncChoice).Asks.Count "demandes vers un PC parti ou trop vieilles retirees"
 
@@ -100,7 +100,7 @@ $null = Send-FakePresence "VIEUX.json" ([Text.Encoding]::UTF8.GetBytes('{"mcp": 
 Invoke-AskSync "PA" "ancien clm present"
 $cat = Read-SyncCatalog
 Assert-True (-not (Test-PcReachable $cat "VIEUX")) "ancien clm : pas reglable d'ici"
-Assert-Equal $script:PrefsPcOld (Get-PcPrefsSub $cat "VIEUX") "ancien clm : explication"
+Assert-Equal (Get-ClmText "sync.prefs.pc.old") (Get-PcPrefsSub $cat "VIEUX") "ancien clm : explication"
 
 $script:Fake.Clear()
 $script:FakePresence.Clear()

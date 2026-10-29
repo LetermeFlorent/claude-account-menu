@@ -32,11 +32,11 @@ function Invoke-WebPcPref {
   $webPcPrefs = Read-CliPrefs
   $webPcMe = Get-DrivePcName
   if ($null -eq $webPcPrefs.Catalog.Pcs -or $null -eq $webPcPrefs.Catalog.Pcs[$Pc]) { throw (Get-ClmText "server.unknownPc" $Pc) }
-  if (-not (Test-PcReachable $webPcPrefs.Catalog $Pc)) { throw ($Pc + " : " + $script:PrefsPcOld) }
+  if (-not (Test-PcReachable $webPcPrefs.Catalog $Pc)) { throw ($Pc + " : " + (Get-ClmText "sync.prefs.pc.old")) }
   $webPcItem = @(Resolve-PrefsItems (Get-PcPrefsLines $webPcPrefs.Choice $webPcPrefs.Catalog $webPcMe $Pc) @($Id))[0]
   $webPcName = $Pc
   $webPcOn = $Move -eq "on"
-  $null = Update-SyncChoice { param($c) Set-PcPrefsCheck $c $webPcPrefs.Catalog $webPcMe $webPcName $webPcItem $webPcOn }
+  $null = Update-SyncChoice { param($c) Set-PcPrefsCheck @{ Choice = $c; Catalog = $webPcPrefs.Catalog; Me = $webPcMe; Pc = $webPcName; Item = $webPcItem; On = $webPcOn } }
   $null = Request-DriveSync $script:DriveJob
   $key = "server.pcPrefOff"
   if ($webPcOn) { $key = "server.pcPrefOn" }

@@ -47,7 +47,7 @@ $script:Sent.Clear()
 Remove-SyncKeys
 $err = ""
 try { $null = Sync-AccountCredential $acc $scFold $scListing } catch { $err = $_.Exception.Message }
-Assert-Equal $script:SyncKeyMissing $err "sans phrase : jetons non synchronises"
+Assert-Equal (Get-ClmText "sync.key.missing") $err "sans phrase : jetons non synchronises"
 Assert-Equal 0 $script:Sent.Count "sans phrase : aucun jeton envoye"
 $script:OsName = $scOs
 Remove-Item -LiteralPath (Join-Path $script:Sandbox ".claude-sealcred") -Recurse -Force

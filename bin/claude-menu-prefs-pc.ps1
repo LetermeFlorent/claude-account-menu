@@ -1,10 +1,13 @@
-$script:PrefsPcOld = "clm n'est pas a jour sur ce PC : ses reglages ne se changent pas d'ici"
-$script:PrefsPcSub = "case cochee : synchronise sur ce PC, change a sa prochaine synchro"
-$script:PrefsPcNone = "Rien a regler sur ce PC pour l'instant."
-$script:PrefsPcWait = "en attente"
-$script:PrefsPcTitle = "Reglages de synchro de "
-$script:PrefsPcPairs = @("Espace", "cocher", "Echap", "revenir")
+. Import-ClmModule claude-text
 $script:PrefsSideKeys = [string][char]0x2190 + [string][char]0x2192
+
+function Get-PrefsPairs {
+  return @((Get-ClmText "sync.prefs.key.space"), (Get-ClmText "sync.prefs.key.check"), (Get-ClmText "sync.prefs.key.delete"), (Get-ClmText "sync.prefs.key.eraseEverywhere"), (Get-ClmText "sync.prefs.key.escape"), (Get-ClmText "sync.prefs.key.back"))
+}
+
+function Get-PrefsPcPairs {
+  return @((Get-ClmText "sync.prefs.key.space"), (Get-ClmText "sync.prefs.key.check"), (Get-ClmText "sync.prefs.key.escape"), (Get-ClmText "sync.prefs.key.back"))
+}
 
 function Get-PrefsPcs {
   param($Catalog, [string]$Me)
@@ -20,15 +23,17 @@ function Test-PcReachable {
 }
 
 function New-PcPrefsItem {
-  param([string]$Kind, [string]$Key, [string]$Label, [string]$Tag, $Target, $Pending, [bool]$Default)
-  $base = $Default
-  if ($Target.Choice[$Kind].ContainsKey($Key)) { $base = [bool]$Target.Choice[$Kind][$Key] }
-  $other = $Pending.Others[$Kind][$Key]
+  param([hashtable]$Request)
+  $kind = $Request.Kind
+  $key = $Request.Key
+  $base = [bool]$Request.Default
+  if ($Request.Target.Choice[$kind].ContainsKey($key)) { $base = [bool]$Request.Target.Choice[$kind][$key] }
+  $other = $Request.Pending.Others[$kind][$key]
   if ($null -ne $other) { $base = $other.On }
-  $mine = $Pending.Mine[$Kind][$Key]
+  $mine = $Request.Pending.Mine[$kind][$key]
   $on = $base
   if ($null -ne $mine -and ($null -eq $other -or $mine.At -gt $other.At)) { $on = $mine.On }
-  $item = New-PrefsItem $Kind $Key $Label $Tag $on $false
+  $item = New-PrefsItem @{ Kind = $kind; Key = $key; Label = $Request.Label; Tag = $Request.Tag; On = $on; Erasing = $false }
   $item.Base = $base
   $item.Wait = $null -ne $other -or $null -ne $mine
   return $item
@@ -40,11 +45,11 @@ function Add-PcMcpLines {
   foreach ($k in (New-NameSet @($Effective.Keys))) {
     if (-not (Test-McpKey $k)) { continue }
     $os = $Effective[$k].Os
-    $item = New-PcPrefsItem "mcp" $k (Split-McpKey $k).Name (Get-McpWhere $k $os) $Target $Pending ($os -eq $Target.Os)
+    $item = New-PcPrefsItem @{ Kind = "mcp"; Key = $k; Label = (Split-McpKey $k).Name; Tag = (Get-McpWhere $k $os); Target = $Target; Pending = $Pending; Default = ($os -eq $Target.Os) }
     $item.Os = $os
     $items.Add($item)
   }
-  Add-PrefsGroup $Lines "MCP" "mcp" "tous les MCP" (Get-SortedPrefsItems $items)
+  Add-PrefsGroup $Lines (Get-ClmText "sync.prefs.head.mcp") "mcp" (Get-ClmText "sync.prefs.all.mcp") (Get-SortedPrefsItems $items)
 }
 
 function Get-PcPrefsLines {
@@ -53,39 +58,40 @@ function Get-PcPrefsLines {
   if (-not (Test-PcReachable $Catalog $Pc)) { return ,$lines.ToArray() }
   $target = $Catalog.Pcs[$Pc]
   $pending = Get-PcPending $Catalog.Pcs $Choice $Me $Pc
-  $skills = @(foreach ($n in (New-NameSet @($Catalog.Skills))) { New-PcPrefsItem "skills" $n $n "" $target $pending $true })
-  Add-PrefsGroup $lines "Skills" "skills" "tous les skills" $skills
+  $skills = @(foreach ($n in (New-NameSet @($Catalog.Skills))) { New-PcPrefsItem @{ Kind = "skills"; Key = $n; Label = $n; Tag = ""; Target = $target; Pending = $pending; Default = $true } })
+  Add-PrefsGroup $lines (Get-ClmText "sync.prefs.head.skills") "skills" (Get-ClmText "sync.prefs.all.skills") $skills
   if ($Catalog.PerPc) { Add-PcMcpLines $lines $target $pending (Get-McpCatalog $Catalog.Pcs) }
   return ,$lines.ToArray()
 }
 
 function Set-PcPrefsCheck {
-  param($Choice, $Catalog, [string]$Me, [string]$Pc, $Item, [bool]$On)
-  $after = [long]$Catalog.Pcs[$Pc].Took[$Me]
-  $list = @($Item)
-  if ($Item.All) { $list = @($Item.Items) }
+  param([hashtable]$Request)
+  $pc = $Request.Pc
+  $after = [long]$Request.Catalog.Pcs[$pc].Took[$Request.Me]
+  $list = @($Request.Item)
+  if ($Request.Item.All) { $list = @($Request.Item.Items) }
   foreach ($one in $list) {
-    if ($On -eq $one.Base) { Remove-PcAsk $Choice $Pc $one.Kind $one.Key }
-    else { Add-PcAsk $Choice $Pc $one.Kind $one.Key $On $after }
+    if ($Request.On -eq $one.Base) { Remove-PcAsk $Request.Choice $pc $one.Kind $one.Key }
+    else { Add-PcAsk @{ Choice = $Request.Choice; Pc = $pc; Kind = $one.Kind; Name = $one.Key; On = $Request.On; After = $after } }
   }
 }
 
 function Get-PcPrefsSub {
   param($Catalog, [string]$Pc)
-  if (-not (Test-PcReachable $Catalog $Pc)) { return $script:PrefsPcOld }
-  return $script:PrefsPcSub
+  if (-not (Test-PcReachable $Catalog $Pc)) { return Get-ClmText "sync.prefs.pc.old" }
+  return Get-ClmText "sync.prefs.pc.sub"
 }
 
 function Get-PrefsView {
   param($Ctx)
   $pc = $Ctx.Pcs[$Ctx.At]
   if ($Ctx.At -eq 0) {
-    $v = @{ Title = $script:PrefsTitle; Sub = (Get-PrefsSub $Ctx.Catalog); Pairs = $script:PrefsPairs; Empty = $script:PrefsPcNone; Lines = (Get-PrefsLines $Ctx.Choice $Ctx.Catalog $Ctx.Globals) }
+    $v = @{ Title = (Get-ClmText "sync.prefs.title"); Sub = (Get-PrefsSub $Ctx.Catalog); Pairs = (Get-PrefsPairs); Empty = (Get-ClmText "sync.prefs.pc.none"); Lines = (Get-PrefsLines $Ctx.Choice $Ctx.Catalog $Ctx.Globals) }
   } else {
-    $v = @{ Title = ($script:PrefsPcTitle + $pc); Sub = (Get-PcPrefsSub $Ctx.Catalog $pc); Pairs = $script:PrefsPcPairs; Empty = ""; Lines = (Get-PcPrefsLines $Ctx.Choice $Ctx.Catalog $Ctx.Me $pc) }
-    if (Test-PcReachable $Ctx.Catalog $pc) { $v.Empty = $script:PrefsPcNone }
+    $v = @{ Title = (Get-ClmText "sync.prefs.pc.title" @($pc)); Sub = (Get-PcPrefsSub $Ctx.Catalog $pc); Pairs = (Get-PrefsPcPairs); Empty = ""; Lines = (Get-PcPrefsLines $Ctx.Choice $Ctx.Catalog $Ctx.Me $pc) }
+    if (Test-PcReachable $Ctx.Catalog $pc) { $v.Empty = Get-ClmText "sync.prefs.pc.none" }
   }
-  if ($Ctx.Pcs.Count -gt 1) { $v.Pairs = @($v.Pairs[0..1]) + @($script:PrefsSideKeys, "autre PC") + @($v.Pairs[2..($v.Pairs.Count - 1)]) }
+  if ($Ctx.Pcs.Count -gt 1) { $v.Pairs = @($v.Pairs[0..1]) + @($script:PrefsSideKeys, (Get-ClmText "sync.prefs.key.otherPc")) + @($v.Pairs[2..($v.Pairs.Count - 1)]) }
   return $v
 }
 
@@ -95,7 +101,7 @@ function Get-PrefsPcRow {
   $r.Add(@("  ", $script:Ink.Dim, $false))
   for ($i = 0; $i -lt $Ctx.Pcs.Count; $i++) {
     $label = $Ctx.Pcs[$i]
-    if ($i -eq 0) { $label += " (ce PC)" }
+    if ($i -eq 0) { $label += " (" + (Get-PrefsThisPc) + ")" }
     $ink = $script:Ink.Dim
     if ($i -eq $Ctx.At) { $ink = $script:Ink.Text }
     $r.Add(@($label, $ink, ($i -eq $Ctx.At)))

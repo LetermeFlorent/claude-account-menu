@@ -1,6 +1,5 @@
-. Import-ClmModule claude-sync-pcdata, claude-state
+. Import-ClmModule claude-sync-pcdata, claude-state, claude-text
 $script:SyncCatalogPath = Get-StatePath "sync-catalog.json"
-$script:SyncCatalogUnreadable = "sync-catalog.json illisible, a corriger ou a supprimer : "
 
 function New-SyncCatalog {
   return @{ PerPc = $false; Waiting = [string[]]@(); Skills = [string[]]@(); Pcs = (New-PathMap); Applied = (New-PathMap); Parked = (New-PathMap); Globals = $null }
@@ -17,7 +16,7 @@ function Read-SyncCatalog {
   $cat = New-SyncCatalog
   if (-not (Test-Path -LiteralPath $script:SyncCatalogPath)) { return $cat }
   try { $data = Read-JsonFile $script:SyncCatalogPath } catch { $data = $null }
-  if ($data -isnot [Collections.IDictionary]) { throw ($script:SyncCatalogUnreadable + $script:SyncCatalogPath) }
+  if ($data -isnot [Collections.IDictionary]) { throw (Get-ClmText "sync.catalog.unreadable" @($script:SyncCatalogPath)) }
   $keys = Get-JsonKeys $data
   if ($keys -contains "perPc") { $cat.PerPc = $data["perPc"] -eq $true }
   if ($keys -contains "waiting") { $cat.Waiting = [string[]]@($data["waiting"] | Where-Object { $_ -is [string] -and $_ }) }

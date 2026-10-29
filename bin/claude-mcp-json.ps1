@@ -1,4 +1,4 @@
-. Import-ClmModule claude-json, claude-json-members
+. Import-ClmModule claude-json, claude-json-members, claude-text
 $script:McpKey = "mcpServers"
 $script:JsonKeyPrefix = [regex]'^"(?:[^"\\]|\\.)*"\s*:\s*'
 $script:JsonStringOrSpace = '"(?:[^"\\]|\\.)*"|\s+'
@@ -79,8 +79,8 @@ function Read-JsonTextOrEmpty {
 
 function Save-EditedJson {
   param([string]$Path, [string]$New)
-  if (-not $New) { throw ("fichier JSON illisible : " + [IO.Path]::GetFileName($Path)) }
-  try { $null = ConvertFrom-JsonText $New } catch { throw ("MCP invalides, " + [IO.Path]::GetFileName($Path) + " garde tel quel") }
+  if (-not $New) { throw (Get-ClmText "mcp.json.unreadable" @([IO.Path]::GetFileName($Path))) }
+  try { $null = ConvertFrom-JsonText $New } catch { throw (Get-ClmText "mcp.json.invalid" @([IO.Path]::GetFileName($Path))) }
   Write-TextFileAtomic $Path $New
   if ($script:OsName -ne "Windows") { & chmod 600 $Path }
 }

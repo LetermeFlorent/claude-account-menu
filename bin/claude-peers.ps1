@@ -1,4 +1,4 @@
-. Import-ClmModule claude-platform
+. Import-ClmModule claude-platform, claude-text
 $script:ClmScriptPattern = '(^|[\\/\s"''])(claude-menu|claude-drive-watcher|claude-statusline-seed)\.ps1'
 $script:ClmHostPattern = '^(pwsh|pwsh-preview|powershell)(\.exe)?$'
 $script:PeerHostFilter = "Name='powershell.exe' or Name='pwsh.exe'"
@@ -19,7 +19,7 @@ function Get-ProcessRows {
   }
   $ps = (Get-Command ps -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
   $res = Invoke-Captured $ps "-A -o pid= -o args="
-  if ($null -eq $res -or $res.Code -ne 0) { throw "liste des process illisible" }
+  if ($null -eq $res -or $res.Code -ne 0) { throw (Get-ClmText "sync.peers.listUnreadable") }
   $rows = @()
   foreach ($l in ($res.Out -split "`n")) {
     if ($l -match '^\s*(\d+)\s+(\S+)(.*)$') { $rows += [PSCustomObject]@{ Id = $Matches[1]; Exe = $Matches[2]; Line = $Matches[2] + $Matches[3] } }

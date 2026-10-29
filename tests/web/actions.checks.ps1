@@ -91,7 +91,7 @@ try {
   $r = Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "on"; pc = "loin" }
   Assert-True ($r.Ok -and -not (Read-SyncChoice).Asks.ContainsKey("loin")) "web action : case remise, demande retiree"
   Assert-Equal (Get-ClmText "server.eraseHereOnly") (Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "erase"; pc = "loin" }).Msg "web action : pas d'effacement pour un autre PC"
-  Assert-Equal ("vieux : " + $script:PrefsPcOld) (Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "on"; pc = "vieux" }).Msg "web action : PC sans clm a jour refuse"
+  Assert-Equal ("vieux : " + (Get-ClmText "sync.prefs.pc.old")) (Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "on"; pc = "vieux" }).Msg "web action : PC sans clm a jour refuse"
   Assert-Equal (Get-ClmText "server.unknownPc" @("nulle part")) (Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "on"; pc = "nulle part" }).Msg "web action : PC inconnu"
   $r = Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "off"; pc = "ICI" }
   Assert-True ($r.Ok -and (Read-SyncChoice).skills["dessin"] -eq $false) "web action : ce PC par son nom, reglage local"
