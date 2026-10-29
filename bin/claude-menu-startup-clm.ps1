@@ -2,6 +2,12 @@
 $script:ClmLockPollMs = 250
 $script:ClmWaitStepText = "attente d'un autre clm"
 $script:ClmByPeerText = "nouvelle version installee par un autre clm"
+$script:ClmStepLock = $null
+
+function Close-ClmStepLock {
+  Close-MachineLock $script:ClmStepLock
+  $script:ClmStepLock = $null
+}
 
 function Start-ClmWork {
   param($Step, [string]$Reader, $Item, [string]$Text, [double]$Now)
@@ -13,8 +19,7 @@ function Start-ClmWork {
 
 function Complete-ClmStep {
   param($Step, [string]$Kind, [string]$Text, [double]$Now)
-  Close-MachineLock $Step.Lock
-  $Step.Lock = $null
+  Close-ClmStepLock
   Complete-StartupStep $Step $Kind $Text $Now
 }
 
@@ -49,11 +54,12 @@ function Enter-ClmStepLock {
   param($Su, $Step, [double]$Now)
   if ($Now -lt $Step.LockAt) { return $false }
   $Step.LockAt = $Now + $script:ClmLockPollMs
-  $Step.Lock = Open-MachineLock $script:ClmUpdateLock
-  if ($null -eq $Step.Lock -and $Now -lt $Step.LockEnd) { return Set-StartupProgress $Step -1 $script:ClmWaitStepText $Now }
-  if ($null -eq $Step.Lock) { Complete-ClmStep $Step "ok" "laissee a un autre clm" $Now; return $true }
+  Close-ClmStepLock
+  $script:ClmStepLock = Open-MachineLock $script:ClmUpdateLock
+  if ($null -eq $script:ClmStepLock -and $Now -lt $Step.LockEnd) { return Set-StartupProgress $Step -1 $script:ClmWaitStepText $Now }
+  if ($null -eq $script:ClmStepLock) { Complete-ClmStep $Step "ok" "laissee a un autre clm" $Now; return $true }
   try { $null = Start-ClmLocked $Su $Step $Now }
-  catch { Close-MachineLock $Step.Lock; $Step.Lock = $null; throw }
+  catch { Close-ClmStepLock; throw }
   return $true
 }
 

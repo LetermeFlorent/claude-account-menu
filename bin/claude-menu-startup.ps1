@@ -16,8 +16,19 @@ function New-StartupStep {
   return @{ Name = $Name; After = $After; Label = $script:StartupLabels[$Name]; State = "wait"; Pct = -1; Text = $text; Kind = ""; Bar = (New-Tween 0 0 0 0); Work = $null; HideAt = $null; Fade = $null; Gone = $false }
 }
 
+function Close-StartupLock {
+  Close-ClmStepLock
+  Close-ClaudeStepLock
+}
+
+function Close-Startup {
+  $script:Startup = $null
+  Close-StartupLock
+}
+
 function New-Startup {
   param($Names)
+  Close-StartupLock
   $steps = New-Object 'System.Collections.Generic.List[object]'
   foreach ($n in @($Names)) {
     $after = ""

@@ -42,7 +42,7 @@ function Stop-MenuLoader {
 
 function Close-AccountMenu {
   param($Idx)
-  $script:Startup = $null
+  Close-Startup
   Stop-MenuLoader 1000
   Stop-ClmCheck
   if ($null -eq $Idx) { Stop-DriveJob $script:DriveJob }
