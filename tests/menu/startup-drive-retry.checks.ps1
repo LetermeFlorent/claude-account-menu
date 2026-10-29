@@ -13,4 +13,9 @@ try {
   $script:DriveJob.RetryAt = [long]0
   $null = Invoke-StartupTicks
   Assert-Equal ($before + 1) $script:DriveStarts "Drive occupe ailleurs : relance a l'heure du nouvel essai"
+  $script:DriveJob.Loader = $null
+  $script:DriveJob.RetryAt = [long]::MaxValue
+  $script:T += 60000
+  $null = Invoke-StartupTicks
+  Assert-Equal "done ok laissee a un autre clm" ($script:Su.Steps[0].State + " " + $script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Drive occupe trop longtemps : synchro laissee a un autre clm"
 } finally { Restore-StartupFakes }

@@ -92,7 +92,7 @@ try {
   $script:DriveJob.Loader = $null
   $script:T += 60000
   $null = Invoke-StartupTicks
-  Assert-Equal "ok en attente, une autre synchro tourne" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Drive : attente trop longue, menu libre"
+  Assert-Equal "ok laissee a un autre clm" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Drive : attente trop longue, menu libre"
 
   Assert-Equal "  mise a jour de clm impossible : x" (Add-ClmFailure @("", $script:Ink.Dim) "x")[0] "erreur de clm sans autre message"
   Assert-Equal "  ok" (Add-ClmFailure @("  ok", $script:Ink.Dim) "")[0] "pas d'erreur de clm : message garde"

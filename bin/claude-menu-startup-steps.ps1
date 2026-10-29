@@ -52,7 +52,7 @@ function Step-DriveStartup {
     return Set-StartupProgress $Step -1 "attente de la synchro en cours" $Now
   }
   if ($job.Failed) { Complete-StartupStep $Step "failed" "erreur" $Now }
-  elseif ($job.Busy) { Complete-StartupStep $Step "ok" "en attente, une autre synchro tourne" $Now }
+  elseif ($job.Busy) { Complete-StartupStep $Step "ok" "laissee a un autre clm" $Now }
   else { Complete-StartupStep $Step "ok" "a jour" $Now }
   return $true
 }
