@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-file-io.ps1")) { . (Join-Path $PSScriptRoot "claude-file-io.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-keychain.ps1")) { . (Join-Path $PSScriptRoot "claude-keychain.ps1") }
+. Import-ClmModule claude-file-io, claude-keychain
 
 function Read-AccountCredential {
   param($Acc)

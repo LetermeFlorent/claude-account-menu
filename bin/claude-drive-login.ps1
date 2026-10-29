@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-auth.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-auth.ps1") }
+. Import-ClmModule claude-drive-auth
 $script:DriveLoginSeconds = 300
 $script:DriveLoginReadMs = 5000
 

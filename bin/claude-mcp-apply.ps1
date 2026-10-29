@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-mcp.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-mcp.ps1") }
+. Import-ClmModule claude-drive-mcp
 $script:McpHomeFile = ".mcp.json"
 
 function Get-McpFiles {

@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+. Import-ClmModule claude-json, claude-state
 $script:AccountKeys = @("model", "modelSettings", "theme")
 $script:SyncStatePath = Get-StatePath "sync-state.json"
 $script:SyncLockPath = Get-StatePath "sync.lock"

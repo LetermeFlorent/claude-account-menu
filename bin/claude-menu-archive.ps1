@@ -1,6 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-progress.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-progress.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-process-args.ps1")) { . (Join-Path $PSScriptRoot "claude-process-args.ps1") }
+. Import-ClmModule claude-platform, claude-menu-progress, claude-process-args
 $script:Tar = $null
 $script:TarFlavor = $null
 

@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-globals.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-globals.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-asks.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-asks.ps1") }
+. Import-ClmModule claude-mcp-globals, claude-drive-asks
 
 function Start-SyncPrefs {
   param($Folders, $Presence, [string]$Pc, $Accs, $Res, $Keys)

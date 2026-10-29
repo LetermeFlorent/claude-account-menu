@@ -1,10 +1,6 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-files.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-files.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-state.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-state.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-plan.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-plan.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-transfer.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-transfer.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-prefetch.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-prefetch.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-sealed.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-sealed.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-conflict.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-conflict.ps1") }
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-drive-files, claude-drive-state, claude-drive-plan, claude-drive-transfer,
+  claude-drive-prefetch, claude-drive-sealed, claude-drive-conflict
 $script:DriveFailLimit = 3
 $script:DriveEchoEvery = 25
 $script:DriveSaveEveryMs = 60000

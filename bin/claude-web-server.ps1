@@ -1,7 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-http.ps1")) { . (Join-Path $PSScriptRoot "claude-web-http.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-auth.ps1")) { . (Join-Path $PSScriptRoot "claude-web-auth.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-errors.ps1")) { . (Join-Path $PSScriptRoot "claude-web-errors.ps1") }
+. Import-ClmModule claude-platform, claude-web-http, claude-web-auth, claude-web-errors
 $script:Web = $null
 $script:WebRoot = Join-Path $PSScriptRoot "clm-web"
 $script:WebFiles = @("index.html", "style.css", "api.js", "ui.js", "tabs.js", "accounts.js", "prefs.js", "sync.js", "backups.js", "display.js")

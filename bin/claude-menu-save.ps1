@@ -1,9 +1,5 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-archive.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-archive.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-self-version.ps1")) { . (Join-Path $PSScriptRoot "claude-self-version.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-machine-settings.ps1")) { . (Join-Path $PSScriptRoot "claude-machine-settings.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-registry.ps1")) { . (Join-Path $PSScriptRoot "claude-registry.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-backup-trust.ps1")) { . (Join-Path $PSScriptRoot "claude-backup-trust.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-backup-restore.ps1")) { . (Join-Path $PSScriptRoot "claude-backup-restore.ps1") }
+. Import-ClmModule claude-menu-archive, claude-self-version, claude-machine-settings, claude-registry,
+  claude-backup-trust, claude-backup-restore
 $script:SaveExcludes = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide", "*.lock", ".local/bin/*.exe") + $script:SkipConversations
 $script:ArchiveRegistryName = ".claude-accounts.json"
 

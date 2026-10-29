@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-pcdata.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-pcdata.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+. Import-ClmModule claude-sync-pcdata, claude-state
 $script:SyncCatalogPath = Get-StatePath "sync-catalog.json"
 $script:SyncCatalogUnreadable = "sync-catalog.json illisible, a corriger ou a supprimer : "
 

@@ -1,7 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-cli-help.ps1")) { . (Join-Path $PSScriptRoot "claude-cli-help.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-cli-accounts.ps1")) { . (Join-Path $PSScriptRoot "claude-cli-accounts.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-cli-drive.ps1")) { . (Join-Path $PSScriptRoot "claude-cli-drive.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-theme.ps1")) { . (Join-Path $PSScriptRoot "claude-theme.ps1") }
+. Import-ClmModule claude-cli-help, claude-cli-accounts, claude-cli-drive, claude-theme
 $script:CliRestart = $false
 $script:CliCommands = @("--help", "-h", "--version", "--list", "--add", "--rename", "--move", "--remove", "--backups", "--update", "--drive-status", "--prefs", "--prefs-on", "--prefs-off", "--prefs-erase", "--palette", "--anim")
 $script:CliDisplayNeeds = @{ palette = "--palette attend auto, dark ou light"; anim = "--anim attend auto, on ou off" }

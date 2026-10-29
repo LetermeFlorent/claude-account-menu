@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-web.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-web.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-boot-bar.ps1")) { . (Join-Path $PSScriptRoot "claude-boot-bar.ps1") }
+. Import-ClmModule claude-menu-web, claude-boot-bar
 $script:MenuState = $null
 $script:MenuUpdated = $false
 $script:MenuRestart = $false

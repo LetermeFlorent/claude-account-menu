@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-account-move.ps1")) { . (Join-Path $PSScriptRoot "claude-account-move.ps1") }
+. Import-ClmModule claude-account-move
 $script:CliDateFormat = "dd/MM/yyyy HH:mm"
 
 function Find-CliAccount {

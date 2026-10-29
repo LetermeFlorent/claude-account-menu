@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-files.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-files.ps1") }
+. Import-ClmModule claude-drive-files
 $script:DriveBatchUri = "https://www.googleapis.com/batch/drive/v3"
 $script:DriveBatchMax = 100
 $script:DriveIdPattern = '^[A-Za-z0-9_-]+$'

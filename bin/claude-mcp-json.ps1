@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json-members.ps1")) { . (Join-Path $PSScriptRoot "claude-json-members.ps1") }
+. Import-ClmModule claude-json, claude-json-members
 $script:McpKey = "mcpServers"
 $script:JsonKeyPrefix = [regex]'^"(?:[^"\\]|\\.)*"\s*:\s*'
 $script:JsonStringOrSpace = '"(?:[^"\\]|\\.)*"|\s+'

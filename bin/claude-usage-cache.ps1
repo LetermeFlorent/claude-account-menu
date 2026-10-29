@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-file-io.ps1")) { . (Join-Path $PSScriptRoot "claude-file-io.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
+. Import-ClmModule claude-file-io, claude-platform
 $script:UsageCachePath = Get-UsageCachePath
 $script:UsageCacheTtl = 180
 $script:ForcedReadMaxAge = 30

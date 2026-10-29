@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-remote-cache.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-remote-cache.ps1") }
+. Import-ClmModule claude-drive-remote-cache
 $script:DriveChangesUri = "https://www.googleapis.com/drive/v3/changes"
 $script:DriveChangeFields = "nextPageToken,newStartPageToken,changes(fileId,removed,file(id,name,md5Checksum,appProperties,parents,trashed))"
 

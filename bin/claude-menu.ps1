@@ -1,25 +1,12 @@
 $script:ClmOnce = New-Object 'System.Collections.Generic.HashSet[string]'
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state-migrate.ps1")) { . (Join-Path $PSScriptRoot "claude-state-migrate.ps1") }
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-state-migrate
 $null = Invoke-StateMigration
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-boot-bar.ps1")) { . (Join-Path $PSScriptRoot "claude-boot-bar.ps1") }
+. Import-ClmModule claude-boot-bar
 $script:BootBar = Start-BootBar $args $PSScriptRoot $script:ClmOnce
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-usage.ps1")) { . (Join-Path $PSScriptRoot "claude-usage.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-view.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-view.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-save.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-save.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-restore.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-restore.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-select.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-select.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-remove.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-remove.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-rename.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-rename.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-prefs.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-prefs.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-statusline-seed.ps1")) { . (Join-Path $PSScriptRoot "claude-statusline-seed.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-update.ps1")) { . (Join-Path $PSScriptRoot "claude-update.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-self-update.ps1")) { . (Join-Path $PSScriptRoot "claude-self-update.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync.ps1")) { . (Join-Path $PSScriptRoot "claude-sync.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-loop.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-loop.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-startup.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-startup.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-cli.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-cli.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-account-guard.ps1")) { . (Join-Path $PSScriptRoot "claude-account-guard.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-cli.ps1")) { . (Join-Path $PSScriptRoot "claude-cli.ps1") }
+. Import-ClmModule claude-usage, claude-menu-view, claude-menu-save, claude-menu-restore, claude-menu-select,
+  claude-menu-remove, claude-menu-rename, claude-menu-prefs, claude-statusline-seed, claude-update, claude-self-update,
+  claude-sync, claude-menu-loop, claude-menu-startup, claude-drive-cli, claude-account-guard, claude-cli
 Set-BootBarReady
 
 function Start-Account {

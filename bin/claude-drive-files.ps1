@@ -1,8 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-accounts.ps1")) { . (Join-Path $PSScriptRoot "claude-accounts.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-save.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-save.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-machine-settings.ps1")) { . (Join-Path $PSScriptRoot "claude-machine-settings.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-patterns.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-patterns.ps1") }
+. Import-ClmModule claude-accounts, claude-menu-save, claude-json, claude-machine-settings, claude-drive-patterns
 $script:SyncLocalOnly = @("*/chrome-bidi/profils", "node_modules", "file-history") + @(foreach ($p in $script:SkipConversations) { "*/" + $p })
 $script:SyncExtraExcludes = @("*.bak-sync", "*.conflit-*", ".credentials.json", "*.tmp") + $script:SyncLocalOnly
 $script:RegistryName = ".claude-accounts.json"

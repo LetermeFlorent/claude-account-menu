@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-file-io.ps1")) { . (Join-Path $PSScriptRoot "claude-file-io.ps1") }
+. Import-ClmModule claude-file-io
 function Read-JsonFile {
   param([string]$Path)
   if (-not (Test-Path -LiteralPath $Path)) { return $null }

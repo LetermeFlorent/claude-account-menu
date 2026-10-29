@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-peers.ps1")) { . (Join-Path $PSScriptRoot "claude-peers.ps1") }
+. Import-ClmModule claude-state, claude-peers
 $script:StateLockExt = ".lock"
 $script:StateTmpExt = ".tmp"
 $script:StateTmpMinAgeMinutes = 10

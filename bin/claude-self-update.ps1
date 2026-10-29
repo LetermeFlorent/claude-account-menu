@@ -1,6 +1,5 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-self-version.ps1")) { . (Join-Path $PSScriptRoot "claude-self-version.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-self-install.ps1")) { . (Join-Path $PSScriptRoot "claude-self-install.ps1") }
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-platform, claude-self-version, claude-self-install
 
 function ConvertFrom-ReleaseJson {
   param([string]$Json)

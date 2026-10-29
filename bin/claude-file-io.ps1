@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
+. Import-ClmModule claude-platform
 $script:LockPollMs = 200
 $script:PrivateModeFailed = "droits du fichier prive impossibles a poser"
 

@@ -1,6 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-config.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-config.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-asks.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-asks.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+. Import-ClmModule claude-drive-config, claude-sync-asks, claude-state
 $script:SyncChoicePath = Get-StatePath "sync-choice.json"
 $script:SyncChoiceLockPath = Get-StatePath "sync-choice.lock"
 $script:SyncChoiceWaitMs = 5000

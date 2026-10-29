@@ -54,6 +54,7 @@ try {
   $env:LOCALAPPDATA = Join-Path $script:Sandbox "AppData"
   $env:STATUSLINE_BG = "dark"
   $script:SyncKeyStoreOs = "Linux"
+  . (Join-Path $bin "claude-import.ps1")
   . (Join-Path $bin "claude-usage.ps1")
   . (Join-Path $bin "claude-menu-view.ps1")
   . (Join-Path $bin "claude-menu-archive.ps1")

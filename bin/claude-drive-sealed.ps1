@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-keyfile.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-keyfile.ps1") }
+. Import-ClmModule claude-sync-keyfile
 $script:SealedPrefix = "clm-enc/"
 $script:SealedFilesArea = "files/"
 

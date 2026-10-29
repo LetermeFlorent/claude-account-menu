@@ -1,7 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-sealed.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-sealed.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-folders.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-folders.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-presence.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-presence.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+. Import-ClmModule claude-drive-sealed, claude-drive-folders, claude-drive-presence, claude-state
 $script:CredentialMarginMs = 60000
 $script:CredLockPath = Get-StatePath "drive-creds.lock"
 $script:CredLockWaitMs = 15000

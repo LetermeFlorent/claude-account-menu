@@ -1,6 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-keystore.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-keystore.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-transfer.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-transfer.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-folders.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-folders.ps1") }
+. Import-ClmModule claude-sync-keystore, claude-drive-transfer, claude-drive-folders
 $script:SyncKeyFileName = "clm-key.json"
 $script:SyncKeyFileVersion = "1"
 $script:SyncKeyWeak = "fichier de cle du Drive refuse : derivation trop faible ou format inconnu"

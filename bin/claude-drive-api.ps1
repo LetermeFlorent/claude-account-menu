@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-auth.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-auth.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-retry.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-retry.ps1") }
+. Import-ClmModule claude-drive-auth, claude-drive-retry
 $script:DriveApi = "https://www.googleapis.com/drive/v3/files"
 $script:DriveUpload = "https://www.googleapis.com/upload/drive/v3/files"
 $script:DriveFolderMime = "application/vnd.google-apps.folder"

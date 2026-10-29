@@ -1,8 +1,5 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-usage-cache.ps1")) { . (Join-Path $PSScriptRoot "claude-usage-cache.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-usage-pace.ps1")) { . (Join-Path $PSScriptRoot "claude-usage-pace.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-accounts.ps1")) { . (Join-Path $PSScriptRoot "claude-accounts.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-token-refresh.ps1")) { . (Join-Path $PSScriptRoot "claude-token-refresh.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-usage-bar.ps1")) { . (Join-Path $PSScriptRoot "claude-usage-bar.ps1") }
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-usage-cache, claude-usage-pace, claude-accounts, claude-token-refresh, claude-usage-bar
 
 function Get-PlanName {
   param($Oauth)

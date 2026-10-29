@@ -1,6 +1,7 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state-migrate.ps1")) { . (Join-Path $PSScriptRoot "claude-state-migrate.ps1") }
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-state-migrate
 $null = Invoke-StateMigration
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-watch.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-watch.ps1") }
+. Import-ClmModule claude-drive-watch
 try { [Diagnostics.Process]::GetCurrentProcess().PriorityClass = "BelowNormal" } catch { Write-Verbose $_.Exception.Message }
 do { Invoke-DriveWatch } while (-not (Test-ClmReplaced) -and (Test-WatchSessionsPending) -and -not (Test-DriveWatcherRunning) -and (Test-DriveConnected))
 if ((Test-ClmReplaced) -and (Test-WatchSessionsPending) -and (Test-DriveConnected)) { $null = Start-DriveWatcher }

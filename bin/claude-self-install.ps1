@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-self-version.ps1")) { . (Join-Path $PSScriptRoot "claude-self-version.ps1") }
+. Import-ClmModule claude-platform, claude-self-version
 $script:ClmBadHashText = "empreinte du paquet clm invalide, installation refusee"
 
 function New-ClmPrivateDir {

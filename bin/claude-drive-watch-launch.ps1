@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-sessions.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-sessions.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+. Import-ClmModule claude-drive-sessions, claude-state
 $script:DriveWatchLockPath = Get-StatePath "drive-watch.lock"
 $script:DriveWatcherScript = Join-Path $PSScriptRoot "claude-drive-watcher.ps1"
 $script:DriveWatchSpawnWaitMs = 5000

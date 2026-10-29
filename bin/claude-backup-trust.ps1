@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-file-io.ps1")) { . (Join-Path $PSScriptRoot "claude-file-io.ps1") }
+. Import-ClmModule claude-state, claude-file-io
 $script:BackupKeyName = "backup-key"
 $script:BackupMarksName = "backup-marks.txt"
 $script:BackupMarksMax = 500

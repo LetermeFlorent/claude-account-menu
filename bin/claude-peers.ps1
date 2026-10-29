@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
+. Import-ClmModule claude-platform
 $script:ClmScriptPattern = '(^|[\\/\s"''])(claude-menu|claude-drive-watcher|claude-statusline-seed)\.ps1'
 $script:ClmHostPattern = '^(pwsh|pwsh-preview|powershell)(\.exe)?$'
 $script:PeerHostFilter = "Name='powershell.exe' or Name='pwsh.exe'"

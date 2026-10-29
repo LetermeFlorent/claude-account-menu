@@ -1,6 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+. Import-ClmModule claude-platform, claude-json, claude-state
 $script:DriveStatePath = Get-StatePath "drive-state.json"
 $script:DriveStateUnreadable = "drive-state.json illisible, a corriger ou a supprimer : "
 $script:JsonPlainValue = '"([^"\\\x00-\x1f]*)"'

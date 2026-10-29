@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
+. Import-ClmModule claude-json
 $script:SeedFile = "claude-statusline-seed.ps1"
 $script:SeedTokenPattern = '(?<="command"\s*:\s*)"(?:[^"\\]|\\.)*claude-statusline-seed\.ps1(?:[^"\\]|\\.)*"'
 $script:WindowsPowerShellTail = "/System32/WindowsPowerShell/v1.0/powershell.exe"

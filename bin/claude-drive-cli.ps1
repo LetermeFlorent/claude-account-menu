@@ -1,7 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-job.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-job.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-passphrase.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-passphrase.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-login.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-login.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-watch-launch.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-watch-launch.ps1") }
+. Import-ClmModule claude-drive-job, claude-sync-passphrase, claude-drive-login, claude-drive-watch-launch
 $script:DriveCliRuns = @{ login = { Invoke-DriveSetup }; key = { Set-SyncPassphrase }; "key-reset" = { Reset-SyncPassphrase }; "key-forget" = { Clear-SyncPassphrase } }
 $script:DriveCliFlags = @{ "--drive-login" = "login"; "--sync-key" = "key"; "--sync-key-reset" = "key-reset"; "--sync-key-forget" = "key-forget" }
 

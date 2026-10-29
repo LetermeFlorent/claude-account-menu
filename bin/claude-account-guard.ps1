@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-accounts.ps1")) { . (Join-Path $PSScriptRoot "claude-accounts.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
+. Import-ClmModule claude-accounts, claude-json
 $script:DefaultTheme = "dark"
 
 function Repair-Onboarding {

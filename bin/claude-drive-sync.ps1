@@ -1,11 +1,6 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-actions.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-actions.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-creds.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-creds.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-leftovers.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-leftovers.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-changes.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-changes.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-sessions.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-sessions.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-prefs.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-prefs.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-scope.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-scope.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-drive-actions, claude-drive-creds, claude-drive-leftovers, claude-drive-changes,
+  claude-drive-sessions, claude-drive-prefs, claude-drive-scope, claude-state
 $script:DriveLockPath = Get-StatePath "drive.lock"
 $script:DriveLockWaitMs = 5000
 $script:DriveExitBudgetMs = 30000

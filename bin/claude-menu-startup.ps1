@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-startup-steps.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-startup-steps.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-startup-fade.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-startup-fade.ps1") }
+. Import-ClmModule claude-menu-startup-steps, claude-menu-startup-fade
 $script:ClmUpdated = $false
 $script:ClmChecked = $false
 $script:DriveChecked = $false

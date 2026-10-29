@@ -1,6 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-projects.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-projects.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-skills.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-skills.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-sealed.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-sealed.ps1") }
+. Import-ClmModule claude-mcp-projects, claude-drive-skills, claude-drive-sealed
 $script:PcFileExt = ".json"
 $script:PcFileArea = "presence/"
 $script:PcFileMax = 1048576

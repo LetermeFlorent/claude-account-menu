@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-catalog.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-catalog.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-remove.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-remove.ps1") }
+. Import-ClmModule claude-sync-catalog, claude-menu-remove
 $script:SkillsRoot = ".claude/skills"
 
 function Get-SkillOfPath {

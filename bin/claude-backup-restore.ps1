@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-backup-trust.ps1")) { . (Join-Path $PSScriptRoot "claude-backup-trust.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-backup-changes.ps1")) { . (Join-Path $PSScriptRoot "claude-backup-changes.ps1") }
+. Import-ClmModule claude-backup-trust, claude-backup-changes
 $script:RestoreForeignText = "sauvegarde pas creee par clm sur ce PC ou modifiee depuis : la restaurer par clm --restore=<chemin>"
 $script:RestoreForeignWarn = "sauvegarde pas creee par clm sur ce PC ou modifiee depuis, restauree a la demande"
 $script:RestoreConfirmText = "restauration a confirmer, elle change des reglages qui lancent des commandes : "

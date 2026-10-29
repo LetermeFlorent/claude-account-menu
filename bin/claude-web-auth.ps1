@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-web-http.ps1")) { . (Join-Path $PSScriptRoot "claude-web-http.ps1") }
+. Import-ClmModule claude-web-http
 $script:WebBootMs = 60000
 $script:WebBootPath = "/boot"
 $script:WebBootBytes = 16

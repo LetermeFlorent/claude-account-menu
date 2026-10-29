@@ -1,6 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-api.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-api.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-drive-state.ps1")) { . (Join-Path $PSScriptRoot "claude-drive-state.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+. Import-ClmModule claude-drive-api, claude-drive-state, claude-state
 $script:RemoteCachePath = Get-StatePath "drive-remote.json"
 $script:RemoteFullSeconds = 24 * 3600
 $script:RemoteCacheMemo = $null

@@ -1,4 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-display.ps1")) { . (Join-Path $PSScriptRoot "claude-display.ps1") }
+. Import-ClmModule claude-display
 $script:BootBarFlags = @("--no-update", "--updated", "--web")
 $script:BootBarLabel = "demarrage"
 $script:BootBarCells = 20

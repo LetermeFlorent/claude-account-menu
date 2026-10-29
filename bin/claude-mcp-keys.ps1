@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-platform.ps1")) { . (Join-Path $PSScriptRoot "claude-platform.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-json.ps1")) { . (Join-Path $PSScriptRoot "claude-json.ps1") }
+. Import-ClmModule claude-platform, claude-json
 $script:McpKeySep = "|"
 $script:McpNamePattern = [regex]'^[^"\\\x00-\x1f]{1,128}$'
 $script:ProjectRelPattern = [regex]'^[^|"\\:*?<>\x00-\x1f]{1,512}$'

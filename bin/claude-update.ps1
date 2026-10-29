@@ -1,6 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-update-watch.ps1")) { . (Join-Path $PSScriptRoot "claude-update-watch.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-update-retry.ps1")) { . (Join-Path $PSScriptRoot "claude-update-retry.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-menu-progress.ps1")) { . (Join-Path $PSScriptRoot "claude-menu-progress.ps1") }
+. Import-ClmModule claude-update-watch, claude-update-retry, claude-menu-progress
 
 function Write-UpdateProgress {
   param([string]$Label, [string]$Bar, [string]$Pct, [string]$Detail)

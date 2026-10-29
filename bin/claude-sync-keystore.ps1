@@ -1,7 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-sync-crypto.ps1")) { . (Join-Path $PSScriptRoot "claude-sync-crypto.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-keychain.ps1")) { . (Join-Path $PSScriptRoot "claude-keychain.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-file-io.ps1")) { . (Join-Path $PSScriptRoot "claude-file-io.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-state.ps1")) { . (Join-Path $PSScriptRoot "claude-state.ps1") }
+. Import-ClmModule claude-sync-crypto, claude-keychain, claude-file-io, claude-state
 $script:SyncKeyStorePath = Get-StatePath "sync-key"
 if ($null -eq $script:SyncKeyStoreOs) { $script:SyncKeyStoreOs = $script:OsName }
 $script:SyncKeyService = "clm-sync-key"

@@ -1,5 +1,4 @@
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-json.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-json.ps1") }
-if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add("claude-mcp-keys.ps1")) { . (Join-Path $PSScriptRoot "claude-mcp-keys.ps1") }
+. Import-ClmModule claude-mcp-json, claude-mcp-keys
 $script:ProjectsKey = "projects"
 
 function Get-JsonName {
