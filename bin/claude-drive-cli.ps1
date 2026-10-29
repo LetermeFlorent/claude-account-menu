@@ -1,4 +1,4 @@
-. Import-ClmModule claude-drive-job, claude-sync-passphrase, claude-drive-login, claude-drive-watch-launch
+. Import-ClmModule claude-drive-job
 $script:DriveCliRuns = @{ login = { Invoke-DriveSetup }; key = { Set-SyncPassphrase }; "key-reset" = { Reset-SyncPassphrase }; "key-forget" = { Clear-SyncPassphrase } }
 $script:DriveCliFlags = @{ "--drive-login" = "login"; "--sync-key" = "key"; "--sync-key-reset" = "key-reset"; "--sync-key-forget" = "key-forget" }
 
