@@ -18,7 +18,7 @@ function Get-OauthUserAgent {
 function Save-RefreshedCredential {
   param($Acc, $Cred)
   $credFile = Join-Path (Get-AccountPath $Acc) ".credentials.json"
-  Invoke-WithFileLock $script:CredLockPath $script:CredLockWaitMs "jetons en cours de synchro" { Write-CredentialFile $credFile $Cred }
+  Invoke-WithMachineLock $script:DriveCredsLock $script:CredLockWaitMs { Write-CredentialFile $credFile $Cred } "jetons en cours de synchro"
 }
 
 function Update-AccountToken {

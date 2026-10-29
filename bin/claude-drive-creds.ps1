@@ -1,6 +1,5 @@
-. Import-ClmModule claude-drive-sealed, claude-drive-folders, claude-drive-presence, claude-state
+. Import-ClmModule claude-drive-sealed, claude-drive-folders, claude-drive-presence, claude-state, claude-drive-lock
 $script:CredentialMarginMs = 60000
-$script:CredLockPath = Get-StatePath "drive-creds.lock"
 $script:CredLockWaitMs = 15000
 $script:CredentialUnknownOwner = "adresse locale inconnue, jeton du Drive refuse"
 $script:CredentialNoOwner = "jeton du Drive sans adresse, refuse"
@@ -94,7 +93,9 @@ function Sync-CredentialUnlocked {
 function Sync-AccountCredential {
   param($Acc, $Folders, $Listing, $Keys = $null)
   if ($null -eq $Keys) { $Keys = Get-SyncKeys }
-  return Invoke-WithFileLock $script:CredLockPath $script:CredLockWaitMs "jetons en cours de synchro" { Sync-CredentialUnlocked $Acc $Folders $Listing $Keys }
+  $lock = Open-MachineLock $script:DriveCredsLock $script:CredLockWaitMs
+  if ($null -eq $lock) { return "left" }
+  try { return Sync-CredentialUnlocked $Acc $Folders $Listing $Keys } finally { Close-MachineLock $lock }
 }
 
 function Sync-DriveCredentials {

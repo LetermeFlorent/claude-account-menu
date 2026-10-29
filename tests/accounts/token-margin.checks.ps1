@@ -39,11 +39,11 @@ $null = New-Item -ItemType Directory -Path (Split-Path -Parent $savePath) -Force
 $saveCred = [PSCustomObject]@{ claudeAiOauth = [PSCustomObject]@{ accessToken = "nouveau"; refreshToken = "r"; expiresAt = 5 } }
 Save-RefreshedCredential $saveAcc $saveCred
 Assert-Equal "nouveau" ((Get-Content -LiteralPath $savePath -Raw | ConvertFrom-Json).claudeAiOauth.accessToken) "jeton renouvele : ecrit"
-$saveHeld = Enter-FileLock $script:CredLockPath 1000
+$saveHeld = Open-MachineLock "drive-creds"
 $saveWait = $script:CredLockWaitMs
 $script:CredLockWaitMs = 200
 $saveCred.claudeAiOauth.accessToken = "concurrent"
 try { Assert-Throws { Save-RefreshedCredential $saveAcc $saveCred } "jetons en cours de synchro" "jeton renouvele : ecriture attend le verrou des jetons" }
-finally { $saveHeld.Dispose(); $script:CredLockWaitMs = $saveWait }
+finally { Close-MachineLock $saveHeld; $script:CredLockWaitMs = $saveWait }
 Assert-Equal "nouveau" ((Get-Content -LiteralPath $savePath -Raw | ConvertFrom-Json).claudeAiOauth.accessToken) "jeton renouvele : fichier intact pendant le verrou"
 Remove-Item -LiteralPath (Split-Path -Parent $savePath) -Recurse -Force

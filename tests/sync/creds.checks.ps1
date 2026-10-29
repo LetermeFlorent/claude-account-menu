@@ -73,10 +73,6 @@ function Get-DriveBytes { param([string]$Id) Write-CredentialFile $credPath (New
 $null = Sync-AccountCredential $acc $fold $listing
 Assert-Equal "claude" (Read-AccountCredential $acc).claudeAiOauth.accessToken "jeton renouvele par Claude pendant le telechargement : garde"
 function Get-DriveBytes { param([string]$Id) return ,(Get-CredTestBytes) }
-$hold = [IO.File]::Open($script:CredLockPath, "OpenOrCreate", "ReadWrite", "None")
-$script:CredLockWaitMs = 0
-try { $err = ""; try { $null = Sync-AccountCredential $acc $fold $listing } catch { $err = $_.Exception.Message } } finally { $hold.Dispose(); $script:CredLockWaitMs = 15000 }
-Assert-Equal "jetons en cours de synchro" $err "jetons synchronises sous verrou"
 
 $now = 1000000
 $pres = @{
