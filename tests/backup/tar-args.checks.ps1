@@ -24,5 +24,5 @@ $null = Invoke-Tar @("-a", "-c", "-f", $tarZip, "-C", $tarHome, "--exclude", 'q"
 $tarNames = @(& $script:Tar -tf $tarZip)
 Assert-True ($tarNames -contains "sous dossier/a.txt") "tar : chemin avec espace et motif avec guillemet passes intacts"
 Assert-Equal ".claude" ((@(Get-ZipAccounts $tarZip) | ForEach-Object { $_.Dir }) -join "|") "archive : dossier de compte refuse ignore"
-Assert-Throws { Restore-Accounts $tarZip @([PSCustomObject]@{ Label = "x"; Dir = ".claude-a b" }) 3>$null } "aucun compte" "restauration : dossier de compte refuse"
+Assert-Throws { Restore-Accounts $tarZip @([PSCustomObject]@{ Label = "x"; Dir = ".claude-a b" }) 3>$null } (Get-ClmText "backup.restore.noAccount") "restauration : dossier de compte refuse"
 Remove-Item -LiteralPath $tarHome, $tarZip -Recurse -Force
