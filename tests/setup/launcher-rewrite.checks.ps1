@@ -3,7 +3,7 @@ if ($script:OsName -eq "Windows") {
   $lwCounter = 0
   $lwWinPs = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
   $lwMenuText = @'
-[IO.File]::WriteAllText((Join-Path $PSScriptRoot "host.txt"), [Diagnostics.Process]::GetCurrentProcess().Path)
+[IO.File]::WriteAllText((Join-Path $PSScriptRoot "host.txt"), [Diagnostics.Process]::GetCurrentProcess().Path + "|" + $env:clm_host)
 $ascii = [Text.Encoding]::ASCII
 foreach ($name in @("clm.cmd", "claude-menu.cmd")) {
   $file = Join-Path $PSScriptRoot $name
@@ -28,9 +28,10 @@ exit 7
     & cmd.exe /d /c (Join-Path $dir "start.cmd") 2>&1 | Out-Null
     $code = $LASTEXITCODE
     $hostFile = Join-Path $dir "host.txt"
-    $hostText = ""
+    $hostText = "|"
     if (Test-Path -LiteralPath $hostFile) { $hostText = [IO.File]::ReadAllText($hostFile).Trim() }
-    return [pscustomobject]@{ Code = $code; Garbage = (Test-Path -LiteralPath (Join-Path $dir "garbage.txt")); HostPath = $hostText }
+    $hostParts = $hostText.Split("|")
+    return [pscustomobject]@{ Code = $code; Garbage = (Test-Path -LiteralPath (Join-Path $dir "garbage.txt")); HostPath = $hostParts[0]; Leak = $hostParts[1] }
   }
 
   $lwEmpty = Join-Path $lwRoot "pf-empty"
@@ -38,6 +39,7 @@ exit 7
     $lwResult = Invoke-LauncherCopy $lwName $lwEmpty
     Assert-Equal 7 $lwResult.Code ($lwName + " : code du menu rendu")
     Assert-True (-not $lwResult.Garbage) ($lwName + " reecrit pendant le menu : rien d'autre lance")
+    Assert-Equal "" $lwResult.Leak ($lwName + " : aucune variable du lanceur laissee au menu")
   }
   $lwFallback = Invoke-LauncherCopy "clm.cmd" $lwEmpty
   Assert-Equal $lwWinPs.ToLowerInvariant() $lwFallback.HostPath.ToLowerInvariant() "sans pwsh 7 : powershell windows par chemin absolu"
