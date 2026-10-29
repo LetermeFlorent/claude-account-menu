@@ -1,7 +1,8 @@
+. Import-ClmModule claude-usage-live
 
 function New-MenuEntry {
   param($Acc, $Cache, [double]$Now)
-  $u = [PSCustomObject]@{ Label = $Acc.Label; Email = (Get-AccountEmail $Acc); Acc = $Acc; Plan = ""; Pct5 = $null; Reset5 = $null; Pct7 = $null; Reset7 = $null; Error = $null; Age = $null; Expired = $false; LimitedUntil = $null }
+  $u = New-UsageRow $Acc
   $e = @{ Acc = $Acc; U = $u; Pending = $true; Seen = $false; View = $null; In = $null; NextAt = $null; Slot = 0; Timer = $null; Force = $false }
   $c = Get-KnownUsage $Acc $Cache
   if ($null -ne $c -and (Get-CacheAge $c) -lt $script:UsageCacheTtl) {
@@ -20,10 +21,11 @@ function New-MenuEntry {
 function New-MenuState {
   param($Accs, [double]$Now, [bool]$Open = $true, [int]$Sel = -1)
   $cache = Read-UsageCache
+  $pollMs = 1000 * (Read-UsagePollSeconds)
   $entries = New-Object 'System.Collections.Generic.List[object]'
   foreach ($a in $Accs) {
     $e = New-MenuEntry $a $cache $Now
-    $e.Slot = $script:RereadMs * $entries.Count / [math]::Max(1, @($Accs).Count)
+    $e.Slot = $pollMs * $entries.Count / [math]::Max(1, @($Accs).Count)
     if ($Open) { $e.In = New-Tween 0 1 220 ($Now + 45 * $entries.Count) }
     $entries.Add($e)
   }
@@ -48,21 +50,13 @@ function Move-MenuSel {
 function Set-UsageResult {
   param($State, $Res, [double]$Now)
   $e = $State.Entries[[int]$Res[0]]
-  if ($null -ne $Res[2]) { $e.U.Error = "" + $Res[2] } else { $e.U = $Res[1] }
+  if ($null -ne $Res[2]) { $e.U.Error = "" + $Res[2] }
+  elseif ([long]$Res[1].At -ge [long]$e.U.At) { $e.U = $Res[1] }
+  else { $e.U.LimitedUntil = $Res[1].LimitedUntil }
   $e.Pending = $false
-  $e.NextAt = Get-NextReadAt $e $Now
+  $e.NextAt = Get-NextReadAt $e $Now 0 $State.Jitter $State.PollSec
   Complete-ForcedRead $State $e
-  $p5 = [double]$e.U.Pct5
-  $p7 = [double]$e.U.Pct7
-  if ($e.Seen) {
-    if ($e.T5.To -ne $p5) { Set-TweenTarget $e.T5 $p5 300 $Now }
-    if ($e.T7.To -ne $p7) { Set-TweenTarget $e.T7 $p7 300 $Now }
-  } else {
-    $e.T5 = New-Tween 0 $p5 400 $Now
-    $e.T7 = New-Tween 0 $p7 400 $Now
-    $e.Seen = $true
-  }
-  Update-EntryView $e
+  Show-EntryUsage $e $Now
   $State.Dirty = $true
   if ($State.Moved) { return }
   $d = Get-ReadyDefault $State.Entries
@@ -82,7 +76,9 @@ function Start-MenuLoader {
     $accs.Add($e.Acc)
   }
   $State.LoaderIdx = @($Indices)
-  $State.Loader = Start-UsageLoader $accs.ToArray() -Reader $reader
+  $State.PollSec = Read-UsagePollSeconds
+  $State.Jitter = Get-ReadJitter $State.PollSec
+  $State.Loader = Start-UsageLoader $accs.ToArray() -Reader $reader -Runspace (Get-UsageRunspace)
 }
 
 function Request-EntryRead {
@@ -109,6 +105,7 @@ function Get-DueEntries {
 
 function Step-MenuLoader {
   param($State, [double]$Now)
+  if (-not $State.Busy) { $null = Update-LiveUsage $State $Now }
   $ld = $State.Loader
   if ($null -eq $ld) {
     if ($State.Busy) { return }
@@ -125,7 +122,7 @@ function Step-MenuLoader {
     if (-not $e.Pending) { continue }
     if ($null -ne $ld.Ctl.Error) { $e.U.Error = "lecture impossible : " + $ld.Ctl.Error }
     $e.Pending = $false
-    $e.NextAt = Get-NextReadAt $e $Now
+    $e.NextAt = Get-NextReadAt $e $Now 0 $State.Jitter $State.PollSec
     Complete-ForcedRead $State $e
     Update-EntryView $e
     $State.Dirty = $true
