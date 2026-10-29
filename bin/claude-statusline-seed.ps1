@@ -1,7 +1,12 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
-. Import-ClmModule claude-state-migrate
-if ($MyInvocation.InvocationName -ne ".") { $null = Invoke-StateMigration }
-. Import-ClmModule claude-usage
+$script:SeedStamp = Read-ClmStamp
+$script:SeedHook = $MyInvocation.InvocationName -ne "."
+if ($script:SeedHook -and $script:SeedStamp -ceq $script:ClmInstallingStamp) { exit 0 }
+try { . Import-ClmModule claude-state-migrate } catch { if (-not $script:SeedHook -or (Test-ClmStampSteady $script:SeedStamp)) { throw } }
+if ($script:SeedHook -and -not (Test-ClmStampSteady $script:SeedStamp)) { exit 0 }
+if ($script:SeedHook) { $null = Invoke-StateMigration }
+try { . Import-ClmModule claude-usage } catch { if (-not $script:SeedHook -or (Test-ClmStampSteady $script:SeedStamp)) { throw } }
+if ($script:SeedHook -and -not (Test-ClmStampSteady $script:SeedStamp)) { exit 0 }
 
 function Convert-ToEpoch {
   param($Iso)

@@ -1,12 +1,20 @@
 $script:ClmOnce = New-Object 'System.Collections.Generic.HashSet[string]'
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
-. Import-ClmModule claude-state-migrate
-$null = Invoke-StateMigration
-. Import-ClmModule claude-boot-bar
-$script:BootBar = Start-BootBar $args $PSScriptRoot $script:ClmOnce
-. Import-ClmModule claude-usage, claude-menu-view, claude-menu-save, claude-menu-restore, claude-menu-select,
-  claude-menu-remove, claude-menu-rename, claude-menu-prefs, claude-statusline-seed, claude-update, claude-self-update,
-  claude-sync, claude-menu-loop, claude-menu-startup, claude-drive-cli, claude-account-guard, claude-cli
+. Import-ClmModule claude-self-guard
+$script:ClmEntryStamp = Wait-ClmInstall
+try {
+  . Import-ClmModule claude-state-migrate
+  if (-not (Test-ClmReloadNeeded $script:ClmEntryStamp)) { $null = Invoke-StateMigration }
+  . Import-ClmModule claude-boot-bar
+  $script:BootBar = Start-BootBar $args $PSScriptRoot $script:ClmOnce
+  . Import-ClmModule claude-usage, claude-menu-view, claude-menu-save, claude-menu-restore, claude-menu-select,
+    claude-menu-remove, claude-menu-rename, claude-menu-prefs, claude-statusline-seed, claude-update, claude-self-update,
+    claude-sync, claude-menu-loop, claude-menu-startup, claude-drive-cli, claude-account-guard, claude-cli
+} catch { if (-not (Test-ClmReloadNeeded $script:ClmEntryStamp)) { throw } }
+if (Test-ClmReloadNeeded $script:ClmEntryStamp) {
+  if (Test-Path Function:\Stop-BootBar) { Stop-BootBar }
+  Invoke-ClmReload $PSCommandPath $args
+}
 Set-BootBarReady
 
 function Start-Account {
