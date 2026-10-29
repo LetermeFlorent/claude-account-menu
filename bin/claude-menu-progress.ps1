@@ -1,3 +1,4 @@
+. Import-ClmModule claude-tar-log
 $script:SkipNames = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide")
 $script:SkipConversations = @("projects/*.jsonl", "projects/*/subagents", "projects/*/tool-results")
 $script:HiddenSkillPath = [regex]'^[^/]+/skills/\.[^/]*$'
@@ -81,12 +82,13 @@ function Get-EntryWeight {
 
 function Wait-Tar {
   param($Proc, [string]$OutLog, [string]$ErrLog, [long]$Total, [string]$Label)
-  $last = -1; $seen = 0; $done = [long]0
+  $outReader = New-TarLogReader $OutLog
+  $errReader = New-TarLogReader $ErrLog
+  $last = -1; $done = [long]0
   while (-not $Proc.HasExited) {
     Wait-Progress 400
-    $lines = @(Get-TarEntries $OutLog $ErrLog)
-    for ($i = $seen; $i -lt $lines.Count; $i++) { $done += Get-EntryWeight $lines[$i] }
-    $seen = $lines.Count
+    foreach ($line in @(Read-TarLogLines $outReader)) { $done += Get-EntryWeight $line }
+    foreach ($line in @(Read-TarLogLines $errReader)) { if ($line -match "^[ax] ") { $done += Get-EntryWeight $line.Substring(2) } }
     $pct = 0
     if ($Total -gt 0) { $pct = [int][math]::Min(99, [math]::Floor($done * 100 / $Total)) }
     if ($pct -ne $last) { Write-TarProgress $Label $pct; $last = $pct }
