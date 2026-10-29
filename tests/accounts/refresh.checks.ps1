@@ -23,14 +23,14 @@ $same = ConvertTo-RefreshedCredential $cred ([PSCustomObject]@{ access_token = "
 Assert-Equal "r2" $same.claudeAiOauth.refreshToken "refresh token garde sans rotation"
 Assert-True ((Get-OauthUserAgent) -match "^claude-cli/\d+\.\d+\.\d+ \(external, cli\)$") "renouvellement presente comme Claude Code"
 
-Assert-Equal "non connecte" (Get-UsageToken $null $null).Error "jeton absent"
+Assert-Equal (Get-ClmText "ui.usage.notSignedIn") (Get-UsageToken $null $null).Error "jeton absent"
 $future = [DateTimeOffset]::UtcNow.AddHours(1).ToUnixTimeMilliseconds()
 $live = [PSCustomObject]@{ claudeAiOauth = [PSCustomObject]@{ accessToken = "tok"; expiresAt = $future } }
 Assert-Equal "tok" (Get-UsageToken $null $live).Token "jeton valide garde"
 $realRefresh = ${function:Update-AccountToken}
 Set-Item Function:\Update-AccountToken { param($Acc, $Cred) return $null }
 $live.claudeAiOauth.expiresAt = 1
-Assert-Equal "compte deconnecte, lancer le compte une fois" (Get-UsageToken $null $live).Error "renouvellement en echec"
+Assert-Equal (Get-ClmText "ui.usage.signedOut") (Get-UsageToken $null $live).Error "renouvellement en echec"
 Set-Item Function:\Update-AccountToken $realRefresh
-Assert-Equal "API de suivi injoignable" (Get-UsageErrorText $null) "sans reponse HTTP"
-Assert-Equal "jeton refuse, lancer le compte une fois" (Get-UsageErrorText ([PSCustomObject]@{ StatusCode = 401 })) "jeton refuse par l'API"
+Assert-Equal (Get-ClmText "ui.usage.unreachable") (Get-UsageErrorText $null) "sans reponse HTTP"
+Assert-Equal (Get-ClmText "ui.usage.tokenRefused") (Get-UsageErrorText ([PSCustomObject]@{ StatusCode = 401 })) "jeton refuse par l'API"
