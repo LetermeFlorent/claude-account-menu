@@ -1,3 +1,4 @@
+. Import-ClmModule claude-ui-width
 $script:UpArrow = [string][char]0x2191
 $script:DownArrow = [string][char]0x2193
 $script:FrameSide = 0x2502
@@ -65,8 +66,8 @@ function Get-FooterRows {
 
 function Limit-Text {
   param([string]$Text, [int]$Max)
-  if ($Text.Length -le $Max) { return $Text }
-  return $Text.Substring(0, $Max - 3) + "..."
+  if ((Get-DisplayWidth $Text) -le $Max) { return $Text }
+  return (Limit-DisplayText $Text ($Max - 3)) + "..."
 }
 
 function Add-PlainRow {
@@ -92,10 +93,11 @@ function Get-FramedRow {
     $t = [string]$s[0]
     if ($left -le 0 -or $t.Length -eq 0) { continue }
     $c = $s.Clone()
-    if ($t.Length -gt $left) { $c[0] = $t.Substring(0, $left) }
+    $w = Get-DisplayWidth $t
+    if ($w -gt $left) { $c[0] = Limit-DisplayText $t $left; $c[0] += " " * ($left - (Get-DisplayWidth $c[0])); $w = $left }
     if ($Fade -lt 1) { $c[1] = Get-FadedRgb $s[1] $Fade $script:Ink.Bg }
     $r.Add($c)
-    $left -= $c[0].Length
+    $left -= $w
   }
   $r.Add(@(((" " * $left) + $side), $script:Ink.Empty, $false))
   return ,$r

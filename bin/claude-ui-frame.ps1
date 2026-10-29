@@ -1,3 +1,4 @@
+. Import-ClmModule claude-ui-width, claude-ui-color-depth
 $script:FrameLines = $null
 $script:LastRows = $null
 $script:LastFades = $null
@@ -22,18 +23,23 @@ function ConvertTo-LineText {
   $e = $script:Esc
   $sb = New-Object Text.StringBuilder 256
   $left = $Max
+  $rgb = $script:UiColorDepth -eq "truecolor"
   if ($Fade -lt 0) { $Fade = 0 }
+  if ($script:UiColorDepth -eq "16" -or $script:UiColorDepth -eq "none") { $Fade = 1 }
   foreach ($s in $Segs) {
     if ($left -le 0) { break }
     $t = [string]$s[0]
     if ($t.Length -eq 0) { continue }
-    if ($t.Length -gt $left) { $t = $t.Substring(0, $left) }
+    $w = Get-DisplayWidth $t
+    if ($w -gt $left) { $t = Limit-DisplayText $t $left; $t += " " * ($left - (Get-DisplayWidth $t)); $w = $left }
     $c = $s[1]
     if ($Fade -lt 1) { $c = Get-FadedRgb $c $Fade $Bg }
     [void]$sb.Append($e).Append("[0")
     if ($s[2]) { [void]$sb.Append(";1") }
-    [void]$sb.Append(";38;2;").Append([int]$c[0]).Append(";").Append([int]$c[1]).Append(";").Append([int]$c[2]).Append("m").Append($t)
-    $left -= $t.Length
+    if ($rgb) { [void]$sb.Append(";38;2;").Append([int]$c[0]).Append(";").Append([int]$c[1]).Append(";").Append([int]$c[2]) }
+    else { [void]$sb.Append((Get-ColorSgr $c)) }
+    [void]$sb.Append("m").Append($t)
+    $left -= $w
   }
   [void]$sb.Append($e).Append("[0m")
   return $sb.ToString()

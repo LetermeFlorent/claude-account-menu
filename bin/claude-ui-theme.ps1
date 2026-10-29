@@ -28,6 +28,7 @@ function Set-UiTheme {
   if ($null -eq $to) { return }
   $script:InkFrom = $script:Ink
   $script:InkTo = $to
+  $script:Levels = $script:LevelSets[$Name]
   $script:InkTween = New-Tween 0 1 300 $Now
 }
 

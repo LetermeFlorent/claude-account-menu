@@ -2,25 +2,17 @@ $script:Esc = [string][char]27
 $script:Rule = [string][char]0x2500
 $script:ViewWidth = 78
 $script:Grad = @{ "5h" = 0.55; "7d" = 0.3 }
-$script:Levels = @{
-  "5h" = @(@(120, 110, 200), @(170, 90, 175), @(200, 60, 95))
-  "7d" = @(@(83, 137, 119), @(185, 130, 68), @(185, 85, 85))
-}
-$script:Palettes = @{
-  "light" = @{ Text = @(0, 0, 0); Dim = @(120, 112, 100); Empty = @(190, 180, 165); Cell = @(190, 180, 165); Alert = @(185, 85, 85); Bg = @(250, 250, 250) }
-  "dark" = @{ Text = @(232, 234, 237); Dim = @(150, 150, 150); Empty = @(75, 75, 80); Cell = @(226, 229, 234); Alert = @(220, 100, 100); Bg = @(12, 12, 12) }
-}
-. Import-ClmModule claude-theme, claude-usage-pace, claude-menu-usage-line, claude-ui-motion, claude-ui-frame,
+. Import-ClmModule claude-ui-palette, claude-ui-color-depth, claude-theme, claude-usage-pace, claude-menu-usage-line, claude-ui-motion, claude-ui-frame,
   claude-ui-theme, claude-ui-term, claude-menu-layout, claude-menu-keys, claude-ui-loader, claude-ui-bars,
   claude-ui-chrome, claude-menu-card, claude-menu-state, claude-menu-timer, claude-menu-clm-check, claude-drive-job,
   claude-menu-startup-view, claude-menu-screen, claude-ui-progress, claude-ui-mouse, claude-ui-page
-$script:Ink = $script:Palettes[(Get-ThemeName)]
+Use-Palette (Get-ThemeName)
 
 function Fg {
   param($Rgb, [bool]$Bold = $false)
   $b = ""
-  if ($Bold) { $b = $script:Esc + "[1m" }
-  return $script:Esc + "[0m" + $b + $script:Esc + "[38;2;" + $Rgb[0] + ";" + $Rgb[1] + ";" + $Rgb[2] + "m"
+  if ($Bold) { $b = ";1" }
+  return $script:Esc + "[0" + $b + (Get-ColorSgr $Rgb) + "m"
 }
 
 function Get-LevelColor {
