@@ -25,6 +25,32 @@ function Find-CurrentAccount {
   return $null
 }
 
+. Import-ClmModule claude-machine-lock
+$script:StatusLockName = "statusline"
+$script:StatusLockWaitMs = 5000
+$script:StatusKeys = "^(q5_at|q5_pct|q7_at|q7_pct|q_at)"
+
+function Read-StatusLines {
+  param([string]$State)
+  if (-not [IO.File]::Exists($State)) { return @() }
+  $lines = @((Read-SharedText $State) -split "`r?`n")
+  if ($lines[-1] -eq "") { $lines = @($lines | Select-Object -First ($lines.Count - 1)) }
+  return $lines
+}
+
+function Write-StatusLines {
+  param([string]$State, [string]$Tag, $Usage)
+  $mine = $script:StatusKeys + "(@" + [regex]::Escape($Tag) + ")? "
+  $keep = @(Read-StatusLines $State | Where-Object { $_ -cnotmatch $mine })
+  $r5 = Convert-ToEpoch $Usage.Reset5
+  $r7 = Convert-ToEpoch $Usage.Reset7
+  $at = "@" + $Tag + " "
+  if ($null -ne $r5) { $keep += "q5_at" + $at + $r5; $keep += "q5_pct" + $at + [int]$Usage.Pct5 }
+  if ($null -ne $r7) { $keep += "q7_at" + $at + $r7; $keep += "q7_pct" + $at + [int]$Usage.Pct7 }
+  $keep += "q_at" + $at + ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [long]$Usage.Age)
+  Write-TextFileAtomic $State (($keep -join "`n") + "`n")
+}
+
 function Update-StatusState {
   param($Acc)
   $state = Get-StatusStatePath
@@ -32,18 +58,9 @@ function Update-StatusState {
   $u = Get-AccountUsage $Acc -NoRefresh
   if ($null -ne $u.Error) { return }
   $tag = Get-StateTag (Get-AccountPath $Acc)
-  $mine = "^(q5_at|q5_pct|q7_at|q7_pct|q_at)(@" + [regex]::Escape($tag) + ")? "
-  $keep = @()
-  if (Test-Path -LiteralPath $state) {
-    $keep = @(Get-Content -LiteralPath $state | Where-Object { $_ -cnotmatch $mine })
-  }
-  $r5 = Convert-ToEpoch $u.Reset5
-  $r7 = Convert-ToEpoch $u.Reset7
-  $at = "@" + $tag + " "
-  if ($null -ne $r5) { $keep += "q5_at" + $at + $r5; $keep += "q5_pct" + $at + [int]$u.Pct5 }
-  if ($null -ne $r7) { $keep += "q7_at" + $at + $r7; $keep += "q7_pct" + $at + [int]$u.Pct7 }
-  $keep += "q_at" + $at + ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [long]$u.Age)
-  Write-TextFileAtomic $state (($keep -join "`n") + "`n")
+  $lock = Open-MachineLock $script:StatusLockName $script:StatusLockWaitMs
+  if ($null -eq $lock) { return }
+  try { Write-StatusLines $state $tag $u } finally { Close-MachineLock $lock }
 }
 
 if ($MyInvocation.InvocationName -ne ".") {
