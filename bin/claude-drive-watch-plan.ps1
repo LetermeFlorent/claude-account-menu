@@ -6,6 +6,7 @@ $script:DriveWatchBlindMs = 60000
 $script:DriveWatchBusyRetryMs = 5000
 $script:DriveWatchFailRetryMs = 60000
 $script:DriveWatchGiveUpMs = 600000
+$script:DriveWatchSessionPollMs = 5000
 $script:DriveWatchGone = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
 
 function Get-WatchNow {
@@ -14,7 +15,7 @@ function Get-WatchNow {
 
 function New-WatchState {
   param([long]$Now)
-  return @{ Live = 0; LiveDirs = @{}; Ended = @{}; EndedSince = [long]0; LocalFirst = [long]0; LocalAt = [long]0; PassAt = [long]0; RemoteAt = $Now; RetryAt = [long]0; Due = $false; Fs = $null }
+  return @{ Live = 0; LiveDirs = @{}; Ended = @{}; EndedSince = [long]0; LocalFirst = [long]0; LocalAt = [long]0; PassAt = [long]0; RemoteAt = $Now; RetryAt = [long]0; Due = $false; Fs = $null; SessionsAt = [long]0 }
 }
 
 function Add-WatchLocalChange {
@@ -32,6 +33,12 @@ function Test-WatchSessionsPending {
   return $false
 }
 
+function Get-WatchLiveDirs {
+  $dirs = @{}
+  foreach ($s in @(Read-WatchSessions)) { if (-not $s.Ended -and (Test-SessionAlive $s)) { $dirs[$s.Dir] = $true } }
+  return $dirs
+}
+
 function Update-WatchSessions {
   param($St, [long]$Now)
   $live = 0
@@ -44,6 +51,14 @@ function Update-WatchSessions {
   }
   $St.Live = $live
   $St.LiveDirs = $dirs
+}
+
+function Step-WatchSessions {
+  param($St, [long]$Now)
+  if ($St.SessionsAt -gt 0 -and $Now - $St.SessionsAt -lt $script:DriveWatchSessionPollMs) { return $false }
+  Update-WatchSessions $St $Now
+  $St.SessionsAt = $Now
+  return $true
 }
 
 function Test-WatchLocalDue {

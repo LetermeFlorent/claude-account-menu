@@ -1,4 +1,4 @@
-$syncSaved = @($script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs, $script:DriveParallel, $script:DriveSessionDir, $script:SyncChoicePath, $script:SyncChoiceLockPath, $script:SyncCatalogPath, $script:SyncChoiceWaitMs, $script:SyncKeyStorePath, $script:SyncKeyStoreOs)
+$syncSaved = @($script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockWaitMs, $script:DriveParallel, $script:DriveSessionDir, $script:SyncChoicePath, $script:SyncChoiceLockPath, $script:SyncCatalogPath, $script:SyncChoiceWaitMs, $script:SyncKeyStorePath, $script:SyncKeyStoreOs)
 $script:DriveParallel = 1
 $script:Fake = New-PathMap
 $script:FakePresence = New-PathMap
@@ -102,7 +102,6 @@ function Use-Pc {
   $script:RegistryPath = Join-Path $state "accounts.json"
   $script:DriveStatePath = Join-Path $state "drive-state.json"
   $script:DriveConfigPath = Join-Path $state "drive.json"
-  $script:DriveLockPath = Join-Path $state "drive.lock"
   $script:DriveSessionDir = Join-Path $state "drive-watch"
   $script:SyncChoicePath = Join-Path $state "sync-choice.json"
   $script:SyncChoiceLockPath = Join-Path $state "sync-choice.lock"
@@ -132,6 +131,6 @@ function Get-PcText {
 $script:DriveLockWaitMs = 0
 
 function Restore-FakeDrive {
-  $script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockPath, $script:DriveLockWaitMs, $script:DriveParallel, $script:DriveSessionDir, $script:SyncChoicePath, $script:SyncChoiceLockPath, $script:SyncCatalogPath, $script:SyncChoiceWaitMs, $script:SyncKeyStorePath, $script:SyncKeyStoreOs = $syncSaved
+  $script:HomeDir, $script:RegistryPath, $script:DriveStatePath, $script:DriveConfigPath, $script:DriveLockWaitMs, $script:DriveParallel, $script:DriveSessionDir, $script:SyncChoicePath, $script:SyncChoiceLockPath, $script:SyncCatalogPath, $script:SyncChoiceWaitMs, $script:SyncKeyStorePath, $script:SyncKeyStoreOs = $syncSaved
   $script:McpPerPc = $false
 }

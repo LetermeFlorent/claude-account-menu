@@ -1,4 +1,4 @@
-. Import-ClmModule claude-drive-sync
+. Import-ClmModule claude-drive-sync, claude-drive-lock
 $script:DriveJob = $null
 $script:DriveQuitWaitMs = 2000
 $script:DriveRetryMs = 60000
@@ -10,9 +10,7 @@ function New-DriveJob {
 }
 
 function Test-DriveLockHeld {
-  try { $fs = [IO.File]::Open($script:DriveLockPath, "OpenOrCreate", "ReadWrite", "None") } catch { return $true }
-  $fs.Dispose()
-  return $false
+  return Test-MachineLockHeld $script:DriveSyncLock
 }
 
 function Update-DriveElsewhere {
@@ -27,12 +25,6 @@ function Update-DriveElsewhere {
   $last = Get-DriveLastSync
   if ($last -gt $Job.Last) { $Job.Last = $last }
   return $true
-}
-
-function Get-DriveLastSync {
-  try { $c = Read-DriveConfig } catch { return [long]0 }
-  if ($null -eq $c) { return [long]0 }
-  return [long]$c["lastSync"]
 }
 
 function Start-DriveJob {

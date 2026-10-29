@@ -29,7 +29,7 @@ function Invoke-WatchSync {
   try {
     $res.Failed = [int](Sync-DriveCredentials (Get-DriveFolders) @(Get-Accounts))
     $res.Ok = $true
-  } catch { $res.Error = $_.Exception.Message }
+  } catch { if (Test-LeftToOtherClm $_) { $res.Ok = $true; $res.Busy = $true } else { $res.Error = $_.Exception.Message } }
   if ($res.Failed -gt 0) { $res.Error = "" + $res.Failed + " identifiant(s) en echec" }
   return $res
 }
@@ -51,7 +51,9 @@ function Invoke-WatchPass {
   $r = Invoke-WatchSync
   if ($r.Error -and -not $r.Busy) { Write-WatchLog ("synchro : " + $r.Error) }
   if ($r.Up -gt 0 -or $r.Down -gt 0 -or $r.Deleted -gt 0) { Write-WatchLog (Get-DriveSyncMsg $r) }
-  if (Complete-WatchPass $St $r $Final (Get-WatchNow)) { Close-WatchEnded $St }
+  if (-not (Complete-WatchPass $St $r $Final (Get-WatchNow))) { return }
+  $St.LiveDirs = Get-WatchLiveDirs
+  Close-WatchEnded $St
 }
 
 function Invoke-WatchCheck {
@@ -62,8 +64,8 @@ function Invoke-WatchCheck {
   $failed = [int](Sync-DriveCredentials $folders @(Get-Accounts))
   if ($failed -gt 0) { Write-WatchLog ("" + $failed + " identifiant(s) en echec") }
   if (-not (Test-DriveAuto)) { return }
-  try { Invoke-WithDriveLock { if (Test-DriveFilesChanged $folders (Get-DrivePcName)) { $St.Due = $true } } }
-  catch { if ($_.Exception.Message -ne $script:DriveBusyText) { throw } }
+  try { Invoke-WithMachineLock $script:DriveSyncLock $script:DriveLockWaitMs { if (Test-DriveFilesChanged $folders (Get-DrivePcName)) { $St.Due = $true } } }
+  catch { if (-not (Test-LeftToOtherClm $_)) { throw } }
 }
 
 function Step-DriveWatch {
@@ -71,7 +73,7 @@ function Step-DriveWatch {
   Start-Sleep -Milliseconds $script:DriveWatchTickMs
   $now = Get-WatchNow
   if ($null -ne $St.Fs -and (Receive-WatchEvents $St.Fs)) { Add-WatchLocalChange $St $now }
-  Update-WatchSessions $St $now
+  $null = Step-WatchSessions $St $now
   if (-not (Test-WatchActive $St)) { return $false }
   if (Test-ClmReplaced) { Write-WatchLog "clm mis a jour, le veilleur repart avec la nouvelle version"; return $false }
   $action = Get-DriveWatchAction $St $now
@@ -80,12 +82,12 @@ function Step-DriveWatch {
   try {
     if ($action -eq "check") { Invoke-WatchCheck $St }
     else { Invoke-WatchPass $St ($action -eq "final") }
-  } catch { Write-WatchLog ($action + " : " + $_.Exception.Message) }
+  } catch { if (-not (Test-LeftToOtherClm $_)) { Write-WatchLog ($action + " : " + $_.Exception.Message) } }
   return $true
 }
 
 function Invoke-DriveWatch {
-  $lock = Open-DriveWatchLock
+  $lock = Open-MachineLock $script:DriveWatchLock
   if ($null -eq $lock) { return }
   $st = New-WatchState (Get-WatchNow)
   try {
@@ -95,7 +97,7 @@ function Invoke-DriveWatch {
   } catch { Write-WatchLog ("arret : " + $_.Exception.Message) }
   finally {
     Stop-WatchFs $st.Fs
-    $lock.Dispose()
+    Close-MachineLock $lock
     Write-WatchLog "fin"
   }
 }

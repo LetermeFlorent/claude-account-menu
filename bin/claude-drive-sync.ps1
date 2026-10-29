@@ -1,18 +1,11 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
 . Import-ClmModule claude-drive-actions, claude-drive-creds, claude-drive-leftovers, claude-drive-changes,
-  claude-drive-sessions, claude-drive-prefs, claude-drive-scope, claude-state
-$script:DriveLockPath = Get-StatePath "drive.lock"
+  claude-drive-sessions, claude-drive-prefs, claude-drive-scope, claude-state, claude-drive-lock, claude-drive-sync-outcome
 $script:DriveLockWaitMs = 5000
 $script:DriveExitBudgetMs = 30000
-$script:DriveBusyText = "une autre synchro Drive est en cours"
-
-function Invoke-WithDriveLock {
-  param([scriptblock]$Action)
-  Invoke-WithFileLock $script:DriveLockPath $script:DriveLockWaitMs $script:DriveBusyText $Action
-}
 
 function New-SyncResult {
-  return @{ Ok = $false; Error = ""; Busy = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Failure = ""; Total = 0; Away = @{}; Again = $false; Refused = (New-Object 'System.Collections.Generic.List[string]'); Late = @() }
+  return @{ Ok = $false; Error = ""; Busy = $false; Shared = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Failure = ""; Total = 0; Away = @{}; Again = $false; Refused = (New-Object 'System.Collections.Generic.List[string]'); Late = @() }
 }
 
 function Set-DriveLastSync {
@@ -97,11 +90,13 @@ function Invoke-DriveSync {
   if (Test-ClmReplaced) { return Invoke-FreshDriveSync $Ctl $DeadlineMs $Force.IsPresent }
   $res = New-SyncResult
   try {
-    Invoke-WithDriveLock {
+    $run = Invoke-MachineOnce $script:DriveSyncLock $script:DriveLockWaitMs -Always:$Force {
       Invoke-DriveSyncPass $res $Ctl $DeadlineMs $Force.IsPresent
       if ($res.Ok -and $res.Again -and $res.Left -eq 0) { $res.Ok = $false; Invoke-DriveSyncPass $res $Ctl $DeadlineMs $Force.IsPresent }
+      Test-DriveSyncClean $res
     }
-  } catch { $res.Ok = $false; $res.Error = $_.Exception.Message; $res.Busy = $res.Error -eq $script:DriveBusyText }
+    Set-DriveSyncOutcome $res $run
+  } catch { Set-DriveSyncError $res $_ }
   return $res
 }
 
@@ -118,6 +113,7 @@ function Get-SyncNotice {
 function Get-DriveSyncMsg {
   param($Result)
   if ($Result.Error) { return "synchro Drive : " + $Result.Error + (Get-SyncNotice $Result) }
+  if ($Result.Busy -or $Result.Shared) { return "synchro Drive : " + (Get-DriveSyncElsewhereText $Result) }
   if ($Result.Stopped) { return "synchro Drive : interrompue pendant l'analyse, reprise a la prochaine synchro" }
   $t = "synchro Drive : " + $Result.Up + " envoyes, " + $Result.Down + " recus, " + $Result.Deleted + " supprimes, " + $Result.Conflicts + " conflits"
   if ($Result.Left -gt 0) { $t += ", " + $Result.Left + " restants pour la prochaine synchro" }
@@ -130,7 +126,7 @@ function Sync-DriveBeforeLaunch {
   try {
     $null = Sync-OneCredential $Acc
     Set-DrivePresence $Acc $true
-  } catch { Write-Host ("  Drive : " + $_.Exception.Message) -ForegroundColor DarkYellow }
+  } catch { if (-not (Test-LeftToOtherClm $_)) { Write-Host ("  Drive : " + $_.Exception.Message) -ForegroundColor DarkYellow } }
 }
 
 function Sync-DriveAfterExit {
@@ -140,5 +136,6 @@ function Sync-DriveAfterExit {
   if (-not (Test-DriveAuto)) { Send-DriveCredential $Acc; return }
   Write-Host "  synchro Drive..." -ForegroundColor DarkGray
   $r = Invoke-DriveSync $null $DeadlineMs
+  while ($r.Busy -and (Get-LockNow) -lt $DeadlineMs) { $r = Invoke-DriveSync $null $DeadlineMs }
   if ($r.Error -or $r.Left -gt 0 -or $r.Stopped) { Write-Host ("  " + (Get-DriveSyncMsg $r)) -ForegroundColor DarkYellow }
 }

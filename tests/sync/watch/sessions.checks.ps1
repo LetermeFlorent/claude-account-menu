@@ -49,5 +49,21 @@ $r = Invoke-DriveSync
 Assert-True $r.Ok ("synchro apres la sortie " + $r.Error)
 Assert-True (Test-FakeFile ".claude-compte2/.claude.json") "sortie : config du compte envoyee"
 
+$pollSaved = $script:DriveWatchSessionPollMs
+$script:DriveWatchSessionPollMs = 5000
+$st = New-WatchState 0
+Assert-Equal 0 $st.SessionsAt "etat neuf : sessions jamais regardees"
+$pollA = Register-DriveSession @{ Dir = ".claude" }
+Assert-True (Step-WatchSessions $st 6000) "sessions regardees apres 5 s"
+Assert-Equal 1 $st.Live "session ouverte comptee"
+Assert-Equal 6000 $st.SessionsAt "heure du dernier regard gardee"
+$pollB = Register-DriveSession @{ Dir = ".claude-compte2" }
+Assert-True (-not (Step-WatchSessions $st 8000)) "sessions pas regardees avant 5 s"
+Assert-Equal 1 $st.Live "nouvelle session pas encore vue"
+Assert-True (Step-WatchSessions $st 11000) "sessions regardees 5 s apres"
+Assert-Equal 2 $st.Live "nouvelle session vue"
+$script:DriveWatchSessionPollMs = $pollSaved
+foreach ($p in @($pollA, $pollB)) { [IO.File]::Delete((Close-DriveSession $p)) }
+
 Restore-FakeDrive
 . (Join-Path $bin "claude-drive-creds.ps1")

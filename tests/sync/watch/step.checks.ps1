@@ -4,6 +4,8 @@ $watchSaved = @{}
 foreach ($n in $watchFaked) { $watchSaved[$n] = (Get-Item ("function:" + $n)).ScriptBlock }
 $watchSavedTick = $script:DriveWatchTickMs
 $script:DriveWatchTickMs = 0
+$watchSavedPoll = $script:DriveWatchSessionPollMs
+$script:DriveWatchSessionPollMs = 0
 $script:WatchCalls = New-Object 'System.Collections.Generic.List[string]'
 $script:WatchResult = $null
 $script:WatchRemote = $false
@@ -83,13 +85,23 @@ Assert-True (-not (Step-DriveWatch $st)) "Drive deconnecte : veilleur arrete"
 Assert-Equal "" (Get-WatchCalls) "Drive deconnecte : rien envoye"
 Save-DriveConfig @{ refreshToken = "r"; pc = "PCW" }
 
-$lock = [IO.File]::Open($script:DriveLockPath, "OpenOrCreate", "ReadWrite", "None")
+$watchLog = Join-Path $script:DriveSessionDir $script:DriveWatchLogName
+[IO.File]::Delete($watchLog)
+$lock = Open-MachineLock "drive"
 $st.RemoteAt = 0
 $null = Step-DriveWatch $st
 Assert-Equal "creds" (Get-WatchCalls) "verrou Drive pris : identifiants quand meme"
-$lock.Dispose()
+$st.RemoteAt = 0
+$checkErr = ""
+try { Invoke-WatchCheck $st } catch { $checkErr = $_.Exception.Message }
+Close-MachineLock $lock
+Assert-Equal "" $checkErr "verrou Drive pris : regard sans erreur"
+$watchText = ""
+if ([IO.File]::Exists($watchLog)) { $watchText = [IO.File]::ReadAllText($watchLog) }
+Assert-True ($watchText -notmatch "laissee a un autre clm|en cours|check :") ("verrou Drive pris : rien dans le journal du veilleur " + $watchText)
+$null = Get-WatchCalls
 $null = Close-DriveSession $session
-Set-WatchResult "une autre synchro Drive est en cours" $true
+Set-WatchResult "" $true
 $null = Step-DriveWatch $st
 Assert-Equal "sync" (Get-WatchCalls) "synchro occupee a la sortie"
 Assert-Equal 1 @(Read-DriveSessions).Count "synchro occupee : session gardee"
@@ -97,12 +109,12 @@ Assert-True ($st.RetryAt -gt (Get-WatchNow)) "synchro occupee : nouvel essai plu
 Stop-WatchFs $st.Fs
 foreach ($p in @(Read-DriveSessions)) { [IO.File]::Delete($p.Path) }
 
-$wl = Open-DriveWatchLock
+$wl = Open-MachineLock "drive-watch"
 Assert-True (Test-DriveWatcherRunning) "veilleur deja lance reconnu"
 $session = Register-DriveSession @{ Dir = ".claude" }
 Invoke-DriveWatch
 Assert-Equal "" (Get-WatchCalls) "second veilleur : s'arrete tout de suite"
-$wl.Dispose()
+Close-MachineLock $wl
 Assert-True (-not (Test-DriveWatcherRunning)) "aucun veilleur reconnu"
 Assert-True (Test-WatchSessionsPending) "session ouverte en attente d'un veilleur"
 $null = Close-DriveSession $session
@@ -114,5 +126,6 @@ Assert-Equal 0 @(Get-EventSubscriber | Where-Object { $_.SourceIdentifier.Starts
 
 foreach ($n in $watchFaked) { Set-Item ("function:" + $n) $watchSaved[$n] }
 $script:DriveWatchTickMs = $watchSavedTick
+$script:DriveWatchSessionPollMs = $watchSavedPoll
 Restore-FakeDrive
 . (Join-Path $bin "claude-drive-creds.ps1")

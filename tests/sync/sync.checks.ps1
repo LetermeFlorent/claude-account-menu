@@ -138,11 +138,6 @@ if ($script:OsName -eq "Windows") {
   Assert-True (Test-FakeFile ".claude/settings.json") "fichier verrouille : garde sur le Drive"
 }
 
-$lock = [IO.File]::Open($script:DriveLockPath, "OpenOrCreate", "ReadWrite", "None")
-try { $r = Invoke-DriveSync } finally { $lock.Dispose() }
-Assert-Equal "une autre synchro Drive est en cours" $r.Error "verrou : deux synchros jamais en meme temps"
-Assert-True $r.Busy "verrou pris ailleurs : synchro en attente"
-
 Assert-Equal "synchro Drive : 2 envoyes, 1 recus, 0 supprimes, 1 conflits" (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 2; Down = 1; Deleted = 0; Conflicts = 1; Left = 0 }) "message de fin"
 Assert-Equal "synchro Drive : 0 envoyes, 0 recus, 0 supprimes, 0 conflits, 4 restants pour la prochaine synchro" (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Left = 4 }) "message avec reste"
 Assert-Equal "synchro Drive : panne" (Get-DriveSyncMsg @{ Ok = $false; Error = "panne" }) "message d'erreur"

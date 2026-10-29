@@ -1,19 +1,11 @@
-. Import-ClmModule claude-drive-sessions, claude-state
-$script:DriveWatchLockPath = Get-StatePath "drive-watch.lock"
+. Import-ClmModule claude-drive-sessions, claude-state, claude-drive-lock
 $script:DriveWatcherScript = Join-Path $PSScriptRoot "claude-drive-watcher.ps1"
 $script:DriveWatchSpawnWaitMs = 5000
 $script:DriveWatchSpawnPollMs = 100
 $script:UnixDetachCommand = 'if command -v setsid >/dev/null 2>&1; then setsid "$0" -NoProfile -NonInteractive -File "$1" </dev/null >/dev/null 2>&1 & else nohup "$0" -NoProfile -NonInteractive -File "$1" </dev/null >/dev/null 2>&1 & fi'
 
-function Open-DriveWatchLock {
-  try { return [IO.File]::Open($script:DriveWatchLockPath, "OpenOrCreate", "ReadWrite", "None") } catch { return $null }
-}
-
 function Test-DriveWatcherRunning {
-  $fs = Open-DriveWatchLock
-  if ($null -eq $fs) { return $true }
-  $fs.Dispose()
-  return $false
+  return Test-MachineLockHeld $script:DriveWatchLock
 }
 
 function Get-PowerShellPath {

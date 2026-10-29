@@ -42,6 +42,12 @@ function Get-DrivePcName {
   return [Environment]::MachineName
 }
 
+function Get-DriveLastSync {
+  try { $c = Read-DriveConfig } catch { return [long]0 }
+  if ($null -eq $c) { return [long]0 }
+  return [long]$c["lastSync"]
+}
+
 function Clear-DriveFolders {
   param($Config)
   foreach ($k in @("folderRoot", "folderFiles", "folderCredentials", "folderPresence", "lastSync")) { $Config.Remove($k) }
