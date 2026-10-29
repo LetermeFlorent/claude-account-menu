@@ -1,4 +1,4 @@
-. Import-ClmModule claude-web-server, claude-web-state, claude-web-lists, claude-web-actions
+. Import-ClmModule claude-web-server, claude-web-state, claude-web-lists, claude-web-actions, claude-text
 $script:WebOpen = $false
 $script:WebReopen = $false
 $script:WebFlag = "--web"
@@ -7,14 +7,14 @@ function Open-MenuWeb {
   param($State)
   try { $null = Start-WebServer @{ state = { Get-WebState $script:WebOpen }; prefs = { Get-WebPrefs }; backups = { Get-WebBackups } } }
   catch {
-    $State.Msg = @(("  page web impossible : " + $_.Exception.Message), $script:Ink.Alert)
+    $State.Msg = @(("  " + (Get-ClmText "web.menu.failed" $_.Exception.Message)), $script:Ink.Alert)
     $State.Dirty = $true
     return
   }
   $script:UiPoll = { Receive-WebRequests $script:WebOpen }
   $url = New-WebUrl
   $null = Open-Browser $url
-  $State.Msg = @(("  page web : " + $url), $script:Levels["7d"][0])
+  $State.Msg = @(("  " + (Get-ClmText "web.menu.url" $url)), $script:Levels["7d"][0])
   $State.Dirty = $true
 }
 

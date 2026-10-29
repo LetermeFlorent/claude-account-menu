@@ -59,7 +59,7 @@ function Invoke-WebPref {
 function Invoke-WebSave {
   param($Data)
   $webAccs = Find-WebAccounts @(Get-Accounts) (Get-WebList $Data "accs")
-  $path = Invoke-WebWork "Sauvegarde" { Save-Accounts "" $webAccs }
+  $path = Invoke-WebWork (Get-ClmText "web.job.save") { Save-Accounts "" $webAccs }
   return New-WebDone (Get-ClmText "server.saved" $path) (Get-WebBackups)
 }
 
@@ -73,6 +73,6 @@ function Invoke-WebRestore {
   $webZip = Find-WebBackup (Get-WebText $Data "name")
   Assert-BackupVersion $webZip
   $webAccs = Find-WebAccounts @(Get-ZipAccounts $webZip) (Get-WebList $Data "accs")
-  $msg = Update-WebAccounts { Restore-Accounts $webZip $webAccs } "Restauration"
+  $msg = Update-WebAccounts { Restore-Accounts $webZip $webAccs } (Get-ClmText "web.job.restore")
   return New-WebDone $msg (Get-WebBackups)
 }

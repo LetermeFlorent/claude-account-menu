@@ -2,7 +2,7 @@
 $script:WebBackupMax = 30
 
 function Get-WebPrefLine {
-  param($Line, [string]$Pc = "ce PC")
+  param($Line, [string]$Pc = (Get-ClmText "web.thisPc"))
   if ($Line.Head) { return [ordered]@{ type = "head"; label = $Line.Label } }
   $off = @()
   if ($Line.On -and -not $Line.Erasing) { $off = @(Get-PrefsOffLines $Line $Pc | ForEach-Object { $_.Trim() }) }
