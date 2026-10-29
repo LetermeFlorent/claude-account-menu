@@ -38,9 +38,12 @@ Assert-True (-not (Step-DriveWatch $st)) "aucune session : veilleur arrete"
 $session = Register-DriveSession @{ Dir = ".claude" }
 Assert-True (Step-DriveWatch $st) "session ouverte : veilleur actif"
 Assert-Equal "" (Get-WatchCalls) "rien a faire tout de suite"
+$stepShaFn = (Get-Item "function:Get-ClmSha").ScriptBlock
+function Get-ClmSha { param([string]$Dir = "") return "nouvelle" }
 $script:ClmLoadedSha = "ancienne"
 Assert-True (-not (Step-DriveWatch $st)) "clm mis a jour : veilleur arrete pour repartir"
 Assert-Equal "" (Get-WatchCalls) "clm mis a jour : aucune synchro par l'ancien code"
+Set-Item "function:Get-ClmSha" $stepShaFn
 $script:ClmLoadedSha = Get-ClmSha
 $st.RemoteAt = 0
 $script:WatchRemote = $true

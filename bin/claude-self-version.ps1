@@ -78,7 +78,9 @@ function Get-ClmSha {
 }
 
 function Test-ClmReplaced {
-  return (Get-ClmSha) -ne $script:ClmLoadedSha
+  if ((Read-ClmStamp) -ceq $script:ClmInstallingStamp) { return $false }
+  $disk = Get-ClmSha
+  return $disk -ne "" -and $disk -ne $script:ClmLoadedSha
 }
 
 $script:ClmLoadedSha = Get-ClmSha

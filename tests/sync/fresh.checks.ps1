@@ -1,9 +1,11 @@
 $freshSource = $script:FreshSyncSource
 $freshSha = $script:ClmLoadedSha
+$freshShaFn = (Get-Item "function:Get-ClmSha").ScriptBlock
 Assert-True (-not (Test-ClmReplaced)) "clm pas mis a jour : code charge a jour"
 
 $script:FreshSyncSource = New-SandboxFile "fresh/sync.ps1" 'function Invoke-DriveSync { param($Ctl, [long]$DeadlineMs, [switch]$Force) return @{ Ok = $true; Up = 7; Force = $Force.IsPresent; Deadline = $DeadlineMs; Ctl = $Ctl.Name } }'
 $script:ClmLoadedSha = "ancienne"
+function Get-ClmSha { param([string]$Dir = "") return "nouvelle" }
 Assert-True (Test-ClmReplaced) "clm mis a jour pendant que ce processus tourne"
 $r = Invoke-DriveSync @{ Name = "ctl" } 42 -Force
 Assert-Equal "True 7 True 42 ctl" ("" + $r.Ok + " " + $r.Up + " " + $r.Force + " " + $r.Deadline + " " + $r.Ctl) "clm mis a jour : synchro faite par le code installe"
@@ -18,5 +20,6 @@ $r = Invoke-DriveSync
 Assert-Equal $script:FreshSyncFailed $r.Error "code installe sans resultat : echec dit"
 
 $script:ClmLoadedSha = $freshSha
+Set-Item "function:Get-ClmSha" $freshShaFn
 $script:FreshSyncSource = $freshSource
 Remove-Item -LiteralPath (Join-Path $script:Sandbox "fresh") -Recurse -Force
