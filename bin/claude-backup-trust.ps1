@@ -1,26 +1,11 @@
-. Import-ClmModule claude-state, claude-file-io
-$script:BackupKeyName = "backup-key"
+. Import-ClmModule claude-state, claude-file-io, claude-backup-key
 $script:BackupMarksName = "backup-marks.txt"
 $script:BackupMarksMax = 500
-$script:BackupMarksWaitMs = 5000
-$script:BackupKeyBytes = 32
+$script:BackupMarksWaitMs = 120000
 
 function ConvertTo-LowerHex {
   param([byte[]]$Bytes)
   return [BitConverter]::ToString($Bytes).Replace("-", "").ToLowerInvariant()
-}
-
-function Get-BackupKey {
-  $path = Get-StatePath $script:BackupKeyName
-  if ([IO.File]::Exists($path)) {
-    try { $key = [Convert]::FromBase64String((Read-SharedText $path).Trim()) } catch [FormatException] { $key = @() }
-    if ($key.Length -ge $script:BackupKeyBytes) { return ,$key }
-  }
-  $key = New-Object byte[] $script:BackupKeyBytes
-  $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
-  try { $rng.GetBytes($key) } finally { $rng.Dispose() }
-  Write-TextFileAtomic $path ([Convert]::ToBase64String($key)) -Private
-  return ,$key
 }
 
 function Get-BackupMac {
@@ -47,11 +32,12 @@ function Add-BackupMark {
   $info = [IO.FileInfo]$Path
   $line = $info.Name + "`t" + $info.Length + "`t" + (Get-BackupMac $Path)
   $marks = Get-StatePath $script:BackupMarksName
-  Invoke-WithFileLock ($marks + ".lock") $script:BackupMarksWaitMs "liste des sauvegardes en cours d'ecriture" {
+  $fs = Enter-FileLock ($marks + ".lock") $script:BackupMarksWaitMs
+  try {
     $kept = @(Read-BackupMarks | Where-Object { $_.Name -cne $info.Name } | ForEach-Object { $_.Name + "`t" + $_.Size + "`t" + $_.Mac })
     $kept = @($kept | Select-Object -Last ($script:BackupMarksMax - 1)) + $line
     Write-TextFileAtomic $marks (($kept -join "`n") + "`n") -Private
-  }
+  } finally { if ($null -ne $fs) { $fs.Dispose() } }
 }
 
 function Test-BackupListed {
