@@ -12,7 +12,7 @@ $script:WtSettingsPaths = @(
   "Microsoft\Windows Terminal\settings.json"
 )
 
-function ConvertFrom-HexColor {
+function ConvertFrom-WtHexColor {
   param([string]$Hex)
   $m = [regex]::Match($Hex, '^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$')
   if (-not $m.Success) { return $null }
@@ -82,16 +82,16 @@ function Get-WtSchemeColor {
   param($Settings, $Name)
   if ($Name -isnot [string]) { return $null }
   foreach ($scheme in (Get-JsonProperty $Settings "schemes")) {
-    if ([string](Get-JsonProperty $scheme "name") -eq $Name) { return ConvertFrom-HexColor ([string](Get-JsonProperty $scheme "background")) }
+    if ([string](Get-JsonProperty $scheme "name") -eq $Name) { return ConvertFrom-WtHexColor ([string](Get-JsonProperty $scheme "background")) }
   }
-  if ($script:WtSchemeColors.ContainsKey($Name)) { return ConvertFrom-HexColor $script:WtSchemeColors[$Name] }
+  if ($script:WtSchemeColors.ContainsKey($Name)) { return ConvertFrom-WtHexColor $script:WtSchemeColors[$Name] }
   return $null
 }
 
 function Get-WtBackground {
   param($Settings, [string]$ProfileId)
   $sources = @(Get-WtProfileParts $Settings $ProfileId)
-  $direct = ConvertFrom-HexColor ([string](Get-WtFirstValue $sources "background"))
+  $direct = ConvertFrom-WtHexColor ([string](Get-WtFirstValue $sources "background"))
   if ($null -ne $direct) { return ,$direct }
   $name = Get-WtFirstValue $sources "colorScheme"
   if ($null -eq $name) { $name = "Campbell" }

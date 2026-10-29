@@ -67,7 +67,7 @@ Assert-Equal "" (Get-WtCaseResult "{ this is not json") "Windows Terminal : fich
 Assert-Equal "" (Get-WtCaseResult "") "Windows Terminal : aucun fichier de reglages"
 Assert-Equal "light" (Get-WtCaseResult $light $preview) "Windows Terminal : chemin de la version Preview"
 
-$hex = ConvertFrom-HexColor "#0C0C0C"
+$hex = ConvertFrom-WtHexColor "#0C0C0C"
 Assert-Equal "12,12,12" ($hex -join ",") "Windows Terminal : lecture de #0C0C0C"
-Assert-Equal "255,255,255" ((ConvertFrom-HexColor "#fff") -join ",") "Windows Terminal : lecture de #fff"
-Assert-Null (ConvertFrom-HexColor "nope") "Windows Terminal : couleur mal formee"
+Assert-Equal "255,255,255" ((ConvertFrom-WtHexColor "#fff") -join ",") "Windows Terminal : lecture de #fff"
+Assert-Null (ConvertFrom-WtHexColor "nope") "Windows Terminal : couleur mal formee"
