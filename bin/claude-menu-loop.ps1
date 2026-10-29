@@ -104,7 +104,7 @@ function Read-MenuAction {
   elseif ($null -ne $k) { $act = Get-MenuAction $k $State.Entries.Count }
   elseif ($null -ne ($web = Get-WebAction)) { $act = Invoke-WebAction $web }
   if ($script:UiQuit) { $act = @{ Name = "quit" } }
-  return Limit-MenuAction $act $State.Entries.Count
+  return Limit-MenuAction (Get-ClmRestartAction $act) $State.Entries.Count
 }
 
 function Invoke-AccountMenu {

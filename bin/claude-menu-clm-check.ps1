@@ -1,3 +1,4 @@
+. Import-ClmModule claude-menu-clm-restart
 $script:ClmCheckMs = 600000
 $script:ClmCheck = $null
 
@@ -14,6 +15,7 @@ function Test-ClmUpdateReady {
 
 function Step-ClmCheck {
   param($Check, [double]$Now)
+  Step-ClmRestart $Now
   if ($null -eq $Check -or $null -eq $Check.NextAt) { return $false }
   $ld = $Check.Loader
   if ($null -eq $ld) {
