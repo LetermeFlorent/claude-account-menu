@@ -53,3 +53,13 @@ $res = Receive-UsageResults $ld
 Close-UsageLoader $ld
 Assert-True ($null -ne $ld.Ctl.Error) "source absente signalee"
 Assert-Equal 0 $res.Count "source absente, aucun resultat"
+$rs = Get-UsageRunspace
+$ld = Start-UsageLoader @(@{ Name = "a" }) $fake "Get-FakeUsage" -Runspace $rs
+Wait-LoaderDone $ld
+Close-UsageLoader $ld
+$ld = Start-UsageLoader @(@{ Name = "b" }) $fake "Get-FakeUsage" -Runspace (Get-UsageRunspace)
+Wait-LoaderDone $ld
+Assert-Equal "ok b" (Receive-UsageResults $ld)[0][1] "deuxieme lot lu dans le meme runspace"
+Close-UsageLoader $ld
+Assert-True ([object]::ReferenceEquals($rs, (Get-UsageRunspace))) "un seul runspace pour toutes les lectures"
+Assert-Equal "Opened" ("" + $rs.RunspaceStateInfo.State) "runspace garde ouvert entre deux lots"

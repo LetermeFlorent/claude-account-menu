@@ -15,12 +15,36 @@ try {
 finally { $Ctl.Current = -1; $Ctl.Done = $true }
 '@
 
+$script:UsageRunspace = $null
+$script:LeftRunspaces = @()
+
+function Close-LeftRunspaces {
+  $keep = @()
+  foreach ($old in $script:LeftRunspaces) {
+    if ($old.RunspaceAvailability -eq "Busy") { $keep += $old; continue }
+    $old.Dispose()
+  }
+  $script:LeftRunspaces = $keep
+}
+
+function Get-UsageRunspace {
+  Close-LeftRunspaces
+  $rs = $script:UsageRunspace
+  if ($null -ne $rs -and $rs.RunspaceStateInfo.State -eq "Opened" -and $rs.RunspaceAvailability -eq "Available") { return $rs }
+  if ($null -ne $rs) { $script:LeftRunspaces += $rs }
+  $rs = [RunspaceFactory]::CreateRunspace()
+  $rs.Open()
+  $script:UsageRunspace = $rs
+  return $rs
+}
+
 function Start-UsageLoader {
-  param($Accounts, [string]$Source = (Join-Path $PSScriptRoot "claude-usage.ps1"), [string]$Reader = "Get-AccountUsage", [switch]$Hold)
+  param($Accounts, [string]$Source = (Join-Path $PSScriptRoot "claude-usage.ps1"), [string]$Reader = "Get-AccountUsage", [switch]$Hold, $Runspace = $null)
   $go = New-Object Threading.ManualResetEventSlim((-not $Hold))
   $ctl = [hashtable]::Synchronized(@{ Stop = $false; Done = $false; Current = -1; Error = $null; Go = $go })
   $queue = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
   $ps = [PowerShell]::Create()
+  if ($null -ne $Runspace) { $ps.Runspace = $Runspace }
   [void]$ps.AddScript($script:LoaderScript).AddArgument($Source).AddArgument($Reader).AddArgument(@($Accounts)).AddArgument($ctl).AddArgument($queue)
   $handle = $ps.BeginInvoke()
   return @{ Ps = $ps; Handle = $handle; Ctl = $ctl; Queue = $queue }
