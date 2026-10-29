@@ -1,3 +1,5 @@
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-ui-input-gate
 $script:UiProgress = $null
 $script:UiPulse = $null
 $script:UiKeys = New-Object 'System.Collections.Generic.Queue[object]'
@@ -40,7 +42,7 @@ function Invoke-UiPoll {
 function Receive-UiKeys {
   Invoke-UiPoll
   try {
-    while ($null -ne ($k = Read-UiInput)) {
+    while ($null -ne ($k = Read-FreshInput)) {
       if ($k -is [ConsoleKeyInfo] -and [int]$k.KeyChar -eq 3) { $script:UiQuit = $true } else { $script:UiKeys.Enqueue($k) }
     }
   } catch { Write-Verbose $_.Exception.Message }
@@ -49,15 +51,19 @@ function Receive-UiKeys {
 function Read-UiKey {
   Invoke-UiPoll
   if ($script:UiKeys.Count -gt 0) { return $script:UiKeys.Dequeue() }
-  try { return Read-UiInput } catch { Write-Verbose $_.Exception.Message }
+  try { return Read-FreshInput } catch { Write-Verbose $_.Exception.Message }
   return $null
 }
 
 function Clear-ConsoleInput {
-  try { while ($null -ne (Read-UiInput)) { } } catch { Write-Verbose $_.Exception.Message }
+  $now = Get-NowMs
+  try { while ($null -ne ($ev = Read-UiInput)) { Add-StaleInput $ev $now } } catch { Write-Verbose $_.Exception.Message }
+  Open-InputGate (Get-NowMs) @(Get-HeldKeys)
 }
 
 function Clear-UiInput {
+  $now = Get-NowMs
+  foreach ($k in $script:UiKeys) { Add-StaleInput $k $now }
   $script:UiKeys.Clear()
   Clear-ConsoleInput
 }

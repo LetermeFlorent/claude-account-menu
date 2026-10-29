@@ -72,6 +72,7 @@ function Invoke-WithKeys {
   $script:ClmCheck = $null
   $script:MenuRestart = $false
   $script:InputLog.Clear()
+  $script:InputGate.Held.Clear()
   $script:StaleInput.Clear()
   $script:FreshInput.Clear()
   foreach ($k in $Stale) { $script:StaleInput.Enqueue((New-TestKey $k)) }

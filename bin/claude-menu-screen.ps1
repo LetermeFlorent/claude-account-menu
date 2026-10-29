@@ -125,6 +125,7 @@ function Show-Menu {
 function Open-MenuFrame {
   Show-Menu $script:MenuState (Get-NowMs)
   Clear-UiInput
+  $script:MenuState.Opened = $true
 }
 
 function Test-MenuAnimating {

@@ -97,6 +97,7 @@ function Invoke-MenuCommand {
 
 function Read-MenuAction {
   param($State)
+  if ($State.Opened -eq $false -and -not $script:UiQuit) { Open-MenuFrame }
   $script:WebOpen = $true
   try { $k = Read-UiKey } finally { $script:WebOpen = $false }
   $act = @{ Name = "none" }
