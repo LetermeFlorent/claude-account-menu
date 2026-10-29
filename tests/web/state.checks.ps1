@@ -80,9 +80,9 @@ try {
   $script:Startup = $null
 
   $v = (Get-WebState $true).display
-  Assert-Equal "auto auto light False False" ($v.palette + " " + $v.anim + " " + $v.theme + " " + $v.paletteEnv + " " + $v.animEnv) "web etat : affichage par defaut"
-  $script:InkTo = $script:Palettes["dark"]
-  Assert-Equal "dark" (Get-WebState $true).display.theme "web etat : couleurs en cours de bascule"
+  Assert-Equal "auto auto False False" ($v.palette + " " + $v.anim + " " + $v.paletteEnv + " " + $v.animEnv) "web etat : affichage par defaut"
+  $lk = (Get-WebState $true).look
+  Assert-Equal "system light" ($lk.themePref + " " + (ConvertTo-WebTheme $lk.themePref "")) "web etat : apparence de la page fournie, claire sans theme systeme"
   try {
     $env:STATUSLINE_BG = "clair"
     $env:CLM_ANIM = "0"
@@ -128,13 +128,13 @@ try {
   Add-BackupMark $f2
   $b = Get-WebBackups
   Assert-Equal "claude-comptes-20261002-100000.tar.gz claude-comptes-20261001-100000.zip" (@($b.items | ForEach-Object { $_.name }) -join " ") "web listes : sauvegardes, la plus recente en haut"
-  Assert-Equal "02/10/2026 10:00" @($b.items)[0].date "web listes : date de la sauvegarde"
+  Assert-Equal "2026-10-02T10:00" @($b.items)[0].when "web listes : date de la sauvegarde, format ISO pour la page"
   Assert-Equal $webDl $b.dir "web listes : dossier des sauvegardes"
   Assert-Equal $f1 (Find-WebBackup "claude-comptes-20261001-100000.zip") "web listes : sauvegarde trouvee par son nom"
   foreach ($bad in @("autre.zip", "..\claude-comptes-20261001-100000.zip", "CLAUDE-COMPTES-20261001-100000.ZIP", "")) {
     $err = ""
     try { $null = Find-WebBackup $bad } catch { $err = $_.Exception.Message }
-    Assert-True ($err -like "sauvegarde introuvable*") ("web listes : nom refuse [" + $bad + "]")
+    Assert-Equal (Get-ClmText "server.backupNotFound" @($bad)) $err ("web listes : nom refuse [" + $bad + "]")
   }
 } finally {
   foreach ($n in $webMocked) { Set-Item ("function:" + $n) $webKept[$n] }

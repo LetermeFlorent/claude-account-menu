@@ -6,7 +6,7 @@ $script:WebSendMs = 2000
 $script:WebLatin = [Text.Encoding]::GetEncoding(28591)
 $script:WebSingle = @("host", "content-length", "content-type", "origin", "cookie", "sec-fetch-site")
 $script:WebStatus = @{ 200 = "OK"; 303 = "See Other"; 400 = "Bad Request"; 403 = "Forbidden"; 404 = "Not Found"; 405 = "Method Not Allowed"; 409 = "Conflict"; 413 = "Payload Too Large"; 415 = "Unsupported Media Type"; 500 = "Internal Server Error" }
-$script:WebHeaders = "Cache-Control: no-store`r`nX-Content-Type-Options: nosniff`r`nReferrer-Policy: no-referrer`r`nX-Frame-Options: DENY`r`nCross-Origin-Opener-Policy: same-origin`r`nCross-Origin-Resource-Policy: same-origin`r`nContent-Security-Policy: default-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`r`n"
+$script:WebHeaders = "Cache-Control: no-store`r`nX-Content-Type-Options: nosniff`r`nReferrer-Policy: no-referrer`r`nX-Frame-Options: DENY`r`nCross-Origin-Opener-Policy: same-origin`r`nCross-Origin-Resource-Policy: same-origin`r`nContent-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`r`n"
 
 function New-WebConn {
   param($Client, [double]$Now)

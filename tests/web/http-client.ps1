@@ -5,8 +5,8 @@ New-Item -ItemType Directory -Path $webRoot -Force | Out-Null
 [IO.File]::WriteAllText((Join-Path $webRoot "index.html"), "<p>clm</p>")
 [IO.File]::WriteAllText((Join-Path $webRoot "style.css"), "p{}")
 [IO.File]::WriteAllText((Join-Path $webRoot "secret.txt"), "non")
-$webSavedRoot = $script:WebRoot
-$script:WebRoot = $webRoot
+$webSavedPage = $script:WebPage
+$script:WebPage = Read-WebPage $webRoot (Join-Path $webRoot "no-lang")
 
 function Connect-WebTest {
   param([int]$Port = 0)
@@ -63,5 +63,5 @@ function Get-WebCode {
 
 function Restore-WebTestRoot {
   Stop-WebServer
-  $script:WebRoot = $webSavedRoot
+  $script:WebPage = $webSavedPage
 }

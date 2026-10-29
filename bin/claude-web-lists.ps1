@@ -1,3 +1,4 @@
+. Import-ClmModule claude-text
 $script:WebBackupMax = 30
 
 function Get-WebPrefLine {
@@ -33,14 +34,14 @@ function Get-WebPrefs {
 
 function Get-WebBackups {
   $list = @(Get-Backups | Select-Object -First $script:WebBackupMax)
-  $items = @(foreach ($f in $list) { [ordered]@{ name = $f.Name; date = $f.LastWriteTime.ToString("dd/MM/yyyy HH:mm"); mb = [math]::Round($f.Length / 1MB, 1) } })
+  $items = @(foreach ($f in $list) { [ordered]@{ name = $f.Name; when = $f.LastWriteTime.ToString("yyyy-MM-ddTHH:mm", [Globalization.CultureInfo]::InvariantCulture); mb = [math]::Round($f.Length / 1MB, 1) } })
   return [ordered]@{ ok = $true; dir = (Get-DownloadsDir); items = $items }
 }
 
 function Find-WebBackup {
   param([string]$Name)
   $hit = @(Get-Backups | Where-Object { $_.Name -ceq $Name })
-  if ($hit.Count -eq 0) { throw ("sauvegarde introuvable : " + $Name) }
+  if ($hit.Count -eq 0) { throw (Get-ClmText "server.backupNotFound" $Name) }
   return $hit[0].FullName
 }
 

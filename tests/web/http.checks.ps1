@@ -13,7 +13,7 @@ try {
   $r = Invoke-WebTest (New-WebAsk "GET /")
   Assert-Equal "200" (Get-WebCode $r) "web : page d'accueil"
   Assert-True ($r -match "Content-Type: text/html") "web : page en html"
-  Assert-True ($r -match "Content-Security-Policy: default-src 'self'") "web : scripts d'ailleurs refuses"
+  Assert-True ($r.Contains("Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")) "web : politique de contenu stricte"
   Assert-True ($r -match "Cache-Control: no-store") "web : rien en cache"
   Assert-True ($r.EndsWith("<p>clm</p>")) "web : contenu de la page"
   $r = Invoke-WebTest (New-WebAsk "GET /style.css?v=2")

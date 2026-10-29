@@ -67,7 +67,7 @@ try {
     $null = Read-WebTestReply $c $true 300
     Stop-WebServer
     $r = Read-WebTestReply $c
-    Assert-True ((Get-WebCode $r) -eq "409" -and $r -match "quitte le menu") "web : action en attente prevenue a la fermeture"
+    Assert-True ((Get-WebCode $r) -eq "409" -and $r.Contains((Get-ClmText "server.menuLeft"))) "web : action en attente prevenue a la fermeture"
   } finally { $c.Close() }
   Assert-Null $script:Web "web : serveur arrete"
   $refused = $false

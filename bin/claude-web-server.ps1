@@ -1,11 +1,7 @@
-. Import-ClmModule claude-platform, claude-web-http, claude-web-auth, claude-web-errors
+. Import-ClmModule claude-platform, claude-web-page, claude-text, claude-web-http, claude-web-auth, claude-web-errors
 $script:Web = $null
-$script:WebRoot = Join-Path $PSScriptRoot "clm-web"
-$script:WebFiles = @("index.html", "style.css", "api.js", "ui.js", "tabs.js", "accounts.js", "prefs.js", "sync.js", "backups.js", "display.js")
-$script:WebTypes = @{ ".html" = "text/html; charset=utf-8"; ".css" = "text/css; charset=utf-8"; ".js" = "text/javascript; charset=utf-8" }
 $script:WebMaxConns = 16
 $script:WebMaxActions = 8
-$script:WebBusyText = "clm est occupe dans le terminal, reessayer quand il revient au menu"
 
 function New-WebListener {
   $l = New-Object Net.Sockets.TcpListener([Net.IPAddress]::Loopback, 0)
@@ -31,7 +27,7 @@ function Stop-WebServer {
   if ($null -eq $w) { return }
   $script:Web = $null
   foreach ($c in $w.Conns) { Close-WebConn $c }
-  while ($w.Actions.Count -gt 0) { Send-WebJson $w.Actions.Dequeue().Conn 409 @{ ok = $false; msg = "clm a quitte le menu" } }
+  while ($w.Actions.Count -gt 0) { Send-WebJson $w.Actions.Dequeue().Conn 409 @{ ok = $false; msg = (Get-ClmText "server.menuLeft") } }
   try { $w.Listener.Stop() } catch { Write-Verbose $_.Exception.Message }
 }
 
@@ -39,15 +35,14 @@ function Send-WebFile {
   param($Conn, [string]$Path)
   $name = $Path.Substring(1)
   if ($name -eq "") { $name = "index.html" }
-  $file = $null
-  if ($script:WebFiles -ccontains $name) { $file = Join-Path $script:WebRoot $name }
-  if ($null -eq $file -or -not [IO.File]::Exists($file)) { Send-WebJson $Conn 404 @{ ok = $false; msg = "page introuvable" }; return }
-  Send-WebResponse $Conn 200 $script:WebTypes[[IO.Path]::GetExtension($name)] ([IO.File]::ReadAllBytes($file))
+  if (-not $script:WebPage.ContainsKey($name)) { Send-WebJson $Conn 404 @{ ok = $false; msg = (Get-ClmText "server.notFound") }; return }
+  $file = $script:WebPage[$name]
+  Send-WebResponse $Conn 200 $file.Type $file.Bytes
 }
 
 function Send-WebView {
   param($Web, $Conn, [string]$Name)
-  if ($null -eq $Web.Views -or -not $Web.Views.ContainsKey($Name)) { Send-WebJson $Conn 404 @{ ok = $false; msg = "donnee inconnue" }; return }
+  if ($null -eq $Web.Views -or -not $Web.Views.ContainsKey($Name)) { Send-WebJson $Conn 404 @{ ok = $false; msg = (Get-ClmText "server.unknownView") }; return }
   try { $data = & $Web.Views[$Name] } catch { Send-WebJson $Conn 500 @{ ok = $false; msg = (Get-WebHiddenText $_ "W1") }; return }
   Send-WebJson $Conn 200 $data
 }
@@ -56,23 +51,23 @@ function Add-WebAction {
   param($Web, $Conn, [bool]$Open)
   $data = $null
   try { $data = ConvertFrom-JsonText $Conn.Req.Body } catch { $data = $null }
-  if ($data -isnot [Collections.IDictionary]) { Send-WebJson $Conn 400 @{ ok = $false; msg = "action illisible" }; return }
-  if (-not $Open -or $Web.Actions.Count -ge $script:WebMaxActions) { Send-WebJson $Conn 409 @{ ok = $false; msg = $script:WebBusyText }; return }
+  if ($data -isnot [Collections.IDictionary]) { Send-WebJson $Conn 400 @{ ok = $false; msg = (Get-ClmText "server.unreadableAction") }; return }
+  if (-not $Open -or $Web.Actions.Count -ge $script:WebMaxActions) { Send-WebJson $Conn 409 @{ ok = $false; msg = (Get-ClmText "server.busy") }; return }
   $Web.Actions.Enqueue(@{ Conn = $Conn; Args = $data })
 }
 
 function Send-WebAnswer {
   param($Web, $Conn, [bool]$Open)
   $req = $Conn.Req
-  if ($req.Status -ne 0) { Send-WebJson $Conn $req.Status @{ ok = $false; msg = "requete refusee" }; return }
+  if ($req.Status -ne 0) { Send-WebJson $Conn $req.Status @{ ok = $false; msg = (Get-ClmText "server.badRequest") }; return }
   $no = Get-WebRefusal $Web $req
-  if ($no -ne 0) { Send-WebJson $Conn $no @{ ok = $false; msg = "acces refuse" }; return }
+  if ($no -ne 0) { Send-WebJson $Conn $no @{ ok = $false; msg = (Get-ClmText "server.denied") }; return }
   $api = $req.Path.StartsWith("/api/")
   if ($req.Method -eq "GET" -and $req.Path -ceq $script:WebBootPath) { Send-WebBoot $Web $Conn; return }
   if ($req.Method -eq "GET" -and -not $api) { Send-WebFile $Conn $req.Path; return }
   if ($req.Method -eq "GET") { Send-WebView $Web $Conn $req.Path.Substring(5); return }
   if ($req.Method -eq "POST" -and $req.Path -ceq "/api/action") { Add-WebAction $Web $Conn $Open; return }
-  Send-WebJson $Conn 405 @{ ok = $false; msg = "methode refusee" }
+  Send-WebJson $Conn 405 @{ ok = $false; msg = (Get-ClmText "server.badMethod") }
 }
 
 function Receive-WebRequests {

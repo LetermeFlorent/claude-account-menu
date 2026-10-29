@@ -1,7 +1,8 @@
-$script:WebPrefMoves = @{ on = "synchronise sur ce PC"; off = "n'est plus synchronise sur ce PC"; erase = "efface partout a la prochaine synchro" }
+. Import-ClmModule claude-text
+$script:WebPrefMoves = @{ on = "server.prefOn"; off = "server.prefOff"; erase = "server.prefErase" }
 
 function Assert-WebDrive {
-  if ($null -eq $script:DriveJob -or -not $script:DriveJob.Connected) { throw "Drive non connecte" }
+  if ($null -eq $script:DriveJob -or -not $script:DriveJob.Connected) { throw (Get-ClmText "server.driveOff") }
 }
 
 function Invoke-WebDriveSync {
@@ -15,64 +16,51 @@ function Invoke-WebDriveAuto {
   Assert-WebDrive
   $on = $Data["on"] -eq $true
   Set-DriveAuto $on
-  if ($on) { return New-WebDone "synchro automatique activee" }
-  return New-WebDone "synchro automatique coupee"
+  if ($on) { return New-WebDone (Get-ClmText "server.autoOn") }
+  return New-WebDone (Get-ClmText "server.autoOff")
 }
 
 function Invoke-WebDriveLogin {
   param($Data)
-  if ($null -ne $script:DriveJob -and $script:DriveJob.Connected) { throw "Drive deja connecte" }
-  return New-WebDone "connexion Google dans le navigateur, le terminal attend la reponse" $null @{ Name = "drivelogin" }
+  if ($null -ne $script:DriveJob -and $script:DriveJob.Connected) { throw (Get-ClmText "server.driveOn") }
+  return New-WebDone (Get-ClmText "server.driveLogin") $null @{ Name = "drivelogin" }
 }
 
 function Invoke-WebPcPref {
   param([string]$Pc, [string]$Id, [string]$Move)
-  if ($Move -eq "erase") { throw "effacer partout se fait depuis les reglages de ce PC" }
+  if ($Move -eq "erase") { throw (Get-ClmText "server.eraseHereOnly") }
   $webPcPrefs = Read-CliPrefs
   $webPcMe = Get-DrivePcName
-  if ($null -eq $webPcPrefs.Catalog.Pcs -or $null -eq $webPcPrefs.Catalog.Pcs[$Pc]) { throw ("PC inconnu : " + $Pc) }
+  if ($null -eq $webPcPrefs.Catalog.Pcs -or $null -eq $webPcPrefs.Catalog.Pcs[$Pc]) { throw (Get-ClmText "server.unknownPc" $Pc) }
   if (-not (Test-PcReachable $webPcPrefs.Catalog $Pc)) { throw ($Pc + " : " + $script:PrefsPcOld) }
   $webPcItem = @(Resolve-PrefsItems (Get-PcPrefsLines $webPcPrefs.Choice $webPcPrefs.Catalog $webPcMe $Pc) @($Id))[0]
   $webPcName = $Pc
   $webPcOn = $Move -eq "on"
   $null = Update-SyncChoice { param($c) Set-PcPrefsCheck $c $webPcPrefs.Catalog $webPcMe $webPcName $webPcItem $webPcOn }
   $null = Request-DriveSync $script:DriveJob
-  $text = " ne sera plus synchronise sur " + $Pc
-  if ($webPcOn) { $text = " sera synchronise sur " + $Pc }
-  return New-WebDone ($webPcItem.Label + $text + " a sa prochaine synchro") (Get-WebPrefs)
+  $key = "server.pcPrefOff"
+  if ($webPcOn) { $key = "server.pcPrefOn" }
+  return New-WebDone (Get-ClmText $key @($webPcItem.Label, $Pc)) (Get-WebPrefs)
 }
 
 function Invoke-WebPref {
   param($Data)
   $webMove = Get-WebText $Data "move"
-  if (-not $script:WebPrefMoves.ContainsKey($webMove)) { throw ("choix inconnu : " + $webMove) }
+  if (-not $script:WebPrefMoves.ContainsKey($webMove)) { throw (Get-ClmText "server.unknownMove" $webMove) }
   $webPc = Get-WebText $Data "pc"
   if ($webPc -and $webPc -cne (Get-DrivePcName)) { return Invoke-WebPcPref $webPc (Get-WebText $Data "id") $webMove }
   $webItem = @(Resolve-PrefsItems (Read-CliPrefs).Lines @(Get-WebText $Data "id"))[0]
-  if ($webMove -eq "erase" -and $webItem.All) { throw "un groupe entier ne s'efface pas" }
+  if ($webMove -eq "erase" -and $webItem.All) { throw (Get-ClmText "server.groupErase") }
   $null = Update-SyncChoice { param($c) Set-CliPrefsItem $c $webItem $webMove }
   $null = Request-DriveSync $script:DriveJob
-  return New-WebDone ($webItem.Label + " " + $script:WebPrefMoves[$webMove]) (Get-WebPrefs)
-}
-
-function Invoke-WebDisplay {
-  param($Data)
-  $cur = Read-DisplayConfig
-  $p = Get-WebText $Data "palette"
-  $a = Get-WebText $Data "anim"
-  if (-not $p) { $p = $cur.palette }
-  if (-not $a) { $a = $cur.anim }
-  $null = Save-DisplayConfig $p $a
-  Update-UiDisplay
-  $script:MenuState.Dirty = $true
-  return New-WebDone "affichage enregistre"
+  return New-WebDone (Get-ClmText $script:WebPrefMoves[$webMove] $webItem.Label) (Get-WebPrefs)
 }
 
 function Invoke-WebSave {
   param($Data)
   $webAccs = Find-WebAccounts @(Get-Accounts) (Get-WebList $Data "accs")
   $path = Invoke-WebWork "Sauvegarde" { Save-Accounts "" $webAccs }
-  return New-WebDone ("sauvegarde : " + $path) (Get-WebBackups)
+  return New-WebDone (Get-ClmText "server.saved" $path) (Get-WebBackups)
 }
 
 function Invoke-WebBackupsOf {

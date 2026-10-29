@@ -1,10 +1,9 @@
-. Import-ClmModule claude-web-actions-sync, claude-web-errors
-$script:WebFree = @("backups-of")
-$script:WebStartupText = "clm finit de demarrer, reessayer dans un instant"
+. Import-ClmModule claude-web-actions-sync, claude-web-actions-settings, claude-web-errors, claude-text
+$script:WebFree = @("backups-of", "look", "usagepoll")
 $script:WebHandlers = @{
   refresh = "Invoke-WebRefresh"; rename = "Invoke-WebRename"; move = "Invoke-WebMove"; remove = "Invoke-WebRemove"; add = "Invoke-WebAdd"
   drivesync = "Invoke-WebDriveSync"; driveauto = "Invoke-WebDriveAuto"; drivelogin = "Invoke-WebDriveLogin"; pref = "Invoke-WebPref"
-  display = "Invoke-WebDisplay"; save = "Invoke-WebSave"; "backups-of" = "Invoke-WebBackupsOf"; restore = "Invoke-WebRestore"; selfupdate = "Invoke-WebSelfUpdate"
+  display = "Invoke-WebDisplay"; look = "Invoke-WebLook"; usagepoll = "Invoke-WebUsagePoll"; save = "Invoke-WebSave"; "backups-of" = "Invoke-WebBackupsOf"; restore = "Invoke-WebRestore"; selfupdate = "Invoke-WebSelfUpdate"
 }
 
 function Get-WebText {
@@ -27,14 +26,14 @@ function New-WebDone {
 function Find-WebAccount {
   param([string]$Dir)
   $hit = @(Get-Accounts | Where-Object { $_.Dir -ceq $Dir })
-  if ($hit.Count -eq 0) { throw ("compte inconnu : " + $Dir) }
+  if ($hit.Count -eq 0) { throw (Get-ClmText "server.unknownAccount" $Dir) }
   return $hit[0]
 }
 
 function Find-WebAccounts {
   param($Accs, [string[]]$Dirs)
-  if ($Dirs.Count -eq 0) { throw "aucun compte choisi" }
-  foreach ($d in $Dirs) { if (@($Accs | Where-Object { $_.Dir -ceq $d }).Count -eq 0) { throw ("compte inconnu : " + $d) } }
+  if ($Dirs.Count -eq 0) { throw (Get-ClmText "server.noAccount") }
+  foreach ($d in $Dirs) { if (@($Accs | Where-Object { $_.Dir -ceq $d }).Count -eq 0) { throw (Get-ClmText "server.unknownAccount" $d) } }
   return @($Accs | Where-Object { $Dirs -ccontains $_.Dir })
 }
 
@@ -61,7 +60,7 @@ function Invoke-WebRefresh {
   for ($i = 0; $i -lt $st.Entries.Count; $i++) {
     if ($st.Entries[$i].Acc.Dir -ceq $dir) { Request-EntryRead $st (Get-NowMs) 0 $i; return New-WebDone ([string]$st.Msg[0]).Trim() }
   }
-  throw ("compte inconnu : " + $dir)
+  throw (Get-ClmText "server.unknownAccount" $dir)
 }
 
 function Invoke-WebRename {
@@ -75,7 +74,7 @@ function Invoke-WebMove {
   param($Data)
   $webAcc = Find-WebAccount (Get-WebText $Data "acc")
   $rank = Get-WebText $Data "rank"
-  if ($rank -notmatch '^[0-9]{1,4}$') { throw "rang illisible" }
+  if ($rank -notmatch '^[0-9]{1,4}$') { throw (Get-ClmText "server.badRank") }
   $webRank = [int]$rank
   return New-WebDone (Update-WebAccounts { Move-Account $webAcc $webRank })
 }
@@ -93,24 +92,24 @@ function Invoke-WebAdd {
   param($Data)
   $name = (Get-WebText $Data "name").Trim()
   if ($name) { Assert-AccountName $name "" @(Get-Accounts) }
-  return New-WebDone "ajout du compte : suivre la connexion dans le terminal" $null @{ Name = "add"; Arg = $name }
+  return New-WebDone (Get-ClmText "server.addStarted") $null @{ Name = "add"; Arg = $name }
 }
 
 function Invoke-WebSelfUpdate {
   param($Data)
-  if (-not (Test-ClmUpdateReady)) { throw "aucune mise a jour de clm en attente" }
-  return New-WebDone "clm se met a jour et redemarre, la page va se fermer" $null @{ Name = "selfupdate" }
+  if (-not (Test-ClmUpdateReady)) { throw (Get-ClmText "server.noUpdate") }
+  return New-WebDone (Get-ClmText "server.updating") $null @{ Name = "selfupdate" }
 }
 
 function Invoke-WebAction {
   param($Item)
   $name = Get-WebText $Item.Args "do"
   if ($null -ne $script:Startup -and (Test-StepsLeft $script:Startup @()) -and $script:WebFree -notcontains $name) {
-    Send-WebJson $Item.Conn 409 @{ ok = $false; msg = $script:WebStartupText }
+    Send-WebJson $Item.Conn 409 @{ ok = $false; msg = (Get-ClmText "server.starting") }
     return @{ Name = "none" }
   }
   try {
-    if (-not $script:WebHandlers.ContainsKey($name)) { throw ("action inconnue : " + $name) }
+    if (-not $script:WebHandlers.ContainsKey($name)) { throw (Get-ClmText "server.unknownAction" $name) }
     $r = & $script:WebHandlers[$name] $Item.Args
   } catch {
     $text = Get-WebErrorText $_ "W3"

@@ -1,9 +1,8 @@
-. Import-ClmModule claude-web-http
+. Import-ClmModule claude-web-http, claude-text
 $script:WebBootMs = 60000
 $script:WebBootPath = "/boot"
 $script:WebBootBytes = 16
 $script:WebTokenBytes = 24
-$script:WebBootRefused = "lien de la page expire ou deja utilise : rouvrir la page depuis clm, touche w"
 
 function New-WebSecret {
   param([int]$Size)
@@ -53,7 +52,7 @@ function Send-WebBoot {
   if ($Conn.Req.Query -cmatch '^c=([0-9a-f]+)$') { $given = $Matches[1] }
   $fresh = $null -ne $Web.Boot -and (Get-NowMs) -le $Web.BootUntil
   if (-not $fresh -or -not (Test-WebSecret $given $Web.Boot)) {
-    Send-WebResponse $Conn 403 "text/plain; charset=utf-8" ([Text.Encoding]::UTF8.GetBytes($script:WebBootRefused))
+    Send-WebResponse $Conn 403 "text/plain; charset=utf-8" ([Text.Encoding]::UTF8.GetBytes((Get-ClmText "server.bootRefused")))
     return
   }
   $Web.Boot = $null

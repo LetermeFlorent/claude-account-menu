@@ -1,5 +1,4 @@
-$script:WebErrorText = "erreur de clm"
-$script:WebErrorWhere = ", detail dans le terminal"
+. Import-ClmModule claude-text
 $script:WebLastDetail = ""
 $script:WebPathChars = New-Object regex '[\\/]'
 
@@ -15,9 +14,8 @@ function Write-WebDetail {
 
 function Get-WebHiddenText {
   param($Err, [string]$Code)
-  $label = $script:WebErrorText + " (" + $Code + ")"
-  Write-WebDetail ($label + " : " + [string]$Err.Exception.Message)
-  return $label + $script:WebErrorWhere
+  Write-WebDetail ("erreur de clm (" + $Code + ") : " + [string]$Err.Exception.Message)
+  return Get-ClmText "server.hiddenError" $Code
 }
 
 function Get-WebErrorText {

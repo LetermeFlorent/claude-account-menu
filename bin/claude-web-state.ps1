@@ -1,3 +1,5 @@
+. Import-ClmModule claude-web-look
+
 function Get-WebQuota {
   param($Pct, $Pace, [string]$Left)
   $q = [ordered]@{ pct = $null; left = $Left; pace = ""; tone = "dim" }
@@ -33,17 +35,10 @@ function Get-WebDrive {
   return $d
 }
 
-function Get-WebTheme {
-  $ink = $script:InkTo
-  if ($null -eq $ink) { $ink = $script:Ink }
-  foreach ($k in $script:Palettes.Keys) { if ([object]::ReferenceEquals($script:Palettes[$k], $ink)) { return $k } }
-  return "dark"
-}
-
 function Get-WebDisplay {
   $d = Read-DisplayConfig
   $f = Get-DisplayForced
-  return [ordered]@{ palette = $d.palette; anim = $d.anim; theme = (Get-WebTheme); paletteEnv = $f.palette; animEnv = $f.anim }
+  return [ordered]@{ palette = $d.palette; anim = $d.anim; paletteEnv = $f.palette; animEnv = $f.anim }
 }
 
 function Get-WebTone {
@@ -73,6 +68,6 @@ function Get-WebState {
   }
   return [ordered]@{
     ok = $true; open = $Open; startup = ($null -ne $script:Startup -and (Test-StepsLeft $script:Startup @())); version = $version
-    update = (Get-WebUpdate); msg = $msg; accounts = $accs.ToArray(); drive = (Get-WebDrive); display = (Get-WebDisplay)
+    update = (Get-WebUpdate); msg = $msg; accounts = $accs.ToArray(); drive = (Get-WebDrive); display = (Get-WebDisplay); look = (Get-WebLook)
   }
 }

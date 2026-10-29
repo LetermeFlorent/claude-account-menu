@@ -41,9 +41,10 @@ try {
   Assert-Equal "403" (Get-WebCode (Invoke-WebTest (New-WebAsk "GET /api/state" @($ok, "Sec-Fetch-Site: cross-site")))) "web : cookie envoye par un autre site refuse"
 
   $script:MenuState = @{ Msg = @("", $null); Dirty = $false }
+  $auHidden = { param([string]$Code) $t = Get-ClmText "server.hiddenError" @($Code); return $t.Substring(0, $t.IndexOf("(" + $Code + ")") + $Code.Length + 2) }
   foreach ($v in @("boom", "io")) {
     $r = Invoke-WebTest (New-WebAsk ("GET /api/" + $v) @($ok))
-    Assert-True ((Get-WebCode $r) -eq "500" -and $r -cmatch 'erreur de clm \(W1\)') ("web : erreur de lecture " + $v + " generique avec son code")
+    Assert-True ((Get-WebCode $r) -eq "500" -and $r.Contains((& $auHidden "W1"))) ("web : erreur de lecture " + $v + " generique avec son code")
     Assert-True (-not $r.Contains("secret-web")) ("web : erreur de lecture " + $v + " sans chemin")
     Assert-True ($script:MenuState.Msg[0].Contains("secret-web") -and $script:MenuState.Msg[0].Contains("W1")) ("web : erreur de lecture " + $v + " detaillee dans le terminal")
   }
@@ -55,7 +56,7 @@ try {
   try { throw "chemin refuse : .claude/x" } catch { $auErr = $_ }
   Assert-True ((Get-WebErrorText $auErr "W3") -cmatch '\(W3\)') "web : chemin relatif cache aussi"
   try { $null = [IO.File]::ReadAllText($auFile) } catch { $auErr = $_ }
-  Assert-True ((Get-WebErrorText $auErr "W3") -cmatch '^erreur de clm \(W3\)') "web : erreur du systeme toujours generique"
+  Assert-True ((Get-WebErrorText $auErr "W3").StartsWith((& $auHidden "W3"))) "web : erreur du systeme toujours generique"
 } finally {
   $script:MenuState = $auMenu
   Restore-WebTestRoot

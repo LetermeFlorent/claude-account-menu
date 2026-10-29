@@ -51,7 +51,7 @@ try {
   $reply = Read-MwReply $c
   Assert-Equal "add|" ($a.Name + "|" + $a.Arg) "menu web : ajout demande par la page, passe au terminal"
   Assert-True ($reply -match '^HTTP/1\.1 200 ' -and $reply -match '"ok":\s*true') "menu web : page prevenue avant l'ajout"
-  Assert-Equal "  ajout du compte : suivre la connexion dans le terminal" $script:MenuState.Msg[0] "menu web : message dans le terminal"
+  Assert-Equal ("  " + (Get-ClmText "server.addStarted")) $script:MenuState.Msg[0] "menu web : message dans le terminal"
 
   $c = Send-MwAsk "POST /api/action" '{"do":"rename","acc":".claude","name":"x"}'
   $script:MwKeys.Enqueue((New-KeyInfo "m"))
