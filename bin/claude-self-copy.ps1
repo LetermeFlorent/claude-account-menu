@@ -18,6 +18,14 @@ function Test-ClmSameFile {
   return [Convert]::ToBase64String([IO.File]::ReadAllBytes($From)) -ceq [Convert]::ToBase64String([IO.File]::ReadAllBytes($To))
 }
 
+function Remove-ClmFile {
+  param([string]$Path)
+  $deadline = [DateTime]::UtcNow.AddMilliseconds($script:SharedWaitMs)
+  while ([IO.File]::Exists($Path)) {
+    try { [IO.File]::Delete($Path) } catch { if (-not (Test-SharedBusy $_ $deadline)) { throw } }
+  }
+}
+
 function Copy-ClmFile {
   param([string]$From, [string]$To)
   if (Test-ClmSameFile $From $To) { return }
@@ -27,7 +35,7 @@ function Copy-ClmFile {
     [IO.File]::Copy($From, $tmp)
     Move-FileOver $tmp $To
   } finally {
-    if ([IO.File]::Exists($tmp)) { [IO.File]::Delete($tmp) }
+    Remove-ClmFile $tmp
   }
 }
 
@@ -61,7 +69,7 @@ function Remove-ClmStaleFiles {
   param([string]$Target, [string[]]$Shipped)
   foreach ($rel in Get-ClmStaleFiles $Target $Shipped) {
     $p = [IO.Path]::Combine($Target, $rel)
-    if ([IO.File]::Exists($p)) { [IO.File]::Delete($p) }
+    Remove-ClmFile $p
     Remove-ClmEmptyDirs $Target $rel
   }
 }
@@ -70,13 +78,14 @@ function Write-ClmStampFile {
   param([string]$Target, [string]$Version)
   $p = [IO.Path]::Combine($Target, $script:ClmVersionFile)
   if ($Version) { Write-TextFileAtomic $p ($Version.Trim() + "`n") }
-  elseif ([IO.File]::Exists($p)) { [IO.File]::Delete($p) }
+  else { Remove-ClmFile $p }
 }
 
 function Copy-ClmTree {
   param([string]$Source, [string]$Target, [string[]]$Files)
   $fresh = @($Files | Where-Object { -not [IO.File]::Exists([IO.Path]::Combine($Target, $_)) })
   foreach ($rel in @($fresh) + @($Files | Where-Object { $fresh -cnotcontains $_ })) {
+    [IO.File]::SetLastWriteTimeUtc([IO.Path]::Combine($Target, $script:ClmMarkerFile), [DateTime]::UtcNow)
     Copy-ClmFile ([IO.Path]::Combine($Source, $rel)) ([IO.Path]::Combine($Target, $rel))
   }
 }
@@ -93,6 +102,6 @@ function Install-ClmFiles {
     Write-TextFileAtomic ([IO.Path]::Combine($Target, $script:ClmManifestFile)) ((@($files) -join "`n") + "`n")
     Write-ClmStampFile $Target $Version
   } finally {
-    if ([IO.File]::Exists($marker)) { [IO.File]::Delete($marker) }
+    Remove-ClmFile $marker
   }
 }
