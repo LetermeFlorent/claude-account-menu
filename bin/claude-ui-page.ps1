@@ -1,3 +1,4 @@
+. Import-ClmModule claude-ui-page-redraw
 $script:WorkPage = $null
 $script:PageMaxWidth = 100
 
@@ -30,8 +31,8 @@ function Read-PageKey {
   param([scriptblock]$Build)
   while ($true) {
     $pkNow = Get-NowMs
-    $null = Update-UiTick $pkNow
-    Show-UiRows (& $Build) $pkNow
+    $pkTick = Update-UiTick $pkNow
+    Show-PageRows (& $Build) $pkNow $pkTick
     $pkKey = Read-UiKey
     if ($pkKey -is [hashtable]) { $pkKey = $null }
     if ($null -ne $pkKey -and [int]$pkKey.KeyChar -ne 3) { return $pkKey }
@@ -78,9 +79,9 @@ function Select-OneRow {
 
 function Show-WorkPage {
   $now = Get-NowMs
-  $null = Update-UiTick $now $true
+  $tick = Update-UiTick $now $true
   $body = @(, (New-TextRow ("  " + $script:WorkPage.Text) $script:Ink.Dim))
-  Show-UiRows (Get-PageRows $script:WorkPage.Title $body) $now
+  Show-PageRows (Get-PageRows $script:WorkPage.Title $body) $now $tick
 }
 
 function Invoke-UiWork {
