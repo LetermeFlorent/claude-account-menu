@@ -73,7 +73,7 @@ Reglages de synchro de ce PC, Drive connecte
 Affichage de ce PC
   clm --palette auto|dark|light  couleurs du menu, auto suit le systeme
   clm --anim auto|on|off         animations du menu, auto suit le systeme
-  clm --usage-poll 15..600       delai entre deux lectures de l'API de suivi, 30 par defaut
+  clm --usage-poll 15..600       delai entre deux lectures de l'API, 30 s
 
 Variables
   CLM_ANIM=0|1                   coupe ou force les animations du menu,
@@ -88,7 +88,7 @@ Fichiers de clm, un dossier par utilisateur
   sync-choice.json               reglages de synchro de ce PC
   sync-catalog.json              skills et MCP vus a la derniere synchro
   drive.json                     connexion Drive, secret, a ne pas partager
-  display.json                   couleurs, animations et delai de lecture de ce PC
+  display.json                   couleurs, animations, delai de l'API de ce PC
   Les anciens .claude-accounts.json et .clm-*.json du dossier perso y sont
   deplaces au premier lancement.
 
