@@ -1,10 +1,11 @@
+. Import-ClmModule claude-ui-console-theme
 $script:InkTween = $null
 $script:InkFrom = $null
 $script:InkTo = $null
 
 function New-ThemeWatch {
   param([string]$Os = $script:OsName, $Vars = $null, [double]$Now = (Get-NowMs), [scriptblock]$Probe = $null)
-  if ($null -eq $Probe) { $Probe = { param($O, $V) Get-SystemTheme $O $V } }
+  if ($null -eq $Probe) { $Probe = { param($O, $V) Get-AutoTheme $O $V } }
   $fixed = $null -ne (Get-FixedTheme $Vars)
   $last = $null
   if (-not $fixed) { try { $last = & $Probe $Os $Vars } catch { Write-Verbose $_.Exception.Message } }
@@ -51,5 +52,5 @@ function Update-UiDisplay {
   param([double]$Now = (Get-NowMs))
   $script:ThemeWatch = New-ThemeWatch $script:OsName $null $Now
   $script:MotionOn = Get-MotionEnabled
-  Set-UiTheme (Get-ThemeName) $Now
+  Set-UiTheme (Get-ConsoleTheme) $Now
 }

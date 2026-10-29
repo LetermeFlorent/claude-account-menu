@@ -2,11 +2,11 @@ $script:Esc = [string][char]27
 $script:Rule = [string][char]0x2500
 $script:ViewWidth = 78
 $script:Grad = @{ "5h" = 0.55; "7d" = 0.3 }
-. Import-ClmModule claude-ui-palette, claude-ui-color-depth, claude-theme, claude-usage-pace, claude-menu-usage-line, claude-ui-motion, claude-ui-frame,
+. Import-ClmModule claude-ui-palette, claude-ui-color-depth, claude-ui-console-theme, claude-theme, claude-usage-pace, claude-menu-usage-line, claude-ui-motion, claude-ui-frame,
   claude-ui-theme, claude-ui-term, claude-menu-layout, claude-menu-keys, claude-ui-loader, claude-ui-bars,
   claude-ui-chrome, claude-menu-card, claude-menu-state, claude-menu-timer, claude-menu-clm-check, claude-drive-job,
   claude-menu-startup-view, claude-menu-screen, claude-ui-progress, claude-ui-mouse, claude-ui-page
-Use-Palette (Get-ThemeName)
+Use-Palette (Get-ConsoleTheme)
 
 function Fg {
   param($Rgb, [bool]$Bold = $false)
