@@ -2,6 +2,8 @@ $script:BarFull = [string][char]0x25A0
 $script:BarEmpty = [string][char]0x25A0
 $script:BarHalf = [string][char]0x25AA
 $script:Mark = [string][char]0x258C
+$script:BarGradients = @{}
+$script:BarGradientLimit = 256
 
 function Get-BarCount {
   param([double]$P, [int]$C)
@@ -41,15 +43,30 @@ function Add-SpanSeg {
   if ($N -gt 0) { $Segs.Add(@(($Glyph * $N), $Rgb, $false)) }
 }
 
-function Add-FilledSegs {
-  param($Segs, [int]$N, $From, $To)
+function New-GradientCells {
+  param([int]$N, $From, $To)
+  $cells = New-Object 'System.Collections.Generic.List[object]'
   for ($i = 0; $i -lt $N; $i++) {
     $t = 0.0
     if ($N -gt 1) { $t = $i / ($N - 1) }
     $glyph = $script:BarFull
     if ($i -eq $N - 1) { $glyph = $script:BarHalf }
-    $Segs.Add(@($glyph, (Get-LerpRgb $From $To $t), $false))
+    $cells.Add(@($glyph, (Get-LerpRgb $From $To $t), $false))
   }
+  return ,$cells
+}
+
+function Add-FilledSegs {
+  param($Segs, [int]$N, $From, $To)
+  if ($N -le 0) { return }
+  $key = "" + $N + "|" + ($From -join ",") + "|" + ($To -join ",")
+  $cells = $script:BarGradients[$key]
+  if ($null -eq $cells) {
+    if ($script:BarGradients.Count -ge $script:BarGradientLimit) { $script:BarGradients.Clear() }
+    $cells = New-GradientCells $N $From $To
+    $script:BarGradients[$key] = $cells
+  }
+  $Segs.AddRange($cells)
 }
 
 function Add-BarSegs {

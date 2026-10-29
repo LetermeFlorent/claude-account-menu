@@ -1,3 +1,4 @@
+. Import-ClmModule claude-menu-card-cache
 function Get-SegsLength {
   param($Row)
   $n = 0
@@ -100,8 +101,6 @@ function Add-CardRows {
   $w = [math]::Max(0, 1 - [math]::Abs($P - $I))
   $fade = 1 - 0.35 * (1 - $w)
   if ($null -ne $E.In) { $fade = $fade * (Get-TweenValue $E.In $Now) }
-  $out = Get-CardHead $E $I $L $w
-  $out.AddRange((Get-CardBody $E $L $Now))
-  $out.Add((New-Row))
+  $out = Get-CardRows $E $I $L $w $Now
   foreach ($r in $out) { $Rows.Add($r); $Fades.Add($fade) }
 }
