@@ -1,6 +1,6 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
 . Import-ClmModule claude-drive-actions, claude-drive-creds, claude-drive-leftovers, claude-drive-changes,
-  claude-drive-sessions, claude-drive-prefs, claude-drive-scope, claude-state, claude-drive-lock, claude-drive-sync-outcome
+  claude-drive-sessions, claude-drive-prefs, claude-drive-scope, claude-state, claude-drive-lock, claude-drive-sync-outcome, claude-text
 $script:DriveLockWaitMs = 5000
 $script:DriveExitBudgetMs = 30000
 
@@ -57,7 +57,7 @@ function Invoke-DriveSyncPass {
     Save-DriveState $state
   }
   Remove-SyncedOffSkills $prefs.Choice $patterns $state.Files
-  if ($Res.Failed -gt 0) { $Res.Error = "" + $Res.Failed + " fichier(s) en echec" + (Get-FailureSuffix $Res) + ", nouvel essai a la prochaine synchro"; return }
+  if ($Res.Failed -gt 0) { $Res.Error = (Get-ClmText "drive.sync.failedFiles" @($Res.Failed, (Get-FailureSuffix $Res))); return }
   if ($Res.Left -eq 0 -and (Test-AllPcsCurrent $presence)) {
     $Res.Deleted += Remove-OwnLeftovers $listing $pc (Get-SyncPatterns $accs) $Ctl $DeadlineMs
     $null = Remove-DriveFiles $sealed.Twins $Ctl $DeadlineMs
@@ -68,7 +68,6 @@ function Invoke-DriveSyncPass {
 }
 
 $script:FreshSyncSource = Join-Path $PSScriptRoot "claude-drive-sync.ps1"
-$script:FreshSyncFailed = "synchro par la nouvelle version de clm impossible"
 $script:FreshSyncScript = Add-ClmGuardedLoad 'param($Source, $Ctl, $DeadlineMs, $Force) $ProgressPreference = "SilentlyContinue"; <ClmGuardedLoad>; if ($clmReplaced) { return @{ Replaced = $true } }; Invoke-DriveSync $Ctl $DeadlineMs -Force:$Force'
 
 function Invoke-FreshDriveSync {
@@ -80,8 +79,8 @@ function Invoke-FreshDriveSync {
     $out = @($ps.Invoke())
     if ($out.Count -gt 0 -and $out[-1].Replaced -eq $true) { $res.Busy = $true; $res.Error = $script:DriveBusyText; return $res }
     if ($out.Count -gt 0 -and $out[-1] -is [hashtable]) { return $out[-1] }
-    $res.Error = $script:FreshSyncFailed
-  } catch { $res.Error = $script:FreshSyncFailed + " : " + $_.Exception.GetBaseException().Message }
+    $res.Error = (Get-ClmText "drive.sync.freshFailed")
+  } catch { $res.Error = (Get-ClmText "drive.sync.freshFailed") + " : " + $_.Exception.GetBaseException().Message }
   finally { $ps.Dispose() }
   return $res
 }
@@ -106,18 +105,18 @@ function Get-SyncNotice {
   $t = ""
   $refused = @($Result.Refused | Where-Object { $_ })
   $late = @($Result.Late | Where-Object { $_ })
-  if ($refused.Count -gt 0) { $t += " ; refuses : " + (@($refused | Select-Object -First 3) -join ", ") }
-  if ($late.Count -gt 0) { $t += " ; PC sur une ancienne version de clm : " + ($late -join ", ") }
+  if ($refused.Count -gt 0) { $t += " ; " + (Get-ClmText "drive.notice.refused" @((@($refused | Select-Object -First 3) -join ", "))) }
+  if ($late.Count -gt 0) { $t += " ; " + (Get-ClmText "drive.notice.late" @(($late -join ", "))) }
   return $t
 }
 
 function Get-DriveSyncMsg {
   param($Result)
-  if ($Result.Error) { return "synchro Drive : " + $Result.Error + (Get-SyncNotice $Result) }
-  if ($Result.Busy -or $Result.Shared) { return "synchro Drive : " + (Get-DriveSyncElsewhereText $Result) }
-  if ($Result.Stopped) { return "synchro Drive : interrompue pendant l'analyse, reprise a la prochaine synchro" }
-  $t = "synchro Drive : " + $Result.Up + " envoyes, " + $Result.Down + " recus, " + $Result.Deleted + " supprimes, " + $Result.Conflicts + " conflits"
-  if ($Result.Left -gt 0) { $t += ", " + $Result.Left + " restants pour la prochaine synchro" }
+  if ($Result.Error) { return (Get-ClmText "drive.msg.line" @($Result.Error)) + (Get-SyncNotice $Result) }
+  if ($Result.Busy -or $Result.Shared) { return (Get-ClmText "drive.msg.line" @((Get-DriveSyncElsewhereText $Result))) }
+  if ($Result.Stopped) { return (Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.stopped"))) }
+  $t = (Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.done" @($Result.Up, $Result.Down, $Result.Deleted, $Result.Conflicts))))
+  if ($Result.Left -gt 0) { $t += ", " + (Get-ClmText "drive.msg.left" @($Result.Left)) }
   return $t + (Get-SyncNotice $Result)
 }
 
@@ -127,7 +126,7 @@ function Sync-DriveBeforeLaunch {
   try {
     $null = Sync-OneCredential $Acc
     Set-DrivePresence $Acc $true
-  } catch { if (-not (Test-LeftToOtherClm $_)) { Write-Host ("  Drive : " + $_.Exception.Message) -ForegroundColor DarkYellow } }
+  } catch { if (-not (Test-LeftToOtherClm $_)) { Write-Host ("  " + (Get-ClmText "drive.warn" @($_.Exception.Message))) -ForegroundColor DarkYellow } }
 }
 
 function Sync-DriveAfterExit {
@@ -135,7 +134,7 @@ function Sync-DriveAfterExit {
   if (-not (Test-DriveConnected)) { return }
   try { Set-DrivePresence $Acc $false } catch { Write-Verbose $_.Exception.Message }
   if (-not (Test-DriveAuto)) { Send-DriveCredential $Acc; return }
-  Write-Host "  synchro Drive..." -ForegroundColor DarkGray
+  Write-Host ("  " + (Get-ClmText "drive.syncing")) -ForegroundColor DarkGray
   $r = Invoke-DriveSync $null $DeadlineMs
   while ($r.Busy -and (Get-LockNow) -lt $DeadlineMs) { $r = Invoke-DriveSync $null $DeadlineMs }
   if ($r.Error -or $r.Left -gt 0 -or $r.Stopped) { Write-Host ("  " + (Get-DriveSyncMsg $r)) -ForegroundColor DarkYellow }

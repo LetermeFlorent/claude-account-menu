@@ -68,9 +68,9 @@ try {
 
   $script:DriveJob = New-DriveJob $true 0
   $d = (Get-WebState $true).drive
-  Assert-Equal "True bureau True sync jamais False" ("" + $d.connected + " " + $d.pc + " " + $d.auto + " " + $d.tag + " " + $d.running) "web etat : Drive connecte"
+  Assert-Equal ("True bureau True " + (Get-ClmText "drive.tag.never") + " False") ("" + $d.connected + " " + $d.pc + " " + $d.auto + " " + $d.tag + " " + $d.running) "web etat : Drive connecte"
   $script:DriveJob.Away[".claude-compte2"] = "portable"
-  Assert-Equal "ouvert sur portable" @((Get-WebState $true).accounts)[1].away "web etat : compte ouvert ailleurs"
+  Assert-Equal (Get-ClmText "drive.away" @("portable")) @((Get-WebState $true).accounts)[1].away "web etat : compte ouvert ailleurs"
 
   $script:ClmCheck = @{ Latest = @{ Number = 12; Sha = "abcdef123456" } }
   $u = (Get-WebState $true).update

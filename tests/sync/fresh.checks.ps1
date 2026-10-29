@@ -13,11 +13,11 @@ Assert-Equal "True 7 True 42 ctl" ("" + $r.Ok + " " + $r.Up + " " + $r.Force + "
 $script:FreshSyncSource = New-SandboxFile "fresh/casse.ps1" 'throw "code casse"'
 $r = Invoke-DriveSync
 Assert-True (-not $r.Ok) "code installe casse : synchro en echec"
-Assert-Equal ($script:FreshSyncFailed + " : code casse") $r.Error "code installe casse : raison donnee"
+Assert-Equal ((Get-ClmText "drive.sync.freshFailed") + " : code casse") $r.Error "code installe casse : raison donnee"
 
 $script:FreshSyncSource = New-SandboxFile "fresh/vide.ps1" 'function Invoke-DriveSync { }'
 $r = Invoke-DriveSync
-Assert-Equal $script:FreshSyncFailed $r.Error "code installe sans resultat : echec dit"
+Assert-Equal (Get-ClmText "drive.sync.freshFailed") $r.Error "code installe sans resultat : echec dit"
 
 $script:ClmLoadedSha = $freshSha
 Set-Item "function:Get-ClmSha" $freshShaFn

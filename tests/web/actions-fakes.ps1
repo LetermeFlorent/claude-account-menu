@@ -37,7 +37,7 @@ function Save-Accounts { param([string]$Tag, $Accs) $script:ActBackup = (@($Accs
 function Restore-Accounts { param([string]$Zip, $Accs) $script:ActRestored = [IO.Path]::GetFileName($Zip) + ":" + (@($Accs | ForEach-Object { $_.Dir }) -join ","); return "restauration terminee" }
 function Get-ZipAccounts { param([string]$Zip) return @([PSCustomObject]@{ Label = "perso"; Dir = ".claude" }, [PSCustomObject]@{ Label = "Pro"; Dir = ".claude-compte2" }) }
 function Assert-BackupVersion { param([string]$Zip) }
-function Request-DriveSync { param($Job) $script:ActSyncs++; return @("  synchro Drive lancee", $script:Ink.Dim) }
+function Request-DriveSync { param($Job) $script:ActSyncs++; return @(("  " + (Get-ClmText "drive.request.started")), $script:Ink.Dim) }
 function Set-DriveAuto { param([bool]$On) $script:ActAuto = $On }
 function Test-DriveConnected { return $true }
 function Read-CliPrefs {

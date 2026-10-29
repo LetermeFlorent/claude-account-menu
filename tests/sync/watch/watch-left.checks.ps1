@@ -4,7 +4,7 @@ Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
 $leftFolders = ${function:Get-DriveFolders}
 
 Set-DriveAuto $false
-Set-Item -Path function:Get-DriveFolders -Value { throw $script:LeftToOtherClm }
+Set-Item -Path function:Get-DriveFolders -Value { throw (Get-LeftToOtherClm) }
 $r = Invoke-WatchSync
 Set-Item -Path function:Get-DriveFolders -Value $leftFolders
 Assert-Equal "" $r.Error "veilleur, dossiers crees par un autre clm : aucune erreur"

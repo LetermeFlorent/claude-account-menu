@@ -16,7 +16,7 @@ try {
   $lkText = '{"at":1,"root":"R","files":[]}'
   [IO.File]::WriteAllText($script:DriveStatePath, $lkText)
   Invoke-LkLocked $script:DriveStatePath {
-    Assert-Throws { Read-DriveState } "illisible" "etat verrouille : lecture en erreur, pas absent"
+    Assert-Throws { Read-DriveState } (Get-ClmText "drive.state.unreadable" @("")) "etat verrouille : lecture en erreur, pas absent"
     $lkRun = Invoke-DriveSync
     Assert-True (-not $lkRun.Ok) "etat verrouille : synchro en echec"
     Assert-Equal 0 $script:Fake.Count "etat verrouille : rien envoye au Drive"
@@ -26,8 +26,8 @@ try {
 
   $lkText = [IO.File]::ReadAllText($script:DriveConfigPath)
   Invoke-LkLocked $script:DriveConfigPath {
-    Assert-Throws { Read-DriveConfig } "illisible" "drive.json verrouille : lecture en erreur, pas absente"
-    Assert-Throws { Set-DriveAuto $false } "illisible" "drive.json verrouille : reglage refuse"
+    Assert-Throws { Read-DriveConfig } (Get-ClmText "drive.config.unreadable" @("")) "drive.json verrouille : lecture en erreur, pas absente"
+    Assert-Throws { Set-DriveAuto $false } (Get-ClmText "drive.config.unreadable" @("")) "drive.json verrouille : reglage refuse"
   }
   Assert-Equal $lkText ([IO.File]::ReadAllText($script:DriveConfigPath)) "drive.json verrouille : fichier intact"
 

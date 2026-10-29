@@ -1,6 +1,5 @@
-. Import-ClmModule claude-sync-crypto
+. Import-ClmModule claude-text, claude-sync-crypto
 $script:SealPieceSize = 64KB
-$script:SealChanged = "fichier modifie pendant l'envoi"
 
 function Get-SealedLength {
   param([long]$PlainLength)
@@ -51,7 +50,7 @@ function Read-PlainPiece {
   $done = 0
   while ($done -lt $Count) {
     $n = $File.Read($Buffer, $done, $Count - $done)
-    if ($n -le 0) { throw $script:SealChanged }
+    if ($n -le 0) { throw (Get-ClmText "drive.upload.source.changed") }
     $done += $n
   }
 }

@@ -42,25 +42,25 @@ Write-CredentialFile $credPath (New-TestCred 100 "tenu")
 if ($credOs -ne "Windows") { Assert-Equal "-rw-------" (Get-Item -LiteralPath $credPath -Force).UnixMode "jeton lisible par son seul proprietaire" }
 $hold = [IO.File]::Open($credPath, "Open", "ReadWrite", "None")
 try { $err = ""; try { $null = Sync-AccountCredential $acc $fold $listing } catch { $err = $_.Exception.Message } } finally { $hold.Dispose() }
-Assert-Equal "jeton local illisible" $err "jeton local tenu par Claude Code : compte en echec"
+Assert-Equal (Get-ClmText "drive.cred.unreadable") $err "jeton local tenu par Claude Code : compte en echec"
 Assert-Equal "tenu" (Read-AccountCredential $acc).claudeAiOauth.accessToken "jeton local tenu : jamais remplace"
 $script:RemoteText = ((New-TestCred 300 "autre") | ConvertTo-Json -Depth 10 -Compress)
 $err = ""; try { $null = Sync-AccountCredential $acc $fold $listing } catch { $err = $_.Exception.Message }
-Assert-Equal "jeton du Drive invalide" $err "jeton du Drive d'une autre expiration : refuse"
+Assert-Equal (Get-ClmText "drive.cred.invalid") $err "jeton du Drive d'une autre expiration : refuse"
 $script:RemoteText = '{"claudeAiOauth":{"expiresAt":200}}'
 $err = ""; try { $null = Sync-AccountCredential $acc $fold $listing } catch { $err = $_.Exception.Message }
-Assert-Equal "jeton du Drive invalide" $err "jeton du Drive sans jeton d'acces : refuse"
+Assert-Equal (Get-ClmText "drive.cred.invalid") $err "jeton du Drive sans jeton d'acces : refuse"
 $null = New-SandboxFile ".claude-credtest/.claude.json" '{"oauthAccount":{"emailAddress":"a@x.fr"}}'
 $script:RemoteText = ((New-TestCred 200 "intrus") | ConvertTo-Json -Depth 10 -Compress)
 $err = ""; try { $null = Sync-AccountCredential $acc $fold @{ ".claude-credtest.json" = @{ Id = "c1"; Exp = 200; Props = @{ exp = "200"; who = "b@y.fr" } } } } catch { $err = $_.Exception.Message }
-Assert-Equal "jeton du Drive pour une autre adresse (b@y.fr)" $err "jeton d'une autre adresse : refuse"
+Assert-Equal (Get-ClmText "drive.cred.otherOwner" @("b@y.fr")) $err "jeton d'une autre adresse : refuse"
 Assert-Equal "tenu" (Read-AccountCredential $acc).claudeAiOauth.accessToken "jeton d'une autre adresse : jeton local garde"
 $err = ""; try { $null = Sync-AccountCredential $acc $fold @{ ".claude-credtest.json" = @{ Id = "c1"; Exp = 200; Props = @{ exp = "200" } } } } catch { $err = $_.Exception.Message }
-Assert-Equal "jeton du Drive sans adresse, refuse" $err "jeton du Drive sans adresse : refuse"
+Assert-Equal (Get-ClmText "drive.cred.noOwner") $err "jeton du Drive sans adresse : refuse"
 $far = [DateTimeOffset]::UtcNow.AddDays(31).ToUnixTimeMilliseconds()
 $script:RemoteText = ((New-TestCred $far "lointain") | ConvertTo-Json -Depth 10 -Compress)
 $err = ""; try { $null = Sync-AccountCredential $acc $fold @{ ".claude-credtest.json" = @{ Id = "c1"; Exp = $far; Props = @{ exp = ("" + $far); who = "a@x.fr" } } } } catch { $err = $_.Exception.Message }
-Assert-Equal "jeton du Drive refuse : expiration trop lointaine" $err "jeton du Drive valable plus de 30 jours : refuse"
+Assert-Equal (Get-ClmText "drive.cred.tooFar") $err "jeton du Drive valable plus de 30 jours : refuse"
 Assert-Equal "tenu" (Read-AccountCredential $acc).claudeAiOauth.accessToken "jetons du Drive refuses : jeton local garde"
 $script:RemoteText = ((New-TestCred 200 "intrus") | ConvertTo-Json -Depth 10 -Compress)
 $script:Sent.Clear()

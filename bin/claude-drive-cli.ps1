@@ -1,4 +1,5 @@
-. Import-ClmModule claude-drive-job, claude-sync-passphrase, claude-drive-login, claude-drive-watch-launch
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-drive-job, claude-sync-passphrase, claude-drive-login, claude-drive-watch-launch, claude-text
 $script:DriveCliRuns = @{ login = { Invoke-DriveSetup }; key = { Set-SyncPassphrase }; "key-reset" = { Reset-SyncPassphrase }; "key-forget" = { Clear-SyncPassphrase } }
 $script:DriveCliFlags = @{ "--drive-login" = "login"; "--sync-key" = "key"; "--sync-key-reset" = "key-reset"; "--sync-key-forget" = "key-forget" }
 
@@ -8,14 +9,14 @@ function Get-DriveCliAction {
     if ($script:DriveCliFlags.ContainsKey([string]$a)) { return @{ Name = $script:DriveCliFlags[[string]$a] } }
     if ($a -eq "--sync") { return @{ Name = "sync"; Force = (@($ArgList) -contains "--force") } }
     if ($a -match "^--sync-auto=(on|off)$") { return @{ Name = "auto"; On = ($Matches[1] -eq "on") } }
-    if ($a -match "^--sync-auto") { return @{ Name = "error"; Msg = "--sync-auto attend on ou off" } }
+    if ($a -match "^--sync-auto") { return @{ Name = "error"; Msg = (Get-ClmText "drive.cli.auto.expects") } }
   }
   return $null
 }
 
 function Invoke-DriveCliSync {
   param([bool]$Force)
-  if (-not (Test-DriveConnected)) { Write-Host "Drive non connecte : clm --drive-login"; return 1 }
+  if (-not (Test-DriveConnected)) { Write-Host (Get-ClmText "drive.off"); return 1 }
   $r = Invoke-DriveSync ([hashtable]::Synchronized(@{ Stop = $false; Progress = ""; Echo = $true })) 0 -Force:$Force
   Write-Host (Get-DriveSyncMsg $r)
   if ($r.Error) { return 1 }
@@ -28,7 +29,7 @@ function Invoke-DriveCli {
   if ($Action.Name -eq "sync") { return Invoke-DriveCliSync $Action.Force }
   if ($Action.Name -eq "auto") {
     Set-DriveAuto $Action.On
-    if ($Action.On) { Write-Host "synchro automatique activee" } else { Write-Host "synchro automatique coupee" }
+    if ($Action.On) { Write-Host (Get-ClmText "drive.cli.auto.on") } else { Write-Host (Get-ClmText "drive.cli.auto.off") }
     return 0
   }
   try { Write-Host (& $script:DriveCliRuns[$Action.Name]) } catch { Write-Host $_.Exception.Message; return 1 }

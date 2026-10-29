@@ -39,9 +39,9 @@ Assert-True ($script:DriveClientId.EndsWith(".apps.googleusercontent.com")) "cli
 function Invoke-DriveTokenPost { param([string]$Body) throw "400 invalid_grant Token has been expired or revoked" }
 $err = $null
 try { $null = Get-DriveToken -Renew } catch { $err = $_.Exception.Message }
-Assert-Equal "reconnecter le Drive : clm --drive-login" $err "jeton Google revoque, demande de reconnexion"
+Assert-Equal (Get-ClmText "drive.auth.reconnect") $err "jeton Google revoque, demande de reconnexion"
 Remove-Item -LiteralPath $script:DriveConfigPath -Force
 $err = $null
 try { $null = Get-DriveToken } catch { $err = $_.Exception.Message }
-Assert-Equal "reconnecter le Drive : clm --drive-login" $err "sans config, demande de connexion"
+Assert-Equal (Get-ClmText "drive.auth.reconnect") $err "sans config, demande de connexion"
 . (Join-Path $bin "claude-drive-login.ps1")

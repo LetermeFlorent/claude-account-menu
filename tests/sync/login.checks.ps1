@@ -44,7 +44,7 @@ try {
   $loginRes = Receive-AuthCode $loginListener 20 "st"
   Assert-Equal "bon|" ($loginRes.Code + "|" + $loginRes.Error) "connexion : erreur d'un autre etat ignoree"
   $loginForgedText = (New-Object IO.StreamReader($loginForged.GetStream())).ReadToEnd()
-  Assert-True (-not $loginForgedText.Contains("refusee")) "connexion : reponse d'un autre etat sans effet affiche"
+  Assert-True (-not $loginForgedText.Contains((Get-ClmText "drive.login.page.refused" @("access_denied")))) "connexion : reponse d'un autre etat sans effet affiche"
 } finally {
   $loginForged.Close()
   $loginGood.Close()

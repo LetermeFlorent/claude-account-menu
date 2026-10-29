@@ -1,26 +1,30 @@
-. Import-ClmModule claude-machine-lock
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-machine-lock, claude-text
 $script:DriveSyncLock = "drive"
 $script:AccountsSyncLock = "sync"
 $script:DriveCredsLock = "drive-creds"
 $script:DriveFoldersLock = "drive-folders"
 $script:DriveWatchLock = "drive-watch"
-$script:LeftToOtherClm = "laissee a un autre clm"
 $script:LockStampKeepMs = 3600000
+
+function Get-LeftToOtherClm {
+  return Get-ClmText "drive.lock.left"
+}
 
 function Get-LockNow {
   return [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 }
 
 function Invoke-WithMachineLock {
-  param([string]$Name, [int]$WaitMs, [scriptblock]$Action, [string]$BusyText = $script:LeftToOtherClm)
+  param([string]$Name, [int]$WaitMs, [scriptblock]$Action, [string]$BusyText = "")
   $lock = Open-MachineLock $Name $WaitMs
-  if ($null -eq $lock) { throw $BusyText }
+  if ($null -eq $lock) { if (-not $BusyText) { $BusyText = Get-LeftToOtherClm }; throw $BusyText }
   try { & $Action } finally { Close-MachineLock $lock }
 }
 
 function Test-LeftToOtherClm {
   param($ErrorRecord)
-  return $null -ne $ErrorRecord -and $ErrorRecord.Exception.Message -eq $script:LeftToOtherClm
+  return $null -ne $ErrorRecord -and $ErrorRecord.Exception.Message -eq (Get-LeftToOtherClm)
 }
 
 function Test-MachineLockHeld {

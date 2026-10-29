@@ -6,14 +6,14 @@ Set-PcFile ".claude/a.md" "x" 1700000000
 
 Assert-Equal 0 (Read-DriveState).Files.Count "etat absent : vide"
 [IO.File]::WriteAllText($script:DriveStatePath, "pas du json")
-Assert-Throws { Read-DriveState } "illisible" "etat illisible : lecture en erreur, pas etat vide"
+Assert-Throws { Read-DriveState } (Get-ClmText "drive.state.unreadable" @("")) "etat illisible : lecture en erreur, pas etat vide"
 $r = Invoke-DriveSync
 Assert-True (-not $r.Ok) "etat illisible : synchro en echec"
-Assert-True ($r.Error.Contains("illisible")) "etat illisible : raison donnee"
+Assert-True ($r.Error.Contains((Get-ClmText "drive.state.unreadable" @("")))) "etat illisible : raison donnee"
 Assert-Equal "pas du json" ([IO.File]::ReadAllText($script:DriveStatePath)) "etat illisible : fichier intact"
 Assert-Equal 0 $script:Fake.Count "etat illisible : rien envoye au Drive"
 [IO.File]::WriteAllText($script:DriveStatePath, "")
-Assert-Throws { Read-DriveState } "illisible" "etat vide : lecture en erreur"
+Assert-Throws { Read-DriveState } (Get-ClmText "drive.state.unreadable" @("")) "etat vide : lecture en erreur"
 Remove-Item -LiteralPath $script:DriveStatePath -Force
 $r = Invoke-DriveSync
 Assert-True $r.Ok ("etat absent : premiere synchro " + $r.Error)

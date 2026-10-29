@@ -1,3 +1,5 @@
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-text
 $script:DriveDeleteLimit = 20
 $script:DeleteKinds = @("delete-local", "delete-remote")
 
@@ -43,5 +45,5 @@ function Assert-DeleteLimit {
   param($Plan, [int]$BaseCount, [bool]$Force, $Exempt = $null)
   $n = Get-CountedDeletes $Plan $Exempt
   $limit = [math]::Max($script:DriveDeleteLimit, [int][math]::Floor($BaseCount / 10))
-  if ($n -gt $limit -and -not $Force) { throw ("synchro bloquee : " + $n + " suppressions prevues, verifier puis lancer clm --sync --force") }
+  if ($n -gt $limit -and -not $Force) { throw (Get-ClmText "drive.scope.blocked" @($n)) }
 }

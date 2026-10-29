@@ -91,7 +91,7 @@ Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/.claude/autre.md" $api
 $script:MediaBody = [Text.Encoding]::UTF8.GetBytes("en clair")
 Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/.claude/notes [v2].md" $apiKeys } $script:SealRefused "telechargement en clair refuse"
 Assert-True (-not [IO.File]::Exists($refusedPath)) "fichier refuse jamais ecrit"
-Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/x" $null } $script:SealRequired "telechargement sans cle refuse"
+Assert-Throws { Save-SealedMedia "m1" $refusedPath "files/x" $null } (Get-ClmText "drive.download.key.required") "telechargement sans cle refuse"
 $entry = ConvertTo-RemoteEntry ([PSCustomObject]@{ id = "s1"; name = "clm-enc/a"; md5Checksum = "ffff"; appProperties = [PSCustomObject]@{ h = "abc"; m = "5" } })
 Assert-Equal "abc|5" ($entry.Md5 + "|" + $entry.M) "fichier chiffre : empreinte en clair lue dans ses proprietes"
 Assert-Equal "a1,b2" ((Get-RemoteIds @{ Id = "a1"; SealedId = "a1"; PlainId = "b2" }) -join ",") "suppression : fichier chiffre et copie en clair"

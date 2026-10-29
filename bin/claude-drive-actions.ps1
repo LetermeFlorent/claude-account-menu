@@ -1,6 +1,6 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
 . Import-ClmModule claude-drive-files, claude-drive-state, claude-drive-plan, claude-drive-transfer,
-  claude-drive-prefetch, claude-drive-sealed, claude-drive-conflict, claude-drive-transfer-file
+  claude-drive-prefetch, claude-drive-sealed, claude-drive-conflict, claude-drive-transfer-file, claude-text
 $script:DriveFailLimit = 3
 $script:DriveEchoEvery = 25
 $script:DriveSaveEveryMs = 60000
@@ -23,7 +23,7 @@ function Set-SyncProgress {
   param($Ctl, [int]$Done, [int]$Total)
   if ($null -eq $Ctl) { return }
   $Ctl.Progress = "" + $Done + "/" + $Total
-  if ($Ctl.Echo -and ($Done % $script:DriveEchoEvery -eq 0 -or $Done -eq $Total)) { Write-Host ("  sync " + $Ctl.Progress) }
+  if ($Ctl.Echo -and ($Done % $script:DriveEchoEvery -eq 0 -or $Done -eq $Total)) { Write-Host ("  " + (Get-ClmText "drive.progress" @($Ctl.Progress))) }
 }
 
 function New-BaseEntry {
@@ -75,7 +75,7 @@ function Receive-SyncFile {
 function Invoke-SyncAction {
   param($Ctx, $Action)
   $p = $Action.Path
-  if ($script:LocalActionKinds -contains $Action.Kind -and -not (Test-SafeSyncPath $p)) { throw ("chemin refuse : " + $p) }
+  if ($script:LocalActionKinds -contains $Action.Kind -and -not (Test-SafeSyncPath $p)) { throw (Get-ClmText "drive.action.unsafePath" @($p)) }
   $res = $Ctx.Res
   switch ($Action.Kind) {
     "upload" { Send-SyncFile $Ctx $p; $res.Up++ }

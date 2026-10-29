@@ -65,7 +65,7 @@ try {
   $script:DriveJob = New-DriveJob $true 0
   Assert-Equal (Get-ClmText "server.driveOn") (Invoke-ActTest @{ do = "drivelogin" }).Msg "web action : Drive deja connecte"
   $script:ActSyncs = 0
-  Assert-Equal "synchro Drive lancee" (Invoke-ActTest @{ do = "drivesync" }).Msg "web action : synchro lancee"
+  Assert-Equal (Get-ClmText "drive.request.started") (Invoke-ActTest @{ do = "drivesync" }).Msg "web action : synchro lancee"
   $r = Invoke-ActTest @{ do = "driveauto"; on = $false }
   Assert-Equal ((Get-ClmText "server.autoOff") + " False") ($r.Msg + " " + $script:ActAuto) "web action : synchro automatique coupee"
   $r = Invoke-ActTest @{ do = "driveauto"; on = $true }

@@ -37,7 +37,7 @@ Reset-DriveFoldersCheck
 $lock = Open-MachineLock "drive-folders"
 $script:DriveFoldersWaitMs = 0
 try { $err = ""; try { $null = Get-DriveFolders } catch { $err = $_.Exception.Message } } finally { Close-MachineLock $lock }
-Assert-Equal "laissee a un autre clm" $err "creation des dossiers Drive sous verrou"
+Assert-Equal (Get-ClmText "drive.lock.left") $err "creation des dossiers Drive sous verrou"
 
 $c = @{ refreshToken = "r"; folderRoot = "r1"; folderFiles = "f1"; folderCredentials = "c1"; folderPresence = "p1"; lastSync = 5; pc = "PC" }
 Clear-DriveFolders $c

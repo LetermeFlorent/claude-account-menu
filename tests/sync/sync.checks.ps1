@@ -70,7 +70,7 @@ $null = Invoke-DriveSync
 Remove-Item -LiteralPath (Join-Path $script:HomeDir ".claude/notes") -Recurse -Force
 $r = Invoke-DriveSync
 Assert-True (-not $r.Ok) "garde-fou : synchro bloquee"
-Assert-Equal "synchro bloquee : 25 suppressions prevues, verifier puis lancer clm --sync --force" $r.Error "garde-fou : message"
+Assert-Equal (Get-ClmText "drive.scope.blocked" @(25)) $r.Error "garde-fou : message"
 Assert-True (Test-FakeFile ".claude/notes/n1.md") "garde-fou : rien supprime"
 $r = Invoke-DriveSync -Force
 Assert-Equal 25 $r.Deleted "--force passe outre le garde-fou"
@@ -93,7 +93,7 @@ Assert-True $r.Stopped "echeance depassee : analyse interrompue"
 Assert-Equal 0 $r.Up "echeance depassee : rien envoye"
 Assert-Equal 0 $r.At "echeance depassee : synchro pas complete"
 Assert-Equal $before ([long](Read-DriveConfig)["lastSync"]) "echeance depassee : derniere synchro inchangee"
-Assert-Equal "synchro Drive : interrompue pendant l'analyse, reprise a la prochaine synchro" (Get-DriveSyncMsg $r) "echeance depassee : message"
+Assert-Equal (Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.stopped"))) (Get-DriveSyncMsg $r) "echeance depassee : message"
 $r = Invoke-DriveSync ([hashtable]::Synchronized(@{ Stop = $true; Progress = "" }))
 Assert-True ($r.Stopped -and $r.Up -eq 0) "arret demande avant la fin de l'analyse : rien envoye"
 
@@ -101,7 +101,7 @@ $script:FailSend = @(".claude/tard/t1.md")
 $r = Invoke-DriveSync
 Assert-Equal 2 $r.Up "echec d'un fichier : les autres partent"
 Assert-Equal 1 $r.Failed "echec d'un fichier compte"
-Assert-Equal "1 fichier(s) en echec (.claude/tard/t1.md : panne reseau), nouvel essai a la prochaine synchro" $r.Error "echec d'un fichier : message"
+Assert-Equal (Get-ClmText "drive.sync.failedFiles" @(1, " (.claude/tard/t1.md : panne reseau)")) $r.Error "echec d'un fichier : message"
 foreach ($i in 1..4) { Set-PcFile (".claude/panne/p" + $i + ".md") ("p" + $i) }
 $script:FailSend = @(".claude/panne/p1.md", ".claude/panne/p2.md", ".claude/panne/p3.md", ".claude/tard/t1.md")
 $r = Invoke-DriveSync
@@ -138,8 +138,8 @@ if ($script:OsName -eq "Windows") {
   Assert-True (Test-FakeFile ".claude/settings.json") "fichier verrouille : garde sur le Drive"
 }
 
-Assert-Equal "synchro Drive : 2 envoyes, 1 recus, 0 supprimes, 1 conflits" (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 2; Down = 1; Deleted = 0; Conflicts = 1; Left = 0 }) "message de fin"
-Assert-Equal "synchro Drive : 0 envoyes, 0 recus, 0 supprimes, 0 conflits, 4 restants pour la prochaine synchro" (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Left = 4 }) "message avec reste"
-Assert-Equal "synchro Drive : panne" (Get-DriveSyncMsg @{ Ok = $false; Error = "panne" }) "message d'erreur"
+Assert-Equal (Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.done" @(2, 1, 0, 1)))) (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 2; Down = 1; Deleted = 0; Conflicts = 1; Left = 0 }) "message de fin"
+Assert-Equal ((Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.done" @(0, 0, 0, 0)))) + ", " + (Get-ClmText "drive.msg.left" @(4))) (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Left = 4 }) "message avec reste"
+Assert-Equal (Get-ClmText "drive.msg.line" @("panne")) (Get-DriveSyncMsg @{ Ok = $false; Error = "panne" }) "message d'erreur"
 Restore-FakeDrive
 . (Join-Path $bin "claude-drive-creds.ps1")

@@ -1,11 +1,11 @@
-. Import-ClmModule claude-drive-remote-cache
+. Import-ClmModule claude-drive-remote-cache, claude-text
 $script:DriveChangesUri = "https://www.googleapis.com/drive/v3/changes"
 $script:DriveChangeFields = "nextPageToken,newStartPageToken,changes(fileId,removed,file(id,name,md5Checksum,appProperties,parents,trashed))"
 
 function Get-DriveStartToken {
   $r = ConvertFrom-DriveJson (Invoke-DriveRequest "GET" ($script:DriveChangesUri + "/startPageToken?fields=startPageToken"))
   $t = [string]$r.startPageToken
-  if (-not $t) { throw "jeton des changements du Drive absent" }
+  if (-not $t) { throw (Get-ClmText "drive.changes.noToken") }
   return $t
 }
 
@@ -19,7 +19,7 @@ function Read-DriveChanges {
     $r = ConvertFrom-DriveJson (Invoke-DriveRequest "GET" $uri)
     foreach ($c in @($r.changes)) { if ($null -ne $c) { $all.Add($c) } }
     if ($r.nextPageToken) { $next = [string]$r.nextPageToken; continue }
-    if (-not $r.newStartPageToken) { throw "fin des changements du Drive sans jeton" }
+    if (-not $r.newStartPageToken) { throw (Get-ClmText "drive.changes.noEnd") }
     return @{ Changes = $all.ToArray(); Token = [string]$r.newStartPageToken }
   }
 }

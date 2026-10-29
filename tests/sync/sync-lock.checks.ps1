@@ -11,14 +11,14 @@ try { $r = Invoke-DriveSync } finally { Close-MachineLock $held }
 Assert-Equal "" $r.Error "verrou tenu : aucune erreur"
 Assert-True $r.Busy "verrou tenu : synchro en attente"
 Assert-True $r.Ok "verrou tenu : pas un echec"
-Assert-Equal "synchro Drive : laissee a un autre clm" (Get-DriveSyncMsg $r) "verrou tenu : message"
+Assert-Equal (Get-ClmText "drive.msg.line" @((Get-LeftToOtherClm))) (Get-DriveSyncMsg $r) "verrou tenu : message"
 Assert-Equal 0 @(Get-FakeRels).Count "verrou tenu : rien envoye"
 
 Write-LockDone "drive" ((Get-LockNow) + 60000)
 $r = Invoke-DriveSync
 Assert-True ($r.Ok -and $r.Shared) "fait par un autre clm : saute"
 Assert-Equal 0 @(Get-FakeRels).Count "fait par un autre clm : rien envoye"
-Assert-Equal "synchro Drive : faite par un autre clm" (Get-DriveSyncMsg $r) "fait par un autre clm : message"
+Assert-Equal (Get-ClmText "drive.msg.line" @((Get-ClmText "drive.sync.sharedText"))) (Get-DriveSyncMsg $r) "fait par un autre clm : message"
 $r = Invoke-DriveSync -Force
 Assert-True ($r.Ok -and -not $r.Shared) "-Force : synchro faite malgre la trace"
 Assert-True ($r.Up -gt 0) "-Force : fichiers envoyes"
