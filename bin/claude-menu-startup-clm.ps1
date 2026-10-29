@@ -52,11 +52,17 @@ function Enter-ClmStepLock {
   $Step.Lock = Open-MachineLock $script:ClmUpdateLock
   if ($null -eq $Step.Lock -and $Now -lt $Step.LockEnd) { return Set-StartupProgress $Step -1 $script:ClmWaitStepText $Now }
   if ($null -eq $Step.Lock) { Complete-ClmStep $Step "ok" "laissee a un autre clm" $Now; return $true }
-  $skip = Get-ClmUpdateSkip $script:ClmLoadedSha
-  if ($skip -eq "replaced") { Complete-ClmRestart $Su $Step $script:ClmByPeerText $Now; return $true }
-  if ($skip -eq "fresh") { Complete-ClmStep $Step "ok" "a jour" $Now; return $true }
-  Start-ClmWork $Step "Find-ClmUpdate" 0 "recherche d'une nouvelle version" $Now
+  try { $null = Start-ClmLocked $Su $Step $Now }
+  catch { Close-MachineLock $Step.Lock; $Step.Lock = $null; throw }
   return $true
+}
+
+function Start-ClmLocked {
+  param($Su, $Step, [double]$Now)
+  $skip = Get-ClmUpdateSkip $script:ClmLoadedSha
+  if ($skip -eq "replaced") { Complete-ClmRestart $Su $Step $script:ClmByPeerText $Now; return }
+  if ($skip -eq "fresh") { Complete-ClmStep $Step "ok" "a jour" $Now; return }
+  Start-ClmWork $Step "Find-ClmUpdate" 0 "recherche d'une nouvelle version" $Now
 }
 
 function Step-ClmStartup {

@@ -3,13 +3,15 @@ $lockShaFn = (Get-Item "function:Get-ClmSha").ScriptBlock
 $lockLoaded = $script:ClmLoadedSha
 $lockWait = $script:ClmUpdateWaitMs
 $script:LockDiskSha = ""
-function Get-ClmSha { param([string]$Dir = "") return $script:LockDiskSha }
+$script:LockShaFail = ""
+function Get-ClmSha { param([string]$Dir = "") if ($script:LockShaFail) { throw $script:LockShaFail }; return $script:LockDiskSha }
 
 try {
   $script:ClmLoadedSha = "a" * 40
   $script:LockDiskSha = "a" * 40
   New-StartupCase @("clm", "claude")
   $held = Open-MachineLock $script:ClmUpdateLock
+  Assert-True ($null -ne $held) "verrou de mise a jour libre avant ces cas"
   try {
     $null = Invoke-StartupTicks 2
     Assert-Equal "" ($script:Loads -join "|") "autre clm en pleine mise a jour : pas de recherche en double"
@@ -40,6 +42,14 @@ try {
   try { $null = Invoke-StartupTicks 6 } finally { Close-MachineLock $held }
   Assert-Equal "ok laissee a un autre clm" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "autre clm bloque trop longtemps : recherche laissee, sans erreur"
   Assert-Equal 1 $script:ClaudeStarts "autre clm bloque trop longtemps : Claude Code continue"
+
+  $script:LockShaFail = "version illisible"
+  New-StartupCase @("clm", "claude")
+  Assert-Throws { Invoke-StartupTicks } "version illisible" "version de clm illisible : erreur remontee"
+  $script:LockShaFail = ""
+  $again = Open-MachineLock $script:ClmUpdateLock
+  Assert-True ($null -ne $again) "version de clm illisible : verrou rendu"
+  Close-MachineLock $again
 } finally {
   Set-Item -Path "function:script:Get-ClmSha" -Value $lockShaFn
   $script:ClmLoadedSha = $lockLoaded
