@@ -1,8 +1,11 @@
-. Import-ClmModule claude-backup-trust, claude-backup-changes
+. Import-ClmModule claude-backup-trust, claude-backup-changes, claude-machine-lock
 $script:RestoreForeignText = "sauvegarde pas creee par clm sur ce PC ou modifiee depuis : la restaurer par clm --restore=<chemin>"
 $script:RestoreForeignWarn = "sauvegarde pas creee par clm sur ce PC ou modifiee depuis, restauree a la demande"
 $script:RestoreConfirmText = "restauration a confirmer, elle change des reglages qui lancent des commandes : "
 $script:RestoreConfirmHow = ". Confirmer dans le menu de clm ou ajouter --yes"
+$script:RestoreLockName = "backup"
+$script:RestoreLockWaitMs = 3000
+$script:RestoreBusyText = "une autre restauration est en cours dans un autre clm : relancer celle-ci quand elle sera finie"
 
 function Assert-RestoreAllowed {
   param([string]$Zip, $Accs, [bool]$AllowForeign, [bool]$Yes)
@@ -33,6 +36,13 @@ function Get-ZipAccounts {
 
 function Restore-Accounts {
   param([string]$Zip, $Accs = $null, [switch]$AllowForeign, [switch]$Yes)
+  $lock = Open-MachineLock $script:RestoreLockName $script:RestoreLockWaitMs
+  if ($null -eq $lock) { throw $script:RestoreBusyText }
+  try { return Invoke-AccountRestore $Zip $Accs $AllowForeign $Yes } finally { Close-MachineLock $lock }
+}
+
+function Invoke-AccountRestore {
+  param([string]$Zip, $Accs, [bool]$AllowForeign, [bool]$Yes)
   Assert-ArchiveReadable $Zip
   Assert-BackupVersion $Zip
   if ($null -eq $Accs) { $Accs = @(Get-ZipAccounts $Zip) }
