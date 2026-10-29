@@ -21,8 +21,9 @@ function ConvertTo-StatusNumber {
 }
 
 function Read-StatusUsage {
-  param($Acc)
-  $map = Read-StatusLines (Get-StatusStatePath)
+  param($Acc, $Map = $null)
+  $map = $Map
+  if ($null -eq $map) { $map = Read-StatusLines (Get-StatusStatePath) }
   $tag = "@" + (Get-StateTag (Get-AccountPath $Acc))
   $at = ConvertTo-StatusNumber $map["q_at" + $tag]
   if ($null -eq $at) { return $null }
@@ -48,6 +49,24 @@ function Select-NewestUsage {
 }
 
 function Get-KnownUsage {
-  param($Acc, $Cache)
-  return Select-NewestUsage $Cache[$Acc.Label] (Read-StatusUsage $Acc)
+  param($Acc, $Cache, $Map = $null)
+  return Select-NewestUsage $Cache[$Acc.Label] (Read-StatusUsage $Acc $Map)
+}
+
+function New-UsageRow {
+  param($Acc, [string]$Email = "")
+  if ($Email -eq "") { $Email = Get-AccountEmail $Acc }
+  return [PSCustomObject]@{ Label = $Acc.Label; Email = $Email; Acc = $Acc; Plan = ""; Pct5 = $null; Reset5 = $null; Pct7 = $null; Reset7 = $null; Error = $null; Age = $null; At = $null; Expired = $false; LimitedUntil = $null }
+}
+
+function Get-LatestUsage {
+  param($Acc)
+  $known = Get-KnownUsage $Acc (Read-UsageCache)
+  if ($null -eq $known) { return $null }
+  $row = New-UsageRow $Acc
+  Copy-CacheEntry $known $row
+  $row.At = [long]$known.At
+  $left = Get-CooldownLeft $known
+  if ($left -gt 0) { $row.LimitedUntil = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() + $left }
+  return $row
 }

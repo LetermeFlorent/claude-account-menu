@@ -18,6 +18,10 @@ function Set-CacheAt {
 }
 
 $barAcc = [PSCustomObject]@{ Label = "barre"; Dir = ".claude-bar" }
+$barDisplay = Get-DisplayPath
+$barDisplayBytes = $null
+if (Test-Path -LiteralPath $barDisplay) { $barDisplayBytes = [IO.File]::ReadAllBytes($barDisplay) }
+[IO.File]::WriteAllText($barDisplay, '{ "usagePoll": 120 }', (New-Object Text.UTF8Encoding($false)))
 Set-BarState ($barNow - 20)
 $b = Read-StatusUsage $barAcc
 Assert-Equal ($barNow - 20) $b.At "barre : heure de sa derniere lecture"
@@ -35,9 +39,9 @@ Assert-True ($u.Age -ge 20 -and $u.Age -le 25) "barre lue il y a 20 s : age affi
 Assert-True (New-MenuEntry $barAcc @{} 0).Seen "barre recente : carte remplie des l'ouverture"
 Set-BarState ($barNow - 60)
 Assert-Equal "non connecte" (Get-FreshUsage $barAcc).Error "relecture forcee, barre de plus de 30 s : appel a l'API"
-Assert-Equal 11 (Get-AccountUsage $barAcc).Pct5 "lecture normale, barre de moins de 3 min : reprise"
+Assert-Equal 11 (Get-AccountUsage $barAcc).Pct5 "lecture normale, barre plus jeune que le delai de lecture : reprise"
 Set-BarState ($barNow - 400)
-Assert-Equal "non connecte" (Get-AccountUsage $barAcc).Error "barre de plus de 3 min : appel a l'API"
+Assert-Equal "non connecte" (Get-AccountUsage $barAcc).Error "barre plus vieille que le delai de lecture : appel a l'API"
 
 Save-UsageEntry "barre" ([PSCustomObject]@{ Pct5 = 50; Reset5 = $null; Pct7 = 6; Reset7 = $null })
 Set-BarState ($barNow - 20)
@@ -55,3 +59,4 @@ $m = Read-UsageCache
 $m.Remove("barre")
 Write-UsageCache $m
 Remove-Item -LiteralPath $barPath -Force
+if ($null -ne $barDisplayBytes) { [IO.File]::WriteAllBytes($barDisplay, $barDisplayBytes) } else { Remove-Item -LiteralPath $barDisplay -Force }

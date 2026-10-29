@@ -1,5 +1,9 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
-. Import-ClmModule claude-usage-cache, claude-usage-pace, claude-accounts, claude-token-refresh, claude-usage-bar
+. Import-ClmModule claude-usage-cache, claude-usage-poll, claude-usage-pace, claude-accounts, claude-token-refresh, claude-usage-bar, claude-machine-lock, claude-usage-format
+$script:UsageApiUrl = "https://api.anthropic.com/api/oauth/usage"
+$script:UsageApiTimeoutSec = 10
+$script:UsageLockWaitMs = 15000
+$script:UsageBusyText = "API de suivi occupee"
 
 function Get-PlanName {
   param($Oauth)
@@ -58,77 +62,69 @@ function Register-UsageRefusal {
   Set-UsageLimited $Out $Entry $wait
 }
 
+function Invoke-UsageApi {
+  param([string]$Token)
+  $h = @{ "Authorization" = "Bearer " + $Token; "anthropic-beta" = "oauth-2025-04-20"; "Accept" = "application/json" }
+  $ProgressPreference = "SilentlyContinue"
+  return Invoke-RestMethod -Uri $script:UsageApiUrl -Headers $h -TimeoutSec $script:UsageApiTimeoutSec
+}
+
+function Get-UsageLockName {
+  param($Acc)
+  return "usage-" + (Get-StateTag (Get-AccountPath $Acc))
+}
+
+function Test-UsageSettled {
+  param($Out, $Known, [int]$MaxAge)
+  if ($null -ne $Known -and (Get-CacheAge $Known) -lt $MaxAge) { Copy-CacheEntry $Known $Out; return $true }
+  $left = Get-CooldownLeft $Known
+  if ($left -le 0) { return $false }
+  Set-UsageLimited $Out $Known $left
+  return $true
+}
+
+function Set-UsageBusy {
+  param($Out, $Known)
+  if ($null -ne $Known -and [long]$Known.At -gt 0) { Copy-CacheEntry $Known $Out; return }
+  $Out.Error = $script:UsageBusyText
+}
+
+function Request-AccountUsage {
+  param($Out, $Acc, $Cred, $Known, [switch]$NoRefresh)
+  try {
+    $tok = Get-UsageToken $Acc $Cred -NoRefresh:$NoRefresh
+    if ($tok.Error) { $Out.Error = $tok.Error; return }
+    $r = Invoke-UsageApi $tok.Token
+    if ($null -ne $r.five_hour) { $Out.Pct5 = [math]::Round([double]$r.five_hour.utilization); $Out.Reset5 = $r.five_hour.resets_at }
+    if ($null -ne $r.seven_day) { $Out.Pct7 = [math]::Round([double]$r.seven_day.utilization); $Out.Reset7 = $r.seven_day.resets_at }
+    $Out.At = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    Save-UsageEntry $Acc.Label $Out $Out.At
+  } catch {
+    $resp = $_.Exception.Response
+    if ($null -ne $resp -and [int]$resp.StatusCode -eq 429) { Register-UsageRefusal $Out $Known $resp; return }
+    $Out.Error = Get-UsageErrorText $resp
+  }
+}
+
 function Get-AccountUsage {
-  param($Acc, [int]$MaxAge = $script:UsageCacheTtl, [switch]$NoRefresh)
-  $out = [PSCustomObject]@{Label=$Acc.Label; Email=(Get-AccountEmail $Acc); Acc=$Acc; Plan=""; Pct5=$null; Reset5=$null; Pct7=$null; Reset7=$null; Error=$null; Age=$null; Expired=$false; LimitedUntil=$null}
+  param($Acc, [int]$MaxAge = (Read-UsagePollSeconds), [switch]$NoRefresh)
+  $out = New-UsageRow $Acc
   $cred = Read-AccountCredential $Acc
   if ($null -ne $cred) { $out.Plan = Get-PlanName $cred.claudeAiOauth }
   $known = Get-KnownUsage $Acc (Read-UsageCache)
-  if ($null -ne $known -and (Get-CacheAge $known) -lt $MaxAge) { Copy-CacheEntry $known $out; return $out }
-  $left = Get-CooldownLeft $known
-  if ($left -gt 0) { Set-UsageLimited $out $known $left; return $out }
+  if (Test-UsageSettled $out $known $MaxAge) { return $out }
+  $lock = Open-MachineLock (Get-UsageLockName $Acc) $script:UsageLockWaitMs
+  if ($null -eq $lock) { Set-UsageBusy $out $known; return $out }
   try {
-    $tok = Get-UsageToken $Acc $cred -NoRefresh:$NoRefresh
-    if ($tok.Error) { $out.Error = $tok.Error; return $out }
-    $h = @{"Authorization"="Bearer " + $tok.Token; "anthropic-beta"="oauth-2025-04-20"; "Accept"="application/json"}
-    $ProgressPreference = "SilentlyContinue"
-    $r = Invoke-RestMethod -Uri "https://api.anthropic.com/api/oauth/usage" -Headers $h -TimeoutSec 10
-    if ($null -ne $r.five_hour) { $out.Pct5 = [math]::Round([double]$r.five_hour.utilization); $out.Reset5 = $r.five_hour.resets_at }
-    if ($null -ne $r.seven_day) { $out.Pct7 = [math]::Round([double]$r.seven_day.utilization); $out.Reset7 = $r.seven_day.resets_at }
-    Save-UsageEntry $Acc.Label $out
-  } catch {
-    $resp = $_.Exception.Response
-    if ($null -ne $resp -and [int]$resp.StatusCode -eq 429) { Register-UsageRefusal $out $known $resp; return $out }
-    $out.Error = Get-UsageErrorText $resp
-  }
+    try { $known = Get-KnownUsage $Acc (Read-UsageCacheMap) } catch { Set-UsageBusy $out $known; return $out }
+    if (-not (Test-UsageSettled $out $known $MaxAge)) { Request-AccountUsage $out $Acc $cred $known -NoRefresh:$NoRefresh }
+  } finally { Close-MachineLock $lock }
   return $out
 }
 
 function Get-FreshUsage {
   param($Acc)
   return Get-AccountUsage $Acc $script:ForcedReadMaxAge
-}
-
-function Format-Reset {
-  param($Iso)
-  $at = ConvertTo-DateOffset $Iso
-  if ($null -eq $at) { return "-" }
-  $dt = $at.LocalDateTime
-  $now = Get-Date
-  $span = $dt - $now
-  $hhmm = $dt.ToString("HH:mm")
-  if ($span.TotalSeconds -le 0) { return "$hhmm (passe)" }
-  $h = [math]::Floor($span.TotalHours)
-  $m = $span.Minutes
-  $mm = "{0:D2}" -f $m
-  if ($h -ge 24) {
-    $d = [math]::Floor($h / 24)
-    return $dt.ToString("dd/MM HH:mm") + " (dans " + $d + "j" + ($h % 24) + "h)"
-  }
-  return "$hhmm (dans " + $h + "h" + $mm + ")"
-}
-
-function Format-Row {
-  param($U)
-  $line = $U.Label + " " + $U.Email + " " + $U.Plan + " | "
-  if ($null -ne $U.Error) { return $line + $U.Error }
-  $line = $line + "5h " + $U.Pct5 + "% reset " + (Format-Reset $U.Reset5) + (Format-PaceSuffix "5h" $U.Pct5 $U.Reset5)
-  $line = $line + " | 7d " + $U.Pct7 + "% reset " + (Format-Reset $U.Reset7) + (Format-PaceSuffix "7d" $U.Pct7 $U.Reset7)
-  return $line + (Format-Stale $U)
-}
-
-function Format-PaceSuffix {
-  param([string]$Kind, $Pct, $Reset)
-  $p = Get-UsagePace $Kind $Pct $Reset
-  if ($null -eq $p) { return "" }
-  return ", " + $p.Text
-}
-
-function Format-Stale {
-  param($U)
-  if ($U.Expired) { return " (fenetre passee, lu il y a " + (Format-Age $U.Age) + ")" }
-  if ($null -eq $U.Age -or $U.Age -lt 60) { return "" }
-  return " (lu il y a " + (Format-Age $U.Age) + ")"
 }
 
 function Get-AllUsages {
