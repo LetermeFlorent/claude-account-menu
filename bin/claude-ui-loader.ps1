@@ -1,8 +1,9 @@
-$script:LoaderScript = @'
+$script:LoaderScript = Add-ClmGuardedLoad @'
 param($Source, $Reader, $Accounts, $Ctl, $Queue)
 $ProgressPreference = "SilentlyContinue"
 try {
-  . $Source
+  <ClmGuardedLoad>
+  if ($clmReplaced) { $Ctl.Replaced = $true; return }
   $Ctl.Go.Wait()
   for ($i = 0; $i -lt $Accounts.Count; $i++) {
     if ($Ctl.Stop) { break }

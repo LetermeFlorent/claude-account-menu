@@ -69,7 +69,7 @@ function Invoke-DriveSyncPass {
 
 $script:FreshSyncSource = Join-Path $PSScriptRoot "claude-drive-sync.ps1"
 $script:FreshSyncFailed = "synchro par la nouvelle version de clm impossible"
-$script:FreshSyncScript = 'param($Source, $Ctl, $DeadlineMs, $Force) $ProgressPreference = "SilentlyContinue"; . $Source; Invoke-DriveSync $Ctl $DeadlineMs -Force:$Force'
+$script:FreshSyncScript = Add-ClmGuardedLoad 'param($Source, $Ctl, $DeadlineMs, $Force) $ProgressPreference = "SilentlyContinue"; <ClmGuardedLoad>; if ($clmReplaced) { return @{ Replaced = $true } }; Invoke-DriveSync $Ctl $DeadlineMs -Force:$Force'
 
 function Invoke-FreshDriveSync {
   param($Ctl, [long]$DeadlineMs, [bool]$Force)
@@ -78,6 +78,7 @@ function Invoke-FreshDriveSync {
   try {
     [void]$ps.AddScript($script:FreshSyncScript).AddArgument($script:FreshSyncSource).AddArgument($Ctl).AddArgument($DeadlineMs).AddArgument($Force)
     $out = @($ps.Invoke())
+    if ($out.Count -gt 0 -and $out[-1].Replaced -eq $true) { $res.Busy = $true; $res.Error = $script:DriveBusyText; return $res }
     if ($out.Count -gt 0 -and $out[-1] -is [hashtable]) { return $out[-1] }
     $res.Error = $script:FreshSyncFailed
   } catch { $res.Error = $script:FreshSyncFailed + " : " + $_.Exception.GetBaseException().Message }

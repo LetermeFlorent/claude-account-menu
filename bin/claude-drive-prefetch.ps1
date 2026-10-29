@@ -4,27 +4,28 @@ $script:DrivePrefetchPollMs = 20
 $script:DrivePrefetchStopMs = 5000
 $script:DrivePrefetchSource = Join-Path $PSScriptRoot "claude-drive-actions.ps1"
 
-$script:PrefetchWorkerScript = {
-  param([string]$Source, $Work, $Results, $Ctl)
-  . $Source
-  $item = $null
-  while (-not $Ctl.Stop -and $Work.TryDequeue([ref]$item)) {
-    if ($Ctl.Deadline -gt 0 -and [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() -ge $Ctl.Deadline) { break }
-    try {
-      if ($item.Kind -eq "download") {
-        $null = [IO.Directory]::CreateDirectory((Split-Path -Parent $item.Tmp))
-        Save-SealedMedia $item.Id $item.Tmp $item.Seal $Ctl.Keys
-        $out = @{ Ok = $true }
-      } else {
-        $out = @{ Ok = $true; Sent = (Send-SealedFile $item.Folder $item.Rel (Get-SyncBytes $item.Rel $item.Full) $item.Props $item.Id $Ctl.Keys) }
-      }
-    } catch {
-      if ($item.Kind -eq "download") { Remove-DriveTemp $item.Tmp }
-      $out = @{ Ok = $false; Error = $_.Exception.Message }
+$script:PrefetchWorkerScript = Add-ClmGuardedLoad @'
+param([string]$Source, $Work, $Results, $Ctl)
+<ClmGuardedLoad>
+if ($clmReplaced) { return }
+$item = $null
+while (-not $Ctl.Stop -and $Work.TryDequeue([ref]$item)) {
+  if ($Ctl.Deadline -gt 0 -and [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() -ge $Ctl.Deadline) { break }
+  try {
+    if ($item.Kind -eq "download") {
+      $null = [IO.Directory]::CreateDirectory((Split-Path -Parent $item.Tmp))
+      Save-SealedMedia $item.Id $item.Tmp $item.Seal $Ctl.Keys
+      $out = @{ Ok = $true }
+    } else {
+      $out = @{ Ok = $true; Sent = (Send-SealedFile $item.Folder $item.Rel (Get-SyncBytes $item.Rel $item.Full) $item.Props $item.Id $Ctl.Keys) }
     }
-    $Results[$item.Rel] = $out
+  } catch {
+    if ($item.Kind -eq "download") { Remove-DriveTemp $item.Tmp }
+    $out = @{ Ok = $false; Error = $_.Exception.Message }
   }
+  $Results[$item.Rel] = $out
 }
+'@
 
 function Get-UploadProps {
   param($Ctx, [string]$Rel)

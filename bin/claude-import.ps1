@@ -25,3 +25,16 @@ function Test-ClmStampSteady {
   param([string]$Before)
   return $Before -cne $script:ClmInstallingStamp -and (Read-ClmStamp) -ceq $Before
 }
+
+$script:ClmGuardedLoad = @'
+$clmEntry = Join-Path (Split-Path -Parent $Source) "claude-import.ps1"
+$clmStamp = $null
+if ([IO.File]::Exists($clmEntry)) { . $clmEntry; if (Test-Path Function:\Read-ClmStamp) { $clmStamp = Read-ClmStamp } }
+try { if ($clmStamp -cne "installing") { . $Source } } catch { if ($null -eq $clmStamp -or (Test-ClmStampSteady $clmStamp)) { throw } }
+$clmReplaced = $null -ne $clmStamp -and -not (Test-ClmStampSteady $clmStamp)
+'@
+
+function Add-ClmGuardedLoad {
+  param([string]$Script)
+  return $Script.Replace("<ClmGuardedLoad>", $script:ClmGuardedLoad)
+}

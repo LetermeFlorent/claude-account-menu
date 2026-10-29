@@ -1,0 +1,26 @@
+param([string]$Bin, [string]$Lab, [string]$Dir, [string]$Id, [string]$Target, [string]$TreeA, [string]$TreeB, [string]$StampA, [string]$StampB, [int]$Rounds)
+$ErrorActionPreference = "Stop"
+. (Join-Path $Lab "race-helpers.ps1")
+. (Join-Path $Bin "claude-import.ps1")
+. Import-ClmModule claude-self-copy
+
+function Get-RoundStamp {
+  param([string]$Stamp, [int]$Round, [int]$Last)
+  if ($Round -eq $Last) { return $Stamp }
+  $parts = $Stamp.Split(" ")
+  return $parts[0] + " " + ([long]$parts[1] + $Round) + " " + (100 + $Round)
+}
+
+Wait-RaceGate $Dir $Id
+$sw = [Diagnostics.Stopwatch]::StartNew()
+try {
+  Start-Sleep -Milliseconds 600
+  for ($n = 1; $n -le $Rounds; $n++) {
+    if ($n % 2 -eq 1) { $src = $TreeB; $stamp = Get-RoundStamp $StampB $n $Rounds } else { $src = $TreeA; $stamp = Get-RoundStamp $StampA $n $Rounds }
+    $null = Install-ClmFiles -Source $src -Target $Target -Version $stamp
+    Start-Sleep -Milliseconds 200
+  }
+} finally {
+  [IO.File]::WriteAllText((Join-Path $Dir "installed"), "x")
+}
+"summary " + $Id + " rounds=" + $Rounds + " ms=" + $sw.ElapsedMilliseconds
