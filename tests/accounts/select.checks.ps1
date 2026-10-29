@@ -13,7 +13,8 @@ Assert-Equal ("sauvegarde introuvable : " + $missing) $err "restauration d'un fi
 $clearKept = Get-Item function:Clear-ConsoleInput -ErrorAction SilentlyContinue
 $script:ChoiceLog = New-Object 'System.Collections.Generic.List[string]'
 function Clear-ConsoleInput { $script:ChoiceLog.Add("flush") }
-function Read-Host { param($Prompt) $script:ChoiceLog.Add("prompt"); return $script:ChoiceAnswer }
+function Read-ChoiceAnswer { param($Prompt) $script:ChoiceLog.Add("prompt"); return $script:ChoiceAnswer }
+Set-Alias -Name Read-Host -Value Read-ChoiceAnswer
 try {
   $usages = @($accs | ForEach-Object { [PSCustomObject]@{ Acc = $_ } })
   $script:ChoiceAnswer = "2"
@@ -24,6 +25,6 @@ try {
   $script:ChoiceAnswer = ""
   Assert-Null (Read-AccountNumber $usages) "liste texte : Entree seule, aucun compte"
 } finally {
-  Remove-Item -Path function:Read-Host
+  Remove-Item -Path Alias:Read-Host, function:Read-ChoiceAnswer
   if ($clearKept) { Set-Item -Path function:Clear-ConsoleInput -Value $clearKept.ScriptBlock } else { Remove-Item -Path function:Clear-ConsoleInput }
 }
