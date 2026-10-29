@@ -21,7 +21,7 @@ Assert-Equal 2 $script:AccountEmailReads "cache courriel : apres changement, pas
 Assert-Equal "second-longer@y.fr" (Get-AccountEmail $mailAcc) "cache courriel : meme taille, date changee, nouveau courriel"
 Assert-Equal 3 $script:AccountEmailReads "cache courriel : meme taille, date changee, relecture"
 
-Remove-Item -LiteralPath $mailFile
+Remove-Item -LiteralPath $mailFile -Force
 Assert-Equal "" (Get-AccountEmail $mailAcc) "cache courriel : fichier supprime"
 Assert-Equal "" (Get-AccountEmail $mailAcc) "cache courriel : fichier absent, encore vide"
 
@@ -35,4 +35,4 @@ $quickA = Get-AccountEmail $mailAcc
 $quickB = Get-AccountEmail $mailAcc
 Assert-Equal "fast01@x.fr fast02@x.fr" ($quickA + " " + $quickB) "cache courriel : reecriture rapide de meme taille"
 Assert-True ($script:AccountEmailReads -ge $quickReads + 2) "cache courriel : reecriture rapide relue"
-Remove-Item -LiteralPath $mailFile -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $mailFile -Force -ErrorAction SilentlyContinue
