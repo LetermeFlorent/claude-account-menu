@@ -1,4 +1,4 @@
-. Import-ClmModule claude-platform, claude-credentials, claude-account-add, claude-state, claude-registry
+. Import-ClmModule claude-platform, claude-credentials, claude-account-add, claude-state, claude-registry, claude-account-email
 $script:HomeDir = Get-HomeDir
 $script:RegistryPath = Get-StatePath "accounts.json"
 $script:ClaudeExe = Find-ClaudeExe
@@ -24,9 +24,7 @@ function Get-AccountConfigFile {
 
 function Get-AccountEmail {
   param($Acc)
-  try { $raw = Get-Content -LiteralPath (Get-AccountConfigFile $Acc) -Raw -ErrorAction Stop } catch { return "" }
-  if ($raw -match '"oauthAccount"\s*:\s*\{[^}]*?"emailAddress"\s*:\s*"([^"]+)"') { return $Matches[1] }
-  return ""
+  return Read-AccountEmail (Get-AccountConfigFile $Acc)
 }
 
 function Invoke-InAccountEnv {
