@@ -13,7 +13,7 @@ function ConvertTo-LowerHex {
 function Get-BackupKey {
   $path = Get-StatePath $script:BackupKeyName
   if ([IO.File]::Exists($path)) {
-    try { $key = [Convert]::FromBase64String(([IO.File]::ReadAllText($path)).Trim()) } catch [FormatException] { $key = @() }
+    try { $key = [Convert]::FromBase64String((Read-SharedText $path).Trim()) } catch [FormatException] { $key = @() }
     if ($key.Length -ge $script:BackupKeyBytes) { return ,$key }
   }
   $key = New-Object byte[] $script:BackupKeyBytes
@@ -36,7 +36,7 @@ function Get-BackupMac {
 function Read-BackupMarks {
   $path = Get-StatePath $script:BackupMarksName
   if (-not [IO.File]::Exists($path)) { return @() }
-  return @(foreach ($line in [IO.File]::ReadAllLines($path)) {
+  return @(foreach ($line in ((Read-SharedText $path) -split "`r?`n")) {
     $f = $line.Split("`t")
     if ($f.Count -eq 3) { [PSCustomObject]@{ Name = $f[0]; Size = $f[1]; Mac = $f[2] } }
   })

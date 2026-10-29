@@ -28,7 +28,7 @@ function Read-DriveStateRows {
 function Read-DriveState {
   $st = @{ At = [long]0; Root = ""; Files = (New-PathMap) }
   if (-not [IO.File]::Exists($script:DriveStatePath)) { return $st }
-  try { $text = [IO.File]::ReadAllText($script:DriveStatePath) } catch { throw ($script:DriveStateUnreadable + $script:DriveStatePath) }
+  try { $text = Read-SharedText $script:DriveStatePath } catch { throw ($script:DriveStateUnreadable + $script:DriveStatePath) }
   if (Read-DriveStateRows $st $text) { return $st }
   try { $data = ConvertFrom-JsonText $text } catch { $data = $null }
   if ($data -isnot [Collections.IDictionary]) { throw ($script:DriveStateUnreadable + $script:DriveStatePath) }

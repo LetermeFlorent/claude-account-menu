@@ -69,7 +69,7 @@ function Read-RemoteCache {
     $stamp = Get-RemoteCacheStamp
     if (-not $stamp) { return $null }
     if ($null -ne $script:RemoteCacheMemo -and $script:RemoteCacheMemo.Stamp -eq $stamp) { return $script:RemoteCacheMemo.Cache }
-    $text = [IO.File]::ReadAllText($script:RemoteCachePath)
+    $text = Read-SharedText $script:RemoteCachePath
     $cache = ConvertFrom-RemoteCacheRows $text
     if ($null -eq $cache) {
       $data = ConvertFrom-JsonText $text

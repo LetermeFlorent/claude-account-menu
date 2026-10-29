@@ -10,7 +10,7 @@ $script:UsageCacheLockMs = 3000
 function Read-UsageCache {
   if (-not (Test-Path -LiteralPath $script:UsageCachePath)) { return @{} }
   try {
-    $raw = Get-Content -LiteralPath $script:UsageCachePath -Raw | ConvertFrom-Json
+    $raw = Read-SharedText $script:UsageCachePath | ConvertFrom-Json
     $map = @{}
     foreach ($p in $raw.PSObject.Properties) { $map[$p.Name] = $p.Value }
     return $map

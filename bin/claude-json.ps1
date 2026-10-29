@@ -2,7 +2,7 @@
 function Read-JsonFile {
   param([string]$Path)
   if (-not (Test-Path -LiteralPath $Path)) { return $null }
-  return ConvertFrom-JsonText ([IO.File]::ReadAllText($Path))
+  return ConvertFrom-JsonText (Read-SharedText $Path)
 }
 
 function ConvertFrom-JsonText {

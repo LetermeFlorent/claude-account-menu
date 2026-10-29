@@ -55,7 +55,7 @@ function Write-SyncKeyText {
 function Read-SyncKeyText {
   if ($script:SyncKeyStoreOs -eq "MacOS") { return Read-KeychainItem $script:SyncKeyService $script:SyncKeyAccount }
   if (-not [IO.File]::Exists($script:SyncKeyStorePath)) { return $null }
-  $text = [IO.File]::ReadAllText($script:SyncKeyStorePath).Trim()
+  $text = (Read-SharedText $script:SyncKeyStorePath).Trim()
   if ($script:SyncKeyStoreOs -ne "Windows") { return $text }
   try { return Unprotect-WindowsText $text } catch { throw $script:SyncKeyBroken }
 }

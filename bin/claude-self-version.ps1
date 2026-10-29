@@ -1,3 +1,4 @@
+. Import-ClmModule claude-file-io
 $script:ClmVersionFile = "clm.version"
 $script:ClmRepo = "LetermeFlorent/claude-account-menu"
 $script:ClmUnknownText = "version de clm inconnue, pas de mise a jour automatique : telecharge la derniere version sur https://github.com/" + $script:ClmRepo + "/releases, puis lance install.ps1 (install.sh hors Windows)"
@@ -12,7 +13,7 @@ function Read-ClmVersion {
   param([string]$Dir = $PSScriptRoot)
   $p = Join-Path $Dir $script:ClmVersionFile
   if (-not (Test-Path -LiteralPath $p)) { return $null }
-  return ConvertFrom-ClmVersion ([IO.File]::ReadAllText($p))
+  return ConvertFrom-ClmVersion (Read-SharedText $p)
 }
 
 function Test-ClmVersionKnown {

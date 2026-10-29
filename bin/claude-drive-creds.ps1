@@ -31,7 +31,7 @@ function Read-LocalCredential {
   if ($script:OsName -eq "MacOS") { return Read-AccountCredential $Acc }
   $p = Join-Path (Get-AccountPath $Acc) ".credentials.json"
   if (-not (Test-Path -LiteralPath $p)) { return $null }
-  try { $raw = [IO.File]::ReadAllText($p) } catch { throw "jeton local illisible" }
+  try { $raw = Read-SharedText $p } catch { throw "jeton local illisible" }
   try { return $raw | ConvertFrom-Json } catch { return $null }
 }
 
