@@ -90,7 +90,7 @@ function Step-DriveStartup {
     return Set-StartupProgress $Step -1 "preparation" $Now
   }
   if ($job.Busy -and $Now -lt $Step.BusyEnd) {
-    Start-DriveJob $job
+    if ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() -ge $job.RetryAt) { Start-DriveJob $job }
     return Set-StartupProgress $Step -1 "attente de la synchro en cours" $Now
   }
   if ($job.Failed) { Complete-StartupStep $Step "failed" "erreur" $Now }
