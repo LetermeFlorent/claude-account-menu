@@ -1,5 +1,4 @@
 . Import-ClmModule claude-theme, claude-ui-term, claude-ui-wt-theme, claude-ui-osc
-$script:TerminalTheme = $null
 
 function ConvertFrom-ColorFgBg {
   param([string]$Value)
