@@ -1,6 +1,6 @@
-. Import-ClmModule claude-drive-api, claude-state
-$script:DriveFoldersLockPath = Get-StatePath "drive-folders.lock"
+. Import-ClmModule claude-drive-api, claude-state, claude-drive-lock
 $script:DriveFoldersWaitMs = 15000
+$script:DriveFoldersTrustMs = 600000
 $script:DriveFolderKeys = @("Root", "Files", "Credentials", "Presence")
 
 function Find-DriveFolder {
@@ -28,9 +28,21 @@ function Get-CachedDriveFolders {
   $out = @{}
   foreach ($k in $script:DriveFolderKeys) { $out[$k] = [string]$c[("folder" + $k)] }
   if (@($script:DriveFolderKeys | Where-Object { -not $out[$_] }).Count -gt 0) { return $null }
+  $key = Get-DriveFoldersKey $out
+  if ((Read-MachineStamp $script:DriveFoldersLock $script:DriveFoldersTrustMs) -eq $key) { return $out }
   $alive = Get-DriveChildFolders $out.Root
   foreach ($k in @("Files", "Credentials", "Presence")) { if ($alive -notcontains $out[$k]) { return $null } }
+  Write-MachineStamp $script:DriveFoldersLock $key
   return $out
+}
+
+function Get-DriveFoldersKey {
+  param($Folders)
+  return @($script:DriveFolderKeys | ForEach-Object { $Folders[$_] }) -join "|"
+}
+
+function Reset-DriveFoldersCheck {
+  Write-MachineStamp $script:DriveFoldersLock ""
 }
 
 function New-DriveFolders {
@@ -40,13 +52,14 @@ function New-DriveFolders {
   if ($null -eq $c) { $c = @{} }
   foreach ($k in $script:DriveFolderKeys) { $c[("folder" + $k)] = $out[$k] }
   Save-DriveConfig $c
+  Write-MachineStamp $script:DriveFoldersLock (Get-DriveFoldersKey $out)
   return $out
 }
 
 function Get-DriveFolders {
   $out = Get-CachedDriveFolders
   if ($null -ne $out) { return $out }
-  return Invoke-WithFileLock $script:DriveFoldersLockPath $script:DriveFoldersWaitMs "dossier Drive en cours de creation" {
+  return Invoke-WithMachineLock $script:DriveFoldersLock $script:DriveFoldersWaitMs {
     $again = Get-CachedDriveFolders
     if ($null -ne $again) { return $again }
     return New-DriveFolders
