@@ -2,6 +2,7 @@
   claude-backup-trust, claude-backup-restore
 $script:SaveExcludes = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide", "*.lock", ".local/bin/*.exe") + $script:SkipConversations
 $script:ArchiveRegistryName = ".claude-accounts.json"
+$script:ArchiveNameTries = 1000
 
 function Get-AccountItems {
   param($Accs)
@@ -43,9 +44,13 @@ function Get-SaveExcludes {
 function Get-FreeArchivePath {
   param([string]$Name, [string]$Ext)
   $dir = Get-DownloadsDir
-  $path = Join-Path $dir ($Name + $Ext)
-  for ($n = 2; Test-Path -LiteralPath $path; $n++) { $path = Join-Path $dir ($Name + "-" + $n + $Ext) }
-  return $path
+  for ($n = 1; $n -le $script:ArchiveNameTries; $n++) {
+    $path = Join-Path $dir ($Name + $Ext)
+    if ($n -gt 1) { $path = Join-Path $dir ($Name + "-" + $n + $Ext) }
+    try { [IO.File]::Open($path, "CreateNew", "Write", "None").Dispose(); return $path }
+    catch { if (-not (Test-Path -LiteralPath $path)) { throw } }
+  }
+  throw ("aucun nom libre pour " + $Name + $Ext + " dans " + $dir)
 }
 
 function Save-Accounts {
@@ -56,7 +61,6 @@ function Save-Accounts {
   $name = "claude-comptes-" + $stamp
   if ($Tag) { $name = "claude-comptes-" + $Tag + "-" + $stamp }
   $zip = Get-FreeArchivePath $name (Get-ArchiveExtension $script:TarFlavor)
-  [IO.File]::WriteAllBytes($zip, [byte[]]@())
   Set-PrivateMode $zip
   $argv = @("-a", "-c", "-f", $zip, "-C", $script:HomeDir)
   $ex = @(Get-SaveExcludes $Accs)
