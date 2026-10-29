@@ -18,7 +18,7 @@ function Restore-StartupFakes {
   $script:ClmChecked = $false
   $script:MenuUpdated = $false
   $script:FakeClaudeFail = $null
-  Close-ClaudeStepLock
+  Close-StartupLock
 }
 
 function New-FakeWork {

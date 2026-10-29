@@ -50,6 +50,22 @@ try {
   $again = Open-MachineLock $script:ClmUpdateLock
   Assert-True ($null -ne $again) "version de clm illisible : verrou rendu"
   Close-MachineLock $again
+
+  New-StartupCase @("clm", "claude")
+  $null = Invoke-StartupTicks
+  Assert-Equal "run" $script:Su.Steps[0].State "demarrage abandonne : recherche de clm en cours"
+  New-StartupCase @("claude")
+  $again = Open-MachineLock $script:ClmUpdateLock
+  Assert-True ($null -ne $again) "demarrage abandonne : verrou rendu au demarrage suivant"
+  Close-MachineLock $again
+
+  New-StartupCase @("clm", "claude")
+  $null = Invoke-StartupTicks
+  $script:Startup = $script:Su
+  Close-Startup
+  $again = Open-MachineLock $script:ClmUpdateLock
+  Assert-True ($null -eq $script:Startup -and $null -ne $again) "menu ferme pendant la recherche de clm : verrou rendu"
+  Close-MachineLock $again
 } finally {
   Set-Item -Path "function:script:Get-ClmSha" -Value $lockShaFn
   $script:ClmLoadedSha = $lockLoaded
