@@ -16,11 +16,11 @@ On Linux and macOS, install PowerShell 7 first and run `sh install.sh` instead. 
 
 ## The menu
 
-The menu opens full screen with one block per account: its number, name and plan, its e-mail address, and a 5 hour bar and a 7 day bar with the percentage, the time before the reset and a word for the pace. The bars turn to a stronger colour at 30 % and again at 70 %. An account at 100 % gets a badge such as "quota 5h atteint". Quotas are read in the background, kept for 3 minutes in a cache and read again for each account about every 3 minutes while the menu is open. A counter next to each name shows the wait ("maj 2m05s"), or "pause API" when the usage API has refused the call, in which case the last known values stay on screen.
+The menu opens full screen with one block per account: its number, name and plan, its e-mail address, and a 5 hour bar and a 7 day bar with the percentage, the time before the reset and a word for the pace. The bars turn to a stronger colour at 30 % and again at 70 %. An account at 100 % gets a badge such as "quota 5h atteint". Quotas are read in the background, one account after the other, and again every 30 seconds by default while the menu is open (see Usage poll delay). A counter next to each name shows the wait ("maj 2m05s"), or "pause API" when the usage API has refused the call, in which case the last known values stay on screen. The status line state file is read about every 2 seconds, so a value the status line just wrote shows at once.
 
 The pace word comes from projecting the current percentage to the end of the window: `debut` (under 10 % of the window elapsed), `faible` (projected under 70 %), `normal` (70 to 100 %), `fort` (100 to 130 %), `excessif` (over 130 %) and `epuise` (quota used up).
 
-The menu text is in French. In a terminal that cannot draw it (input or output redirected, or no VT support) clm prints the account list with the quotas and asks for a number instead. Under 41 columns, or in a very short terminal, the menu shows one line per account. While the startup updates run, most keys wait until they finish.
+The terminal menu text is in French and the web page speaks English or French (see Language). In a terminal that cannot draw it (input or output redirected, or no VT support) clm prints the account list with the quotas and asks for a number instead. Under 41 columns, or in a very short terminal, the menu shows one line per account. While the startup updates run, the cursor keys, `y`, `w` and `m` work and the others wait until they finish; Enter or a number is kept and the account starts when they end.
 
 ### Keys
 
@@ -57,7 +57,11 @@ Key `x` lists the accounts and then offers two exits: take the account out of th
 
 ### Updates
 
-At startup clm checks for a newer release of itself, then runs `claude update` for Claude Code, and shows both as progress bars above the accounts. The menu stays usable if a step fails and the reason shows at the bottom. See INSTALL.md for details.
+At startup clm checks for a newer release of itself first. Claude Code's update and the Drive sync then run side by side, each shown as a progress bar above the accounts. The menu stays usable if a step fails and the reason shows at the bottom. When a clm update installs, the menu restarts onto it; INSTALL.md has the details.
+
+### Several clm at once
+
+Every terminal tab can run its own clm, and they share the work. One usage call per account is made for all of them, and the others reuse its result. One clm updates Claude Code at a time: the others wait up to 5 minutes, or skip a check another clm made in the last 2 minutes. The check for a new clm release works the same way. A second restore is told that one is already running. A Drive sync another clm has started is left to it, and one it just finished is not repeated. Once a clm has installed a new version, every other running clm restarts onto it as soon as its menu is idle, never in the middle of a Claude Code session.
 
 ## Command line
 
@@ -81,6 +85,7 @@ Everything the menu does also works as an option, and `clm --help` prints them a
 | `--web` | Open the menu with the web page; needs an interactive terminal |
 | `--palette auto\|dark\|light` | Set the colours of this PC (`sombre` and `clair` also work) |
 | `--anim auto\|on\|off` | Set the animations of this PC |
+| `--usage-poll <seconds>` | Set the delay between two quota reads, 15 to 600, 30 by default |
 | `--help`, `-h` | Print the full help |
 
 Drive options: `--drive-login`, `--drive-status`, `--sync [--force]`, `--sync-auto=on\|off`, `--sync-key`, `--sync-key-reset` and `--sync-key-forget`. Per-PC choices of synced skills and MCP servers use `--prefs`, `--prefs-on <id>`, `--prefs-off <id>` and `--prefs-erase <id> --yes`, where an id looks like `skill:name`, `mcp:project|name` or `global:name`.
@@ -95,19 +100,33 @@ Key `r` shows up to nine of the most recent archives that clm itself made on thi
 
 Press `y` to connect Google Drive. A browser window opens for Google sign-in, then clm asks for a sync phrase of at least 12 characters (twice on a new Drive, once if the Drive already has one). Every PC needs the same phrase. It is asked by `y`, `--drive-login`, `--sync-key` and `--sync-key-reset`, never by background jobs; `y` asks again when Drive is connected but this PC holds no phrase. What gets synced, how it is encrypted and what stays readable is in PRIVACY.md.
 
-Automatic sync is on by default. It runs in the background when the menu opens, when you launch an account, and while Claude Code runs through a small hidden watcher that starts with the account, uses low priority and stops itself. Conflicts keep the newer file and save the other as `<file>.conflit-<PC name>` (characters other than letters, digits, `_` and `-` become `_`). On the first sync of a PC, the Drive copy wins and the local one is kept the same way. A sync that would delete more than 20 files and more than a tenth of the known files is blocked until you run `clm --sync --force`.
+Automatic sync is on by default. It runs in the background when the menu opens, when you launch an account, and while Claude Code runs through a small hidden watcher that starts with the account, uses low priority and stops itself. Files over 5 MB go up in resumable 8 MB chunks, encrypted as they are read. A sync takes a Drive lock, so only one clm syncs at a time. When both sides changed a file, the one modified later wins and the other is saved as `<file>.conflit-<PC name>` (characters other than letters, digits, `_` and `-` become `_`). On the first sync of a PC, a file changed on both sides takes the Drive copy and the local one is kept the same way. A sync that would delete more than 20 files and more than a tenth of the known files is blocked until you run `clm --sync --force`.
+
+The watcher checks local changes after 2 seconds of quiet (at most 30 seconds after the first one, and never more than every 30 seconds), looks at Drive every 30 seconds, and ends after a last pass when no Claude Code session of this PC is left.
 
 Login tokens are exchanged too, and the one that expires later wins, so an account stays signed in on every PC. Only use one account in one place at a time: two Claude Code sessions renewing the same token can sign each other out.
 
-Key `p` (or `--prefs`) lists synced skills and MCP servers with check boxes for this PC. With two or more PCs, the left and right arrows switch to another PC's choices. Space toggles an item and `Suppr` erases it everywhere, both after a confirmation with `o`; erasing works only on this PC's own list, and on another PC's list only Space works. Esc or `q` leaves the page. Skills go to the Drive trash, so they can be recovered there.
+Key `p` (or `--prefs`) lists synced skills and MCP servers with check boxes for this PC. With two or more PCs, the left and right arrows switch to another PC's choices. Space toggles an item (it asks only when unchecking) and `Suppr` erases it everywhere, both confirmed with `o`; erasing works only on this PC's own list, and on another PC's list only Space works. Esc or `q` leaves the page. Skills go to the Drive trash, so they can be recovered there.
 
 ## Web page
 
-Key `w` or `clm --web` opens a page at `http://127.0.0.1:<port>/` in your browser, served by clm while the menu is open and closed with it. It has four tabs, Comptes, Drive, Affichage and Sauvegardes, and does what the keys do: quotas, add, rename, move, remove, sync choices, display settings, save and restore. Actions run in the terminal menu, so while it is busy the page answers that clm is busy.
+Key `w` or `clm --web` opens a page at `http://127.0.0.1:<port>/` in your browser, served by clm while the menu is open and closed with it; outside an interactive terminal `--web` exits with 1. The page has four sections: Accounts (quotas, add, rename, move, remove), Drive (connect, automatic sync, sync now, synced skills and MCP servers), Backups (save, list, restore) and Settings (terminal colours and animations, the usage poll delay). A header holds the clm version, an update button, and the language and theme selectors.
+
+The first address carries a code that works once and expires after 60 seconds. The page then keeps a session cookie (`HttpOnly`, `SameSite=Strict`, gone when the browser closes), and only requests addressed to `127.0.0.1:<port>` are answered. The Content-Security-Policy is strict (`default-src 'none'`, with scripts, styles and requests allowed from the page's own origin only, and images from it or inline), so nothing is loaded from outside. Actions run inside clm: while the menu is busy in the terminal, the page greys its controls and says so. Adding an account, connecting Drive and installing a clm update finish in the terminal.
+
+## Language
+
+The web page and clm's messages for it come in English and French. The language is, in order: the choice made in the page's language selector (saved as `lang` in `display.json`: `auto`, `en` or `fr`), the `CLM_LANG` variable, the system language (Windows UI culture, macOS `AppleLanguages`), then `LC_ALL`, `LC_MESSAGES` and `LANG`. A value starting with `fr` gives French, any other gives English, and English is the default.
 
 ## Colours and animation
 
-The palette is chosen in this order: the `STATUSLINE_BG` variable (`dark` or `light`), then `clm --palette`, then the system theme (Windows registry, macOS appearance, GNOME, GTK or KDE), then dark. The animations follow the same order with `CLM_ANIM` (`0` or `1`), `clm --anim` and the system setting for reduced motion. Both settings are stored in `display.json`.
+The console palette is chosen in this order: the `STATUSLINE_BG` variable (`dark` or `light`), then `clm --palette`, then what the terminal reports for its own background (`COLORFGBG`, the Windows Terminal profile in use, an OSC 11 query where the terminal can answer), then the system theme (Windows registry, macOS appearance, GNOME, GTK or KDE), then dark. `NO_COLOR` switches colours off, and terminals without true colour get 256 or 16 colour palettes. The animations follow `CLM_ANIM` (`0` or `1`), `clm --anim` and the system setting for reduced motion.
+
+The web page follows the system theme live and is light by default. Its theme selector offers system, light and dark, and the choice is saved as `webTheme` in `display.json`.
+
+## Usage poll delay
+
+The quotas are read again every 30 seconds by default. `clm --usage-poll <seconds>`, or the usage field in the Settings section of the web page, changes it from 15 to 600 and saves it as `usagePoll` in `display.json`. The console has no screen for it.
 
 ## Files
 
@@ -116,13 +135,13 @@ The state folder is `%LOCALAPPDATA%\clm` on Windows, `~/Library/Application Supp
 | File | Content |
 |---|---|
 | `accounts.json` | The account list, `[{Label, Dir}]` in menu order |
-| `display.json` | Palette and animation choice |
+| `display.json` | Palette, animation, language, web theme and usage poll delay |
 | `drive.json` | Google tokens and the PC name; secret |
 | `sync-key` | The sync key; absent on macOS, which uses the Keychain |
 | `sync-choice.json`, `sync-catalog.json` | Per-PC sync choices |
 | `backup-key`, `backup-marks.txt` | Recognition of the archives clm made |
 
-Smaller files here are locks and sync bookkeeping. Elsewhere, the quota cache is `usage.json` in `%LOCALAPPDATA%\claude-menu`, `~/Library/Caches/claude-menu` or `~/.cache/claude-menu`, the status line state is in a `claude-statusline` folder next to the state folder, and the program files are in `~/.local/bin`. A damaged `accounts.json` is copied aside as `accounts.json.bad-<date>` and defaults are used.
+Smaller files here are locks, stamps and sync bookkeeping. Elsewhere, the quota cache, shared by every clm, is `usage.json` in `%LOCALAPPDATA%\claude-menu`, `~/Library/Caches/claude-menu` or `$XDG_CACHE_HOME/claude-menu` (default `~/.cache/claude-menu`), the status line state is in a `claude-statusline` folder next to the state folder, and the program files, with the `lang` and `clm-web` folders, are in `~/.local/bin`. A damaged `accounts.json` is copied aside as `accounts.json.bad-<date>` and defaults are used.
 
 ## Tests
 
