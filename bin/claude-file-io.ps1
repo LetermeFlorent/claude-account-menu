@@ -3,14 +3,16 @@ $script:LockPollMs = 200
 $script:SharedWaitMs = 3000
 $script:SharedPollMs = 20
 if ($PSVersionTable.PSVersion.Major -lt 6) { Add-Type -AssemblyName Microsoft.VisualBasic }
-$script:PrivateModeFailed = "droits du fichier prive impossibles a poser"
 
 function Set-PrivateMode {
   param([string]$Path)
   if ($script:OsName -eq "Windows") { return }
   $global:LASTEXITCODE = 0
   & chmod 600 $Path
-  if ($LASTEXITCODE -ne 0) { throw $script:PrivateModeFailed }
+  if ($LASTEXITCODE -eq 0) { return }
+  $key = "accounts.file.privateModeFailed"
+  if (Test-Path Function:\Get-ClmText) { throw (Get-ClmText $key) }
+  throw $key
 }
 
 function Test-SharedBusy {
@@ -60,13 +62,21 @@ function Write-TextFileAtomic {
   }
 }
 
+function Test-SharingViolation {
+  param($Err)
+  $e = $Err.Exception
+  while ($e -is [Management.Automation.MethodInvocationException] -and $null -ne $e.InnerException) { $e = $e.InnerException }
+  if (-not ($e -is [IO.IOException])) { return $false }
+  return -not ($e -is [IO.FileNotFoundException] -or $e -is [IO.DirectoryNotFoundException] -or $e -is [IO.PathTooLongException] -or $e -is [IO.DriveNotFoundException])
+}
+
 function Enter-FileLock {
   param([string]$Path, [int]$WaitMs)
   $deadline = [DateTime]::UtcNow.AddMilliseconds($WaitMs)
   while ($true) {
     try { return [IO.File]::Open($Path, "OpenOrCreate", "ReadWrite", "None") }
     catch {
-      if ([DateTime]::UtcNow -ge $deadline) { return $null }
+      if (-not (Test-SharingViolation $_) -or [DateTime]::UtcNow -ge $deadline) { return $null }
       Start-Sleep -Milliseconds $script:LockPollMs
     }
   }

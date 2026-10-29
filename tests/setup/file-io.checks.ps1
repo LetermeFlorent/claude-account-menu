@@ -86,3 +86,25 @@ Rename-UsageEntry "un" "trois"
 Assert-True ((Read-UsageCache).ContainsKey("trois") -and -not (Read-UsageCache).ContainsKey("un")) "cache d'usage : entree renommee"
 $script:UsageCachePath = $savedCachePath
 $script:UsageCacheLockMs = $savedCacheWait
+
+$lockMissing = Join-Path (Join-Path $ioDir "absent") "m.lock"
+$lockClock = [Diagnostics.Stopwatch]::StartNew()
+$lockMissed = Enter-FileLock $lockMissing 3000
+$lockClock.Stop()
+Assert-Null $lockMissed "verrou : dossier absent rend null"
+Assert-True ($lockClock.ElapsedMilliseconds -lt 1000) "verrou : dossier absent sans attendre"
+
+$lockUnder = Join-Path $ioDir "a.json"
+$lockClock = [Diagnostics.Stopwatch]::StartNew()
+$lockBlocked = Enter-FileLock (Join-Path $lockUnder "m.lock") 3000
+$lockClock.Stop()
+Assert-Null $lockBlocked "verrou : parent qui est un fichier rend null"
+Assert-True ($lockClock.ElapsedMilliseconds -lt 1000) "verrou : parent qui est un fichier sans attendre"
+
+$lockHeld = Enter-FileLock $lockPath 100
+$lockClock = [Diagnostics.Stopwatch]::StartNew()
+$lockSecond = Enter-FileLock $lockPath 300
+$lockClock.Stop()
+$lockHeld.Dispose()
+Assert-Null $lockSecond "verrou tenu : deuxieme prise rend null"
+Assert-True ($lockClock.ElapsedMilliseconds -ge 250) "verrou tenu : toujours vu comme occupe pendant l'attente"
