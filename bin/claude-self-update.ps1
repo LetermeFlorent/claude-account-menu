@@ -93,9 +93,15 @@ function Update-ClmLocked {
   return $true
 }
 
+function Get-ClmRelaunchArgs {
+  param([string[]]$Argv)
+  if ($script:ClmRestartDue -or $script:MenuUpdated) { return Get-ClmRestartArgs $Argv }
+  return ,[string[]]@($Argv)
+}
+
 function Restart-Clm {
   param([string]$Script, [string[]]$Argv)
-  if ($script:ClmRestartDue) { $Argv = Get-ClmRestartArgs $Argv }
+  $Argv = Get-ClmRelaunchArgs $Argv
   $exe = (Get-Process -Id $PID).Path
   & $exe -NoProfile -ExecutionPolicy Bypass -File $Script @Argv "--updated"
   exit $LASTEXITCODE

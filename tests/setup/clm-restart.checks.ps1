@@ -17,6 +17,7 @@ function Reset-ClmRestart {
   $script:ClmRestartDue = $false
   $script:ClmRestartAt = 0.0
   $script:ClmUpdated = $false
+  $script:MenuUpdated = $false
   $script:UiQuit = $false
   $script:Startup = $null
   $script:DriveJob = $null
@@ -84,12 +85,18 @@ try {
   Assert-Equal "--web --no-update" ((Get-ClmRestartArgs @("--web", "--no-update", "--usage", "--save=b", "--update", "--list", "--sync", "--force", "--drive-login", "--sync-auto=on", "--erase")) -join " ") "redemarrage : commandes et synchro retirees, page web gardee"
   Assert-Equal "--no-update" ((Get-ClmRestartArgs @()) -join " ") "redemarrage sans argument : pas de nouvelle mise a jour"
   Assert-Equal "--no-update" ((Get-ClmRestartArgs @("--no-update", "--no-update")) -join " ") "redemarrage : --no-update jamais double"
+  $script:ClmRestartDue = $false
+  $script:MenuUpdated = $false
+  Assert-Equal "--web" ((Get-ClmRelaunchArgs @("--web")) -join " ") "touche u avant la mise a jour de Claude Code : elle tourne au redemarrage"
+  $script:MenuUpdated = $true
+  Assert-Equal "--web --no-update" ((Get-ClmRelaunchArgs @("--web")) -join " ") "touche u apres la mise a jour de Claude Code : pas relancee au redemarrage"
 } finally {
   foreach ($n in $restartMocked) { Set-Item -Path ("function:script:" + $n) -Value $restartKept[$n] }
   $script:ClmLoadedSha = $restartLoaded
   $script:ClmRestartDue = $false
   $script:ClmRestartAt = 0.0
   $script:ClmUpdated = $false
+  $script:MenuUpdated = $false
   $script:UiQuit = $false
   $script:Startup = $null
   $script:DriveJob = $null
