@@ -48,7 +48,7 @@ try {
   Assert-Equal "  a, b, c : Claude Code a jour (2.1.292)" $script:St.Msg[0] "Claude Code a jour : resultat sous les comptes"
   $script:DriveJob.Ctl.Progress = "3/10"
   Assert-True (Invoke-StartupTicks) "Drive : avancement redessine"
-  Assert-Equal "30 3/10 fichiers" ("" + $script:Su.Steps[2].Pct + " " + $script:Su.Steps[2].Text) "Drive : fichiers faits sur le total"
+  Assert-Equal ("30 " + (Get-ClmText "menu.startup.files" @("3/10"))) ("" + $script:Su.Steps[2].Pct + " " + $script:Su.Steps[2].Text) "Drive : fichiers faits sur le total"
   $script:DriveJob.Loader = $null
   $null = Invoke-StartupTicks 2
   Assert-Equal (Get-ClmText "menu.startup.up_to_date") $script:Su.Steps[2].Text "Drive : synchro finie"

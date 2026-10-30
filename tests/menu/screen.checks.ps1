@@ -85,7 +85,7 @@ Assert-True ($texts[4].EndsWith((Get-ClmText "menu.usage.quota_7d_reached") + " 
 Assert-Equal ($L.W - 2) $texts[4].Length "texte de droite cale sur la largeur"
 Assert-True ($texts[6] -match "^  . {4}5h ") "barre 5h sous le repere"
 Assert-True ($texts[11] -match "jeton refuse") "erreur a la place des barres"
-Assert-True ($texts[16] -match "lecture\.\.\.") "compte encore en lecture"
+Assert-True ($texts[16].Contains((Get-ClmText "menu.screen.reading"))) "compte encore en lecture"
 Assert-Equal 1 $f.Fades[4] "carte choisie a pleine intensite"
 Assert-Equal 0.65 $f.Fades[9] "autre carte attenuee"
 Assert-Equal "  pret" $texts[22] "message en pied"
@@ -104,7 +104,7 @@ $f = Get-MenuRows $st $L 0
 $texts = @(foreach ($r in $f.Rows) { Get-SegsText $r })
 Assert-Equal 5 $f.Rows.Count "vue simple, titre, comptes et message"
 Assert-True ($texts[1] -match "1  perso  5h 20%  7d 100%") "vue simple, quotas en texte"
-Assert-True ($texts[3].StartsWith(" " + $script:Mark + " 3  test  lecture")) "vue simple, compte choisi en lecture"
+Assert-True ($texts[3].StartsWith(" " + $script:Mark + " 3  test  " + (Get-ClmText "menu.screen.reading"))) "vue simple, compte choisi en lecture"
 
 $st.Moved = $false
 $st.Sel = 0

@@ -5,7 +5,7 @@ Assert-Equal "compte1|Pro|perso" ((@(Select-ByLabel $accs "") | ForEach-Object {
 Assert-Equal "Pro|perso" ((@(Select-ByLabel $accs " perso, pro ") | ForEach-Object { $_.Label }) -join "|") "selection par nom, casse et espaces ignores"
 $err = $null
 try { $null = Select-ByLabel $accs "pro,prso" } catch { $err = $_.Exception.Message }
-Assert-Equal "compte inconnu : prso" $err "nom mal tape refuse"
+Assert-Equal (Get-ClmText "menu.select.unknown" @("prso")) $err "nom mal tape refuse"
 $err = $null
 $missing = Join-Path $script:Sandbox "absent.zip"
 try { Assert-ArchiveReadable $missing } catch { $err = $_.Exception.Message }

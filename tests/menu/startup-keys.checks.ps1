@@ -80,7 +80,7 @@ try {
   $script:DriveJob.Loader = $null
   $script:DriveJob.Failed = $true
   $null = Invoke-StartupTicks
-  Assert-Equal "failed erreur" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Drive : erreur"
+  Assert-Equal ("failed " + (Get-ClmText "menu.startup.error")) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Drive : erreur"
 
   New-StartupCase @("drive")
   $null = Invoke-StartupTicks

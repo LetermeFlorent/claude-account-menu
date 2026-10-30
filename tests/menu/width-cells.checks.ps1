@@ -3,7 +3,7 @@ $accentLabel = "caf" + [char]0x00E9 + " " + [char]0x00E0
 $txt = $script:Ink.Text
 Assert-Equal 4 (Get-SegsLength @(, @($wideLabel, $txt, $false))) "largeur en cases : libelle large sur deux cases par signe"
 Assert-Equal 6 (Get-SegsLength @(, @($accentLabel, $txt, $false))) "largeur en cases : libelle accentue une case par lettre"
-Assert-Equal 9 (Get-SegsLength @(@("ab", $txt, $false), @($wideLabel, $txt, $false), @($accentLabel, $txt, $false))) "largeur en cases : somme des segments"
+Assert-Equal 12 (Get-SegsLength @(@("ab", $txt, $false), @($wideLabel, $txt, $false), @($accentLabel, $txt, $false))) "largeur en cases : somme des segments"
 
 $row = New-Row
 $row.Add(@("ab", $txt, $false))

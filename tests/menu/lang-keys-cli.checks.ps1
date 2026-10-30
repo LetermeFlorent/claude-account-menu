@@ -7,7 +7,7 @@ $langEn = Read-ClmTextTable (Join-Path $bin "lang\en.json")
 $langFr = Read-ClmTextTable (Join-Path $bin "lang\fr.json")
 Assert-True ($langKeys.Count -ge 14) "menu : les cles du menu sont relevees dans les sources"
 foreach ($k in $langKeys) {
-  Assert-True ($langEn.Contains($k) -and $langFr.Contains($k)) ("menu : cle " + $k + " dans les deux langues")
+  Assert-True ($null -ne $langEn[$k] -and $null -ne $langFr[$k]) ("menu : cle " + $k + " dans les deux langues")
 }
 $langAccents = @{ "menu.cli.clm.updated.restarting" = @(233, 224); "menu.loop.fail.prefs" = @(233); "menu.loop.no.clm.update" = @(224) }
 foreach ($k in $langAccents.Keys) {

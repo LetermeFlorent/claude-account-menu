@@ -52,7 +52,8 @@ function Select-ByLabel {
 
 function Read-AccountNumber {
   param($Usages)
-  $count = @($Usages).Count
+  $count = 0
+  if ($null -ne $Usages) { $count = @($Usages).Count }
   if ($count -eq 0) {
     Write-Host ("  " + (Get-ClmText "menu.select.noAccount"))
     return $null

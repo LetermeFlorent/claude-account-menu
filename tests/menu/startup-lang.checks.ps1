@@ -10,7 +10,7 @@ foreach ($f in $langFiles) {
 $langUsed = @($langUsed | Sort-Object -Unique)
 Assert-True ($langUsed.Count -ge 17) "textes de l'ecran et du demarrage : cles trouvees dans les fichiers"
 foreach ($k in $langUsed) {
-  Assert-True ($langTables["en"].Contains($k) -and $langTables["fr"].Contains($k)) ("cle " + $k + " : presente en anglais et en francais")
+  Assert-True ($null -ne $langTables["en"][$k] -and $null -ne $langTables["fr"][$k]) ("cle " + $k + " : presente en anglais et en francais")
 }
 
 $accentless = '\b(apres|laissee|preparation|demarrage|affiches|arret|demande|verification|mise a jour|a jour|lance|remplace|maj)\b'
@@ -21,7 +21,7 @@ foreach ($k in @($langTables["fr"].Keys | Where-Object { $_ -match '^menu\.(scre
 Assert-Equal ([string][char]0xE0 + " jour") $langTables["fr"]["menu.startup.up_to_date"] "francais : a jour avec son accent"
 Assert-Equal ("pr" + [char]0xE9 + "paration") $langTables["fr"]["menu.startup.preparing"] "francais : preparation avec son accent"
 Assert-Equal ("d" + [char]0xE9 + "marrage") $langTables["fr"]["menu.boot.starting"] "francais : demarrage avec son accent"
-Assert-Equal ("laiss" + [char]0xE9 + "e " + [char]0xE0 + " un autre clm") $langTables["fr"]["menu.startup.left_to_other_clm"] "francais : laissee a un autre clm avec ses accents"
+Assert-Equal ("laiss" + [char]0xE9 + " " + [char]0xE0 + " un autre clm") $langTables["fr"]["menu.startup.left_to_other_clm"] "francais : laissee a un autre clm avec ses accents"
 
 $keptLang = $env:CLM_LANG
 try {
