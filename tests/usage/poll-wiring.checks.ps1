@@ -12,6 +12,7 @@ foreach ($p in @($pwBar, (Get-DisplayPath))) { $pwFiles[$p] = $null; if ([IO.Fil
 $pwUnix = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $pwAccs = @([PSCustomObject]@{ Label = "fil"; Dir = ".claude-fil" }, [PSCustomObject]@{ Label = "fil2"; Dir = ".claude-fil2" })
 $pwUtf8 = New-Object Text.UTF8Encoding($false)
+$pwMaj = [regex]::Escape((Get-ClmText "menu.timer.update" ""))
 $script:PwClock = 0.0
 $script:PwViews = $null
 
@@ -56,7 +57,7 @@ function Read-PwWeb {
 
 function Read-PwCard {
   param($E, [double]$At)
-  return ((Get-CompactUsageSegs $E.U 10 $E.View $E.T5 $E.T7 $At) | ForEach-Object { $_[0] }) -join ""
+  return ((Get-CompactUsageSegs @{ Usage = $E.U; Cells = 10; View = $E.View; Tween5 = $E.T5; Tween7 = $E.T7; Now = $At }) | ForEach-Object { $_[0] }) -join ""
 }
 
 function Get-PwApiTimer {
@@ -102,7 +103,7 @@ try {
   Assert-True ((Read-PwCard $pe ($pwPeriod + 400)).Contains("63%")) "fil de la barre : carte dessinee avec la valeur fraiche"
   $pwGap = $pe.NextAt - $pwPeriod - (30 - $pe.U.Age) * 1000
   Assert-True ($pwGap -ge 0 -and $pwGap -lt 3000) ("fil de la barre : lecture de l'API recalee sur la valeur de la barre, " + $pwGap)
-  Assert-True ($pe.Timer[0] -match '^maj (29|3[0-3])s$') ("fil de la barre : compteur du menu recale, " + $pe.Timer[0])
+  Assert-True ($pe.Timer[0] -match ('^' + $pwMaj + '(29|3[0-3])s$')) ("fil de la barre : compteur du menu recale, " + $pe.Timer[0])
   Assert-Null $script:MenuState.Loader "fil de la barre : aucun appel a l'API pour la valeur de la barre"
 
   Remove-Item -LiteralPath $pwBar -Force
@@ -110,7 +111,7 @@ try {
   Assert-Equal 30 $pwDef[3] "usage-poll absent : lot lu avec 30 s"
   Assert-True ($pwDef[0] -ge 30000 -and $pwDef[0] -lt 33000) ("usage-poll absent : API relue apres 30 s, " + $pwDef[0])
   Assert-Equal 15000 $pwDef[1] "usage-poll absent : second compte decale de 15 s"
-  Assert-True ($pwDef[2] -match '^maj 3[0-3]s$') ("usage-poll absent : compteur " + $pwDef[2])
+  Assert-True ($pwDef[2] -match ('^' + $pwMaj + '3[0-3]s$')) ("usage-poll absent : compteur " + $pwDef[2])
 
   $pwCode = Invoke-CliCommand (Get-CliCommand @("--usage-poll", "90")) @("--usage-poll", "90") 6>$null
   Assert-Equal 0 $pwCode "usage-poll 90 : commande reussie"
@@ -118,7 +119,7 @@ try {
   Assert-Equal 90 $pwSet[3] "usage-poll 90 : lot lu avec 90 s"
   Assert-True ($pwSet[0] -ge 90000 -and $pwSet[0] -lt 99000) ("usage-poll 90 : API relue apres 90 s, " + $pwSet[0])
   Assert-Equal 45000 $pwSet[1] "usage-poll 90 : second compte decale de 45 s"
-  Assert-True ($pwSet[2] -match '^maj 1m3[0-9]s$') ("usage-poll 90 : compteur " + $pwSet[2])
+  Assert-True ($pwSet[2] -match ('^' + $pwMaj + '1m3[0-9]s$')) ("usage-poll 90 : compteur " + $pwSet[2])
 } finally {
   foreach ($n in $pwFaked) { Set-Item ("function:" + $n) $pwKept[$n] }
   foreach ($p in @($pwFiles.Keys)) {
