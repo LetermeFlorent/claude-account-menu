@@ -37,9 +37,12 @@ try {
   $text = $help -join "`n"
   $documented = @($script:CliCommands + @("--usage", "--save", "--restore=", "--only=", "--no-update", "--drive-login", "--sync", "--force", "--sync-auto=on|off", "--erase", "--yes", "--web", "CLM_ANIM", "STATUSLINE_BG", "display.json", "%LOCALAPPDATA%\clm", "~/.local/state/clm", "~/Library/Application Support/clm"))
   Assert-Equal "" (@($documented | Where-Object { -not $text.Contains($_) }) -join ",") "aide : chaque option decrite"
-  Assert-Equal "" (@($help | Where-Object { $_ -match "[^\x20-\x7E]" -or $_.Length -gt 80 }) -join "|") "aide : ascii, 80 colonnes au plus"
-  Assert-True ($help -contains "  p       reglages") "aide : touches du menu"
-  Assert-True ($help -contains "  w       page web") "aide : touche de la page web"
+  Assert-Equal "" (@($help | Where-Object { $_.Length -gt 80 }) -join "|") "aide : 80 colonnes au plus"
+  if ((Get-ClmLang) -eq "en") { Assert-Equal "" (@($help | Where-Object { $_ -match "[^\x20-\x7E]" }) -join "|") "aide : ascii" }
+  $footer = @{}
+  for ($i = 0; $i + 1 -lt $script:MenuFooter.Count; $i += 2) { $footer[$script:MenuFooter[$i]] = $script:MenuFooter[$i + 1] }
+  Assert-True ($help -contains ("  " + "p".PadRight(8) + $footer["p"])) "aide : touches du menu"
+  Assert-True ($help -contains ("  " + "w".PadRight(8) + $footer["w"])) "aide : touche de la page web"
   Assert-Equal 0 (Invoke-CliArgs @("--help")) "aide : reussie"
 
   Save-Registry @(
@@ -54,7 +57,7 @@ try {
   Assert-Equal "perso" (Find-CliAccount $accs ".claude-compte3").Label "compte par dossier"
   $err = ""
   try { $null = Find-CliAccount $accs "9" } catch { $err = $_.Exception.Message }
-  Assert-Equal "compte inconnu : 9, voir clm --list" $err "numero sans compte"
+  Assert-Equal (Get-ClmText "accounts.cli.unknownAccount" @("9")) $err "numero sans compte"
   $list = Get-CliAccountLines
   Assert-Equal 3 $list.Count "--list : une ligne par compte"
   Assert-Equal "2  Pro          .claude-compte2    pro@exemple.fr" $list[1] "--list : numero, nom, dossier, e-mail"
@@ -84,11 +87,11 @@ try {
   Assert-Equal "compte1,Travail" (@(Get-Accounts | ForEach-Object { $_.Label }) -join ",") "--remove : compte retire de la liste"
 
   $v = Get-CliVersionLines
-  Assert-True ($v[0].StartsWith("clm ") -and $v[1].Contains("hors de .local/bin") -and $v[2] -eq "Claude Code 2.1.0") "--version : clm, dossier, Claude Code"
+  Assert-True ($v[0].StartsWith("clm ") -and $v[1].EndsWith((Get-ClmText "accounts.cli.notInstalledHere")) -and $v[2] -eq "Claude Code 2.1.0") "--version : clm, dossier, Claude Code"
   function Get-Backups { return @([PSCustomObject]@{ LastWriteTime = [datetime]::new(2026, 10, 21, 9, 5, 0); FullName = "/t/claude-comptes-x.zip" }) }
   Assert-Equal "21/10/2026 09:05  /t/claude-comptes-x.zip" (Get-CliBackupLines)[0] "--backups : date et chemin"
   function Get-Backups { return @() }
-  Assert-True ((Get-CliBackupLines)[0].StartsWith("aucune archive dans ")) "--backups sans archive"
+  Assert-Equal (Get-ClmText "accounts.cli.noBackups" @((Get-DownloadsDir))) (Get-CliBackupLines)[0] "--backups sans archive"
 
   $script:CliCalls.Clear()
   $script:CliOnline = $false

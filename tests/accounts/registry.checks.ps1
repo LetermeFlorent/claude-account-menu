@@ -23,7 +23,7 @@ if ($bad.Count -eq 1) {
 $null = Get-Accounts
 Assert-Equal 1 (Get-RegistryBadFiles).Count "registre illisible : pas de copie en double a chaque lecture"
 
-Assert-Throws { Save-Registry @([PSCustomObject]@{ Label = "x"; Dir = ".claude-x" }) } "illisible" "registre illisible : ecriture refusee"
+Assert-Throws { Save-Registry @([PSCustomObject]@{ Label = "x"; Dir = ".claude-x" }) } (Get-ClmText "accounts.registry.unreadable") "registre illisible : ecriture refusee"
 Assert-Equal $corrupt ([IO.File]::ReadAllText($script:RegistryPath)) "registre illisible : fichier intact apres refus"
 
 Remove-Item -LiteralPath $script:RegistryPath -Force

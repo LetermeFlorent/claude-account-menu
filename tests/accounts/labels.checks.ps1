@@ -18,7 +18,7 @@ Assert-Equal 40 $stored.Length "renommage : nom coupe a 40 caracteres"
 Assert-True (-not ([IO.File]::ReadAllText($script:RegistryPath).Contains("\u001b"))) "renommage : registre sans echappement"
 $labelErr = $null
 try { $null = Rename-Account (@(Get-Accounts))[1] ($esc + [char]9) } catch { $labelErr = $_.Exception.Message }
-Assert-Equal "nom vide" $labelErr "renommage : nom fait que de controle refuse"
+Assert-Equal (Get-ClmText "accounts.rename.empty") $labelErr "renommage : nom fait que de controle refuse"
 
 $slotFns = @{ r = ${function:Repair-SharedLinks}; v = ${function:Get-ClaudeVersion} }
 function Repair-SharedLinks { param($Acc, [switch]$Force) $null = New-Item -ItemType Directory -Path (Get-AccountPath $Acc) -Force }

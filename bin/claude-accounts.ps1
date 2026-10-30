@@ -1,4 +1,4 @@
-. Import-ClmModule claude-platform, claude-credentials, claude-account-add, claude-state, claude-registry, claude-account-email
+. Import-ClmModule claude-platform, claude-credentials, claude-account-add, claude-state, claude-registry, claude-account-email, claude-text, claude-network
 $script:HomeDir = Get-HomeDir
 $script:RegistryPath = Get-StatePath "accounts.json"
 $script:ClaudeExe = Find-ClaudeExe
@@ -50,7 +50,7 @@ function Repair-SharedLinks {
   $main = Join-Path $script:HomeDir ".claude"
   $dir = Get-AccountPath $Acc
   foreach ($root in @($main, $dir)) {
-    if (Test-ReparsePath $root) { Write-Warning ("dossier de compte en lien, laisse tel quel : " + $root); return }
+    if (Test-ReparsePath $root) { Write-Warning (Get-ClmText "accounts.link.skipped" @($root)); return }
   }
   if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
   foreach ($d in $script:SharedDirs) {

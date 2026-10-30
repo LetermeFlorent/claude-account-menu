@@ -26,18 +26,18 @@ $dir2 = Get-AccountPath $acc2
 $dir3 = Get-AccountPath $acc3
 
 $msg = Remove-Account $acc3 $false
-Assert-Equal "perso retire du menu" $msg "retrait simple, message"
+Assert-Equal (Get-ClmText "accounts.remove.removed" @("perso")) $msg "retrait simple, message"
 Assert-True (Test-Path -LiteralPath $dir3) "retrait simple, dossier garde"
 Assert-Equal ".claude|.claude-compte2" ((@(Get-Accounts) | ForEach-Object { $_.Dir }) -join "|") "retrait simple, registre"
 Assert-Equal 0 $script:Archived.Count "retrait simple, pas d'archive"
 
 $err = $null
 try { $null = Remove-Account $acc1 $true } catch { $err = $_.Exception.Message }
-Assert-Equal "le dossier .claude n'est jamais efface" $err "effacement de .claude refuse"
+Assert-Equal (Get-ClmText "accounts.remove.neverErased" @(".claude")) $err "effacement de .claude refuse"
 Assert-Equal ".claude|.claude-compte2" ((@(Get-Accounts) | ForEach-Object { $_.Dir }) -join "|") "refus, registre intact"
 
 $msg = Remove-Account $acc2 $true
-Assert-Equal "pro retire du menu, dossier efface, archive : archive.zip" $msg "effacement, message"
+Assert-Equal (Get-ClmText "accounts.remove.erased" @("pro", "archive.zip")) $msg "effacement, message"
 Assert-Equal ".claude-compte2" ($script:Archived -join "|") "effacement, archive du seul compte retire"
 Assert-True (-not (Test-Path -LiteralPath $dir2)) "effacement, dossier parti"
 Assert-Equal "skill" ([IO.File]::ReadAllText($skill)) "effacement, cible du lien skills intacte"
@@ -48,7 +48,7 @@ else { Assert-Equal 0 $script:KeychainCleared.Count "pas de trousseau hors macOS
 
 $err = $null
 try { $null = Remove-Account $acc1 $false } catch { $err = $_.Exception.Message }
-Assert-Equal "c'est le dernier compte" $err "dernier compte refuse"
+Assert-Equal (Get-ClmText "accounts.remove.last") $err "dernier compte refuse"
 Assert-Equal ".claude" ((@(Get-Accounts) | ForEach-Object { $_.Dir }) -join "|") "dernier compte, registre intact"
 
 Remove-Item -LiteralPath $script:RegistryPath, $dir3 -Recurse -Force

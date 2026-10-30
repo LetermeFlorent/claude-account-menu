@@ -1,4 +1,4 @@
-. Import-ClmModule claude-json
+. Import-ClmModule claude-json, claude-text
 function New-AccountSlot {
   param([string]$Label)
   $list = @(Get-Accounts)
@@ -19,10 +19,10 @@ function New-AccountSlot {
 function Show-AddAccountHelp {
   Clear-Host
   Write-Host ""
-  Write-Host "  Ajouter un compte Claude"
-  Write-Host "  Le navigateur va s'ouvrir sur la page de connexion." -ForegroundColor DarkGray
-  Write-Host "  Si claude.ai y est deja connecte sur un autre compte, copie le lien affiche" -ForegroundColor DarkGray
-  Write-Host "  dans une fenetre privee, sinon c'est cet autre compte qui sera enregistre." -ForegroundColor DarkGray
+  Write-Host ("  " + (Get-ClmText "accounts.add.title"))
+  Write-Host ("  " + (Get-ClmText "accounts.add.browser")) -ForegroundColor DarkGray
+  Write-Host ("  " + (Get-ClmText "accounts.add.signedInElsewhere")) -ForegroundColor DarkGray
+  Write-Host ("  " + (Get-ClmText "accounts.add.privateWindow")) -ForegroundColor DarkGray
   Write-Host ""
 }
 
@@ -30,8 +30,8 @@ function Add-Account {
   param($Label = $null)
   Show-AddAccountHelp
   if ($null -ne $Label) { return Connect-NewAccount $Label }
-  $label = Read-Host "  Nom du compte (Entree pour le nom par defaut, q pour annuler)"
-  if ($label -eq "q") { return "ajout annule" }
+  $label = Read-Host ("  " + (Get-ClmText "accounts.add.namePrompt"))
+  if ($label -eq "q") { return Get-ClmText "accounts.add.cancelled" }
   return Connect-NewAccount $label
 }
 
@@ -40,6 +40,6 @@ function Connect-NewAccount {
   $acc = New-AccountSlot $Label
   Invoke-AsAccount $acc @("auth", "login") | Out-Host
   $mail = Get-AccountEmail $acc
-  if ($mail -eq "") { return $acc.Label + " cree, mais non connecte : relance-le pour faire /login" }
-  return $acc.Label + " ajoute : " + $mail
+  if ($mail -eq "") { return Get-ClmText "accounts.add.notSignedIn" @($acc.Label) }
+  return Get-ClmText "accounts.add.done" @($acc.Label, $mail)
 }

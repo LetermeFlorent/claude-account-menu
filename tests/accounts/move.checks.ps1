@@ -14,21 +14,21 @@ try {
     [PSCustomObject]@{ Label = "perso"; Dir = ".claude-compte3" }
   )
   $accs = @(Get-Accounts)
-  Assert-Equal "perso passe au rang 1" (Move-Account $accs[2] 1) "ordre : compte monte en tete"
+  Assert-Equal (Get-ClmText "accounts.move.done" @("perso", 1)) (Move-Account $accs[2] 1) "ordre : compte monte en tete"
   Assert-Equal "perso|compte1|Pro" (Get-MoveOrder) "ordre : les autres descendent d'un rang"
-  Assert-Equal "perso passe au rang 3" (Move-Account $accs[2] 3) "ordre : compte descendu en bas"
+  Assert-Equal (Get-ClmText "accounts.move.done" @("perso", 3)) (Move-Account $accs[2] 3) "ordre : compte descendu en bas"
   Assert-Equal "compte1|Pro|perso" (Get-MoveOrder) "ordre : retour a l'ordre de depart"
-  Assert-Equal "Pro deja au rang 2" (Move-Account $accs[1] 2) "ordre : meme rang, rien a faire"
+  Assert-Equal (Get-ClmText "accounts.move.alreadyAt" @("Pro", 2)) (Move-Account $accs[1] 2) "ordre : meme rang, rien a faire"
   Assert-Equal ".claude-compte2" (@(Get-Accounts)[1]).Dir "ordre : dossiers suivent leur compte"
 
   foreach ($bad in @(0, 4, -1)) {
     $err = ""
     try { $null = Move-Account $accs[0] $bad } catch { $err = $_.Exception.Message }
-    Assert-Equal "rang $bad hors de la liste, de 1 a 3" $err "ordre : rang $bad refuse"
+    Assert-Equal (Get-ClmText "accounts.move.outOfRange" @($bad, 3)) $err "ordre : rang $bad refuse"
   }
   $err = ""
   try { $null = Move-Account ([PSCustomObject]@{ Label = "fantome"; Dir = ".claude-compte9" }) 1 } catch { $err = $_.Exception.Message }
-  Assert-Equal "compte inconnu : fantome" $err "ordre : compte absent refuse"
+  Assert-Equal (Get-ClmText "accounts.move.unknown" @("fantome")) $err "ordre : compte absent refuse"
   Assert-Equal "compte1|Pro|perso" (Get-MoveOrder) "ordre : refus sans effet sur le registre"
 
   Assert-Equal 0 (Invoke-CliCommand (Get-CliCommand @("--move", "perso", "2")) @() 6>$null) "--move : reussi"

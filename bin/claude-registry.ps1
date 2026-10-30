@@ -1,11 +1,8 @@
-. Import-ClmModule claude-file-io, claude-state
+. Import-ClmModule claude-file-io, claude-state, claude-text
 $script:RegistryLockWaitMs = 5000
-$script:RegistryUnreadableText = "liste des comptes illisible, copie gardee a cote"
-$script:RegistryBusyText = "liste des comptes en cours d'ecriture"
 $script:RegistryBadKey = ""
 $script:AccountLabelMax = 40
 $script:AccountDirPattern = '^\.claude(-[A-Za-z0-9_-]+)?\z'
-$script:AccountDirBadText = "compte ignore, nom de dossier refuse : "
 $script:AccountDirWarned = @{}
 
 function Test-AccountDir {
@@ -20,7 +17,7 @@ function Select-ValidAccounts {
     $shown = ([string]$a.Dir) -replace '[\x00-\x1f\x7f]', '?'
     if ($script:AccountDirWarned.ContainsKey($shown)) { continue }
     $script:AccountDirWarned[$shown] = $true
-    Write-Warning ($script:AccountDirBadText + $shown)
+    Write-Warning (Get-ClmText "accounts.registry.badDir" @($shown))
   }
 }
 
@@ -36,7 +33,7 @@ function Read-RegistryFile {
   $data = Read-SharedText $script:RegistryPath | ConvertFrom-Json
   $list = @($data | ForEach-Object { $_ })
   foreach ($a in $list) {
-    if ($a -isnot [PSCustomObject] -or [string]::IsNullOrEmpty([string]$a.Label) -or [string]::IsNullOrEmpty([string]$a.Dir)) { throw $script:RegistryUnreadableText }
+    if ($a -isnot [PSCustomObject] -or [string]::IsNullOrEmpty([string]$a.Label) -or [string]::IsNullOrEmpty([string]$a.Dir)) { throw (Get-ClmText "accounts.registry.unreadable") }
   }
   return @(Select-ValidAccounts $list)
 }
@@ -54,7 +51,7 @@ function Save-RegistryBad {
   $dest = $script:RegistryPath + ".bad-" + $stamp
   if (Test-Path -LiteralPath $dest) { $dest = $dest + "-" + [guid]::NewGuid().ToString("N").Substring(0, 6) }
   try { Copy-Item -LiteralPath $script:RegistryPath -Destination $dest -ErrorAction Stop; $script:RegistryBadKey = $key }
-  catch { Write-Verbose ("copie du registre illisible impossible : " + $_.Exception.Message) }
+  catch { Write-Verbose (Get-ClmText "accounts.registry.badCopyFailed" @($_.Exception.Message)) }
 }
 
 function Get-DefaultAccounts {
@@ -77,8 +74,8 @@ function Get-Accounts {
 
 function Save-Registry {
   param($List)
-  Invoke-WithFileLock ($script:RegistryPath + ".lock") $script:RegistryLockWaitMs $script:RegistryBusyText {
-    if (-not (Test-RegistryReadable)) { throw $script:RegistryUnreadableText }
+  Invoke-WithFileLock ($script:RegistryPath + ".lock") $script:RegistryLockWaitMs (Get-ClmText "accounts.registry.busy") {
+    if (-not (Test-RegistryReadable)) { throw (Get-ClmText "accounts.registry.unreadable") }
     Write-TextFileAtomic $script:RegistryPath ((ConvertTo-Json -InputObject @($List) -Depth 3) + "`n") -Bom:($PSVersionTable.PSVersion.Major -lt 6)
   }
 }

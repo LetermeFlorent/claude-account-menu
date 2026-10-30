@@ -53,7 +53,7 @@ try {
   Invoke-LkLocked $script:RegistryPath {
     $lkAccs = @(Get-Accounts)
     Assert-Equal "compte1" $lkAccs[0].Label "accounts.json verrouille : comptes par defaut, pas la liste lue"
-    Assert-Throws { Save-Registry @([PSCustomObject]@{ Label = "x"; Dir = ".claude-x" }) } "illisible" "accounts.json verrouille : ecriture refusee"
+    Assert-Throws { Save-Registry @([PSCustomObject]@{ Label = "x"; Dir = ".claude-x" }) } (Get-ClmText "accounts.registry.unreadable") "accounts.json verrouille : ecriture refusee"
   }
   Assert-Equal $lkText ([IO.File]::ReadAllText($script:RegistryPath)) "accounts.json verrouille : fichier intact"
   Assert-Equal "a" ((@(Get-Accounts) | ForEach-Object { $_.Label }) -join "|") "accounts.json deverrouille : liste relue"

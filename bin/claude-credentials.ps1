@@ -1,4 +1,4 @@
-. Import-ClmModule claude-file-io, claude-keychain
+. Import-ClmModule claude-file-io, claude-keychain, claude-text
 
 function Read-AccountCredential {
   param($Acc)
