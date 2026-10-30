@@ -14,6 +14,7 @@ function Set-DisplayValues {
   $data = Read-DisplayFile $Vars
   foreach ($k in $clean.Keys) { $data[$k] = $clean[$k] }
   Write-TextFileAtomic (Get-DisplayPath $Vars) ((ConvertTo-JsonText $data) + "`n")
+  $script:LangPrefCache = $null
   return Read-DisplayConfig $Vars
 }
 

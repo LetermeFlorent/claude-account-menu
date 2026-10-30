@@ -5,6 +5,7 @@ $script:LangFallback = "en"
 $script:LangEnvNames = @("LC_ALL", "LC_MESSAGES", "LANG")
 $script:LangMacPattern = New-Object regex '^\s*\(\s*"?([A-Za-z]{2,3}(?:[-_][A-Za-z0-9]+)*)'
 $script:LangSystemFound = $null
+$script:LangPrefCache = $null
 
 function ConvertTo-LangCode {
   param($Value)
@@ -59,12 +60,31 @@ function Get-DetectedLang {
   return $script:LangSystemFound
 }
 
-function Get-PreferredLang {
+function Read-PreferredLang {
   param($Vars = $null)
   $pref = ""
   try { $pref = (Read-DisplayConfig $Vars).lang } catch { $pref = "" }
   if ($script:LangCodes -ccontains $pref) { return $pref }
   return ""
+}
+
+function Get-LangPrefStamp {
+  try {
+    $info = New-Object IO.FileInfo (Get-DisplayPath)
+    if (-not $info.Exists) { return $info.FullName + "|none" }
+    return $info.FullName + "|" + $info.LastWriteTimeUtc.Ticks + ":" + $info.Length
+  } catch { return "" }
+}
+
+function Get-PreferredLang {
+  param($Vars = $null)
+  if ($null -ne $Vars) { return Read-PreferredLang $Vars }
+  $stamp = Get-LangPrefStamp
+  $hit = $script:LangPrefCache
+  if ($stamp -and $null -ne $hit -and $hit.Stamp -ceq $stamp) { return $hit.Lang }
+  $lang = Read-PreferredLang
+  $script:LangPrefCache = @{ Stamp = $stamp; Lang = $lang }
+  return $lang
 }
 
 function Get-ClmLang {
