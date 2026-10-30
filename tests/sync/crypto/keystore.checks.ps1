@@ -20,14 +20,14 @@ function Remove-KeychainItems { param([string]$Service, [string[]]$Accounts) for
 try {
   $script:SyncKeyStoreOs = "Linux"
   Assert-True (-not (Test-SyncKeyStored)) "cle de synchro : absente au depart"
-  Assert-Throws { Get-SyncKeys } $script:SyncKeyMissing "cle de synchro absente : synchro refusee"
+  Assert-Throws { Get-SyncKeys } (Get-ClmText "sync.key.missing") "cle de synchro absente : synchro refusee"
   Save-SyncKeys $storeKeys
   Assert-True (Test-SyncKeyStored) "linux : cle enregistree"
   Assert-Equal $storeKeys.Check (Get-SyncKeys).Check "linux : cle relue"
   Assert-Equal 600000 (Get-SyncKeys).Iterations "linux : reglages de derivation gardes"
   if ($script:OsName -ne "Windows") { Assert-Equal "-rw-------" (Get-Item -LiteralPath $script:SyncKeyStorePath).UnixMode "linux : fichier en 600" }
   [IO.File]::WriteAllText($script:SyncKeyStorePath, ([IO.File]::ReadAllText($script:SyncKeyStorePath)).Replace($storeKeys.Check, ("0" * 64)))
-  Assert-Throws { Get-SyncKeys } $script:SyncKeyBroken "linux : cle abimee refusee"
+  Assert-Throws { Get-SyncKeys } (Get-ClmText "sync.key.broken") "linux : cle abimee refusee"
   Remove-SyncKeys
   Assert-True (-not (Test-SyncKeyStored)) "linux : cle oubliee"
 

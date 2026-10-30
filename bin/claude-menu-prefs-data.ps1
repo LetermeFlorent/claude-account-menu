@@ -1,18 +1,22 @@
-$script:PrefsHomeLabel = "perso"
-$script:PrefsGlobalTag = "ce PC"
+. Import-ClmModule claude-text
 $script:PrefsAllKey = "*"
-$script:PrefsOffWarn = @{
-  skills = "  Le skill quitte ce PC a sa prochaine synchro, il reste sur le Drive."
-  mcp = "  Le MCP quitte ce PC a sa prochaine synchro, il reste sur le Drive."
-  globals = "  Le MCP quitte tous les comptes de ce PC, sa definition est mise de cote."
+
+function Get-PrefsThisPc {
+  return Get-ClmText "sync.prefs.thisPc"
+}
+
+function Get-PrefsOffWarn {
+  param([string]$Kind)
+  return "  " + (Get-ClmText ("sync.prefs.off." + $Kind))
 }
 
 function Get-PrefsOffLines {
-  param($Item, [string]$Pc = "ce PC")
+  param($Item, [string]$Pc = "")
+  if (-not $Pc) { $Pc = Get-PrefsThisPc }
   $list = @($Item)
   if ($Item.All) { $list = @($Item.Items | Where-Object { $_.On }) }
-  $lines = @(foreach ($k in @($list | ForEach-Object { $_.Kind } | Sort-Object -Unique)) { $script:PrefsOffWarn[$k].Replace("ce PC", $Pc) })
-  if ($Item.All) { $lines += "  " + $list.Count + " cases decochees d'un coup." }
+  $lines = @(foreach ($k in @($list | ForEach-Object { $_.Kind } | Sort-Object -Unique)) { (Get-PrefsOffWarn $k).Replace((Get-PrefsThisPc), $Pc) })
+  if ($Item.All) { $lines += "  " + (Get-ClmText "sync.prefs.manyOff" @($list.Count)) }
   return ,[string[]]$lines
 }
 
@@ -22,15 +26,15 @@ function New-PrefsHead {
 }
 
 function New-PrefsItem {
-  param([string]$Kind, [string]$Key, [string]$Label, [string]$Tag, [bool]$On, [bool]$Erasing)
-  return @{ Head = $false; Kind = $Kind; Key = $Key; Label = $Label; Tag = $Tag; On = $On; Erasing = $Erasing }
+  param([hashtable]$Item)
+  return @{ Head = $false; Kind = [string]$Item.Kind; Key = [string]$Item.Key; Label = [string]$Item.Label; Tag = [string]$Item.Tag; On = [bool]$Item.On; Erasing = [bool]$Item.Erasing }
 }
 
 function New-PrefsAll {
   param([string]$Kind, [string]$Label, $Items)
   $live = @($Items | Where-Object { -not $_.Head -and -not $_.Erasing })
   $on = @($live | Where-Object { $_.On }).Count
-  $all = New-PrefsItem $Kind $script:PrefsAllKey $Label ("coches : " + $on + " sur " + $live.Count) ($live.Count -gt 0 -and $on -eq $live.Count) $false
+  $all = New-PrefsItem @{ Kind = $Kind; Key = $script:PrefsAllKey; Label = $Label; Tag = (Get-ClmText "sync.prefs.checkedCount" @($on, $live.Count)); On = ($live.Count -gt 0 -and $on -eq $live.Count); Erasing = $false }
   $all.All = $true
   $all.Mixed = $on -gt 0 -and $on -lt $live.Count
   $all.Items = $live
@@ -61,13 +65,13 @@ function Get-SortedPrefsItems {
 function Add-SkillLines {
   param($Lines, $Choice, $Catalog)
   $names = New-NameSet @($Catalog.Skills, (Get-LocalSkillNames), $Choice.Erase.skills)
-  $items = @(foreach ($n in $names) { New-PrefsItem "skills" $n $n "" (Test-SkillChecked $Choice $n) $Choice.Erase.skills.Contains($n) })
-  Add-PrefsGroup $Lines "Skills" "skills" "tous les skills" $items
+  $items = @(foreach ($n in $names) { New-PrefsItem @{ Kind = "skills"; Key = $n; Label = $n; Tag = ""; On = (Test-SkillChecked $Choice $n); Erasing = $Choice.Erase.skills.Contains($n) } })
+  Add-PrefsGroup $Lines (Get-ClmText "sync.prefs.head.skills") "skills" (Get-ClmText "sync.prefs.all.skills") $items
 }
 
 function Get-McpWhere {
   param([string]$Key, [string]$Os)
-  $where = $script:PrefsHomeLabel
+  $where = Get-ClmText "sync.prefs.home"
   $project = (Split-McpKey $Key).Project
   if ($project) { $where = @($project -split "/")[-1] }
   if ($Os) { $where += ", " + $Os }
@@ -76,7 +80,7 @@ function Get-McpWhere {
 
 function New-McpItem {
   param([string]$Key, [string]$Os, [bool]$On, [bool]$Erasing)
-  $item = New-PrefsItem "mcp" $Key (Split-McpKey $Key).Name (Get-McpWhere $Key $Os) $On $Erasing
+  $item = New-PrefsItem @{ Kind = "mcp"; Key = $Key; Label = (Split-McpKey $Key).Name; Tag = (Get-McpWhere $Key $Os); On = $On; Erasing = $Erasing }
   $item.Os = $Os
   return $item
 }
@@ -92,9 +96,9 @@ function Add-McpLines {
     $items.Add((New-McpItem $k $os (Test-McpChecked $Choice $k $os) $Choice.Erase.mcp.Contains($k)))
   }
   foreach ($n in (New-NameSet @($Globals, @($Catalog.Parked.Keys), $Choice.Erase.globals))) {
-    $items.Add((New-PrefsItem "globals" $n $n $script:PrefsGlobalTag (-not (Test-GlobalOff $Choice $n)) $Choice.Erase.globals.Contains($n)))
+    $items.Add((New-PrefsItem @{ Kind = "globals"; Key = $n; Label = $n; Tag = (Get-PrefsThisPc); On = (-not (Test-GlobalOff $Choice $n)); Erasing = $Choice.Erase.globals.Contains($n) }))
   }
-  Add-PrefsGroup $Lines "MCP" "mcp" "tous les MCP" (Get-SortedPrefsItems $items)
+  Add-PrefsGroup $Lines (Get-ClmText "sync.prefs.head.mcp") "mcp" (Get-ClmText "sync.prefs.all.mcp") (Get-SortedPrefsItems $items)
 }
 
 function Get-PrefsLines {

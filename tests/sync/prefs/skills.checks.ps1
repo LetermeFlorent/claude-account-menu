@@ -28,7 +28,7 @@ $offCat.Pcs["AUTRE"].Choice.skills["x"] = $false
 Assert-True (-not (Test-SkillOffEverywhere $offChoice $offCat "MOI" "x")) "PC dont clm n'est pas a jour : compte comme coche"
 $offCat.Pcs["AUTRE"].Os = "Windows"
 Assert-True (Test-SkillOffEverywhere $offChoice $offCat "MOI" "x") "decoche sur chaque PC : decoche partout"
-Add-PcAsk $offChoice "AUTRE" "skills" "x" $true 0
+Add-PcAsk @{ Choice = $offChoice; Pc = "AUTRE"; Kind = "skills"; Name = "x"; On = $true; After = 0 }
 Assert-True (-not (Test-SkillOffEverywhere $offChoice $offCat "MOI" "x")) "demande de recocher en attente : pas decoche partout"
 Remove-PcAsk $offChoice "AUTRE" "skills" "x"
 $offCat.Pcs["AUTRE"].Choice.skills.Remove("x")

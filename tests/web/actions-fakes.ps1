@@ -41,7 +41,7 @@ function Request-DriveSync { param($Job) $script:ActSyncs++; return @(("  " + (G
 function Set-DriveAuto { param([bool]$On) $script:ActAuto = $On }
 function Test-DriveConnected { return $true }
 function Read-CliPrefs {
-  $skill = New-PrefsItem "skills" "dessin" "dessin" "" $true $false
+  $skill = New-PrefsItem @{ Kind = "skills"; Key = "dessin"; Label = "dessin"; Tag = ""; On = $true; Erasing = $false }
   $all = New-PrefsAll "skills" "tous les skills" @($skill)
   $pcs = New-PathMap
   $pcs["loin"] = New-PcContent

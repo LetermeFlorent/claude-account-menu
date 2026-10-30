@@ -1,10 +1,8 @@
-. Import-ClmModule claude-sync-crypto, claude-keychain, claude-file-io, claude-state
+. Import-ClmModule claude-sync-crypto, claude-keychain, claude-file-io, claude-state, claude-text
 $script:SyncKeyStorePath = Get-StatePath "sync-key"
 if ($null -eq $script:SyncKeyStoreOs) { $script:SyncKeyStoreOs = $script:OsName }
 $script:SyncKeyService = "clm-sync-key"
 $script:SyncKeyAccount = "clm"
-$script:SyncKeyMissing = "phrase de synchro absente sur ce PC : la saisir par y dans le menu ou clm --sync-key"
-$script:SyncKeyBroken = "cle de synchro de ce PC illisible : clm --sync-key-forget puis clm --sync-key"
 
 function ConvertTo-SyncKeyRecord {
   param($Keys)
@@ -45,7 +43,7 @@ function Write-SyncKeyText {
   param([string]$Text)
   if ($script:SyncKeyStoreOs -eq "MacOS") {
     Invoke-SecurityBatch @(ConvertTo-KeychainLine $script:SyncKeyService $script:SyncKeyAccount $Text)
-    if ((Read-SyncKeyText) -cne $Text) { throw "trousseau : ecriture refusee" }
+    if ((Read-SyncKeyText) -cne $Text) { throw (Get-ClmText "sync.key.keychainRefused") }
     return
   }
   if ($script:SyncKeyStoreOs -eq "Windows") { Write-TextFileAtomic $script:SyncKeyStorePath (Protect-WindowsText $Text); return }

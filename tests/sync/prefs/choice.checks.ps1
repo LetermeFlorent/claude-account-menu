@@ -44,7 +44,7 @@ $held = [IO.File]::Open($script:SyncChoiceLockPath, "OpenOrCreate", "ReadWrite",
 $err = ""
 try { $null = Update-SyncChoice { param($x) Set-ChoiceCheck $x "skills" "z" $false $true } } catch { $err = $_.Exception.Message }
 $held.Dispose()
-Assert-Equal $script:SyncChoiceBusyText $err "verrou pris : ecriture refusee"
+Assert-Equal (Get-ClmText "sync.choice.busy") $err "verrou pris : ecriture refusee"
 
 Remove-Item -LiteralPath $script:SyncChoicePath, $script:SyncChoiceLockPath -Force -ErrorAction SilentlyContinue
 $script:SyncChoicePath, $script:SyncChoiceLockPath, $script:SyncChoiceWaitMs = $choiceSaved

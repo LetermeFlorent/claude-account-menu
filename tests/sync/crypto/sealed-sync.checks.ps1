@@ -77,7 +77,7 @@ Start-SealedPc "PK"
 $null = Publish-SyncKeyFile (Get-DriveFolders) $ssOther ""
 Set-PcFile ".claude/k.md" "local"
 $r = Invoke-DriveSync
-Assert-Equal $script:SyncKeyChanged $r.Error "phrase changee ailleurs : synchro arretee"
+Assert-Equal (Get-ClmText "sync.key.changed") $r.Error "phrase changee ailleurs : synchro arretee"
 Assert-True (-not (Test-FakeFile ".claude/k.md")) "phrase changee ailleurs : rien envoye"
 $script:FakeRootFiles.Clear()
 
@@ -94,7 +94,7 @@ $fresh = Receive-DriveCredential $ssOne[0]
 Send-DriveCredential $ssOne[0]
 Set-Item -Path function:Read-SyncPassText -Value $ssSaved[0]
 Set-Item -Path function:Get-DriveFolders -Value $ssSaved[1]
-Assert-Equal $script:SyncKeyMissing $r.Error "sans phrase : pas de synchro"
+Assert-Equal (Get-ClmText "sync.key.missing") $r.Error "sans phrase : pas de synchro"
 Assert-True ((Get-DriveSyncMsg $r).Contains("clm --sync-key")) "sans phrase : message qui dit quoi faire"
 Assert-Null $fresh "sans phrase : aucun jeton recu"
 Assert-Equal 0 $script:SsPrompts "sans phrase : aucune question posee hors du menu"

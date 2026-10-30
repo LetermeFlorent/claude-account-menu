@@ -90,7 +90,7 @@ $sealRt = Get-SealRoundTrip $sealBig "seal-round.bin"
 Assert-Equal $sealBigLen $sealRt.Length "chiffrement en flux : longueur annoncee exacte"
 Assert-Equal $sealBigLen $sealRt.Sealed.Length "chiffrement en flux : octets lus egaux a la longueur"
 Assert-True (Test-SameBytes $sealRt.Plain (Unprotect-SyncBytes $sealKeys "files/.claude/big.bin" $sealRt.Sealed)) "chiffrement en flux : aller-retour"
-Assert-Throws { Unprotect-SyncBytes $sealKeys "files/.claude/other.bin" $sealRt.Sealed } $script:SealRefused "chiffrement en flux : autre chemin refuse"
+Assert-Throws { Unprotect-SyncBytes $sealKeys "files/.claude/other.bin" $sealRt.Sealed } (Get-ClmText "sync.crypto.refused") "chiffrement en flux : autre chemin refuse"
 
 $sealRt = Get-SealRoundTrip 0 "seal-empty.bin"
 Assert-True ($sealRt.Length -eq 69 -and $sealRt.Sealed.Length -eq 69) "chiffrement en flux : fichier vide, 69 octets"

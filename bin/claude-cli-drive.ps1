@@ -55,7 +55,7 @@ function Get-CliPrefsLines {
   $p = Read-CliPrefs
   if ($p.Lines.Count -eq 0) { return ,[string[]]@((Get-ClmText "drive.prefs.none")) }
   $out = New-Object 'System.Collections.Generic.List[string]'
-  $out.Add($script:PrefsTitle + ", " + (Get-CliMcpModeLine $p.Catalog))
+  $out.Add((Get-ClmText "sync.prefs.title") + ", " + (Get-CliMcpModeLine $p.Catalog))
   foreach ($l in $p.Lines) {
     if ($l.Head) { $out.Add($l.Label) }
     else { $out.Add((Format-PrefsItem $l)) }
@@ -97,7 +97,7 @@ function Invoke-CliPrefsChange {
   $prefsPicked = @(Resolve-PrefsItems (Read-CliPrefs).Lines $Refs)
   if ($Move -eq "erase" -and @($prefsPicked | Where-Object { $_.All }).Count -gt 0) { throw (Get-ClmText "drive.prefs.group.erase") }
   if ($Move -eq "erase" -and -not $Yes) {
-    foreach ($i in $prefsPicked) { Write-Host (Get-ClmText "drive.prefs.erase.line" @((Get-PrefsId $i), $script:PrefsEraseWarn[$i.Kind].Trim())) }
+    foreach ($i in $prefsPicked) { Write-Host (Get-ClmText "drive.prefs.erase.line" @((Get-PrefsId $i), (Get-PrefsEraseWarn $i.Kind).Trim())) }
     throw (Get-ClmText "drive.prefs.yes")
   }
   $prefsMove = $Move

@@ -7,19 +7,19 @@ $script:SyncChoiceWaitMs = 0
 
 $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 $c = New-SyncChoice
-Add-PcAsk $c "bureau" "skills" "outil" $false 0
+Add-PcAsk @{ Choice = $c; Pc = "bureau"; Kind = "skills"; Name = "outil"; On = $false; After = 0 }
 $a = $c.Asks["bureau"].skills["outil"]
 Assert-True ((-not $a.On) -and $a.At -ge $now) "demande datee de maintenant"
 $later = $now + 100000
-Add-PcAsk $c "bureau" "skills" "outil" $true $later
+Add-PcAsk @{ Choice = $c; Pc = "bureau"; Kind = "skills"; Name = "outil"; On = $true; After = $later }
 Assert-Equal ($later + 1) $c.Asks["bureau"].skills["outil"].At "demande toujours apres la derniere prise en compte"
-Add-PcAsk $c "bureau" "skills" "outil" $false 0
+Add-PcAsk @{ Choice = $c; Pc = "bureau"; Kind = "skills"; Name = "outil"; On = $false; After = 0 }
 Assert-Equal ($later + 2) $c.Asks["bureau"].skills["outil"].At "nouvelle demande toujours plus recente"
 Remove-PcAsk $c "bureau" "skills" "outil"
 Assert-True (-not $c.Asks.ContainsKey("bureau")) "PC sans demande retire"
 Remove-PcAsk $c "absent" "skills" "outil"
 
-$null = Update-SyncChoice { param($x) Add-PcAsk $x "bureau" "mcp" "Documents/p|loc" $true 0; Set-ChoiceStamp $x "skills" "outil" }
+$null = Update-SyncChoice { param($x) Add-PcAsk @{ Choice = $x; Pc = "bureau"; Kind = "mcp"; Name = "Documents/p|loc"; On = $true; After = 0 }; Set-ChoiceStamp $x "skills" "outil" }
 $back = Read-SyncChoice
 Assert-True $back.Asks["bureau"].mcp["Documents/p|loc"].On "demande relue"
 Assert-True ($back.Stamps.skills["outil"] -ge $now) "date du choix relue"
@@ -72,10 +72,10 @@ Assert-Equal 0 (Get-PcPrefsLines $mine $cat "moi" "autre").Count "PC sans clm a 
 Assert-Equal 0 (Get-PcPrefsLines $mine $cat "moi" "inconnu").Count "PC inconnu : rien a regler"
 
 $neuf = @($lines | Where-Object { $_.Key -eq "neuf" })[0]
-Set-PcPrefsCheck $mine $cat "moi" "cible" $neuf $false
+Set-PcPrefsCheck @{ Choice = $mine; Catalog = $cat; Me = "moi"; Pc = "cible"; Item = $neuf; On = $false }
 Assert-True (-not $mine.Asks.ContainsKey("cible")) "case remise a sa valeur : ma demande retiree"
 $seul = @($lines | Where-Object { $_.Key -eq "seul" })[0]
-Set-PcPrefsCheck $mine $cat "moi" "cible" $seul $false
+Set-PcPrefsCheck @{ Choice = $mine; Catalog = $cat; Me = "moi"; Pc = "cible"; Item = $seul; On = $false }
 Assert-True (-not $mine.Asks["cible"].skills["seul"].On) "case decochee pour un autre PC : demande ajoutee"
 
 $script:SyncChoicePath, $script:SyncChoiceLockPath, $script:SyncChoiceWaitMs = $asksSaved

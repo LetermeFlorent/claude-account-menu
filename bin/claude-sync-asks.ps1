@@ -101,12 +101,13 @@ function Set-ChoiceStamp {
 }
 
 function Add-PcAsk {
-  param($Choice, [string]$Pc, [string]$Kind, [string]$Name, [bool]$On, [long]$After)
-  if (-not $Choice.Asks.ContainsKey($Pc)) { $Choice.Asks[$Pc] = New-AskMaps }
-  $at = [math]::Max([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds(), $After + 1)
-  $old = $Choice.Asks[$Pc][$Kind][$Name]
+  param([hashtable]$Ask)
+  $asks = $Ask.Choice.Asks
+  if (-not $asks.ContainsKey($Ask.Pc)) { $asks[$Ask.Pc] = New-AskMaps }
+  $at = [math]::Max([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds(), [long]$Ask.After + 1)
+  $old = $asks[$Ask.Pc][$Ask.Kind][$Ask.Name]
   if ($null -ne $old -and $old.At -ge $at) { $at = $old.At + 1 }
-  $Choice.Asks[$Pc][$Kind][$Name] = @{ On = $On; At = [long]$at }
+  $asks[$Ask.Pc][$Ask.Kind][$Ask.Name] = @{ On = [bool]$Ask.On; At = [long]$at }
 }
 
 function Remove-PcAsk {

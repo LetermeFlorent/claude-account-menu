@@ -1,8 +1,6 @@
-. Import-ClmModule claude-sync-keystore, claude-drive-transfer, claude-drive-folders
+. Import-ClmModule claude-sync-keystore, claude-drive-transfer, claude-drive-folders, claude-text
 $script:SyncKeyFileName = "clm-key.json"
 $script:SyncKeyFileVersion = "1"
-$script:SyncKeyWeak = "fichier de cle du Drive refuse : derivation trop faible ou format inconnu"
-$script:SyncKeyChanged = "phrase de synchro changee sur un autre PC : la saisir de nouveau par y dans le menu ou clm --sync-key"
 
 function Get-SyncKeyFile {
   param($Folders)
@@ -14,9 +12,9 @@ function Read-SyncKeyParams {
   $p = $Entry.Props
   $iterations = 0
   $salt = $null
-  try { $salt = [Convert]::FromBase64String([string]$p["salt"]) } catch { throw $script:SyncKeyWeak }
+  try { $salt = [Convert]::FromBase64String([string]$p["salt"]) } catch { throw (Get-ClmText "sync.key.weak") }
   $ok = [string]$p["v"] -eq $script:SyncKeyFileVersion -and [int]::TryParse([string]$p["iterations"], [ref]$iterations)
-  if (-not $ok -or $iterations -lt $script:SyncKeyMinIterations -or $salt.Length -ne 16 -or [string]$p["check"] -cnotmatch '^[0-9a-f]{64}$') { throw $script:SyncKeyWeak }
+  if (-not $ok -or $iterations -lt $script:SyncKeyMinIterations -or $salt.Length -ne 16 -or [string]$p["check"] -cnotmatch '^[0-9a-f]{64}$') { throw (Get-ClmText "sync.key.weak") }
   return @{ Salt = $salt; Iterations = $iterations; Check = [string]$p["check"]; Id = [string]$Entry.Id }
 }
 
@@ -36,5 +34,5 @@ function Assert-SyncKeysMatch {
   param($Folders, $Keys)
   $entry = Get-SyncKeyFile $Folders
   if ($null -eq $entry) { Publish-SyncKeyFile $Folders $Keys ""; return }
-  if (-not (Test-SyncCheckEqual ([string]$entry.Props["check"]) $Keys.Check)) { throw $script:SyncKeyChanged }
+  if (-not (Test-SyncCheckEqual ([string]$entry.Props["check"]) $Keys.Check)) { throw (Get-ClmText "sync.key.changed") }
 }

@@ -1,19 +1,17 @@
-. Import-ClmModule claude-menu-prefs-data, claude-menu-prefs-pc
-$script:PrefsTitle = "Reglages de synchro de ce PC"
-$script:PrefsPairs = @("Espace", "cocher", "Suppr", "effacer partout", "Echap", "revenir")
+. Import-ClmModule claude-menu-prefs-data, claude-menu-prefs-pc, claude-text
 $script:PrefsChrome = 14
 $script:PrefsLabelWidth = 34
-$script:PrefsEraseWarn = @{
-  skills = "  Le skill part a la corbeille du Drive et son dossier quitte chaque PC."
-  mcp = "  Le MCP quitte chaque PC a sa prochaine synchro."
-  globals = "  Le MCP quitte tous les comptes de ce PC et sa definition est oubliee."
+
+function Get-PrefsEraseWarn {
+  param([string]$Kind)
+  return "  " + (Get-ClmText ("sync.prefs.erase." + $Kind))
 }
 
 function Get-PrefsSub {
   param($Catalog)
-  if (@($Catalog.Waiting).Count -gt 0) { return "MCP envoyes en entier tant que ces PC n'ont pas clm a jour : " + (@($Catalog.Waiting) -join ", ") }
-  if (-not $Catalog.PerPc) { return "MCP reglables par PC apres la prochaine synchro Drive" }
-  return "case cochee : synchronise sur ce PC"
+  if (@($Catalog.Waiting).Count -gt 0) { return Get-ClmText "sync.prefs.sub.waiting" @((@($Catalog.Waiting) -join ", ")) }
+  if (-not $Catalog.PerPc) { return Get-ClmText "sync.prefs.sub.perPc" }
+  return Get-ClmText "sync.prefs.sub.checked"
 }
 
 function Get-PrefsItemRow {
@@ -27,8 +25,8 @@ function Get-PrefsItemRow {
   else { $r.Add(@(([string][char]0x25A1 + "  "), $script:Ink.Empty, $false)) }
   $r.Add(@((Limit-Text $Item.Label $script:PrefsLabelWidth).PadRight($script:PrefsLabelWidth), $ink, $Sel))
   if ($Item.Tag) { $r.Add(@(("  " + $Item.Tag), $script:Ink.Dim, $false)) }
-  if ($Item.Erasing) { $r.Add(@("  efface a la prochaine synchro", $script:Ink.Alert, $false)) }
-  if ($Item.Wait) { $r.Add(@(("  " + $script:PrefsPcWait), $script:Ink.Dim, $false)) }
+  if ($Item.Erasing) { $r.Add(@(("  " + (Get-ClmText "sync.prefs.erasing")), $script:Ink.Alert, $false)) }
+  if ($Item.Wait) { $r.Add(@(("  " + (Get-ClmText "sync.prefs.pc.wait")), $script:Ink.Dim, $false)) }
   if ($Sel) { Add-MarkSeg $r }
   return ,$r
 }
@@ -76,14 +74,14 @@ function Find-PrefsLine {
 function Confirm-PrefsPage {
   param([string]$Ask, [string[]]$Lines)
   $body = @(foreach ($l in $Lines) { , (New-TextRow $l $script:Ink.Dim) })
-  $k = Read-PageKey { Get-PageRows $Ask $body @("o", "confirmer", "autre touche", "annuler") }
+  $k = Read-PageKey { Get-PageRows $Ask $body @("o", (Get-ClmText "sync.prefs.confirm.ok"), (Get-ClmText "sync.prefs.confirm.any"), (Get-ClmText "sync.prefs.confirm.cancel")) }
   return $k.KeyChar -eq "o"
 }
 
 function Show-PrefsEmpty {
-  $body = @(, (New-TextRow "  Rien a regler pour l'instant. Touche quelconque pour revenir." $script:Ink.Dim))
-  $null = Read-PageKey { Get-PageRows $script:PrefsTitle $body @() }
-  return "aucun reglage de synchro a montrer"
+  $body = @(, (New-TextRow ("  " + (Get-ClmText "sync.prefs.empty")) $script:Ink.Dim))
+  $null = Read-PageKey { Get-PageRows (Get-ClmText "sync.prefs.title") $body @() }
+  return Get-ClmText "sync.prefs.noneToShow"
 }
 
 function Invoke-PrefsKey {
@@ -92,16 +90,16 @@ function Invoke-PrefsKey {
   $prefsHit = $Item
   if ($Ctx.At -gt 0) {
     if ($Key.Key -ne "Spacebar") { return $false }
-    if ($Item.On -and -not (Confirm-PrefsPage ("Decocher " + $Item.Label + " ?") (Get-PrefsOffLines $Item $Ctx.Pcs[$Ctx.At]))) { return $false }
-    $Ctx.Choice = Update-SyncChoice { param($c) Set-PcPrefsCheck $c $prefsCtx.Catalog $prefsCtx.Me $prefsCtx.Pcs[$prefsCtx.At] $prefsHit (-not $prefsHit.On) }
+    if ($Item.On -and -not (Confirm-PrefsPage (Get-ClmText "sync.prefs.uncheck.ask" @($Item.Label)) (Get-PrefsOffLines $Item $Ctx.Pcs[$Ctx.At]))) { return $false }
+    $Ctx.Choice = Update-SyncChoice { param($c) Set-PcPrefsCheck @{ Choice = $c; Catalog = $prefsCtx.Catalog; Me = $prefsCtx.Me; Pc = $prefsCtx.Pcs[$prefsCtx.At]; Item = $prefsHit; On = (-not $prefsHit.On) } }
     return $true
   }
   if ($Key.Key -eq "Spacebar") {
-    if ($Item.On -and -not $Item.Erasing -and -not (Confirm-PrefsPage ("Decocher " + $Item.Label + " ?") (Get-PrefsOffLines $Item))) { return $false }
+    if ($Item.On -and -not $Item.Erasing -and -not (Confirm-PrefsPage (Get-ClmText "sync.prefs.uncheck.ask" @($Item.Label)) (Get-PrefsOffLines $Item))) { return $false }
     $Ctx.Choice = Update-SyncChoice { param($c) Set-PrefsCheck $c $prefsHit }
     return $true
   }
-  if ($Key.Key -ne "Delete" -or $Item.Erasing -or $Item.All -or -not (Confirm-PrefsPage ("Effacer " + $Item.Label + " partout ?") @($script:PrefsEraseWarn[$Item.Kind]))) { return $false }
+  if ($Key.Key -ne "Delete" -or $Item.Erasing -or $Item.All -or -not (Confirm-PrefsPage (Get-ClmText "sync.prefs.erase.ask" @($Item.Label)) @(Get-PrefsEraseWarn $Item.Kind))) { return $false }
   $Ctx.Choice = Update-SyncChoice { param($c) Add-EraseRequest $c $prefsHit.Kind $prefsHit.Key }
   return $true
 }
@@ -115,7 +113,7 @@ function Get-PrefsPcStep {
 }
 
 function Show-PrefsMenu {
-  if (-not (Test-DriveConnected)) { return "reglages de synchro : connecte d'abord le Drive avec y" }
+  if (-not (Test-DriveConnected)) { return Get-ClmText "sync.prefs.needDrive" }
   $catalog = Read-SyncCatalog
   $me = Get-DrivePcName
   $ctx = @{ Catalog = $catalog; Choice = (Read-SyncChoice); Globals = (Get-GlobalNames @(Get-Accounts)); Me = $me; Pcs = (Get-PrefsPcs $catalog $me); At = 0 }
@@ -143,7 +141,7 @@ function Show-PrefsMenu {
     if ($view.Lines.Count -eq 0 -and $ctx.Pcs.Count -eq 1) { break }
     $sel = Find-PrefsLine $view.Lines $prefsItem
   }
-  if (-not $changed) { return "reglages de synchro inchanges" }
+  if (-not $changed) { return Get-ClmText "sync.prefs.unchanged" }
   $null = Request-DriveSync $script:DriveJob
-  return "reglages de synchro enregistres, synchro Drive lancee"
+  return Get-ClmText "sync.prefs.saved"
 }

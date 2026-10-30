@@ -1,4 +1,4 @@
-. Import-ClmModule claude-json, claude-state, claude-drive-lock
+. Import-ClmModule claude-json, claude-state, claude-drive-lock, claude-text
 $script:AccountKeys = @("model", "modelSettings", "theme")
 $script:SyncStatePath = Get-StatePath "sync-state.json"
 $script:SyncLockWaitMs = 5000
@@ -64,7 +64,7 @@ function Sync-Accounts {
       Write-TextFileAtomic $script:SyncStatePath (ConvertTo-JsonText $state)
       $true
     } catch {
-      Write-Host ("  sync echouee : " + $_.Exception.Message) -ForegroundColor DarkYellow
+      Write-Host ("  " + (Get-ClmText "sync.run.failed" @($_.Exception.Message))) -ForegroundColor DarkYellow
     }
   }
 }
