@@ -1,6 +1,5 @@
 . (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "drive") "drive-race-store.ps1")
 
-$global:ItestSeedPath = $PSCommandPath
 [Net.WebRequest]::DefaultWebProxy = New-Object Net.WebProxy("http://127.0.0.1:9")
 
 function New-ItestRunspace {
@@ -8,7 +7,7 @@ function New-ItestRunspace {
   $rs.Open()
   $ps = [PowerShell]::Create()
   $ps.Runspace = $rs
-  [void]$ps.AddScript('param($Seed) . $Seed').AddArgument($global:ItestSeedPath)
+  [void]$ps.AddScript('param($Seed) . $Seed').AddArgument(${function:New-ItestRunspace}.File)
   [void]$ps.Invoke()
   $ps.Dispose()
   return $rs
