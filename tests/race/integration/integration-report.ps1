@@ -68,7 +68,7 @@ function Get-ItestLeftovers {
   $files = @(Get-ChildItem -LiteralPath $Box.Home -Recurse -Force -File)
   $left = @($files | Where-Object { $_.Name -like "*.tmp" -or $_.Name -eq "clm.installing" } | ForEach-Object { $_.FullName })
   $left += @($files | Where-Object { $_.Name -like "*.lock" -and -not (Test-ItestLockFree $_.FullName) } | ForEach-Object { "verrou tenu " + $_.FullName })
-  $left += @(Get-ChildItem -LiteralPath $Box.Tmp -Force | ForEach-Object { $_.FullName })
+  $left += @(Get-ChildItem -LiteralPath $Box.Tmp -Force | Where-Object { $_.Name -ne ".dotnet" } | ForEach-Object { $_.FullName })
   return $left
 }
 
