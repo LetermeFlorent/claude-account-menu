@@ -17,7 +17,7 @@ function New-AccountSlot {
 }
 
 function Show-AddAccountHelp {
-  Clear-Host
+  Clear-ConsoleScreen
   Write-Host ""
   Write-Host ("  " + (Get-ClmText "accounts.add.title"))
   Write-Host ("  " + (Get-ClmText "accounts.add.browser")) -ForegroundColor DarkGray

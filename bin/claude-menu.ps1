@@ -16,7 +16,7 @@ if (Test-ClmReloadNeeded $script:ClmEntryStamp) {
   Invoke-ClmReload $PSCommandPath $args
 }
 Set-BootBarReady
-. Import-ClmModule claude-console-utf8
+. Import-ClmModule claude-console-utf8, claude-console-clear
 $script:ConsoleEncodingBefore = Use-ConsoleUtf8
 try {
 
@@ -133,14 +133,14 @@ if ($fallback) {
 }
 
 if ($script:MenuRestart) {
-  Clear-Host
+  Clear-ConsoleScreen
   if (-not (Update-Clm -Recheck)) { Start-Sleep -Seconds 3 }
   Restart-Clm $PSCommandPath (Get-WebRestartArgs $args)
 }
 
 if ($null -eq $chosen) { exit 0 }
 Import-ClmGroupOrReload @("drive", "sync") $PSCommandPath $args
-Clear-Host
+Clear-ConsoleScreen
 Start-Account $chosen $rest
 exit $LASTEXITCODE
 } finally { Restore-ConsoleEncoding $script:ConsoleEncodingBefore }

@@ -21,7 +21,7 @@ function Rename-Account {
 
 function Read-AccountName {
   param($Acc)
-  Clear-Host
+  Clear-ConsoleScreen
   Write-Host ""
   Write-Host ("  " + (Get-ClmText "accounts.rename.header" @($Acc.Label)) + "  " + (Get-AccountEmail $Acc))
   Write-Host ("  " + (Get-ClmText "accounts.rename.note")) -ForegroundColor DarkGray
