@@ -1,4 +1,4 @@
-. Import-ClmModule claude-platform
+. Import-ClmModule claude-platform, claude-text
 $script:VersionPattern = "(\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?)"
 $script:CheckTimeout = 20
 $script:StallTimeout = 90
@@ -54,36 +54,36 @@ function New-Outcome {
 
 function Get-UpdateOutcome {
   param($State, [int]$ExitCode, [string]$Killed)
-  if ($Killed -eq "check") { return New-Outcome "failed" "mise a jour de Claude Code : verification impossible" }
-  if ($Killed -eq "stall") { return New-Outcome "failed" "mise a jour de Claude Code abandonnee, telechargement bloque" }
+  if ($Killed -eq "check") { return New-Outcome "failed" (Get-ClmText "update.claude.checkFailed") }
+  if ($Killed -eq "stall") { return New-Outcome "failed" (Get-ClmText "update.claude.stalled") }
   if ($State.Done -eq "updated") {
     $from = $State.From
     if (-not $from) { $from = $State.Current }
-    return New-Outcome "updated" ("Claude Code mis a jour, " + $from + " -> " + $State.Target)
+    return New-Outcome "updated" (Get-ClmText "update.claude.updated" @($from, $State.Target))
   }
   if ($State.Done -eq "uptodate") {
-    $txt = "Claude Code a jour"
-    if ($State.Current) { $txt += " (" + $State.Current + ")" }
+    $txt = Get-ClmText "update.claude.upToDate"
+    if ($State.Current) { $txt = Get-ClmText "update.claude.upToDateVersion" @($State.Current) }
     return New-Outcome "ok" $txt
   }
   if ($State.Done -eq "manual") {
-    $by = "le gestionnaire de paquets"
+    $by = Get-ClmText "update.claude.packageManager"
     if ($State.Manager) { $by = $State.Manager }
-    return New-Outcome "manual" ("Claude Code " + $State.Target + " disponible, a installer avec " + $by)
+    return New-Outcome "manual" (Get-ClmText "update.claude.manual" @($State.Target, $by))
   }
   if ($State.Busy) {
-    $txt = "mise a jour de Claude Code deja en cours ailleurs"
-    if ($State.Holder) { $txt += " (PID " + $State.Holder + ")" }
+    $txt = Get-ClmText "update.claude.busy"
+    if ($State.Holder) { $txt = Get-ClmText "update.claude.busyHolder" @($State.Holder) }
     return New-Outcome "failed" $txt
   }
   if ($State.Error) {
     $why = $State.Error
     if ($State.Reason) { $why = $State.Reason }
-    return New-Outcome "failed" ("echec de la mise a jour : " + (Limit-Text $why 50))
+    return New-Outcome "failed" (Get-ClmText "update.claude.failed" @((Limit-Text $why 50)))
   }
-  if ($ExitCode -ne 0) { return New-Outcome "failed" ("echec de claude update (code " + $ExitCode + ")") }
-  if ($State.Last) { return New-Outcome "unknown" ("claude update : " + (Limit-Text $State.Last 50)) }
-  return New-Outcome "unknown" "claude update termine"
+  if ($ExitCode -ne 0) { return New-Outcome "failed" (Get-ClmText "update.claude.exitCode" @($ExitCode)) }
+  if ($State.Last) { return New-Outcome "unknown" (Get-ClmText "update.claude.unknownLast" @((Limit-Text $State.Last 50))) }
+  return New-Outcome "unknown" (Get-ClmText "update.claude.unknownDone")
 }
 
 function Get-DownloadPercent {
@@ -95,8 +95,8 @@ function Get-DownloadPercent {
 function Format-DownloadDetail {
   param([long]$Bytes, [long]$Size)
   $got = "" + [math]::Floor([math]::Max(0, $Bytes) / 1MB)
-  if ($Size -gt 0) { return $got + " / " + [math]::Floor($Size / 1MB) + " Mo" }
-  return $got + " Mo"
+  if ($Size -gt 0) { return Get-ClmText "update.claude.sizeBoth" @($got, [math]::Floor($Size / 1MB)) }
+  return Get-ClmText "update.claude.sizeOne" @($got)
 }
 
 function Get-ManifestPlatform {

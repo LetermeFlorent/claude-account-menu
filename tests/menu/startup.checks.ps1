@@ -25,14 +25,14 @@ try {
   Assert-True (Invoke-StartupTicks) "clm : barre redessinee au demarrage"
   Assert-Equal "Find-ClmUpdate" ($script:Loads -join "|") "clm : recherche lancee a part"
   Assert-True $script:ClmChecked "clm : pas de nouvelle recherche en mode texte"
-  Assert-Equal ("recherche d'une nouvelle version|" + (Get-ClmText "menu.startup.after" @("clm")) + "|" + (Get-ClmText "menu.startup.after" @("clm"))) (Get-StepList "Text") "clm : recherche affichee"
+  Assert-Equal ((Get-ClmText "update.startup.searching") + "|" + (Get-ClmText "menu.startup.after" @("clm")) + "|" + (Get-ClmText "menu.startup.after" @("clm"))) (Get-StepList "Text") "clm : recherche affichee"
   Assert-True (-not (Invoke-StartupTicks)) "clm : rien a redessiner pendant la recherche"
   Assert-True (Test-StartupBlocking $script:Su) "clm : comptes caches pendant la verification"
   $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks
   Assert-Equal "done|run|run" (Get-StepList "State") "clm a jour : Claude Code et Drive lances ensemble"
   Assert-True (-not (Test-StartupBlocking $script:Su)) "clm a jour : comptes affiches tout de suite"
-  Assert-Equal "a jour 100" ($script:Su.Steps[0].Text + " " + $script:Su.Steps[0].Bar.To) "clm a jour : barre pleine"
+  Assert-Equal ((Get-ClmText "update.startup.upToDate") + " 100") ($script:Su.Steps[0].Text + " " + $script:Su.Steps[0].Bar.To) "clm a jour : barre pleine"
   Assert-Equal 1 $script:DriveStarts "Drive : lance des que clm est a jour"
   $null = Invoke-StartupTicks
   Assert-Equal 1 $script:ClaudeStarts "Claude Code : lance apres clm"
@@ -41,11 +41,11 @@ try {
   $run.State.Mode = "native"; $run.State.Target = "2.1.300"
   $run.Watch = @{ Seen = $true; Settled = $false; Bytes = 45MB; Size = 100MB }
   $null = Invoke-StartupTicks
-  Assert-Equal "45 telechargement 2.1.300  45 / 100 Mo" ("" + $script:Su.Steps[1].Pct + " " + $script:Su.Steps[1].Text) "Claude Code : telechargement suivi"
+  Assert-Equal ("45 " + (Get-ClmText "update.claude.downloading" @("2.1.300")) + "  " + (Get-ClmText "update.claude.sizeBoth" @(45, 100))) ("" + $script:Su.Steps[1].Pct + " " + $script:Su.Steps[1].Text) "Claude Code : telechargement suivi"
   Assert-Equal (Get-ClmText "menu.startup.preparing") $script:Su.Steps[2].Text "Drive : en cours pendant Claude Code"
   $null = Invoke-StartupTicks
-  Assert-Equal "a jour (2.1.292)" $script:Su.Steps[1].Text "Claude Code a jour : annonce"
-  Assert-Equal "  a, b, c : Claude Code a jour (2.1.292)" $script:St.Msg[0] "Claude Code a jour : resultat sous les comptes"
+  Assert-Equal ((Get-ClmText "update.claude.upToDateVersion" @("2.1.292")) -replace "^Claude Code ", "") $script:Su.Steps[1].Text "Claude Code a jour : annonce"
+  Assert-Equal ("  a, b, c : " + (Get-ClmText "update.claude.upToDateVersion" @("2.1.292"))) $script:St.Msg[0] "Claude Code a jour : resultat sous les comptes"
   $script:DriveJob.Ctl.Progress = "3/10"
   Assert-True (Invoke-StartupTicks) "Drive : avancement redessine"
   Assert-Equal ("30 " + (Get-ClmText "menu.startup.files" @("3/10"))) ("" + $script:Su.Steps[2].Pct + " " + $script:Su.Steps[2].Text) "Drive : fichiers faits sur le total"
@@ -105,7 +105,7 @@ try {
   New-StartupCase @("claude")
   $script:FakeClaudeFail = "echec de la mise a jour : EBUSY"
   $null = Invoke-StartupTicks 5
-  Assert-Equal "failed echec" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Claude Code en echec : la ligne dit echec"
+  Assert-Equal ("failed " + (Get-ClmText "update.startup.claudeFailed")) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Claude Code en echec : la ligne dit echec"
   Assert-Equal "  a, b, c : echec de la mise a jour : EBUSY" $script:St.Msg[0] "Claude Code en echec : la raison sous les comptes"
   $null = Invoke-StartupTicks 20
   Assert-True (-not $script:Su.Hidden -and -not $script:Su.Steps[0].Gone) "Claude Code en echec : la ligne reste"

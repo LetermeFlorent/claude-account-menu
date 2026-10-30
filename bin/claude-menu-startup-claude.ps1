@@ -1,7 +1,5 @@
-. Import-ClmModule claude-update-lock
+. Import-ClmModule claude-update-lock, claude-text
 $script:ClaudeLockPollMs = 250
-$script:ClaudeWaitStepText = "attente d'un autre clm"
-$script:ClaudeLeftStepText = "laissee a un autre clm"
 
 function Add-ClaudeOutcome {
   param($Step, $Accounts, $Outcome)
@@ -22,7 +20,7 @@ function Complete-ClaudeStartup {
   $State.Msg = Add-ClmFailure (Get-UpdateSummary $Step.Parts $Step.Kinds) $Su.ClmError
   $kind = Get-UpdateKind $Step.Kinds
   $text = $Step.Texts -join ", "
-  if ($kind -eq "failed") { $text = "echec" }
+  if ($kind -eq "failed") { $text = Get-ClmText "update.startup.claudeFailed" }
   Complete-StartupStep $Step $kind $text $Now
 }
 
@@ -37,9 +35,9 @@ function Enter-ClaudeStepLock {
     Complete-ClaudeStartup $Su $Step $State $Now
     return $true
   }
-  if ($null -ne $script:ClaudeStepLock) { $Step.State = "run"; $null = Set-StartupProgress $Step -1 "recherche de mise a jour" $Now; return $true }
-  if ($Now -lt $Step.LockEnd) { return Set-StartupProgress $Step -1 $script:ClaudeWaitStepText $Now }
-  Complete-StartupStep $Step "ok" $script:ClaudeLeftStepText $Now
+  if ($null -ne $script:ClaudeStepLock) { $Step.State = "run"; $null = Set-StartupProgress $Step -1 (Get-ClmText "update.claude.checking") $Now; return $true }
+  if ($Now -lt $Step.LockEnd) { return Set-StartupProgress $Step -1 (Get-ClmText "update.startup.waitOther") $Now }
+  Complete-StartupStep $Step "ok" (Get-ClmText "update.startup.leftToOther") $Now
   return $true
 }
 

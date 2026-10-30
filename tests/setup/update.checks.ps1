@@ -5,36 +5,36 @@ $native = @("Current version: 2.1.268", "Checking for updates to latest version.
   "Successfully updated from 2.1.268 to version 2.1.292")
 $o = Get-OutcomeFor $native
 Assert-Equal "updated" $o.Kind "update native, type"
-Assert-Equal "Claude Code mis a jour, 2.1.268 -> 2.1.292" $o.Text "update native, texte"
+Assert-Equal (Get-ClmText "update.claude.updated" @("2.1.268", "2.1.292")) $o.Text "update native, texte"
 
 $o = Get-OutcomeFor @("Current version: 2.1.292", "Checking for updates to latest version...", "Claude Code is up to date (2.1.292)")
 Assert-Equal "ok" $o.Kind "a jour, type"
-Assert-Equal "Claude Code a jour (2.1.292)" $o.Text "a jour, texte"
+Assert-Equal (Get-ClmText "update.claude.upToDateVersion" @("2.1.292")) $o.Text "a jour, texte"
 
 $o = Get-OutcomeFor @("Current version: 2.1.290", "Claude is up to date!")
-Assert-Equal "Claude Code a jour (2.1.290)" $o.Text "a jour sans version, reprend la version courante"
+Assert-Equal (Get-ClmText "update.claude.upToDateVersion" @("2.1.290")) $o.Text "a jour sans version, reprend la version courante"
 
 $o = Get-OutcomeFor @("Current version: 2.1.0", "New version available: 2.1.5 (current: 2.1.0)", "Installing update...", "Successfully updated from 2.1.0 to version 2.1.5")
-Assert-Equal "Claude Code mis a jour, 2.1.0 -> 2.1.5" $o.Text "update npm"
+Assert-Equal (Get-ClmText "update.claude.updated" @("2.1.0", "2.1.5")) $o.Text "update npm"
 
 $o = Get-OutcomeFor @("Current version: 2.1.0", "Claude is managed by Homebrew.", "Update available: 2.1.5")
 Assert-Equal "manual" $o.Kind "gestionnaire de paquets, type"
-Assert-Equal "Claude Code 2.1.5 disponible, a installer avec Homebrew" $o.Text "gestionnaire de paquets, texte"
+Assert-Equal (Get-ClmText "update.claude.manual" @("2.1.5", "Homebrew")) $o.Text "gestionnaire de paquets, texte"
 
 $o = Get-OutcomeFor @("Current version: 2.1.0", "Another process is currently running an update") 1
-Assert-Equal "mise a jour de Claude Code deja en cours ailleurs" $o.Text "update deja en cours"
+Assert-Equal (Get-ClmText "update.claude.busy") $o.Text "update deja en cours"
 
 $o = Get-OutcomeFor @("Current version: 2.1.0", "Error: failed to fetch latest version") 1
 Assert-Equal "failed" $o.Kind "erreur, type"
-Assert-Equal "echec de la mise a jour : Error: failed to fetch latest version" $o.Text "erreur, texte"
+Assert-Equal (Get-ClmText "update.claude.failed" @("Error: failed to fetch latest version")) $o.Text "erreur, texte"
 
 $o = Get-OutcomeFor @("Current version: 2.1.0", "Checking for updates to latest version...") 3
-Assert-Equal "echec de claude update (code 3)" $o.Text "code de sortie seul"
+Assert-Equal (Get-ClmText "update.claude.exitCode" @(3)) $o.Text "code de sortie seul"
 
 $o = Get-OutcomeFor @("Current version: 2.1.0") 0 "check"
-Assert-Equal "mise a jour de Claude Code : verification impossible" $o.Text "arret apres 20 s"
+Assert-Equal (Get-ClmText "update.claude.checkFailed") $o.Text "arret apres 20 s"
 $o = Get-OutcomeFor @("Updating to 2.1.292...") 0 "stall"
-Assert-Equal "mise a jour de Claude Code abandonnee, telechargement bloque" $o.Text "arret, telechargement fige"
+Assert-Equal (Get-ClmText "update.claude.stalled") $o.Text "arret, telechargement fige"
 
 $st = New-UpdateState
 Add-UpdateLine $st "Updating to 2.2.0-beta.1..."
@@ -47,8 +47,8 @@ Assert-Equal "Updating to 2.2.0-beta.1..." $st.Last "ligne vide ignoree"
 Assert-Equal 50 (Get-DownloadPercent 127429200 254858400) "pourcentage"
 Assert-Equal 100 (Get-DownloadPercent 300000000 254858400) "pourcentage borne"
 Assert-Equal -1 (Get-DownloadPercent 1000 0) "taille inconnue"
-Assert-Equal "121 / 243 Mo" (Format-DownloadDetail 127429200 254858400) "detail avec taille"
-Assert-Equal "121 Mo" (Format-DownloadDetail 127429200 0) "detail sans taille"
+Assert-Equal (Get-ClmText "update.claude.sizeBoth" @(121, 243)) (Format-DownloadDetail 127429200 254858400) "detail avec taille"
+Assert-Equal (Get-ClmText "update.claude.sizeOne" @(121)) (Format-DownloadDetail 127429200 0) "detail sans taille"
 
 Assert-Equal "win32-x64" (Get-ManifestPlatform "Windows" "amd64") "plateforme Windows x64"
 Assert-Equal "win32-arm64" (Get-ManifestPlatform "Windows" "ARM64") "plateforme Windows arm64"
@@ -99,15 +99,15 @@ function Get-TickText {
 }
 
 $st = New-UpdateState
-Assert-Equal "recherche de mise a jour|-1|" (Get-TickText $st $null) "etape : recherche"
+Assert-Equal ((Get-ClmText "update.claude.checking") + "|-1|") (Get-TickText $st $null) "etape : recherche"
 Add-UpdateLine $st "Updating to 2.1.300..."
-Assert-Equal "mise a jour 2.1.300|-1|Updating to 2.1.300..." (Get-TickText $st $null) "etape : version trouvee, telechargement pas encore vu"
+Assert-Equal ((Get-ClmText "update.claude.updating" @("2.1.300")) + "|-1|Updating to 2.1.300...") (Get-TickText $st $null) "etape : version trouvee, telechargement pas encore vu"
 $watch = @{ Seen = $true; Settled = $false; Bytes = [long]127429200; Size = [long]254858400 }
-Assert-Equal "telechargement 2.1.300|50|121 / 243 Mo" (Get-TickText $st $watch) "etape : telechargement avec pourcentage"
+Assert-Equal ((Get-ClmText "update.claude.downloading" @("2.1.300")) + "|50|" + (Get-ClmText "update.claude.sizeBoth" @(121, 243))) (Get-TickText $st $watch) "etape : telechargement avec pourcentage"
 $watch.Size = [long]0
-Assert-Equal "telechargement 2.1.300|-1|121 Mo" (Get-TickText $st $watch) "etape : telechargement de taille inconnue"
+Assert-Equal ((Get-ClmText "update.claude.downloading" @("2.1.300")) + "|-1|" + (Get-ClmText "update.claude.sizeOne" @(121))) (Get-TickText $st $watch) "etape : telechargement de taille inconnue"
 $watch.Settled = $true
-Assert-Equal "installation 2.1.300|100|" (Get-TickText $st $watch) "etape : installation"
+Assert-Equal ((Get-ClmText "update.claude.installing" @("2.1.300")) + "|100|") (Get-TickText $st $watch) "etape : installation"
 
 Assert-Equal "ok" (Get-UpdateKind @("ok", "manual", "unknown")) "bilan sans mise a jour"
 Assert-Equal "updated" (Get-UpdateKind @("ok", "updated")) "bilan avec une mise a jour"
@@ -119,7 +119,7 @@ Assert-Equal $script:Ink.Alert $sum[1] "bilan : couleur du pire resultat"
 
 foreach ($exe in @("", (Join-Path $PSScriptRoot "absent-claude.exe"))) {
   $run = Start-ClaudeUpdate $exe $null
-  Assert-Equal "Claude Code introuvable, pas de mise a jour" $run.Outcome.Text ("Claude Code absent, resultat immediat : " + $exe)
+  Assert-Equal (Get-ClmText "update.claude.missing") $run.Outcome.Text ("Claude Code absent, resultat immediat : " + $exe)
   Assert-Equal $true (Step-ClaudeUpdate $run) ("Claude Code absent, rien a attendre : " + $exe)
 }
 Assert-Equal "failed" (Invoke-ClaudeUpdate "" $null).Kind "mode texte, Claude Code absent"
@@ -132,6 +132,6 @@ Assert-Equal "2.1.292" $run.State.Current "pas a pas : sortie lue au fil de l'ea
 $proc = New-FakeUpdateProc $true "Current version: 2.1.292`nClaude Code is up to date (2.1.292)"
 $run = New-UpdateRun $proc
 Assert-Equal $true (Step-ClaudeUpdate $run) "pas a pas : processus fini"
-Assert-Equal "Claude Code a jour (2.1.292)" $run.Outcome.Text "pas a pas : resultat tire de la sortie"
+Assert-Equal (Get-ClmText "update.claude.upToDateVersion" @("2.1.292")) $run.Outcome.Text "pas a pas : resultat tire de la sortie"
 Assert-True $proc.Disposed "pas a pas : processus libere"
 Assert-Equal $true (Step-ClaudeUpdate $run) "pas a pas : fini reste fini"

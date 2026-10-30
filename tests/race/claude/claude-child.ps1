@@ -15,7 +15,7 @@ function Start-ClaudeUpdate {
 function Step-ClaudeUpdate {
   param($Run)
   if ($Run.Clock.ElapsedMilliseconds -lt $script:FakeUpdateMs) { return $false }
-  $Run.Outcome = New-Outcome "ok" "Claude Code a jour (2.1.300)"
+  $Run.Outcome = New-Outcome "ok" (Get-ClmText "update.claude.upToDateVersion" @("2.1.300"))
   return $true
 }
 

@@ -3,20 +3,20 @@
 $busyLine = "Another Claude process (PID 4242) is currently running. Please try again in a moment."
 $o = Get-OutcomeFor @("Current version: 2.1.304", "Checking for updates to latest version...", $busyLine)
 Assert-Equal "failed" $o.Kind "verrou pris, code 0 : echec quand meme"
-Assert-Equal "mise a jour de Claude Code deja en cours ailleurs (PID 4242)" $o.Text "verrou pris : session qui bloque"
+Assert-Equal (Get-ClmText "update.claude.busyHolder" @("4242")) $o.Text "verrou pris : session qui bloque"
 
 $o = Get-OutcomeFor @("Current version: 2.1.304", "Error: Failed to install native update", "EBUSY: resource busy or locked", 'Try running "claude doctor" for diagnostics') 1
-Assert-Equal "echec de la mise a jour : EBUSY: resource busy or locked" $o.Text "erreur : la vraie raison, ligne suivante"
+Assert-Equal (Get-ClmText "update.claude.failed" @("EBUSY: resource busy or locked")) $o.Text "erreur : la vraie raison, ligne suivante"
 $o = Get-OutcomeFor @("Error: Failed to install native update", 'Try running "claude doctor" for diagnostics') 1
-Assert-Equal "echec de la mise a jour : Error: Failed to install native update" $o.Text "erreur sans raison : la ligne d'erreur"
+Assert-Equal (Get-ClmText "update.claude.failed" @("Error: Failed to install native update")) $o.Text "erreur sans raison : la ligne d'erreur"
 
 $st = New-UpdateState
 Add-UpdateLine $st "@latest is at 2.1.300 (older than 2.1.308)..."
 Assert-Equal "native 2.1.300" ($st.Mode + " " + $st.Target) "canal plus ancien : retour en arriere natif"
 $o = Get-OutcomeFor @("Current version: 2.1.308", 'Update target 2.1.300 (from @latest or a server-side override) predates release-signature enforcement; staying on 2.1.308. Run `claude install 2.1.300` to install it anyway.')
-Assert-Equal "ok Claude Code a jour (2.1.308)" ($o.Kind + " " + $o.Text) "cible trop ancienne : reste a jour"
+Assert-Equal ("ok " + (Get-ClmText "update.claude.upToDateVersion" @("2.1.308"))) ($o.Kind + " " + $o.Text) "cible trop ancienne : reste a jour"
 $o = Get-OutcomeFor @("Current version: 2.1.308", "The stable channel is at 2.1.300, which is older. Staying on 2.1.308.")
-Assert-Equal "Claude Code a jour (2.1.308)" $o.Text "canal plus ancien : reste a jour"
+Assert-Equal (Get-ClmText "update.claude.upToDateVersion" @("2.1.308")) $o.Text "canal plus ancien : reste a jour"
 
 $fail = New-Outcome "failed" "x"
 $r = @{ Exe = "x"; CanRetry = $true; BusyFrom = -1.0; Tries = 1; State = @{ Busy = $true } }
@@ -54,33 +54,33 @@ try {
   Set-FakeProcs @($busy, (New-FakeUpdateProc $true "Updating to 2.1.308...`nSuccessfully updated from 2.1.304 to version 2.1.308"))
   $run = Start-ClaudeUpdate $exe $acc
   Assert-Equal $false (Step-ClaudeUpdate $run) "verrou pris : on ne s'arrete pas"
-  Assert-Equal "attente d'une autre session (PID 4242)" (Get-UpdateTick $run.State $run.Watch).Label "verrou pris : attente affichee"
+  Assert-Equal (Get-ClmText "update.claude.waitSessionPid" @("4242")) (Get-UpdateTick $run.State $run.Watch).Label "verrou pris : attente affichee"
   Assert-Equal $false (Step-ClaudeUpdate $run) "verrou pris : nouvel essai lance"
-  Assert-Equal "attente d'une autre session (PID 4242)" (Get-UpdateTick $run.State $run.Watch).Label "nouvel essai : attente gardee pendant la recherche"
+  Assert-Equal (Get-ClmText "update.claude.waitSessionPid" @("4242")) (Get-UpdateTick $run.State $run.Watch).Label "nouvel essai : attente gardee pendant la recherche"
   Invoke-UpdateSteps $run
-  Assert-Equal "2 Claude Code mis a jour, 2.1.304 -> 2.1.308" ("" + $script:FakeStarts + " " + $run.Outcome.Text) "verrou libere : mise a jour faite"
+  Assert-Equal ("2 " + (Get-ClmText "update.claude.updated" @("2.1.304", "2.1.308"))) ("" + $script:FakeStarts + " " + $run.Outcome.Text) "verrou libere : mise a jour faite"
   Assert-True $busy.Disposed "verrou pris : premier processus libere"
 
   Set-FakeProcs @(1..4 | ForEach-Object { New-FakeUpdateProc $true "Current version: 2.1.304" $errText 1 })
   $run = Start-ClaudeUpdate $exe $acc
   $null = Step-ClaudeUpdate $run
-  Assert-Equal "nouvel essai (2/3)" (Get-UpdateTick $run.State $run.Watch).Label "erreur : deuxieme essai annonce"
+  Assert-Equal (Get-ClmText "update.claude.retry" @(2, 3)) (Get-UpdateTick $run.State $run.Watch).Label "erreur : deuxieme essai annonce"
   Invoke-UpdateSteps $run
-  Assert-Equal "3 echec de la mise a jour : EBUSY: resource busy or locked" ("" + $script:FakeStarts + " " + $run.Outcome.Text) "erreur repetee : trois essais puis echec"
+  Assert-Equal ("3 " + (Get-ClmText "update.claude.failed" @("EBUSY: resource busy or locked"))) ("" + $script:FakeStarts + " " + $run.Outcome.Text) "erreur repetee : trois essais puis echec"
 
   Set-FakeProcs @((New-FakeUpdateProc $true $busyLine))
   $run = Start-ClaudeUpdate $exe $acc
   $null = Step-ClaudeUpdate $run
   $run.CanRetry = $false
   Assert-Equal $true (Step-ClaudeUpdate $run) "arret demande pendant l'attente : fin tout de suite"
-  Assert-Equal "1 mise a jour de Claude Code deja en cours ailleurs (PID 4242)" ("" + $script:FakeStarts + " " + $run.Outcome.Text) "arret demande : dernier resultat garde"
+  Assert-Equal ("1 " + (Get-ClmText "update.claude.busyHolder" @("4242"))) ("" + $script:FakeStarts + " " + $run.Outcome.Text) "arret demande : dernier resultat garde"
 
   Set-FakeProcs @((New-FakeUpdateProc $true "" $errText 1))
   $run = Start-ClaudeUpdate $exe $acc
   $null = Step-ClaudeUpdate $run
   Remove-Item -LiteralPath $exe
   Invoke-UpdateSteps $run
-  Assert-Equal $script:UpdateMissingText $run.Outcome.Text "Claude Code disparu avant le nouvel essai"
+  Assert-Equal (Get-ClmText "update.claude.missing") $run.Outcome.Text "Claude Code disparu avant le nouvel essai"
 } finally {
   ${function:Start-UpdateProcess} = $keptStart
   $script:UpdateRetryPause = $keptPause
