@@ -1,4 +1,4 @@
-. Import-ClmModule claude-display, claude-json, claude-file-io
+. Import-ClmModule claude-display, claude-json, claude-file-io, claude-text
 $script:UsagePollKey = "usagePoll"
 $script:UsagePollDefaultSec = 30
 $script:UsagePollMinSec = 15
@@ -33,7 +33,7 @@ function Set-DisplayUsagePoll {
   param($Seconds, $Vars = $null)
   $n = ConvertTo-UsagePollNumber $Seconds
   if ($null -eq $n -or $n -lt $script:UsagePollMinSec -or $n -gt $script:UsagePollMaxSec) {
-    throw ("delai de lecture inconnu : " + $Seconds + ", choisir un nombre de secondes entre " + $script:UsagePollMinSec + " et " + $script:UsagePollMaxSec)
+    throw (Get-ClmText "ui.poll.refused" @($Seconds, $script:UsagePollMinSec, $script:UsagePollMaxSec))
   }
   $data = Read-UsagePollData $Vars
   $out = [ordered]@{}

@@ -19,7 +19,7 @@ Assert-Equal 0 $marginRefreshed "jeton qui expire dans 120 s : pas de renouvelle
 
 $expired = [PSCustomObject]@{ claudeAiOauth = [PSCustomObject]@{ accessToken = "mort"; expiresAt = 1000 } }
 $tok = Get-UsageToken $null $expired -NoRefresh
-Assert-Equal "jeton expire, lancer le compte une fois" $tok.Error "lecture seule : jeton expire signale"
+Assert-Equal (Get-ClmText "ui.usage.tokenExpired") $tok.Error "lecture seule : jeton expire signale"
 Assert-Equal 0 $marginRefreshed "lecture seule : aucun renouvellement"
 $tok = Get-UsageToken $null $nearEnd -NoRefresh
 Assert-Equal "vieux" $tok.Token "lecture seule : jeton encore bon pour l'instant garde"
@@ -43,7 +43,7 @@ $saveHeld = Open-MachineLock "drive-creds"
 $saveWait = $script:CredLockWaitMs
 $script:CredLockWaitMs = 200
 $saveCred.claudeAiOauth.accessToken = "concurrent"
-try { Assert-Throws { Save-RefreshedCredential $saveAcc $saveCred } "jetons en cours de synchro" "jeton renouvele : ecriture attend le verrou des jetons" }
+try { Assert-Throws { Save-RefreshedCredential $saveAcc $saveCred } (Get-ClmText "ui.token.syncing") "jeton renouvele : ecriture attend le verrou des jetons" }
 finally { Close-MachineLock $saveHeld; $script:CredLockWaitMs = $saveWait }
 Assert-Equal "nouveau" ((Get-Content -LiteralPath $savePath -Raw | ConvertFrom-Json).claudeAiOauth.accessToken) "jeton renouvele : fichier intact pendant le verrou"
 Remove-Item -LiteralPath (Split-Path -Parent $savePath) -Recurse -Force
