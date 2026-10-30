@@ -47,6 +47,7 @@ try {
   $script:GoneRuns = 0
   $other = Get-GoneError { Invoke-WithFolderRetry { $script:GoneRuns++; throw "autre erreur" } }
   Assert-Equal 1 $script:GoneRuns "autre erreur : pas de nouvel essai"
+Assert-True ($null -ne $other) "autre erreur : erreur rendue"
 
   Save-DriveConfig @{ refreshToken = "r"; folderRoot = "r1"; folderFiles = "f1"; folderCredentials = "c1"; folderPresence = "p1" }
   [IO.File]::Delete($goneStamp)
