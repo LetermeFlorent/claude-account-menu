@@ -40,7 +40,7 @@ function Find-WebAccounts {
 function Invoke-WebWork {
   param([string]$Title, [scriptblock]$Job)
   Hide-Screen
-  try { return Invoke-UiWork $Title ($Title + " demandee depuis la page web...") $Job } finally { if (-not $script:UiQuit) { Hide-Screen } }
+  try { return Invoke-UiWork $Title (Get-ClmText "web.job.fromPage" $Title) $Job } finally { if (-not $script:UiQuit) { Hide-Screen } }
 }
 
 function Update-WebAccounts {
@@ -84,7 +84,7 @@ function Invoke-WebRemove {
   $webAcc = Find-WebAccount (Get-WebText $Data "acc")
   $webErase = $Data["erase"] -eq $true
   $title = ""
-  if ($webErase) { $title = "Retrait de " + $webAcc.Label }
+  if ($webErase) { $title = Get-ClmText "web.job.remove" $webAcc.Label }
   return New-WebDone (Update-WebAccounts { Remove-Account $webAcc $webErase } $title)
 }
 

@@ -8,13 +8,13 @@ function Write-WebDetail {
   if ($null -eq $script:MenuState) { return }
   $ink = $null
   if ($null -ne $script:Ink) { $ink = $script:Ink.Alert }
-  $script:MenuState.Msg = @(("  page web, " + $Text), $ink)
+  $script:MenuState.Msg = @(("  " + (Get-ClmText "web.error.detail" $Text)), $ink)
   $script:MenuState.Dirty = $true
 }
 
 function Get-WebHiddenText {
   param($Err, [string]$Code)
-  Write-WebDetail ("erreur de clm (" + $Code + ") : " + [string]$Err.Exception.Message)
+  Write-WebDetail (Get-ClmText "web.error.clm" @($Code, [string]$Err.Exception.Message))
   return Get-ClmText "server.hiddenError" $Code
 }
 

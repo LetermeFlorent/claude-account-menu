@@ -10,7 +10,7 @@ try {
   function Open-Browser { param([string]$Url) $script:MwUrls.Add($Url) }
 
   Assert-Equal "web" (Get-MenuAction (New-KeyInfo "w") 3).Name "menu web : touche w"
-  Assert-True ($script:MenuFooter -join " ").Contains("w page web") "menu web : touche w au pied du menu"
+  Assert-True ($script:MenuFooter -join " ").Contains("w " + (Get-ClmText "ui.footer.web")) "menu web : touche w au pied du menu"
   $segs = @(foreach ($fr in (Get-FooterRows $script:MenuFooter 100 $script:MenuFooterAccent)) { $fr })
   $accent = ($script:Levels["5h"][0] -join ",")
   Assert-Equal ($accent + "|" + $accent) ((@($segs | Where-Object { $_[3] -eq "w" }) | ForEach-Object { $_[1] -join "," }) -join "|") "menu web : touche w et son texte en couleur"
@@ -32,7 +32,7 @@ try {
   Open-MenuWeb $script:MenuState
   $url = $script:MwUrls[0]
   Assert-True ($url -match '^http://127\.0\.0\.1:[0-9]+/boot\?c=[0-9a-f]{32}$') "menu web : adresse locale avec un code d'entree"
-  Assert-Equal ($url + " |   page web : " + $url) ($script:MwUrls[0] + " | " + $script:MenuState.Msg[0]) "menu web : navigateur ouvert, adresse dans le menu"
+  Assert-Equal ($url + " |   " + (Get-ClmText "web.menu.url" $url)) ($script:MwUrls[0] + " | " + $script:MenuState.Msg[0]) "menu web : navigateur ouvert, adresse dans le menu"
   Assert-True ($null -ne $script:UiPoll) "menu web : requetes suivies"
   Open-MenuWeb $script:MenuState
   Assert-True ($script:MwUrls.Count -eq 2 -and $script:MwUrls[1] -ne $url -and $script:MwUrls[1].StartsWith($url.Substring(0, $url.IndexOf("?")))) "menu web : seconde touche w, meme page avec un nouveau code"
