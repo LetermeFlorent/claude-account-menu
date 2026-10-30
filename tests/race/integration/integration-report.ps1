@@ -27,11 +27,28 @@ function Get-ItestMarkPids {
   return @(Get-ItestMarks $Box $Kind | ForEach-Object { $_.Split("-")[1] } | Sort-Object -Unique)
 }
 
+function Get-ItestOverlaps {
+  param($Box, [string]$Kind)
+  $groups = @(Get-ChildItem -LiteralPath $Box.Log -Filter ($Kind + "-*") -File | Group-Object { $_.Name.Split("-")[1] })
+  $spans = @($groups | ForEach-Object { $t = @($_.Group | ForEach-Object { $_.LastWriteTimeUtc.Ticks } | Sort-Object); [PSCustomObject]@{ Id = $_.Name; From = $t[0]; To = $t[-1] } } | Sort-Object From)
+  return @(for ($i = 1; $i -lt $spans.Count; $i++) { if ($spans[$i].From -le $spans[$i - 1].To) { $spans[$i - 1].Id + "/" + $spans[$i].Id } })
+}
+
 function Wait-ItestMarks {
   param($Box, [string]$Kind, [int]$Count, [int]$TimeoutMs = 45000)
   $clock = [Diagnostics.Stopwatch]::StartNew()
   while (@(Get-ItestMarks $Box $Kind).Count -lt $Count -and $clock.ElapsedMilliseconds -lt $TimeoutMs) { Start-Sleep -Milliseconds 50 }
   return @(Get-ItestMarks $Box $Kind).Count -ge $Count
+}
+
+function Wait-ItestExits {
+  param($Kids, $Clock, [int]$TimeoutMs = 90000)
+  $at = [ordered]@{}
+  while ($at.Count -lt $Kids.Count -and $Clock.ElapsedMilliseconds -lt $TimeoutMs) {
+    foreach ($id in @($Kids.Keys)) { if (-not $at.Contains($id) -and $Kids[$id].Proc.HasExited) { $at[$id] = $Clock.ElapsedMilliseconds } }
+    Start-Sleep -Milliseconds 50
+  }
+  return (@(foreach ($id in $at.Keys) { $id + "=" + $at[$id] }) -join " ")
 }
 
 function Get-ItestBadJson {

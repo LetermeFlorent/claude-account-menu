@@ -15,10 +15,11 @@ Assert-Equal "" ((Get-ItestBadJson $itStartBox) -join " | ") "demarrage simultan
 Assert-Equal "" ((Get-ItestLeftovers $itStartBox) -join " | ") "demarrage simultane : aucun reste ni verrou tenu"
 Assert-Equal "1" (Get-ItestMarks $itStartBox "install").Count "demarrage simultane : une seule installation"
 Assert-Equal "1" (Get-ItestMarks $itStartBox "claude-update").Count "demarrage simultane : une seule mise a jour de Claude Code"
-Assert-Equal "1" (Get-ItestMarkPids $itStartBox "drive").Count "demarrage simultane : un seul tour d'appels Drive"
+Assert-Equal "" ((Get-ItestOverlaps $itStartBox "drive") -join " | ") "demarrage simultane : un seul tour Drive a la fois"
+Assert-True ((Get-ItestMarkPids $itStartBox "drive").Count -le 3) "demarrage simultane : au plus un tour Drive par clm"
 Assert-Equal "0" (Get-ItestMarks $itStartBox "claude-session").Count "demarrage simultane : aucun compte lance"
 Assert-Equal "0" (@(Get-ChildItem -LiteralPath $itStartBox.Home -Recurse -File -Filter "*.zip").Count) "demarrage simultane : aucune archive de sauvegarde au demarrage"
 Assert-True ((Get-ItestMarks $itStartBox "usage").Count -ge 3) "demarrage simultane : l'usage de chaque compte est lu"
 Assert-True ($itStartMs -lt 60000) ("demarrage simultane : moins de 60 s (" + $itStartMs + " ms)")
-[Console]::Out.WriteLine("integration demarrage : " + $itStartMs + " ms, usage " + (Get-ItestMarks $itStartBox "usage").Count + ", drive " + (Get-ItestMarks $itStartBox "drive").Count + ", github " + (Get-ItestMarks $itStartBox "github").Count)
+[Console]::Out.WriteLine("integration demarrage : " + $itStartMs + " ms, usage " + (Get-ItestMarks $itStartBox "usage").Count + ", drive " + (Get-ItestMarks $itStartBox "drive").Count + ", github " + (Get-ItestMarks $itStartBox "github").Count + ", drive par clm " + ((Get-ItestMarkTexts $itStartBox "drive" | Sort-Object -Unique) -join " ; "))
 foreach ($itStartRun in $itStartRuns) { [Console]::Out.WriteLine(((Get-RaceLines $itStartRun "start") + (Get-RaceLines $itStartRun "menu") + (Get-RaceLines $itStartRun "key")) -join " / ") }

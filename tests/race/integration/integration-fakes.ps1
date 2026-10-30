@@ -29,7 +29,7 @@ function Invoke-ItestFreshSync {
 
 function Add-ItestMark {
   param([string]$Kind)
-  [IO.File]::WriteAllText((Join-Path $env:CLM_ITEST_LOG ($Kind + "-" + $PID + "-" + [guid]::NewGuid().ToString("N"))), $Kind)
+  [IO.File]::WriteAllText((Join-Path $env:CLM_ITEST_LOG ($Kind + "-" + $PID + "-" + [guid]::NewGuid().ToString("N"))), ($env:CLM_ITEST_ID + " " + $env:CLM_ITEST_STARTS))
 }
 
 function Stop-ItestNetwork { throw "reseau interdit pendant les tests" }
