@@ -1,3 +1,4 @@
+if (-not (Test-Path Function:\Invoke-DriveSetup)) { . (Join-Path $bin "claude-sync-passphrase.ps1") }
 $loginMem = New-Object IO.MemoryStream
 Send-AuthPage $loginMem "clm : connexion refusee (<script>alert(1)</script>&x)"
 $loginHtml = [Text.Encoding]::UTF8.GetString($loginMem.ToArray())

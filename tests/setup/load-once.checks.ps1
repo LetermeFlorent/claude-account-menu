@@ -17,8 +17,9 @@ foreach ($f in Get-ChildItem -LiteralPath $bin -Filter "*.ps1" | Where-Object { 
   $calls = 0
   foreach ($d in $ast.FindAll({ param($n) $n -is [Management.Automation.Language.CommandAst] -and $n.InvocationOperator -eq "Dot" }, $true)) {
     if ($d.GetCommandName() -eq "Import-ClmModule") {
-      $calls++
-      foreach ($n in (Get-ImportedNames $d)) { if (-not (Test-Path -LiteralPath (Join-Path $bin ($n + ".ps1")))) { $bad.Add($f.Name + " : module inconnu " + $n) } }
+      $names = @(Get-ImportedNames $d)
+      if (@($names | Where-Object { $_ -notlike '$*' }).Count -gt 0) { $calls++ }
+      foreach ($n in $names) { if ($n -notlike '$*' -and -not (Test-Path -LiteralPath (Join-Path $bin ($n + ".ps1")))) { $bad.Add($f.Name + " : module inconnu " + $n) } }
     } elseif ($d.CommandElements[0] -is [Management.Automation.Language.ParenExpressionAst] -and $d.Extent.Text -cne $importBoot) { $bad.Add($f.Name + " : " + $d.Extent.Text) }
   }
   if ($calls -gt 1 -and $f.Name -notin $importEntries) { $bad.Add($f.Name + " : " + $calls + " appels") }

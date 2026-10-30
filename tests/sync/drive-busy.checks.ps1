@@ -1,3 +1,4 @@
+if (-not (Test-Path Function:\Invoke-DriveSetup)) { . (Join-Path $bin "claude-sync-passphrase.ps1") }
 $busyPass = (Get-Item "function:Set-SyncPassphrase").ScriptBlock
 $busyConfig = $script:DriveConfigPath
 $script:DriveConfigPath = Join-Path $script:Sandbox "drive-busy.json"

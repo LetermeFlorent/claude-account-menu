@@ -1,3 +1,4 @@
+if (-not (Test-Path Function:\Invoke-DriveSetup)) { . (Join-Path $bin "claude-sync-passphrase.ps1") }
 $pk = New-PkcePair
 Assert-Equal 43 $pk.Verifier.Length "verifier PKCE de 43 caracteres"
 Assert-True ($pk.Verifier -match '^[A-Za-z0-9_-]+$') "verifier en base64url sans ="

@@ -1,3 +1,4 @@
+if (-not (Test-Path Function:\Invoke-DriveSetup)) { . (Join-Path $bin "claude-sync-passphrase.ps1") }
 . (Join-Path (Split-Path -Parent $PSScriptRoot) "fake-drive.ps1")
 $ssOne = @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
 $ssPlain = "texte-clair-de-migration"

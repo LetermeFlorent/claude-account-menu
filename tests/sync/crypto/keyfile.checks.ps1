@@ -1,3 +1,4 @@
+if (-not (Test-Path Function:\Invoke-DriveSetup)) { . (Join-Path $bin "claude-sync-passphrase.ps1") }
 . (Join-Path (Split-Path -Parent $PSScriptRoot) "fake-drive.ps1")
 $kfSaved = @($script:SyncKeyIterations, $script:SyncKeyMinIterations, ${function:Read-SyncPassText})
 $script:SyncKeyIterations = 1000

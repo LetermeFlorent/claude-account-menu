@@ -1,3 +1,4 @@
+if (-not (Test-Path Function:\Invoke-DriveSetup)) { . (Join-Path $bin "claude-sync-passphrase.ps1") }
 . (Join-Path $bin "claude-menu-loop.ps1")
 . (Join-Path $bin "claude-menu-startup.ps1")
 . (Join-Path $bin "claude-menu-rename.ps1")

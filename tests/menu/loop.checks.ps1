@@ -1,6 +1,6 @@
 . (Join-Path $bin "claude-menu-loop.ps1")
 . (Join-Path $bin "claude-menu-startup.ps1")
-
+if (-not (Test-Path Function:\Invoke-DriveSetup)) { . (Join-Path $bin "claude-sync-passphrase.ps1") }
 $mocked = @("Enter-UiScreen", "Exit-UiScreen", "Hide-Screen", "Show-Menu", "Start-MenuLoader", "Get-Accounts", "Update-UiTick", "New-ClmCheck", "Read-UiInput")
 $kept = @{}
 foreach ($n in $mocked) { $kept[$n] = (Get-Item ("function:" + $n)).ScriptBlock }
