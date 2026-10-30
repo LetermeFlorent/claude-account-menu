@@ -1,4 +1,4 @@
-. (Join-Path $bin "claude-text.ps1")
+. (Join-Path $bin "core/claude-text.ps1")
 
 $keyFiles = @()
 foreach ($pattern in @("claude-ui-*.ps1", "claude-usage*.ps1", "claude-web-*.ps1", "claude-statusline-seed.ps1", "claude-seed-hook.ps1", "claude-token-refresh.ps1", "claude-display.ps1", "claude-theme.ps1", "claude-color.ps1", "claude-menu-web.ps1")) {
