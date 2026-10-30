@@ -33,8 +33,8 @@ try {
   Assert-Equal 120 (Set-DisplayUsagePoll "120") "reglage du delai accepte des chiffres"
   Assert-True ([IO.File]::ReadAllText($pollPath).EndsWith("}`n")) "fichier du delai fini par un retour a la ligne"
   Assert-Throws { Set-DisplayUsagePoll "abc" } (Get-ClmText "ui.poll.refused" @("abc", 15, 600)) "delai texte refuse"
-  Assert-Throws { Set-DisplayUsagePoll 14 } "entre 15 et 600" "delai 14 refuse"
-  Assert-Throws { Set-DisplayUsagePoll 601 } "entre 15 et 600" "delai 601 refuse"
+  Assert-Throws { Set-DisplayUsagePoll 14 } ((Get-ClmText "ui.poll.refused" @("*", 15, 600)).Split("*")[1]) "delai 14 refuse"
+  Assert-Throws { Set-DisplayUsagePoll 601 } ((Get-ClmText "ui.poll.refused" @("*", 15, 600)).Split("*")[1]) "delai 601 refuse"
   Assert-Equal 120 (Read-UsagePollSeconds) "refus sans rien changer"
 
   Write-PollFile '{ "usagePoll": '

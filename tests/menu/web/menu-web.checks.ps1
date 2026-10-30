@@ -76,7 +76,7 @@ try {
   function Start-WebServer { param($Views) throw "port pris" }
   $script:MwUrls.Clear()
   Open-MenuWeb $script:MenuState
-  Assert-Equal "  page web impossible : port pris" $script:MenuState.Msg[0] "menu web : echec du serveur dans le menu"
+  Assert-Equal ("  " + (Get-ClmText "web.menu.failed" "port pris")) $script:MenuState.Msg[0] "menu web : echec du serveur dans le menu"
   Assert-True ((@($script:MenuState.Msg[1]) -join ",") -eq (@($script:Ink.Alert) -join ",") -and $script:MwUrls.Count -eq 0 -and $null -eq $script:UiPoll) "menu web : echec sans navigateur ni suivi"
   Set-MwReal "Start-WebServer"
 
