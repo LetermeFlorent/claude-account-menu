@@ -28,5 +28,5 @@ while ((Test-StepsLeft $su @()) -and $clock.ElapsedMilliseconds -lt 60000) {
   Start-Sleep -Milliseconds 50
 }
 $step = $su.Steps[0]
-"result " + $Id + " " + $step.State + " " + $step.Kind + " " + $step.Text
-"stamp " + ((Read-SharedText (Get-StatePath "claude-check.done")) -replace "^[0-9]+ [0-9]+ ", "")
+$resultLines = @(("result " + $Id + " " + $step.State + " " + $step.Kind + " " + $step.Text), ("stamp " + ((Read-SharedText (Get-StatePath "claude-check.done")) -replace "^[0-9]+ [0-9]+ ", "")))
+[IO.File]::WriteAllLines((Join-Path $Dir ("result-" + $Id)), [string[]]$resultLines, (New-Object Text.UTF8Encoding $false))

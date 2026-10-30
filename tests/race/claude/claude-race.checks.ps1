@@ -7,7 +7,7 @@ $claudeEnv = @{ USERPROFILE = $claudeRoot; HOME = $claudeRoot; LOCALAPPDATA = (J
 $claudeChild = Join-Path $PSScriptRoot "claude-child.ps1"
 $claudeParams = @(foreach ($n in 1..3) { @{ Bin = $bin; Lab = $raceLab; Dir = $claudeRoot; Id = ("c" + $n) } })
 $claudeRuns = Invoke-Race $claudeChild $claudeParams $claudeRoot $claudeEnv
-$claudeOut = @(foreach ($r in $claudeRuns) { @($r.Out -split "`r?`n" | Where-Object { $_ -like "result *" -or $_ -like "stamp *" }) }) -join "|"
+$claudeOut = @(foreach ($n in 1..3) { $f = Join-Path $claudeRoot ("result-c" + $n); if (Test-Path -LiteralPath $f) { [IO.File]::ReadAllLines($f, [Text.Encoding]::UTF8) } }) -join "|"
 Assert-Equal "" (Format-RaceFailures $claudeRuns) "trois clm mettent Claude Code a jour en meme temps : aucune erreur"
 Assert-Equal 1 @(Get-ChildItem -LiteralPath $claudeRoot -Filter "run-*").Count "trois clm mettent Claude Code a jour en meme temps : une seule mise a jour"
 Assert-Equal ((@(foreach ($n in 1..3) { "result c" + $n + " done ok " + ((Get-ClmText "update.claude.upToDateVersion" @("2.1.300")) -replace "^Claude Code ", "") + "|stamp 2.1.300" })) -join "|") $claudeOut "trois clm mettent Claude Code a jour en meme temps : chacun finit a jour, marque intacte"
