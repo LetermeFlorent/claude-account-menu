@@ -41,7 +41,7 @@ Assert-Equal "a|b" ((@(Get-Accounts) | ForEach-Object { $_.Label }) -join "|") "
 Assert-Equal 0 @(Get-ChildItem -LiteralPath $regDir -Filter "accounts.json.*.tmp").Count "registre : pas de fichier temporaire laisse"
 $lockFs = Enter-FileLock ($script:RegistryPath + ".lock") 1000
 $script:RegistryLockWaitMs = 300
-Assert-Throws { Save-Registry @([PSCustomObject]@{ Label = "z"; Dir = ".claude" }) } "en cours" "registre verrouille : ecriture refusee"
+Assert-Throws { Save-Registry @([PSCustomObject]@{ Label = "z"; Dir = ".claude" }) } (Get-ClmText "accounts.registry.busy") "registre verrouille : ecriture refusee"
 $lockFs.Dispose()
 Assert-Equal "a|b" ((@(Get-Accounts) | ForEach-Object { $_.Label }) -join "|") "registre verrouille : contenu intact"
 
