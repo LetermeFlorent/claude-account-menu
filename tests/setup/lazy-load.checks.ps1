@@ -79,7 +79,7 @@ try {
 }
 
 $lazyProbe = @'
-param([string]$Bin, [string]$Out)
+param([string]$Bin, [string]$Out, [string]$Case)
 $ProgressPreference = "SilentlyContinue"
 $tk = $null; $er = $null
 $menu = [Management.Automation.Language.Parser]::ParseFile((Join-Path $Bin "claude-menu.ps1"), [ref]$tk, [ref]$er)
@@ -89,22 +89,26 @@ $roots = foreach ($c in $menu.FindAll({ param($n) $n -is [Management.Automation.
 $script:ClmOnce = New-Object 'System.Collections.Generic.HashSet[string]'
 . (Join-Path $Bin "claude-import.ps1")
 . Import-ClmModule $roots
+if ($Case -eq "avec") { Save-DriveConfig @{ refreshToken = "r"; lastSync = 1 } }
 $err = ""
-try { Open-MenuSession $false $false } catch { $err = "erreur " + $_.Exception.Message }
+try { Open-MenuSession $false $false; if ($Case -eq "avec") { Stop-DriveJob $script:DriveJob 0 } } catch { $err = "erreur " + $_.Exception.Message }
 [IO.File]::WriteAllLines($Out, [string[]](@($err) + @($script:ClmOnce)))
 '@
 $lazyProbeFile = New-SandboxFile "lazy-probe.ps1" $lazyProbe
 $lazyExe = (Get-Process -Id $PID).Path
 $lazyGlue = @("claude-drive-cli", "claude-drive-job", "claude-drive-config")
-foreach ($case in @("sans")) {
+foreach ($case in @("sans", "avec")) {
   $out = Join-Path $script:Sandbox ("lazy-start-" + $case + ".txt")
   $state = Join-Path $script:Sandbox ("lazy-state-" + $case)
   $savedProfile = $env:USERPROFILE; $savedHome = $env:HOME; $savedLocal = $env:LOCALAPPDATA
   $env:USERPROFILE = $state; $env:HOME = $state; $env:LOCALAPPDATA = Join-Path $state "AppData"
-  try { & $lazyExe -NoProfile -ExecutionPolicy Bypass -File $lazyProbeFile -Bin $bin -Out $out | Out-Null }
+  try { & $lazyExe -NoProfile -ExecutionPolicy Bypass -File $lazyProbeFile -Bin $bin -Out $out -Case $case | Out-Null }
   finally { $env:USERPROFILE = $savedProfile; $env:HOME = $savedHome; $env:LOCALAPPDATA = $savedLocal }
   $lines = @()
   if (Test-Path -LiteralPath $out) { $lines = [IO.File]::ReadAllLines($out) }
   $late = @($lines | Where-Object { $_ -match "^claude-(drive-|web-|mcp-|sync)" -and $lazyGlue -notcontains $_ })
-  Assert-Equal "|" (($lines | Select-Object -First 1) + "|" + ($late -join ",")) "demarrage sans Drive : aucun module drive, web, mcp ou sync charge"
+  if ($case -eq "sans") { Assert-Equal "|" (($lines | Select-Object -First 1) + "|" + ($late -join ",")) "demarrage sans Drive : aucun module drive, web, mcp ou sync charge"; continue }
+  $missing = @($script:ClmGroups["drive"] | Where-Object { $lines -notcontains $_ })
+  $other = @($late | Where-Object { $_ -match "^claude-web-" })
+  Assert-Equal "||" (($lines | Select-Object -First 1) + "|" + ($missing -join ",") + "|" + ($other -join ",")) "demarrage avec Drive : modules drive charges a la demande, aucun module web"
 }
