@@ -19,8 +19,7 @@ try {
   Set-SelfNetwork "" "" (New-TestRelease 40)
   Assert-Throws { Find-ClmUpdate } (Get-ClmUnknownText) "version installee inconnue : recherche refusee"
   Assert-Equal 0 $script:SelfGets.Count "version installee inconnue : pas de reseau"
-  $out = (Update-Clm 6>&1 | Out-String)
-  Assert-True ($out.Contains((Get-ClmUnknownText)) -and $out -match "False") "version installee inconnue : message et pas de mise a jour"
+  Assert-Equal ("  " + (Get-ClmUnknownText) + "|False") (@(Update-Clm 6>&1) -join "|") "version installee inconnue : message et pas de mise a jour"
   $script:SelfInstalled = ConvertFrom-ClmVersion "aaaaaaa1111111111111111111111111111111aa 1760000000"
   Assert-Throws { Find-ClmUpdate } (Get-ClmUnknownText) "version installee sans numero : recherche refusee"
 

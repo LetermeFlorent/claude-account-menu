@@ -30,7 +30,7 @@ Assert-Equal "" ($ulUnused -join " ") "textes de mise a jour : aucune cle inutil
 $ulFrench = @("sauvegarde", "restaure", "reglage", "telecharg", "mise a jour", "a jour", "creee", "etat ", "reessay", "efface", "installee", "redemarrage", "laissee", "precedent", "termine", "cle ", "avertissement", "introuvable", "attente")
 $ulAccentless = @(foreach ($k in $ulOwned) {
   $v = [string]$ulTables["fr"][$k]
-  foreach ($w in @("efface", "reglages", "Telechargements", "creee", "etat", "reessayer", "restauree", "installee", "redemarrage", "laissee", "precedent", "telechargement", "terminee", "refusee", "a jour", "mise a jour", "recherche impossible", "echec", "ferme", "connexion utilisee", "verifier")) {
+  foreach ($w in @("efface", "reglages", "Telechargements", "creee", "etat", "reessayer", "restauree", "installee", "redemarrage", "laissee", "precedent", "telechargement", "terminee", "refusee", "a jour", "mise a jour", "echec", "connexion utilisee", "verifier")) {
     if ($v -cmatch ("(?i)\b" + [regex]::Escape($w) + "\b")) { $k + ":" + $w }
   }
 })

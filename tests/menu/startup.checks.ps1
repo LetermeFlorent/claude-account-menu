@@ -64,10 +64,10 @@ try {
   $null = Invoke-StartupTicks; $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks
   Assert-Equal "Find-ClmUpdate|Install-ClmVersion 62" (($script:Loads -join "|") + " " + $script:InstallItem.Number) "nouvelle version de clm : celle trouvee, installee"
-  Assert-True ($script:Su.Steps[0].Text -like "installation v62 du *") "nouvelle version de clm : affichee"
+  Assert-True ($script:Su.Steps[0].Text -like ((Get-ClmText "update.startup.installing" @((Get-ClmText "update.self.versionAt" @("v62", "")))) + "*")) "nouvelle version de clm : affichee"
   $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks 3
-  Assert-Equal "v62 installee, redemarrage" $script:Su.Steps[0].Text "nouvelle version de clm : redemarrage annonce"
+  Assert-Equal (Get-ClmText "update.startup.withRestart" @(Get-ClmText "update.startup.installed" @("v62"))) $script:Su.Steps[0].Text "nouvelle version de clm : redemarrage annonce"
   Assert-True $script:ClmUpdated "nouvelle version de clm : redemarrage demande"
   Assert-Equal "restart" (Send-StartupAct "up").Name "nouvelle version de clm : menu ferme pour redemarrer"
   Assert-Equal 0 ($script:ClaudeStarts + $script:DriveStarts) "nouvelle version de clm : ni Claude Code ni Drive avant le redemarrage"
@@ -79,10 +79,10 @@ try {
   $null = Invoke-StartupTicks; $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks; $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks
-  Assert-Equal "failed installation impossible : disque plein" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "installation de clm ratee : barre en erreur"
+  Assert-Equal ("failed " + (Get-ClmText "update.startup.installFailed" @("disque plein"))) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "installation de clm ratee : barre en erreur"
   Assert-Equal ("  " + (Get-ClmText "menu.startup.clmUpdateFailed" @("disque plein"))) $script:St.Msg[0] "installation de clm ratee : annoncee tout de suite"
   $null = Invoke-StartupTicks 4
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.clmUpdateFailed" @("disque plein")) + "   a, b, c : Claude Code a jour (2.1.292)") $script:St.Msg[0] "installation de clm ratee : erreur puis resultat de Claude Code"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.clmUpdateFailed" @("disque plein")) + "   a, b, c : " + (Get-ClmText "update.claude.upToDateVersion" @("2.1.292"))) $script:St.Msg[0] "installation de clm ratee : erreur puis resultat de Claude Code"
   Assert-Equal $script:Ink.Alert $script:St.Msg[1] "installation de clm ratee : couleur d'alerte"
   Assert-True (-not $script:ClmUpdated -and $null -eq $script:Su.Exit) "installation de clm ratee : pas de redemarrage"
   $script:FakeInstallError = $null
@@ -91,7 +91,7 @@ try {
   $script:FakeFindError = "hors ligne"
   $null = Invoke-StartupTicks; $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks 3
-  Assert-Equal "failed recherche impossible" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "recherche de clm ratee : barre en erreur"
+  Assert-Equal ("failed " + (Get-ClmText "update.startup.searchFailed")) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "recherche de clm ratee : barre en erreur"
   Assert-Equal 1 $script:ClaudeStarts "recherche de clm ratee : Claude Code continue"
   $null = Invoke-StartupTicks 2
   Assert-Equal "done|done False|False" ((Get-StepList "State") + " " + (Get-StepList "Gone")) "fin avec un echec : lignes gardees un instant"
