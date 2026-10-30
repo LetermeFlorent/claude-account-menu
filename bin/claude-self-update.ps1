@@ -1,11 +1,9 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
-. Import-ClmModule claude-platform, claude-self-version, claude-self-install, claude-machine-lock
+. Import-ClmModule claude-platform, claude-self-version, claude-self-install, claude-machine-lock, claude-text
 $script:ClmUpdateLock = "clm-update"
 $script:ClmCheckStamp = "clm-check"
 $script:ClmUpdateWaitMs = 180000
 $script:ClmCheckFreshMs = 120000
-$script:ClmWaitText = "attente d'un autre clm qui met a jour clm..."
-$script:ClmReplacedText = "clm mis a jour par un autre clm, redemarrage"
 
 function ConvertFrom-ReleaseJson {
   param([string]$Json)
@@ -38,7 +36,7 @@ function Test-ClmInstalledHere {
 
 function Find-ClmUpdate {
   $installed = Read-ClmVersion
-  if (-not (Test-ClmVersionKnown $installed)) { throw $script:ClmUnknownText }
+  if (-not (Test-ClmVersionKnown $installed)) { throw (Get-ClmUnknownText) }
   $latest = Get-LatestClm
   if (-not (Test-ClmOutdated $installed $latest)) { return $null }
   return $latest
@@ -62,12 +60,12 @@ function Update-Clm {
   param([switch]$Recheck)
   if (-not (Test-ClmInstalledHere)) { return $false }
   if (-not (Test-ClmVersionKnown (Read-ClmVersion))) {
-    Write-Host ("  " + $script:ClmUnknownText) -ForegroundColor DarkYellow
+    Write-Host ("  " + (Get-ClmUnknownText)) -ForegroundColor DarkYellow
     return $false
   }
   $lock = Open-MachineLock $script:ClmUpdateLock
   if ($null -eq $lock) {
-    Write-Host ("  " + $script:ClmWaitText) -ForegroundColor DarkGray
+    Write-Host ("  " + (Get-ClmText "update.self.waitPeer")) -ForegroundColor DarkGray
     $lock = Open-MachineLock $script:ClmUpdateLock $script:ClmUpdateWaitMs
   }
   if ($null -eq $lock) { return $false }
@@ -78,20 +76,20 @@ function Update-ClmLocked {
   param([bool]$Recheck)
   $skip = Get-ClmUpdateSkip $script:ClmLoadedSha
   if ($skip -eq "replaced") {
-    Write-Host ("  " + $script:ClmReplacedText) -ForegroundColor DarkGray
+    Write-Host ("  " + (Get-ClmText "update.self.replacedByPeer")) -ForegroundColor DarkGray
     return $true
   }
   if ($skip -eq "fresh" -and -not $Recheck) { return $false }
   $latest = $null
   try { $latest = Find-ClmUpdate } catch { return $false }
   if ($null -eq $latest) { Write-ClmChecked; return $false }
-  Write-Host ("  nouvelle version de clm (" + (Format-ClmVersion $latest) + "), installation...") -ForegroundColor DarkGray
+  Write-Host ("  " + (Get-ClmText "update.self.found" @((Format-ClmVersion $latest)))) -ForegroundColor DarkGray
   try { Install-ClmVersion $latest }
   catch {
-    Write-Host ("  mise a jour de clm impossible : " + $_.Exception.Message) -ForegroundColor DarkYellow
+    Write-Host ("  " + (Get-ClmText "update.self.failed" @($_.Exception.Message))) -ForegroundColor DarkYellow
     return $false
   }
-  Write-Host "  clm mis a jour, redemarrage" -ForegroundColor DarkGray
+  Write-Host ("  " + (Get-ClmText "update.self.done")) -ForegroundColor DarkGray
   return $true
 }
 

@@ -17,12 +17,12 @@ try {
 
   $script:SelfInstalled = $null
   Set-SelfNetwork "" "" (New-TestRelease 40)
-  Assert-Throws { Find-ClmUpdate } "version de clm inconnue" "version installee inconnue : recherche refusee"
+  Assert-Throws { Find-ClmUpdate } (Get-ClmUnknownText) "version installee inconnue : recherche refusee"
   Assert-Equal 0 $script:SelfGets.Count "version installee inconnue : pas de reseau"
   $out = (Update-Clm 6>&1 | Out-String)
-  Assert-True ($out -match "version de clm inconnue" -and $out -match "releases" -and $out -match "False") "version installee inconnue : message et pas de mise a jour"
+  Assert-True ($out.Contains((Get-ClmUnknownText)) -and $out -match "False") "version installee inconnue : message et pas de mise a jour"
   $script:SelfInstalled = ConvertFrom-ClmVersion "aaaaaaa1111111111111111111111111111111aa 1760000000"
-  Assert-Throws { Find-ClmUpdate } "version de clm inconnue" "version installee sans numero : recherche refusee"
+  Assert-Throws { Find-ClmUpdate } (Get-ClmUnknownText) "version installee sans numero : recherche refusee"
 
   $script:SelfInstalled = ConvertFrom-ClmVersion "aaaaaaa1111111111111111111111111111111aa 1760000000 34"
   $script:ClmLoadedSha = $script:SelfInstalled.Sha
@@ -48,13 +48,13 @@ try {
   Assert-Equal 1 $script:SelfGets.Count "mise a jour demandee : release relue malgre la verification recente"
   Assert-Equal "replaced" (Get-ClmUpdateSkip ("b" * 40)) "version du disque differente de celle chargee : remplacee"
   $script:ClmLoadedSha = "b" * 40
-  Assert-Equal ("  " + $script:ClmReplacedText + "|True") (@(Update-Clm 6>&1) -join "|") "installee par un autre clm : redemarrage sans reinstaller"
+  Assert-Equal ("  " + (Get-ClmText "update.self.replacedByPeer") + "|True") (@(Update-Clm 6>&1) -join "|") "installee par un autre clm : redemarrage sans reinstaller"
   $script:ClmLoadedSha = $script:SelfInstalled.Sha
   $held = Open-MachineLock $script:ClmUpdateLock
   $selfWait = $script:ClmUpdateWaitMs
   $script:ClmUpdateWaitMs = 300
   try { $out = @(Update-Clm 6>&1) } finally { Close-MachineLock $held; $script:ClmUpdateWaitMs = $selfWait }
-  Assert-Equal ("  " + $script:ClmWaitText + "|False") ($out -join "|") "autre clm en pleine mise a jour : attente annoncee, pas d'erreur"
+  Assert-Equal ("  " + (Get-ClmText "update.self.waitPeer") + "|False") ($out -join "|") "autre clm en pleine mise a jour : attente annoncee, pas d'erreur"
 
   $zip = New-TestPackage "clm-v40"
   $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLower()
@@ -62,12 +62,12 @@ try {
   $base = "https://github.com/LetermeFlorent/claude-account-menu/releases/download/v40/clm-v40.zip"
 
   Set-SelfNetwork $zip ("0" * 64 + "  clm-v40.zip`n") (New-TestRelease 40)
-  Assert-Throws { Install-ClmVersion $latest } "empreinte" "empreinte differente : installation refusee"
+  Assert-Throws { Install-ClmVersion $latest } (Get-ClmText "install.badHash") "empreinte differente : installation refusee"
   Assert-Equal 0 $script:SelfRuns.Count "empreinte differente : installeur jamais lance"
   Assert-Equal ($base + ".sha256 10|" + $base + " 60") ($script:SelfGets -join "|") "paquet et empreinte telecharges depuis la release"
 
   Set-SelfNetwork $zip "pas une empreinte" (New-TestRelease 40)
-  Assert-Throws { Install-ClmVersion $latest } "empreinte" "fichier d'empreinte illisible : installation refusee"
+  Assert-Throws { Install-ClmVersion $latest } (Get-ClmText "install.badHash") "fichier d'empreinte illisible : installation refusee"
   Assert-Equal 0 $script:SelfRuns.Count "fichier d'empreinte illisible : installeur jamais lance"
 
   Set-SelfNetwork $zip ($hash.ToUpper() + "  clm-v40.zip`n") (New-TestRelease 40)
@@ -86,7 +86,7 @@ try {
 
   Set-SelfNetwork $zip ($hash + "  clm-v40.zip`n") (New-TestRelease 40)
   $script:SelfCode = 3
-  Assert-Throws { Install-ClmVersion $latest } "installeur en echec : erreur de copie" "installeur en echec : erreur remontee"
+  Assert-Throws { Install-ClmVersion $latest } (Get-ClmText "install.installerFailed" @("erreur de copie")) "installeur en echec : erreur remontee"
 
   $cmd = Get-ClmInstallerCommand "C:\t\pkg" "Windows"
   Assert-Equal ($env:SystemRoot + "\System32\WindowsPowerShell\v1.0\powershell.exe") $cmd.Exe "commande Windows, interpreteur"

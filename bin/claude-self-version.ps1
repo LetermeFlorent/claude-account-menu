@@ -1,7 +1,13 @@
-. Import-ClmModule claude-file-io
+. Import-ClmModule claude-file-io, claude-text
 $script:ClmVersionFile = "clm.version"
 $script:ClmRepo = "LetermeFlorent/claude-account-menu"
-$script:ClmUnknownText = "version de clm inconnue, pas de mise a jour automatique : telecharge la derniere version sur https://github.com/" + $script:ClmRepo + "/releases, puis lance install.ps1 (install.sh hors Windows)"
+function Get-ClmReleasesUrl {
+  return "https://github.com/" + $script:ClmRepo + "/releases"
+}
+
+function Get-ClmUnknownText {
+  return Get-ClmText "update.self.unknownVersion" @((Get-ClmReleasesUrl))
+}
 
 function ConvertFrom-ClmVersion {
   param([string]$Text)
@@ -23,9 +29,9 @@ function Test-ClmVersionKnown {
 
 function Format-ClmVersion {
   param($Version)
-  if ($null -eq $Version) { return "inconnue" }
+  if ($null -eq $Version) { return Get-ClmText "update.self.versionNone" }
   $at = [DateTimeOffset]::FromUnixTimeSeconds($Version.Time).ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-  return (Get-ClmName $Version) + " du " + $at
+  return Get-ClmText "update.self.versionAt" @((Get-ClmName $Version), $at)
 }
 
 function Test-ClmOutdated {
@@ -45,10 +51,9 @@ function Get-BackupVersion {
 function Get-BackupVersionError {
   param($Installed, $Backup)
   if ($null -eq $Backup) { return $null }
-  $hint = " : relance clm pour qu'il se mette a jour, puis restaure"
-  if ($null -eq $Installed) { return "sauvegarde faite avec clm " + (Format-ClmVersion $Backup) + ", version installee inconnue : reinstalle clm depuis https://github.com/" + $script:ClmRepo + "/releases, puis restaure" }
+  if ($null -eq $Installed) { return Get-ClmText "update.self.backupInstalledUnknown" @((Format-ClmVersion $Backup), (Get-ClmReleasesUrl)) }
   if ($Backup.Time -le $Installed.Time) { return $null }
-  return "sauvegarde faite avec clm " + (Format-ClmVersion $Backup) + ", plus recent que clm " + (Format-ClmVersion $Installed) + $hint
+  return Get-ClmText "update.self.backupNewer" @((Format-ClmVersion $Backup), (Format-ClmVersion $Installed))
 }
 
 function Assert-BackupVersion {
@@ -67,7 +72,7 @@ function Get-ClmTag {
   param([string]$Dir = $PSScriptRoot)
   $v = Read-ClmVersion $Dir
   if ($null -eq $v) { return "" }
-  return "clm " + (Get-ClmName $v)
+  return Get-ClmText "update.self.tag" @((Get-ClmName $v))
 }
 
 function Get-ClmSha {

@@ -1,12 +1,11 @@
-. Import-ClmModule claude-platform, claude-self-version
-$script:ClmBadHashText = "empreinte du paquet clm invalide, installation refusee"
+. Import-ClmModule claude-platform, claude-self-version, claude-text
 
 function New-ClmPrivateDir {
   $dir = Join-Path ([IO.Path]::GetTempPath()) ("clm-update-" + [guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $dir | Out-Null
   if ($script:OsName -ne "Windows") {
     & /bin/chmod 700 $dir
-    if ($LASTEXITCODE -ne 0) { throw "dossier temporaire impossible a proteger" }
+    if ($LASTEXITCODE -ne 0) { throw (Get-ClmText "install.tempDirUnsafe") }
     return $dir
   }
   $acl = New-Object Security.AccessControl.DirectorySecurity
@@ -26,7 +25,7 @@ function Get-ClmAssetUrl {
 function Read-ClmSum {
   param([string]$Path)
   $text = [IO.File]::ReadAllText($Path)
-  if ($text -notmatch "^\s*([0-9A-Fa-f]{64})(\s|$)") { throw $script:ClmBadHashText }
+  if ($text -notmatch "^\s*([0-9A-Fa-f]{64})(\s|$)") { throw (Get-ClmText "install.badHash") }
   return $Matches[1]
 }
 
@@ -34,7 +33,7 @@ function Assert-ClmHash {
   param([string]$Zip, [string]$Sum)
   $expected = Read-ClmSum $Sum
   $actual = (Get-FileHash -LiteralPath $Zip -Algorithm SHA256).Hash
-  if ($actual -ne $expected) { throw $script:ClmBadHashText }
+  if ($actual -ne $expected) { throw (Get-ClmText "install.badHash") }
 }
 
 function Get-ClmInstallerCommand {
@@ -58,7 +57,7 @@ function Invoke-ClmInstaller {
   $saved = $env:CLM_PWSH
   $env:CLM_PWSH = (Get-Process -Id $PID).Path
   try { $r = Invoke-ClmProcess $cmd.Exe $cmd.Arguments } finally { $env:CLM_PWSH = $saved }
-  if ($r.Code -ne 0) { throw ("installeur en echec : " + $r.Last) }
+  if ($r.Code -ne 0) { throw (Get-ClmText "install.installerFailed" @($r.Last)) }
 }
 
 function Install-ClmVersion {
