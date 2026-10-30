@@ -15,10 +15,11 @@ $itRestShownMs = $itRestClock.ElapsedMilliseconds
 Get-ChildItem -LiteralPath $itRestBox.State -Filter "claude-check*" | Remove-Item -Force
 Set-ItestRelease $itRestBox $true
 [IO.File]::WriteAllText((Join-Path $itRestBox.Log "update-now"), "go")
+$itRestInstalled = Wait-ItestMarks $itRestBox "install" 1
+[IO.File]::WriteAllText((Join-Path $itRestBox.Log "session-end"), "go")
 $itRestMoved = Wait-ItestMarks $itRestBox "menu-2" 3
 $itRestMovedMs = $itRestClock.ElapsedMilliseconds
 [IO.File]::WriteAllText((Join-Path $itRestBox.Log "quit-all"), "go")
-[IO.File]::WriteAllText((Join-Path $itRestBox.Log "session-end"), "go")
 $itRestExits = Wait-ItestExits $itRestKids $itRestClock
 $itRestRuns = [ordered]@{}
 foreach ($itRestId in $itRestKids.Keys) { $itRestRuns[$itRestId] = Wait-RaceChild $itRestKids[$itRestId] 60000 }
@@ -37,6 +38,9 @@ Assert-Equal "" ((Get-ItestMarkTexts $itRestBox "claude-update" | Where-Object {
 Assert-Equal "r4 1" ((Get-ItestMarkTexts $itRestBox "claude-session" | ForEach-Object { $_.Split(" ")[0] + " " + $_.Split(" ")[1] }) -join " | ") "relance : seul le compte deja en session a lance claude"
 Assert-Equal "1" @(Get-RaceLines $itRestRuns["r4"] "start").Count "relance : le clm en session n'est pas relance"
 Assert-Equal "1" (Get-ItestMarks $itRestBox "claude-ended").Count "relance : la session va jusqu'a sa fin"
+$itRestEnded = @(Get-ChildItem -LiteralPath $itRestBox.Log -Filter "claude-ended-*" -File)
+$itRestSetup = @(Get-ChildItem -LiteralPath $itRestBox.Log -Filter "install-*" -File)
+Assert-True ($itRestInstalled -and $itRestEnded.Count -eq 1 -and $itRestSetup.Count -eq 1 -and $itRestEnded[0].LastWriteTimeUtc -ge $itRestSetup[0].LastWriteTimeUtc) "relance : la session tourne encore pendant l'installation"
 Assert-Equal "" ((Get-ItestBadJson $itRestBox) -join " | ") "relance : chaque json se relit"
 Assert-Equal "" ((Get-ItestLeftovers $itRestBox) -join " | ") "relance : aucun reste ni verrou tenu"
 Assert-True ($itRestMs -lt 60000) ("relance : moins de 60 s (" + $itRestMs + " ms)")
