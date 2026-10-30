@@ -18,13 +18,13 @@ try {
 
   $script:ActStops = 0
   $r = Invoke-ActTest @{ do = "rename"; acc = ".claude-compte2"; name = " Travail " }
-  Assert-Equal "True Pro renomme en Travail" ("" + $r.Ok + " " + $r.Msg) "web action : renommer"
+  Assert-Equal ("True " + (Get-ClmText "accounts.rename.done" @("Pro", "Travail"))) ("" + $r.Ok + " " + $r.Msg) "web action : renommer"
   Assert-Equal "perso=.claude|Travail=.claude-compte2|jeu=.claude-compte3" (Get-ActOrder) "web action : nom enregistre"
   Assert-True ($script:ActStops -eq 1) "web action : lecture des quotas arretee avant le changement"
-  Assert-Equal "  Pro renomme en Travail" $script:MenuState.Msg[0] "web action : message aussi dans le terminal"
+  Assert-Equal ("  " + (Get-ClmText "accounts.rename.done" @("Pro", "Travail"))) $script:MenuState.Msg[0] "web action : message aussi dans le terminal"
   Assert-Equal 3 $script:MenuState.Entries.Count "web action : menu du terminal rafraichi"
   $r = Invoke-ActTest @{ do = "rename"; acc = ".claude-compte3"; name = "perso" }
-  Assert-Equal "False le nom perso est deja pris" ("" + $r.Ok + " " + $r.Msg) "web action : nom deja pris"
+  Assert-Equal ("False " + (Get-ClmText "accounts.rename.taken" @("perso"))) ("" + $r.Ok + " " + $r.Msg) "web action : nom deja pris"
   Assert-Equal "alert" (Get-WebTone $script:MenuState.Msg[1]) "web action : erreur en rouge dans le terminal"
   $r = Invoke-ActTest @{ do = "rename"; acc = ".claude-compte9"; name = "x" }
   Assert-Equal (Get-ClmText "server.unknownAccount" @(".claude-compte9")) $r.Msg "web action : compte inconnu"
@@ -32,13 +32,13 @@ try {
   Assert-Equal (Get-ClmText "server.unknownAccount" @(".CLAUDE-COMPTE2")) $r.Msg "web action : dossier compare a la lettre pres"
 
   $r = Invoke-ActTest @{ do = "move"; acc = ".claude-compte3"; rank = 1 }
-  Assert-Equal "True jeu passe au rang 1" ("" + $r.Ok + " " + $r.Msg) "web action : changer l'ordre"
+  Assert-Equal ("True " + (Get-ClmText "accounts.move.done" @("jeu", 1))) ("" + $r.Ok + " " + $r.Msg) "web action : changer l'ordre"
   Assert-Equal "jeu=.claude-compte3|perso=.claude|Travail=.claude-compte2" (Get-ActOrder) "web action : ordre enregistre"
   foreach ($bad in @("haut", "-1", "1.5", "")) {
     $r = Invoke-ActTest @{ do = "move"; acc = ".claude-compte3"; rank = $bad }
     Assert-Equal (Get-ClmText "server.badRank") $r.Msg ("web action : rang refuse [" + $bad + "]")
   }
-  Assert-Equal "rang 9 hors de la liste, de 1 a 3" (Invoke-ActTest @{ do = "move"; acc = ".claude"; rank = 9 }).Msg "web action : rang trop grand"
+  Assert-Equal (Get-ClmText "accounts.move.outOfRange" @(9, 3)) (Invoke-ActTest @{ do = "move"; acc = ".claude"; rank = 9 }).Msg "web action : rang trop grand"
 
   $r = Invoke-ActTest @{ do = "add"; name = " Neuf " }
   Assert-Equal "True add Neuf" ("" + $r.Ok + " " + $r.Next + " " + $r.Arg) "web action : ajout passe la main au terminal"
@@ -53,10 +53,10 @@ try {
   Assert-True ($script:MenuState.Entries[1].Force -and $script:MenuState.Sel -eq 0) "web action : relecture sans bouger la selection"
 
   $r = Invoke-ActTest @{ do = "remove"; acc = ".claude-compte2" }
-  Assert-Equal "True Travail retire du menu" ("" + $r.Ok + " " + $r.Msg) "web action : retirer un compte"
+  Assert-Equal ("True " + (Get-ClmText "accounts.remove.removed" @("Travail"))) ("" + $r.Ok + " " + $r.Msg) "web action : retirer un compte"
   Assert-Equal "jeu=.claude-compte3|perso=.claude" (Get-ActOrder) "web action : compte retire du registre"
   $r = Invoke-ActTest @{ do = "remove"; acc = ".claude"; erase = $true }
-  Assert-Equal "le dossier .claude n'est jamais efface" $r.Msg "web action : dossier principal jamais efface"
+  Assert-Equal (Get-ClmText "accounts.remove.neverErased" @(".claude")) $r.Msg "web action : dossier principal jamais efface"
 
   $r = Invoke-ActTest @{ do = "drivesync" }
   Assert-Equal ("False " + (Get-ClmText "server.driveOff")) ("" + $r.Ok + " " + $r.Msg) "web action : synchro sans Drive"

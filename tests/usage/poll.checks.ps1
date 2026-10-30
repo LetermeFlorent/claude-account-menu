@@ -44,10 +44,10 @@ try {
   Remove-Item -LiteralPath $pollPath -Force -ErrorAction SilentlyContinue
   $cmd = Get-CliCommand @("--usage-poll", "45")
   $lines = @(Invoke-CliCommand $cmd @("--usage-poll", "45") 6>&1 | ForEach-Object { "" + $_ })
-  Assert-Equal "lecture de l'API de suivi de ce PC : toutes les 45 s|0" ($lines -join "|") "cli delai de lecture ecrit"
+  Assert-Equal ((Get-ClmText "cli.usagePoll.done" @(45)) + "|0") ($lines -join "|") "cli delai de lecture ecrit"
   Assert-Equal 45 (Read-UsagePollSeconds) "cli delai de lecture relu"
   $lines = @(Invoke-CliCommand (Get-CliCommand @("--usage-poll")) @("--usage-poll") 6>&1 | ForEach-Object { "" + $_ })
-  Assert-Equal "--usage-poll attend un nombre de secondes entre 15 et 600|1" ($lines -join "|") "cli delai de lecture manquant"
+  Assert-Equal ((Get-ClmText "cli.usagePoll.needs") + "|1") ($lines -join "|") "cli delai de lecture manquant"
   $lines = @(Invoke-CliCommand (Get-CliCommand @("--usage-poll", "3")) @("--usage-poll", "3") 6>&1 | ForEach-Object { "" + $_ })
   Assert-Equal 1 $lines[-1] "cli delai de lecture trop court refuse"
   Assert-Equal 45 (Read-UsagePollSeconds) "cli refus sans rien changer"
