@@ -1,8 +1,8 @@
-. Import-ClmModule claude-menu-card-cache
+. Import-ClmModule claude-menu-card-cache, claude-text, claude-ui-width
 function Get-SegsLength {
   param($Row)
   $n = 0
-  foreach ($s in $Row) { $n += $s[0].Length }
+  foreach ($s in $Row) { $n += Get-DisplayWidth $s[0] }
   return $n
 }
 
@@ -13,7 +13,7 @@ function Add-RightSegs {
   $len = 0
   while ($k -lt $Right.Count) {
     $len = 0
-    for ($j = $k; $j -lt $Right.Count; $j++) { $len += $Right[$j][0].Length }
+    for ($j = $k; $j -lt $Right.Count; $j++) { $len += Get-DisplayWidth $Right[$j][0] }
     if ($used + 2 + $len -le $End) { break }
     $k++
   }
@@ -47,12 +47,12 @@ function Get-CardBody {
     Add-WaitSegs $rows[0] "5h" $L.Cells $Now
     if ($n -eq 1) { $rows[0].Add(@("   ", $script:Ink.Text, $false)); Add-WaitSegs $rows[0] "7d" $L.Cells $Now }
     else { Add-WaitSegs $rows[1] "7d" $L.Cells $Now }
-    $rows[0].Add(@("  lecture...", $script:Ink.Dim, $false))
+    $rows[0].Add(@(("  " + (Get-ClmText "menu.card.reading")), $script:Ink.Dim, $false))
   } elseif ($n -eq 1) {
-    $rows[0].AddRange((Get-CompactUsageSegs $u $L.Cells $v $E.T5 $E.T7 $Now))
+    $rows[0].AddRange((Get-CompactUsageSegs @{ Usage = $u; Cells = $L.Cells; View = $v; Tween5 = $E.T5; Tween7 = $E.T7; Now = $Now }))
   } else {
-    Add-UsageSegs $rows[0] "5h" $E.T5 $v.Left5 $v.Pace5 $L.Cells $Now $true
-    Add-UsageSegs $rows[1] "7d" $E.T7 $v.Left7 $v.Pace7 $L.Cells $Now $true
+    Add-UsageSegs @{ Segs = $rows[0]; Kind = "5h"; Tween = $E.T5; Left = $v.Left5; Pace = $v.Pace5; Cells = $L.Cells; Now = $Now; Wide = $true }
+    Add-UsageSegs @{ Segs = $rows[1]; Kind = "7d"; Tween = $E.T7; Left = $v.Left7; Pace = $v.Pace7; Cells = $L.Cells; Now = $Now; Wide = $true }
   }
   return ,$rows
 }
@@ -97,10 +97,11 @@ function Get-CardHead {
 }
 
 function Add-CardRows {
-  param($Rows, $Fades, $E, [int]$I, $L, [double]$P, [double]$Now)
-  $w = [math]::Max(0, 1 - [math]::Abs($P - $I))
+  param($Request)
+  $now = [double]$Request.Now
+  $w = [math]::Max(0, 1 - [math]::Abs([double]$Request.Position - [int]$Request.Index))
   $fade = 1 - 0.35 * (1 - $w)
-  if ($null -ne $E.In) { $fade = $fade * (Get-TweenValue $E.In $Now) }
-  $out = Get-CardRows $E $I $L $w $Now
-  foreach ($r in $out) { $Rows.Add($r); $Fades.Add($fade) }
+  if ($null -ne $Request.Entry.In) { $fade = $fade * (Get-TweenValue $Request.Entry.In $now) }
+  $out = Get-CardRows $Request.Entry ([int]$Request.Index) $Request.Layout $w $now
+  foreach ($r in $out) { $Request.Rows.Add($r); $Request.Fades.Add($fade) }
 }

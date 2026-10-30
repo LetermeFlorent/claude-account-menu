@@ -10,10 +10,10 @@ function Invoke-BootBarFrames {
   $ui | Add-Member -MemberType ScriptMethod -Name Write -Value {
     param($Text)
     $script:BootOut.Add($Text)
-    if ($Text.Contains("demarrage")) { $script:BootLeft-- }
+    if ($Text.Contains((Get-ClmText "menu.boot.starting"))) { $script:BootLeft-- }
     if ($script:BootLeft -le 0) { $script:BootCtl.Stop = $true }
   }
-  & ([scriptblock]::Create($script:BootBarScript)) ([PSCustomObject]@{ UI = $ui }) $Ctl $Loaded $Total "demarrage" 20 $Motion $script:BootLook
+  & ([scriptblock]::Create($script:BootBarScript)) ([PSCustomObject]@{ UI = $ui }) $Ctl $Loaded $Total (Get-ClmText "menu.boot.starting") 20 $Motion $script:BootLook
   return ,$script:BootOut.ToArray()
 }
 
@@ -29,7 +29,7 @@ foreach ($n in 1..5) { [void]$loaded.Add("f" + $n) }
 
 $ctl = [hashtable]::Synchronized(@{ Stop = $false; Ready = $false; Done = $false; MaxMs = 10000 })
 $frames = Invoke-BootBarFrames $ctl $loaded 10
-$draw = @($frames | Where-Object { $_.Contains("demarrage") })
+$draw = @($frames | Where-Object { $_.Contains((Get-ClmText "menu.boot.starting")) })
 Assert-True ($draw.Count -eq 10) "barre de demarrage : une image par tour jusqu'a l'arret"
 Assert-Equal ($esc + "[?25l") $frames[0] "barre de demarrage : curseur cache d'abord"
 Assert-Equal ("`r" + $esc + "[0m" + $esc + "[2K" + $esc + "[?25h") $frames[$frames.Count - 1] "barre de demarrage : ligne effacee et curseur rendu a la fin"
@@ -52,13 +52,13 @@ $frames = Invoke-BootBarFrames $ctl $loaded 10
 Assert-True ($frames.Count -eq 2 -and $ctl.Done) "barre de demarrage : arretee avant la premiere image, rien de dessine"
 
 $ctl = [hashtable]::Synchronized(@{ Stop = $false; Ready = $false; Done = $false; MaxMs = 10000 })
-$plain = @((Invoke-BootBarFrames $ctl $loaded 10 $false) | Where-Object { $_.Contains("demarrage") })
+$plain = @((Invoke-BootBarFrames $ctl $loaded 10 $false) | Where-Object { $_.Contains((Get-ClmText "menu.boot.starting")) })
 Assert-True ($plain.Count -eq 10 -and @($plain | Where-Object { $_.Contains($script:BootLook.Sweep) }).Count -eq 0) "barre de demarrage : sans animation, pas de reflet"
 $ctl = [hashtable]::Synchronized(@{ Stop = $false; Ready = $false; Done = $false; MaxMs = 10000 })
 $empty = New-Object 'System.Collections.Generic.HashSet[string]'
-$moving = @((Invoke-BootBarFrames $ctl $empty 10 $true) | Where-Object { $_.Contains("demarrage") })
+$moving = @((Invoke-BootBarFrames $ctl $empty 10 $true) | Where-Object { $_.Contains((Get-ClmText "menu.boot.starting")) })
 $ctl = [hashtable]::Synchronized(@{ Stop = $false; Ready = $false; Done = $false; MaxMs = 150 })
-$cut = @((Invoke-BootBarFrames $ctl $empty 10 $false 1000) | Where-Object { $_.Contains("demarrage") })
+$cut = @((Invoke-BootBarFrames $ctl $empty 10 $false 1000) | Where-Object { $_.Contains((Get-ClmText "menu.boot.starting")) })
 Assert-True ($cut.Count -ge 1 -and $cut.Count -lt 1000 -and $ctl.Done) "barre de demarrage : s'arrete seule au bout du temps maximum"
 Assert-True (@($moving | Where-Object { $_.Contains($script:BootLook.Sweep) }).Count -gt 0) "barre de demarrage : reflet qui passe avec l'animation"
 

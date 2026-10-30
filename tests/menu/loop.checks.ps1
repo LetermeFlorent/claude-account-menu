@@ -98,7 +98,7 @@ try {
   $script:LoginFails = $true
   $script:DriveOn = $false
   Assert-Null (Invoke-WithKeys @("y", [ConsoleKey]::Escape)) "y sans Drive : menu garde"
-  Assert-Equal "  connexion Drive impossible : refus" $script:MenuState.Msg[0] "y sans Drive : echec affiche"
+  Assert-Equal ("  " + (Get-ClmText "menu.loop.fail.drive.login" @("refus"))) $script:MenuState.Msg[0] "y sans Drive : echec affiche"
   Assert-True (-not $script:DriveJob.Connected) "y sans Drive : echec, toujours deconnecte"
   $script:LoginFails = $false
   $null = Invoke-WithKeys @("y", [ConsoleKey]::Escape)

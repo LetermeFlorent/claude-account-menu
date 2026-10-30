@@ -10,23 +10,23 @@ function New-TimerCard {
 
 $e = New-TimerCard "a" 10 10
 $e.NextAt = 31000
-Assert-Equal "maj 30s" (Get-EntryTimer $e $false 1000 5000)[0] "compteur au depart"
-Assert-Equal "maj 8s" (Get-EntryTimer $e $false 23500 5000)[0] "compteur arrondi a la seconde du dessus"
-Assert-Equal "maj 0s" (Get-EntryTimer $e $false 40000 5000)[0] "compteur jamais negatif"
+Assert-Equal (Get-ClmText "menu.timer.update" @("30s")) (Get-EntryTimer $e $false 1000 5000)[0] "compteur au depart"
+Assert-Equal (Get-ClmText "menu.timer.update" @("8s")) (Get-EntryTimer $e $false 23500 5000)[0] "compteur arrondi a la seconde du dessus"
+Assert-Equal (Get-ClmText "menu.timer.update" @("0s")) (Get-EntryTimer $e $false 40000 5000)[0] "compteur jamais negatif"
 $e.NextAt = 186000
-Assert-Equal "maj 3m05s" (Get-EntryTimer $e $false 1000 5000)[0] "compteur en minutes"
+Assert-Equal (Get-ClmText "menu.timer.update" @("3m05s")) (Get-EntryTimer $e $false 1000 5000)[0] "compteur en minutes"
 $e.U.LimitedUntil = 5250
-Assert-Equal "pause API 3m05s" (Get-EntryTimer $e $false 1000 5000)[0] "pause de l'API"
+Assert-Equal (Get-ClmText "menu.timer.api_pause" @("3m05s")) (Get-EntryTimer $e $false 1000 5000)[0] "pause de l'API"
 Assert-Equal ($script:Levels["7d"][1] -join " ") ((Get-EntryTimer $e $false 1000 5000)[1] -join " ") "pause en orange"
-Assert-Equal "maj 3m05s" (Get-EntryTimer $e $false 1000 5300)[0] "pause finie"
+Assert-Equal (Get-ClmText "menu.timer.update" @("3m05s")) (Get-EntryTimer $e $false 1000 5300)[0] "pause finie"
 $e.U.Error = "panne"
-Assert-Equal "reessai 3m05s" (Get-EntryTimer $e $false 1000 5000)[0] "echec avant la pause"
+Assert-Equal (Get-ClmText "menu.timer.retry" @("3m05s")) (Get-EntryTimer $e $false 1000 5000)[0] "echec avant la pause"
 Assert-Equal ($script:Ink.Alert -join " ") ((Get-EntryTimer $e $false 1000 5000)[1] -join " ") "echec en rouge"
 $e.Pending = $true
-Assert-Equal "lecture..." (Get-EntryTimer $e $false 1000 5000)[0] "relecture en cours"
+Assert-Equal (Get-ClmText "menu.timer.reading") (Get-EntryTimer $e $false 1000 5000)[0] "relecture en cours"
 $e.Seen = $false
 Assert-Equal "" (Get-EntryTimer $e $false 1000 5000)[0] "premiere lecture, pas de compteur"
-Assert-Equal "en pause" (Get-EntryTimer $e $true 1000 5000)[0] "relecture suspendue pendant une action"
+Assert-Equal (Get-ClmText "menu.timer.paused") (Get-EntryTimer $e $true 1000 5000)[0] "relecture suspendue pendant une action"
 
 
 $e = New-TimerCard "a" 10 10
@@ -63,7 +63,7 @@ $st.Entries[1].NextAt = 61000
 Assert-True (Update-MenuTimers $st 1000 5000) "compteurs dessines au premier passage"
 Assert-True (-not (Update-MenuTimers $st 1200 5000)) "meme seconde, rien a redessiner"
 Assert-True (Update-MenuTimers $st 2100 5000) "seconde suivante, compteurs redessines"
-Assert-Equal "maj 29s|maj 59s" (($st.Entries | ForEach-Object { $_.Timer[0] }) -join "|") "un compteur par compte"
+Assert-Equal (((Get-ClmText "menu.timer.update" @("29s")), (Get-ClmText "menu.timer.update" @("59s"))) -join "|") (($st.Entries | ForEach-Object { $_.Timer[0] }) -join "|") "un compteur par compte"
 
 $st = @{ Entries = @((New-TimerCard "a" 1 1), (New-TimerCard "b" 1 1), (New-TimerCard "c" 1 1)); Busy = $false; Moved = $true; Sel = 0; Dirty = $false; LoaderIdx = @(2) }
 $q = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'
@@ -82,19 +82,19 @@ foreach ($x in $st.Entries) { $x.Acc = [PSCustomObject]@{ Label = $x.U.Label }; 
 Request-EntryRead $st 1000 5000
 Assert-True $st.Entries[0].Force "relecture forcee demandee sur le compte choisi"
 Assert-Equal 1000 $st.Entries[0].NextAt "compte force a echeance tout de suite"
-Assert-Equal "  a : relecture demandee" $st.Msg[0] "message de relecture"
-Assert-Equal "lecture..." (Get-EntryTimer $st.Entries[0] $false 1000 5000)[0] "compte force affiche lecture"
+Assert-Equal ("  a : " + (Get-ClmText "menu.state.reread_requested")) $st.Msg[0] "message de relecture"
+Assert-Equal (Get-ClmText "menu.timer.reading") (Get-EntryTimer $st.Entries[0] $false 1000 5000)[0] "compte force affiche lecture"
 Assert-Equal "0" ((Get-DueEntries $st 1000) -join ",") "compte force relu au prochain passage"
 $st.Sel = 1
 Request-EntryRead $st 1000 5000
 Assert-True (-not $st.Entries[1].Force) "compte deja en lecture, rien de plus"
-Assert-Equal "  b : lecture deja en cours" $st.Msg[0] "message lecture en cours"
+Assert-Equal ("  b : " + (Get-ClmText "menu.state.read_in_progress")) $st.Msg[0] "message lecture en cours"
 $st.Sel = 2
 $st.Entries[2].U.LimitedUntil = 5125
 Request-EntryRead $st 1000 5000
 Assert-True (-not $st.Entries[2].Force) "pause API respectee"
 Assert-Equal 90000 $st.Entries[2].NextAt "pause API, planning inchange"
-Assert-Equal "  c : API en pause, reessai dans 2m05s" $st.Msg[0] "message pause API"
+Assert-Equal ("  c : " + (Get-ClmText "menu.state.api_paused" @("2m05s"))) $st.Msg[0] "message pause API"
 
 $keptLoader = (Get-Item "function:Start-UsageLoader").ScriptBlock
 function Start-UsageLoader { param($Accounts, [string]$Source, [string]$Reader = "Get-AccountUsage", $Runspace) return @{ Reader = $Reader; Count = @($Accounts).Count } }
@@ -110,17 +110,17 @@ $st.Moved = $true
 $fresh = [PSCustomObject]@{ Label = "a"; Email = "a@x.fr"; Plan = ""; Error = $null; Age = $null; Expired = $false; LimitedUntil = $null; Pct5 = 12; Reset5 = $null; Pct7 = 4; Reset7 = $null }
 Set-UsageResult $st @(0, $fresh, $null) 2000
 Assert-True (-not $st.Entries[0].Force) "demande consommee au resultat"
-Assert-True ($st.Msg[0] -match "^  a : quotas relus a \d\d:\d\d:\d\d \(5h 12 %, 7j 4 %\)$") "resultat de la relecture annonce"
+Assert-True ($st.Msg[0] -match ("^  a : " + ([regex]::Escape((Get-ClmText "menu.timer.forced.reread" @("@@", (Get-ClmText "menu.timer.forced.percents" @(12, 4))))) -replace "@@", "\d\d:\d\d:\d\d") + "$")) "resultat de la relecture annonce"
 $st.Msg = @("autre", $null)
 Set-UsageResult $st @(0, $fresh, $null) 2000
 Assert-Equal "autre" $st.Msg[0] "lecture ordinaire, message garde"
 $fresh.Age = 12
-Assert-Equal "  a : deja a jour, lu il y a 12s (5h 12 %, 7j 4 %)" (Get-ForcedReadMsg $st.Entries[0])[0] "cache de moins de 30 s annonce"
+Assert-Equal ("  a : " + (Get-ClmText "menu.timer.forced.up_to_date" @("12s", (Get-ClmText "menu.timer.forced.percents" @(12, 4))))) (Get-ForcedReadMsg $st.Entries[0])[0] "cache de moins de 30 s annonce"
 $fresh.LimitedUntil = 5090
-Assert-Equal "  a : l'API refuse la relecture, reessai dans 1m30s" (Get-ForcedReadMsg $st.Entries[0] 5000)[0] "refus de l'API annonce"
+Assert-Equal ("  a : " + (Get-ClmText "menu.timer.forced.api_refused" @("1m30s"))) (Get-ForcedReadMsg $st.Entries[0] 5000)[0] "refus de l'API annonce"
 $fresh.LimitedUntil = $null
 $fresh.Error = "jeton expire"
-Assert-Equal "  a : relecture impossible, jeton expire" (Get-ForcedReadMsg $st.Entries[0])[0] "erreur de relecture annoncee"
+Assert-Equal ("  a : " + (Get-ClmText "menu.timer.forced.failed" @("jeton expire"))) (Get-ForcedReadMsg $st.Entries[0])[0] "erreur de relecture annoncee"
 
 $st = @{ Entries = @((New-TimerCard "a" 1 1), (New-TimerCard "b" 1 1)); Busy = $false; Moved = $true; Sel = 0; Dirty = $false; Msg = $null }
 function Start-UsageLoader { param($Accounts, [string]$Source, [string]$Reader = "Get-AccountUsage", $Runspace) return @{ Runspace = $Runspace } }

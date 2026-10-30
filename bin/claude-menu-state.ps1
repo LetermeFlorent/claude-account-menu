@@ -1,4 +1,4 @@
-. Import-ClmModule claude-usage-live
+. Import-ClmModule claude-usage-live, claude-text
 
 function New-MenuEntry {
   param($Acc, $Cache, [double]$Now)
@@ -88,9 +88,9 @@ function Request-EntryRead {
   if ($Index -lt 0) { $Index = $State.Sel }
   $e = $State.Entries[$Index]
   $pause = [long]$e.U.LimitedUntil - $UnixNow
-  if ($e.Pending) { $text = "lecture deja en cours" }
-  elseif ($pause -gt 0) { $text = "API en pause, reessai dans " + (Format-Countdown $pause) }
-  else { $e.Force = $true; $e.NextAt = $Now; $text = "relecture demandee" }
+  if ($e.Pending) { $text = Get-ClmText "menu.state.read_in_progress" }
+  elseif ($pause -gt 0) { $text = Get-ClmText "menu.state.api_paused" @(Format-Countdown $pause) }
+  else { $e.Force = $true; $e.NextAt = $Now; $text = Get-ClmText "menu.state.reread_requested" }
   $State.Msg = @(("  " + $e.Acc.Label + " : " + $text), $script:Ink.Dim)
   $State.Dirty = $true
 }
@@ -120,7 +120,7 @@ function Step-MenuLoader {
   foreach ($i in $State.LoaderIdx) {
     $e = $State.Entries[$i]
     if (-not $e.Pending) { continue }
-    if ($null -ne $ld.Ctl.Error) { $e.U.Error = "lecture impossible : " + $ld.Ctl.Error }
+    if ($null -ne $ld.Ctl.Error) { $e.U.Error = Get-ClmText "menu.state.read_failed" @($ld.Ctl.Error) }
     $e.Pending = $false
     $e.NextAt = Get-NextReadAt $e $Now 0 $State.Jitter $State.PollSec
     Complete-ForcedRead $State $e

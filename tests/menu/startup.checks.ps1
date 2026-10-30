@@ -16,7 +16,7 @@ try {
   Open-MenuSession $true $true
   $script:Su = $script:Startup
   Assert-Equal "clm|Claude Code|Drive" (Get-StepList "Label") "ouverture : une barre par etape"
-  Assert-Equal "|apres clm|apres clm" (Get-StepList "Text") "ouverture : Claude Code et Drive attendent clm"
+  Assert-Equal ("|" + (Get-ClmText "menu.startup.after" @("clm")) + "|" + (Get-ClmText "menu.startup.after" @("clm"))) (Get-StepList "Text") "ouverture : Claude Code et Drive attendent clm"
   Assert-Equal "3 1" ("" + $script:MenuState.Entries.Count + " " + $script:MenuLoads) "ouverture : comptes et quotas tout de suite"
   Assert-True ($script:DriveJob.Connected -and $script:DriveStarts -eq 0) "ouverture : Drive pret, synchro pas encore lancee"
   Assert-Equal 1 $script:DriveHolds "ouverture : synchro chargee en avance pendant la verification de clm"
@@ -25,7 +25,7 @@ try {
   Assert-True (Invoke-StartupTicks) "clm : barre redessinee au demarrage"
   Assert-Equal "Find-ClmUpdate" ($script:Loads -join "|") "clm : recherche lancee a part"
   Assert-True $script:ClmChecked "clm : pas de nouvelle recherche en mode texte"
-  Assert-Equal "recherche d'une nouvelle version|apres clm|apres clm" (Get-StepList "Text") "clm : recherche affichee"
+  Assert-Equal ("recherche d'une nouvelle version|" + (Get-ClmText "menu.startup.after" @("clm")) + "|" + (Get-ClmText "menu.startup.after" @("clm"))) (Get-StepList "Text") "clm : recherche affichee"
   Assert-True (-not (Invoke-StartupTicks)) "clm : rien a redessiner pendant la recherche"
   Assert-True (Test-StartupBlocking $script:Su) "clm : comptes caches pendant la verification"
   $script:Work.Ctl.Done = $true
@@ -42,7 +42,7 @@ try {
   $run.Watch = @{ Seen = $true; Settled = $false; Bytes = 45MB; Size = 100MB }
   $null = Invoke-StartupTicks
   Assert-Equal "45 telechargement 2.1.300  45 / 100 Mo" ("" + $script:Su.Steps[1].Pct + " " + $script:Su.Steps[1].Text) "Claude Code : telechargement suivi"
-  Assert-Equal "preparation" $script:Su.Steps[2].Text "Drive : en cours pendant Claude Code"
+  Assert-Equal (Get-ClmText "menu.startup.preparing") $script:Su.Steps[2].Text "Drive : en cours pendant Claude Code"
   $null = Invoke-StartupTicks
   Assert-Equal "a jour (2.1.292)" $script:Su.Steps[1].Text "Claude Code a jour : annonce"
   Assert-Equal "  a, b, c : Claude Code a jour (2.1.292)" $script:St.Msg[0] "Claude Code a jour : resultat sous les comptes"
@@ -51,7 +51,7 @@ try {
   Assert-Equal "30 3/10 fichiers" ("" + $script:Su.Steps[2].Pct + " " + $script:Su.Steps[2].Text) "Drive : fichiers faits sur le total"
   $script:DriveJob.Loader = $null
   $null = Invoke-StartupTicks 2
-  Assert-Equal "a jour" $script:Su.Steps[2].Text "Drive : synchro finie"
+  Assert-Equal (Get-ClmText "menu.startup.up_to_date") $script:Su.Steps[2].Text "Drive : synchro finie"
   Assert-Equal "True|False|False" (Get-StepList "Gone") "clm a jour : ligne effacee, Claude Code et Drive gardes un instant"
   Assert-Equal 3 (Get-StartupRowCount $script:Su) "clm a jour : une rangee de moins"
   Assert-True (-not $script:Su.Hidden) "fin : barres gardees un instant"
@@ -80,9 +80,9 @@ try {
   $null = Invoke-StartupTicks; $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks
   Assert-Equal "failed installation impossible : disque plein" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "installation de clm ratee : barre en erreur"
-  Assert-Equal "  mise a jour de clm impossible : disque plein" $script:St.Msg[0] "installation de clm ratee : annoncee tout de suite"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.clm_update_failed" @("disque plein"))) $script:St.Msg[0] "installation de clm ratee : annoncee tout de suite"
   $null = Invoke-StartupTicks 4
-  Assert-Equal "  mise a jour de clm impossible : disque plein   a, b, c : Claude Code a jour (2.1.292)" $script:St.Msg[0] "installation de clm ratee : erreur puis resultat de Claude Code"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.clm_update_failed" @("disque plein")) + "   a, b, c : Claude Code a jour (2.1.292)") $script:St.Msg[0] "installation de clm ratee : erreur puis resultat de Claude Code"
   Assert-Equal $script:Ink.Alert $script:St.Msg[1] "installation de clm ratee : couleur d'alerte"
   Assert-True (-not $script:ClmUpdated -and $null -eq $script:Su.Exit) "installation de clm ratee : pas de redemarrage"
   $script:FakeInstallError = $null

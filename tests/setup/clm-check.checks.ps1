@@ -54,10 +54,10 @@ Assert-Equal "selfupdate" (Get-MenuAction (New-KeyInfo "u") 3).Name "u met clm a
 
 $st = @{ Version = "clm v33" }
 $wide = Get-MenuHeaderRow $st 80
-Assert-True ((Get-HeaderText $wide) -match "^  Comptes Claude Code  clm v33  \[maj dispo\] +\d\d:\d\d$") "bouton a cote de la version"
+Assert-True ((Get-HeaderText $wide) -match ("^  " + [regex]::Escape((Get-ClmText "menu.screen.title")) + "  clm v33  " + [regex]::Escape("[" + (Get-ClmText "menu.screen.update_available") + "]") + " +\d\d:\d\d$")) "bouton a cote de la version"
 Assert-Equal "u" (Get-FooterKeyAt @(, $wide) 37 0) "clic sur le bouton, touche u"
 Assert-Null (Get-FooterKeyAt @(, $wide) 25 0) "clic sur la version, rien"
-Assert-True ((Get-HeaderText (Get-MenuHeaderRow $st 46)) -match "^  Comptes Claude Code  \[maj dispo\] +\d\d:\d\d$") "fenetre etroite, bouton garde, version retiree"
+Assert-True ((Get-HeaderText (Get-MenuHeaderRow $st 46)) -match ("^  " + [regex]::Escape((Get-ClmText "menu.screen.title")) + "  " + [regex]::Escape("[" + (Get-ClmText "menu.screen.update_available") + "]") + " +\d\d:\d\d$")) "fenetre etroite, bouton garde, version retiree"
 foreach ($w in 30, 46, 53, 80) { Assert-True ((Get-HeaderText (Get-MenuHeaderRow $st $w)).Length -le $w - 2) ("en-tete avec bouton dans la largeur " + $w) }
 $script:ClmCheck = $null
-Assert-True ((Get-HeaderText (Get-MenuHeaderRow $st 80)) -notmatch "maj dispo") "pas de mise a jour, pas de bouton"
+Assert-True ((Get-HeaderText (Get-MenuHeaderRow $st 80)) -notmatch [regex]::Escape((Get-ClmText "menu.screen.update_available"))) "pas de mise a jour, pas de bouton"

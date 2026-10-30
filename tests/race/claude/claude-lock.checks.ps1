@@ -47,7 +47,7 @@ try {
   New-StartupCase @("claude")
   $held = Open-MachineLock $script:ClaudeUpdateLock
   try { $null = Invoke-StartupTicks 6 } finally { Close-MachineLock $held }
-  Assert-Equal "done ok laissee a un autre clm" ($script:Su.Steps[0].State + " " + $script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "autre clm bloque trop longtemps : Claude Code laisse, sans erreur"
+  Assert-Equal ("done ok " + (Get-ClmText "menu.startup.left_to_other_clm")) ($script:Su.Steps[0].State + " " + $script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "autre clm bloque trop longtemps : Claude Code laisse, sans erreur"
   Assert-Equal "0 " ("" + $script:ClaudeStarts + " " + $script:St.Msg[0]) "autre clm bloque trop longtemps : aucun message"
   $script:ClaudeUpdateWaitMs = $claudeWait
 
