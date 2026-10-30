@@ -23,7 +23,7 @@ function Complete-ClmStep {
 
 function Complete-ClmFind {
   param($Su, $Step, $State, $R, [double]$Now)
-  if ($R.Error -eq $script:ClmUnknownText) { $Su.ClmError = $R.Error; $State.Msg = Add-ClmFailure @("", $script:Ink.Dim) $R.Error }
+  if ($R.Error -eq (Get-ClmUnknownText)) { $Su.ClmError = $R.Error; $State.Msg = Add-ClmFailure @("", $script:Ink.Dim) $R.Error }
   if ($R.Error) { Complete-ClmStep $Step "failed" (Get-ClmText "update.startup.searchFailed") $Now; return }
   if ($null -eq $R.Value) { Write-ClmChecked; Complete-ClmStep $Step "ok" (Get-ClmText "update.startup.upToDate") $Now; return }
   $Step.Found = $R.Value
