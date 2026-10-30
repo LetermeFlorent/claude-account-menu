@@ -34,6 +34,7 @@ function Read-PlanThrice {
 }
 
 try {
+  if ($planOs -eq "MacOS") { $script:OsName = "Linux" }
   Write-PlanCredential "pro"
   $script:PlanReads = 0
   Assert-Equal "Pro|Pro|Pro" (Read-PlanThrice) "forfait : nom lu sur trois lectures"
