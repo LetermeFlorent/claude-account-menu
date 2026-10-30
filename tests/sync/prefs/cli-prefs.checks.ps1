@@ -45,7 +45,7 @@ try {
   $cat.PerPc = $true
   Save-SyncCatalog $cat
   $os = $script:OsName
-  $want = @(($script:PrefsTitle + ", " + (Get-ClmText "drive.status.mcp.perpc")), "Skills", "  [x] skill:*  tous les skills  coches : 1 sur 1", "  [x] skill:alpha", "MCP", "  [-] mcp:*  tous les MCP  coches : 4 sur 5", "  [x] global:blender  ce PC", "  [ ] mcp:|loin  perso, Autre", ("  [x] mcp:Documents/p|outil  p, " + $os), ("  [x] mcp:|outil  perso, " + $os), "  [x] global:roblox  ce PC")
+  $want = @(((Get-ClmText "sync.prefs.title") + ", " + (Get-ClmText "drive.status.mcp.perpc")), (Get-ClmText "sync.prefs.head.skills"), ("  [x] skill:*  " + (Get-ClmText "sync.prefs.all.skills") + "  " + (Get-ClmText "sync.prefs.checkedCount" @(1, 1))), "  [x] skill:alpha", (Get-ClmText "sync.prefs.head.mcp"), ("  [-] mcp:*  " + (Get-ClmText "sync.prefs.all.mcp") + "  " + (Get-ClmText "sync.prefs.checkedCount" @(4, 5))), ("  [x] global:blender  " + (Get-ClmText "sync.prefs.thisPc")), ("  [ ] mcp:|loin  " + (Get-ClmText "sync.prefs.home") + ", Autre"), ("  [x] mcp:Documents/p|outil  p, " + $os), ("  [x] mcp:|outil  " + (Get-ClmText "sync.prefs.home") + ", " + $os), ("  [x] global:roblox  " + (Get-ClmText "sync.prefs.thisPc")))
   Assert-Equal ($want -join "`n") ((Get-CliPrefsLines) -join "`n") "--prefs : cases et ids par categorie"
 
   Assert-Equal 1 (Invoke-PrefsCli @("--prefs-off", "outil")) "nom porte par deux MCP : refuse"
@@ -67,7 +67,7 @@ try {
   Assert-Equal 0 (Read-SyncChoice).Erase.skills.Count "--prefs-erase sans --yes : rien demande"
   Assert-Equal 0 (Invoke-PrefsCli @("--prefs-erase", "skill:alpha", "--yes")) "--prefs-erase --yes : reussi"
   Assert-Equal "alpha" ((Read-SyncChoice).Erase.skills -join ",") "--prefs-erase : effacement demande"
-  Assert-True ((Get-CliPrefsLines) -contains ("  [ ] skill:alpha  " + (Get-ClmText "drive.prefs.erasing"))) "--prefs : effacement en attente affiche"
+  Assert-True ((Get-CliPrefsLines) -contains ("  [ ] skill:alpha  " + (Get-ClmText "sync.prefs.erasing"))) "--prefs : effacement en attente affiche"
   Assert-Equal 0 (Invoke-PrefsCli @("--prefs-on", "alpha")) "--prefs-on sur un effacement : reussi"
   $ch = Read-SyncChoice
   Assert-True ($ch.Erase.skills.Count -eq 0 -and -not $ch.skills.ContainsKey("alpha")) "--prefs-on : effacement annule, case au defaut"

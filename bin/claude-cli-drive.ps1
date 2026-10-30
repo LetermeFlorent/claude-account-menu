@@ -47,7 +47,7 @@ function Format-PrefsItem {
   $t = "  " + $box + " " + (Get-PrefsId $Item)
   if ($Item.All) { $t += "  " + $Item.Label }
   if ($Item.Tag) { $t += "  " + $Item.Tag }
-  if ($Item.Erasing) { $t += "  " + (Get-ClmText "drive.prefs.erasing") }
+  if ($Item.Erasing) { $t += "  " + (Get-ClmText "sync.prefs.erasing") }
   return $t
 }
 

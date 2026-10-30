@@ -160,7 +160,6 @@
   "drive.passphrase.busy": "another clm is working on Drive, try again in a moment",
   "drive.prefs.ambiguous": "ambiguous setting: {0}, pick one of {1}",
   "drive.prefs.erase.line": "erase {0} everywhere: {1}",
-  "drive.prefs.erasing": "erased at next sync",
   "drive.prefs.group.erase": "a whole group cannot be erased, give the ids one by one",
   "drive.prefs.none": "no skill or MCP to set for now",
   "drive.prefs.ref.missing": "give at least one id, see clm --prefs",
