@@ -1,4 +1,4 @@
-. Import-ClmModule claude-drive-creds, claude-text
+. Import-ClmModule claude-lazy-load, claude-text
 $script:OauthTokenUrl = "https://platform.claude.com/v1/oauth/token"
 $script:OauthClientId = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 
@@ -23,7 +23,7 @@ function Save-RefreshedCredential {
 
 function Update-AccountToken {
   param($Acc, $Cred)
-  if ($script:OsName -eq "MacOS") { return $null }
+  if ($script:OsName -eq "MacOS" -or -not (Import-ClmGroup drive)) { return $null }
   $fresh = Receive-DriveCredential $Acc
   if ($null -ne $fresh) {
     if (Test-CredentialUsable $fresh) { return $fresh }

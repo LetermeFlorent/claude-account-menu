@@ -1,4 +1,4 @@
-. Import-ClmModule claude-drive-sync, claude-drive-lock, claude-text
+. Import-ClmModule claude-drive-config, claude-lazy-load, claude-text
 $script:DriveJob = $null
 $script:DriveQuitWaitMs = 2000
 $script:DriveRetryMs = 60000
@@ -15,7 +15,7 @@ function Test-DriveLockHeld {
 
 function Update-DriveElsewhere {
   param($Job, [long]$NowMs)
-  if (-not $Job.Connected -or $NowMs - $Job.ProbeAt -lt $script:DriveProbeMs) { return $false }
+  if (-not $Job.Connected -or $NowMs - $Job.ProbeAt -lt $script:DriveProbeMs -or -not (Import-ClmGroup drive)) { return $false }
   $Job.ProbeAt = $NowMs
   $held = Test-DriveLockHeld
   if ($held -eq $Job.Elsewhere) { return $false }
@@ -29,7 +29,7 @@ function Update-DriveElsewhere {
 
 function Start-DriveJob {
   param($Job, [switch]$Hold)
-  if ($null -eq $Job) { return }
+  if ($null -eq $Job -or -not (Import-ClmGroup drive)) { return }
   if ($null -ne $Job.Loader) { if (-not $Hold) { Resume-UsageLoader $Job.Loader }; return }
   $Job.Ctl = [hashtable]::Synchronized(@{ Stop = $false; Progress = "" })
   $Job.Seen = ""

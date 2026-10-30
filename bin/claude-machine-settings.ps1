@@ -1,4 +1,4 @@
-. Import-ClmModule claude-platform, claude-json, claude-json-members, claude-mcp-projects, claude-seed-hook
+. Import-ClmModule claude-platform, claude-json, claude-json-members, claude-seed-hook, claude-lazy-load
 $script:SettingsMachine = @{ Keys = [string[]]@("statusLine"); Seed = $true; Fallback = ".claude/settings.json"; Projects = $false }
 $script:McpMachineKeys = [string[]]@("mcpServers")
 $script:McpConfigPattern = [regex]'^(\.claude\.json|\.mcp\.json|\.claude[^/]*/\.claude\.json)$'
@@ -22,7 +22,7 @@ function Remove-MachineSettings {
       $out = Remove-JsonMember $out $info $i
     }
   }
-  if ($Kind.Projects) { $out = Remove-ProjectMcp $out }
+  if ($Kind.Projects) { Assert-ClmGroup mcp; $out = Remove-ProjectMcp $out }
   if (-not $Kind.Seed) { return $out }
   return Set-SeedCommand $out (Get-SeedHookCommand "Windows" $script:WindowsPowerShellCanon)
 }
@@ -69,7 +69,7 @@ function Convert-SettingsBytes {
   $text = ConvertFrom-SettingsBytes $Bytes
   $new = Remove-MachineSettings $text $Kind
   if ($Local) { $new = Add-MachineSettings $new $Members $Kind }
-  if ($Local -and $null -ne $Projects) { $set = Set-ProjectMcp $new $Projects; if ($null -ne $set) { $new = $set } }
+  if ($Local -and $null -ne $Projects) { Assert-ClmGroup mcp; $set = Set-ProjectMcp $new $Projects; if ($null -ne $set) { $new = $set } }
   if ($new -ceq $text) { return ,$Bytes }
   $out = [Text.Encoding]::UTF8.GetBytes($new)
   if (Test-Utf8Bom $Bytes) { $out = [byte[]]($script:Utf8Bom + $out) }
@@ -92,7 +92,7 @@ function Update-MachineSettingsFile {
 function Read-LocalProjectMcp {
   param([string]$Path, [string]$Fallback)
   foreach ($p in @($Path, $Fallback)) {
-    if ($p -and [IO.File]::Exists($p)) { return Read-ProjectMcp (ConvertFrom-SettingsBytes ([IO.File]::ReadAllBytes($p))) }
+    if ($p -and [IO.File]::Exists($p)) { Assert-ClmGroup mcp; return Read-ProjectMcp (ConvertFrom-SettingsBytes ([IO.File]::ReadAllBytes($p))) }
   }
   return $null
 }

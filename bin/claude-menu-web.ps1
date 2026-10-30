@@ -1,10 +1,11 @@
-. Import-ClmModule claude-web-server, claude-web-state, claude-web-lists, claude-web-actions, claude-text
+. Import-ClmModule claude-lazy-load, claude-text
 $script:WebOpen = $false
 $script:WebReopen = $false
 $script:WebFlag = "--web"
 
 function Open-MenuWeb {
   param($State)
+  if (-not (Import-ClmGroup web, drive, sync, mcp)) { $script:WebReopen = $true; return }
   try { $null = Start-WebServer @{ state = { Get-WebState $script:WebOpen }; prefs = { Get-WebPrefs }; backups = { Get-WebBackups } } }
   catch {
     $State.Msg = @(("  " + (Get-ClmText "web.menu.failed" $_.Exception.Message)), $script:Ink.Alert)
@@ -22,7 +23,7 @@ function Close-MenuWeb {
   $script:UiPoll = $null
   if ($null -ne $script:Web) { $script:WebReopen = $true }
   $script:WebOpen = $false
-  Stop-WebServer
+  if (Test-ClmGroupLoaded web) { Stop-WebServer }
 }
 
 function Get-WebRestartArgs {

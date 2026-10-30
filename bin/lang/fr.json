@@ -233,6 +233,7 @@
   "menu.cli.no.account.number": "pas de compte {0}",
   "menu.cli.ui.unavailable": "interface indisponible : {0}",
   "menu.cli.web.needs.terminal": "--web ouvre la page avec le menu de clm, dans un terminal interactif",
+  "menu.groups.replaced": "clm vient d'être mis à jour, il redémarre : recommence ensuite",
   "menu.loop.fail.add": "ajout impossible : {0}",
   "menu.loop.fail.drive.login": "connexion Drive impossible : {0}",
   "menu.loop.fail.prefs": "réglages de synchro impossibles : {0}",

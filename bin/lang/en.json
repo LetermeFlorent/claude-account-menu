@@ -233,6 +233,7 @@
   "menu.cli.no.account.number": "no account {0}",
   "menu.cli.ui.unavailable": "interface unavailable: {0}",
   "menu.cli.web.needs.terminal": "--web opens the page with the clm menu, in an interactive terminal",
+  "menu.groups.replaced": "clm was just updated and is restarting: try again afterwards",
   "menu.loop.fail.add": "add failed: {0}",
   "menu.loop.fail.drive.login": "Drive sign-in failed: {0}",
   "menu.loop.fail.prefs": "sync settings failed: {0}",

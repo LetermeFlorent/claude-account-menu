@@ -57,8 +57,8 @@ function Invoke-MenuPage {
   if ($Name -eq "restore") { return Show-RestoreMenu }
   if ($Name -eq "remove") { return Show-RemoveMenu $Sel }
   if ($Name -eq "rename") { return Show-RenameMenu $Sel }
-  if ($Name -eq "drivelogin") { return Connect-MenuDrive }
-  if ($Name -eq "prefs") { return Show-PrefsMenu }
+  if ($Name -eq "drivelogin") { if (Import-ClmGroup drive) { return Connect-MenuDrive }; return "" }
+  if ($Name -eq "prefs") { if (Import-ClmGroup drive, sync, mcp) { return Show-PrefsMenu }; return "" }
   Exit-UiScreen
   try { return Add-Account $Arg } finally { Enter-UiScreen }
 }
@@ -102,7 +102,7 @@ function Read-MenuAction {
   $act = @{ Name = "none" }
   if ($k -is [hashtable]) { $act = Get-MenuMouseAction $State $k }
   elseif ($null -ne $k) { $act = Get-MenuAction $k $State.Entries.Count }
-  elseif ($null -ne ($web = Get-WebAction)) { $act = Invoke-WebAction $web }
+  elseif ((Test-ClmGroupLoaded web) -and $null -ne ($web = Get-WebAction)) { $act = Invoke-WebAction $web }
   if ($script:UiQuit) { $act = @{ Name = "quit" } }
   return Limit-MenuAction (Get-ClmRestartAction $act) $State.Entries.Count
 }
@@ -136,7 +136,7 @@ function Invoke-MenuLoop {
     elseif ($act.Name -eq "quit" -or $act.Name -eq "restart") { return Close-AccountMenu $null }
     elseif ($act.Name -eq "offline") { $script:MenuOffline = $true; return Close-AccountMenu $null }
     elseif ($act.Name -eq "refresh") { Request-EntryRead $st $now }
-    elseif ($act.Name -eq "drivesync" -and (-not $script:DriveJob.Connected -or -not (Test-SyncKeyStored))) { Invoke-MenuCommand "drivelogin" }
+    elseif ($act.Name -eq "drivesync" -and (-not $script:DriveJob.Connected -or -not (Import-ClmGroup drive) -or -not (Test-SyncKeyStored))) { Invoke-MenuCommand "drivelogin" }
     elseif ($act.Name -eq "drivesync") { $st.Msg = Request-DriveSync $script:DriveJob; $st.Dirty = $true }
     elseif ($act.Name -eq "selfupdate") {
       if (Test-ClmUpdateReady) { $script:MenuRestart = $true; return Close-AccountMenu $null }

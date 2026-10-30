@@ -9,7 +9,7 @@ try {
   $script:BootBar = Start-BootBar $args $PSScriptRoot $script:ClmOnce
   . Import-ClmModule claude-usage, claude-menu-view, claude-menu-save, claude-menu-restore, claude-menu-select,
     claude-menu-remove, claude-menu-rename, claude-menu-prefs, claude-statusline-seed, claude-update, claude-self-update,
-    claude-sync, claude-menu-loop, claude-menu-startup, claude-drive-cli, claude-account-guard, claude-cli
+    claude-menu-loop, claude-menu-startup, claude-drive-cli, claude-account-guard, claude-cli, claude-lazy-load
 } catch { if (-not (Test-ClmReloadNeeded $script:ClmEntryStamp)) { throw } }
 if (Test-ClmReloadNeeded $script:ClmEntryStamp) {
   if (Test-Path Function:\Stop-BootBar) { Stop-BootBar }
@@ -41,12 +41,13 @@ function Assert-Online {
 function Invoke-TextStartup {
   param([bool]$Update, [bool]$Drive)
   if ($Update) { Update-ClaudeForAccounts @(Get-Accounts) }
-  if ($Drive -and (Test-DriveAuto)) { $null = Invoke-DriveCliSync $false }
+  if ($Drive -and (Test-DriveAuto) -and (Import-ClmGroup drive)) { $null = Invoke-DriveCliSync $false }
   Assert-Online
 }
 
 $cli = Get-CliCommand $args
 if ($null -ne $cli) {
+  Import-ClmGroupOrReload @("drive", "sync", "mcp") $PSCommandPath $args
   $code = Invoke-CliCommand $cli $args
   if ($script:CliRestart) { Restart-Clm $PSCommandPath $args }
   exit $code
@@ -86,7 +87,7 @@ if ($openWeb -and -not $menuMode) {
 }
 if ($null -eq $driveCli -and -not $restoreZip) { Assert-Online }
 if ($selfUpdate -and -not $menuMode -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
-if ($null -ne $driveCli) { exit (Invoke-DriveCli $driveCli) }
+if ($null -ne $driveCli) { Import-ClmGroupOrReload @("drive") $PSCommandPath $args; exit (Invoke-DriveCli $driveCli) }
 
 if ($restoreZip) {
   try {
@@ -100,6 +101,7 @@ if ($null -ne $direct) {
   $accs = @(Get-Accounts)
   if ($direct -ge $accs.Count) { Write-Output (Get-ClmText "menu.cli.no.account.number" @(($direct + 1))); exit 1 }
   Invoke-TextStartup $update $true
+  Import-ClmGroupOrReload @("drive", "sync") $PSCommandPath $args
   Start-Account $accs[$direct] $rest
   exit $LASTEXITCODE
 }
@@ -137,6 +139,7 @@ if ($script:MenuRestart) {
 }
 
 if ($null -eq $chosen) { exit 0 }
+Import-ClmGroupOrReload @("drive", "sync") $PSCommandPath $args
 Clear-Host
 Start-Account $chosen $rest
 exit $LASTEXITCODE
