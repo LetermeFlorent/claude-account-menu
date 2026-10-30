@@ -10,11 +10,11 @@ function Get-PaceInk {
 function Get-UsageView {
   param($U)
   $badge = ""
-  if ($null -eq $U.Error -and [int]$U.Pct7 -ge 100) { $badge = Get-ClmText "menu.usage.quota_7d_reached" }
-  elseif ($null -eq $U.Error -and [int]$U.Pct5 -ge 100) { $badge = Get-ClmText "menu.usage.quota_5h_reached" }
+  if ($null -eq $U.Error -and [int]$U.Pct7 -ge 100) { $badge = Get-ClmText "menu.usage.quota7dReached" }
+  elseif ($null -eq $U.Error -and [int]$U.Pct5 -ge 100) { $badge = Get-ClmText "menu.usage.quota5hReached" }
   $note = ""
-  if ($null -ne $U.Age -and $U.Expired) { $note = Get-ClmText "menu.usage.window_passed" @(Format-Age $U.Age) }
-  elseif ($null -ne $U.Age -and $U.Age -ge 60) { $note = Get-ClmText "menu.usage.read_ago" @(Format-Age $U.Age) }
+  if ($null -ne $U.Age -and $U.Expired) { $note = Get-ClmText "menu.usage.windowPassed" @(Format-Age $U.Age) }
+  elseif ($null -ne $U.Age -and $U.Age -ge 60) { $note = Get-ClmText "menu.usage.readAgo" @(Format-Age $U.Age) }
   return @{
     Left5 = Format-Left $U.Reset5; Left7 = Format-Left $U.Reset7
     Pace5 = Get-UsagePace "5h" $U.Pct5 $U.Reset5; Pace7 = Get-UsagePace "7d" $U.Pct7 $U.Reset7

@@ -17,7 +17,7 @@ try {
     Assert-True ([string]$t -cnotmatch $webFrench) ("web en anglais : aucun mot francais dans [" + $t + "]")
     Assert-True ([string]$t -cmatch '^[\x20-\x7E]*$') ("web en anglais : texte ASCII [" + $t + "]")
   }
-  Assert-Equal (Get-ClmText "menu.usage.quota_7d_reached" -Lang "en") $webView.Badge "web en anglais : badge quota 7d"
+  Assert-Equal (Get-ClmText "menu.usage.quota7dReached" -Lang "en") $webView.Badge "web en anglais : badge quota 7d"
   Assert-True ($webTexts.Count -ge 8) "web en anglais : tous les textes du menu pour la page sont verifies"
 } finally {
   if ($null -eq $webLangKept) { Remove-Item Env:CLM_LANG -ErrorAction SilentlyContinue } else { $env:CLM_LANG = $webLangKept }

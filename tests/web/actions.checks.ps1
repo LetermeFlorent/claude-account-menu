@@ -49,7 +49,7 @@ try {
 
   $script:MenuState.Entries[1].Pending = $false
   $r = Invoke-ActTest @{ do = "refresh"; acc = ".claude" }
-  Assert-Equal ("perso : " + (Get-ClmText "menu.state.reread_requested")) $r.Msg "web action : relire les quotas d'un compte"
+  Assert-Equal ("perso : " + (Get-ClmText "menu.state.rereadRequested")) $r.Msg "web action : relire les quotas d'un compte"
   Assert-True ($script:MenuState.Entries[1].Force -and $script:MenuState.Sel -eq 0) "web action : relecture sans bouger la selection"
 
   $r = Invoke-ActTest @{ do = "remove"; acc = ".claude-compte2" }

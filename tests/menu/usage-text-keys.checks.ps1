@@ -19,8 +19,8 @@ Assert-Equal "" ($stripped -join " ") "textes du menu : aucun texte francais san
 $acute = [string][char]0x00E9
 $grave = [string][char]0x00E0
 Assert-True ($tables["fr"]["menu.timer.retry"].StartsWith("r" + $acute + "essai")) "textes du menu : reessai accentue"
-Assert-True ($tables["fr"]["menu.state.read_in_progress"].Contains("d" + $acute + "j" + $grave)) "textes du menu : deja accentue"
-Assert-True ($tables["fr"]["menu.state.reread_requested"].EndsWith("demand" + $acute + "e")) "textes du menu : demandee accentue"
-Assert-True ($tables["fr"]["menu.usage.window_passed"].StartsWith("fen" + [char]0x00EA + "tre pass" + $acute + "e")) "textes du menu : fenetre passee accentue"
+Assert-True ($tables["fr"]["menu.state.readInProgress"].Contains("d" + $acute + "j" + $grave)) "textes du menu : deja accentue"
+Assert-True ($tables["fr"]["menu.state.rereadRequested"].EndsWith("demand" + $acute + "e")) "textes du menu : demandee accentue"
+Assert-True ($tables["fr"]["menu.usage.windowPassed"].StartsWith("fen" + [char]0x00EA + "tre pass" + $acute + "e")) "textes du menu : fenetre passee accentue"
 Assert-True ($tables["fr"]["menu.timer.forced.reread"].Contains("relus " + $grave + " ")) "textes du menu : relus a accentue"
-Assert-True ($tables["fr"]["menu.timer.forced.up_to_date"].StartsWith("d" + $acute + "j" + $grave + " " + $grave + " jour")) "textes du menu : deja a jour accentue"
+Assert-True ($tables["fr"]["menu.timer.forced.upToDate"].StartsWith("d" + $acute + "j" + $grave + " " + $grave + " jour")) "textes du menu : deja a jour accentue"

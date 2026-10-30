@@ -5,7 +5,7 @@ try {
   $script:FakeLatest = $script:FakeV62
   $null = Invoke-StartupTicks
   Assert-Equal "none" (Send-StartupAct "quit").Name "Echap pendant la mise a jour : menu garde"
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.stop_requested")) $script:St.Msg[0] "Echap pendant la mise a jour : attente annoncee"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.stopRequested")) $script:St.Msg[0] "Echap pendant la mise a jour : attente annoncee"
   $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks 2
   Assert-Equal "Find-ClmUpdate v62 disponible, pas installee" (($script:Loads -join "|") + " " + $script:Su.Steps[0].Text) "Echap pendant la recherche : version annoncee, rien installe"
@@ -33,18 +33,18 @@ try {
   New-StartupCase @("clm", "claude")
   $null = Invoke-StartupTicks
   Assert-Equal "none none" ((Send-StartupAct "launch").Name + " " + (Send-StartupAct "up").Name) "verification de clm : comptes caches"
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.accounts_after_clm_check")) $script:St.Msg[0] "verification de clm : raison affichee"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.accountsAfterClmCheck")) $script:St.Msg[0] "verification de clm : raison affichee"
   Assert-Equal "refresh" (Send-StartupAct "refresh").Name "relecture des quotas pendant la verification"
 
   New-StartupCase @("claude", "drive")
   $null = Invoke-StartupTicks
   Assert-Equal "none" (Send-StartupAct "save").Name "pendant les mises a jour : commandes plus tard"
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.available_after_updates")) $script:St.Msg[0] "pendant les mises a jour : raison affichee"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.availableAfterUpdates")) $script:St.Msg[0] "pendant les mises a jour : raison affichee"
   Assert-Equal "up select drivesync" ((Send-StartupAct "up").Name + " " + (Send-StartupAct "select" 2).Name + " " + (Send-StartupAct "drivesync").Name) "pendant les mises a jour : comptes accessibles"
   Assert-Equal "none" (Send-StartupAct "launch").Name "Entree pendant les mises a jour : lancement differe"
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.launch_after_updates" @("a"))) $script:St.Msg[0] "Entree pendant les mises a jour : attente annoncee"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.launchAfterUpdates" @("a"))) $script:St.Msg[0] "Entree pendant les mises a jour : attente annoncee"
   $null = Send-StartupAct "pick" 1
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.launch_after_updates" @("b"))) $script:St.Msg[0] "autre compte choisi : remplace le premier"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.launchAfterUpdates" @("b"))) $script:St.Msg[0] "autre compte choisi : remplace le premier"
   $null = Invoke-StartupTicks 3
   Assert-Null $script:Su.Exit "Claude Code fini, Drive en cours : lancement encore differe"
   $script:DriveJob.Loader = $null
@@ -87,13 +87,13 @@ try {
   $script:DriveJob.Loader = $null
   $script:DriveJob.Busy = $true
   $null = Invoke-StartupTicks
-  Assert-Equal ("run " + (Get-ClmText "menu.startup.waiting_sync") + " 2") ($script:Su.Steps[0].State + " " + $script:Su.Steps[0].Text + " " + $script:DriveStarts) "Drive : synchro deja en cours, attente puis nouvel essai"
+  Assert-Equal ("run " + (Get-ClmText "menu.startup.waitingSync") + " 2") ($script:Su.Steps[0].State + " " + $script:Su.Steps[0].Text + " " + $script:DriveStarts) "Drive : synchro deja en cours, attente puis nouvel essai"
   Assert-Equal "none" (Send-StartupAct "launch").Name "Drive : compte refuse pendant l'attente"
   $script:DriveJob.Loader = $null
   $script:T += 60000
   $null = Invoke-StartupTicks
-  Assert-Equal ("ok " + (Get-ClmText "menu.startup.left_to_other_clm")) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Drive : attente trop longue, menu libre"
+  Assert-Equal ("ok " + (Get-ClmText "menu.startup.leftToOtherClm")) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Drive : attente trop longue, menu libre"
 
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.clm_update_failed" @("x"))) (Add-ClmFailure @("", $script:Ink.Dim) "x")[0] "erreur de clm sans autre message"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.clmUpdateFailed" @("x"))) (Add-ClmFailure @("", $script:Ink.Dim) "x")[0] "erreur de clm sans autre message"
   Assert-Equal "  ok" (Add-ClmFailure @("  ok", $script:Ink.Dim) "")[0] "pas d'erreur de clm : message garde"
 } finally { Restore-StartupFakes }

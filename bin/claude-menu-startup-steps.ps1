@@ -27,7 +27,7 @@ function Receive-LoaderValue {
   Close-UsageLoader $Loader
   $r = @{ Value = $null; Error = ("" + $Loader.Ctl.Error) }
   if ($res.Count -gt 0) { $r.Value = $res[0][1]; if ($res[0][2]) { $r.Error = "" + $res[0][2] } }
-  if ($Loader.Ctl.Replaced -eq $true) { $r.Error = Get-ClmText "menu.startup.loader_replaced" }
+  if ($Loader.Ctl.Replaced -eq $true) { $r.Error = Get-ClmText "menu.startup.loaderReplaced" }
   return $r
 }
 
@@ -49,11 +49,11 @@ function Step-DriveStartup {
   }
   if ($job.Busy -and $Now -lt $Step.BusyEnd) {
     if ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() -ge $job.RetryAt) { Start-DriveJob $job }
-    return Set-StartupProgress $Step -1 (Get-ClmText "menu.startup.waiting_sync") $Now
+    return Set-StartupProgress $Step -1 (Get-ClmText "menu.startup.waitingSync") $Now
   }
   if ($job.Failed) { Complete-StartupStep $Step "failed" (Get-ClmText "menu.startup.error") $Now }
-  elseif ($job.Busy) { Complete-StartupStep $Step "ok" (Get-ClmText "menu.startup.left_to_other_clm") $Now }
-  else { Complete-StartupStep $Step "ok" (Get-ClmText "menu.startup.up_to_date") $Now }
+  elseif ($job.Busy) { Complete-StartupStep $Step "ok" (Get-ClmText "menu.startup.leftToOtherClm") $Now }
+  else { Complete-StartupStep $Step "ok" (Get-ClmText "menu.startup.upToDate") $Now }
   return $true
 }
 

@@ -88,9 +88,9 @@ function Request-EntryRead {
   if ($Index -lt 0) { $Index = $State.Sel }
   $e = $State.Entries[$Index]
   $pause = [long]$e.U.LimitedUntil - $UnixNow
-  if ($e.Pending) { $text = Get-ClmText "menu.state.read_in_progress" }
-  elseif ($pause -gt 0) { $text = Get-ClmText "menu.state.api_paused" @(Format-Countdown $pause) }
-  else { $e.Force = $true; $e.NextAt = $Now; $text = Get-ClmText "menu.state.reread_requested" }
+  if ($e.Pending) { $text = Get-ClmText "menu.state.readInProgress" }
+  elseif ($pause -gt 0) { $text = Get-ClmText "menu.state.apiPaused" @(Format-Countdown $pause) }
+  else { $e.Force = $true; $e.NextAt = $Now; $text = Get-ClmText "menu.state.rereadRequested" }
   $State.Msg = @(("  " + $e.Acc.Label + " : " + $text), $script:Ink.Dim)
   $State.Dirty = $true
 }
@@ -120,7 +120,7 @@ function Step-MenuLoader {
   foreach ($i in $State.LoaderIdx) {
     $e = $State.Entries[$i]
     if (-not $e.Pending) { continue }
-    if ($null -ne $ld.Ctl.Error) { $e.U.Error = Get-ClmText "menu.state.read_failed" @($ld.Ctl.Error) }
+    if ($null -ne $ld.Ctl.Error) { $e.U.Error = Get-ClmText "menu.state.readFailed" @($ld.Ctl.Error) }
     $e.Pending = $false
     $e.NextAt = Get-NextReadAt $e $Now 0 $State.Jitter $State.PollSec
     Complete-ForcedRead $State $e

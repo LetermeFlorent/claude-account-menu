@@ -34,7 +34,7 @@ Step-MenuLoader $st 3100
 Assert-Equal 70 $le.U.Pct5 "pause de l'API : la barre met quand meme la carte a jour"
 Assert-True ($le.U.LimitedUntil -gt $liveNow) "pause de l'API gardee"
 Assert-Equal $pauseAt $le.NextAt "pause de l'API : relecture toujours a sa fin"
-Assert-True ((Get-EntryTimer $le $false 3100)[0].StartsWith((Get-ClmText "menu.timer.api_pause" @("")))) "compteur de la pause garde"
+Assert-True ((Get-EntryTimer $le $false 3100)[0].StartsWith((Get-ClmText "menu.timer.apiPause" @("")))) "compteur de la pause garde"
 
 Set-LiveState ($liveNow - 100) 10
 Step-MenuLoader $st 5200

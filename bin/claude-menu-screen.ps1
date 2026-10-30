@@ -18,7 +18,7 @@ function Get-MenuHeaderRow {
   $dt = Get-DriveTag $script:DriveJob
   if ($dt[0]) { $drive = @(@("  ", $script:Ink.Dim, $false), @($dt[0], $dt[1], $false, "y")) }
   $button = @()
-  if (Test-ClmUpdateReady) { $button = @(@("  ", $script:Ink.Dim, $false), @(("[" + (Get-ClmText "menu.screen.update_available") + "]"), $script:Levels["7d"][1], $true, "u")) }
+  if (Test-ClmUpdateReady) { $button = @(@("  ", $script:Ink.Dim, $false), @(("[" + (Get-ClmText "menu.screen.updateAvailable") + "]"), $script:Levels["7d"][1], $true, "u")) }
   $len = Get-SegsLength $button
   $tagWidth = Get-DisplayWidth $tag[0]
   $tlen = 0

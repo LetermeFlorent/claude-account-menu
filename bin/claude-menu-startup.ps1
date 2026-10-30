@@ -130,18 +130,18 @@ function Get-StartupGate {
     if (-not (Test-QuitWaits $Su)) { return $Act }
     $Su.Quit = $true
     $Su.Pending = $null
-    return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.stop_requested"))
+    return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.stopRequested"))
   }
-  if (Test-StartupBlocking $Su) { return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.accounts_after_clm_check")) }
+  if (Test-StartupBlocking $Su) { return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.accountsAfterClmCheck")) }
   if ($script:StartupOpen -contains $Act.Name) { return $Act }
   if ($Act.Name -eq "launch") { $Act = @{ Name = "pick"; Index = $State.Sel } }
-  if ($Act.Name -ne "pick") { return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.available_after_updates")) }
+  if ($Act.Name -ne "pick") { return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.availableAfterUpdates")) }
   $Su.Pending = $Act
-  return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.launch_after_updates" @($State.Entries[$Act.Index].Acc.Label)))
+  return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.launchAfterUpdates" @($State.Entries[$Act.Index].Acc.Label)))
 }
 
 function Add-ClmFailure {
   param($Msg, [string]$Err)
   if (-not $Err) { return $Msg }
-  return @(("  " + (Get-ClmText "menu.startup.clm_update_failed" @($Err)) + "   " + ([string]$Msg[0]).Trim()).TrimEnd(), $script:Ink.Alert)
+  return @(("  " + (Get-ClmText "menu.startup.clmUpdateFailed" @($Err)) + "   " + ([string]$Msg[0]).Trim()).TrimEnd(), $script:Ink.Alert)
 }

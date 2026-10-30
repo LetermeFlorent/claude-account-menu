@@ -51,7 +51,7 @@ try {
   Assert-Equal ("30 " + (Get-ClmText "menu.startup.files" @("3/10"))) ("" + $script:Su.Steps[2].Pct + " " + $script:Su.Steps[2].Text) "Drive : fichiers faits sur le total"
   $script:DriveJob.Loader = $null
   $null = Invoke-StartupTicks 2
-  Assert-Equal (Get-ClmText "menu.startup.up_to_date") $script:Su.Steps[2].Text "Drive : synchro finie"
+  Assert-Equal (Get-ClmText "menu.startup.upToDate") $script:Su.Steps[2].Text "Drive : synchro finie"
   Assert-Equal "True|False|False" (Get-StepList "Gone") "clm a jour : ligne effacee, Claude Code et Drive gardes un instant"
   Assert-Equal 3 (Get-StartupRowCount $script:Su) "clm a jour : une rangee de moins"
   Assert-True (-not $script:Su.Hidden) "fin : barres gardees un instant"
@@ -80,9 +80,9 @@ try {
   $null = Invoke-StartupTicks; $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks
   Assert-Equal "failed installation impossible : disque plein" ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "installation de clm ratee : barre en erreur"
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.clm_update_failed" @("disque plein"))) $script:St.Msg[0] "installation de clm ratee : annoncee tout de suite"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.clmUpdateFailed" @("disque plein"))) $script:St.Msg[0] "installation de clm ratee : annoncee tout de suite"
   $null = Invoke-StartupTicks 4
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.clm_update_failed" @("disque plein")) + "   a, b, c : Claude Code a jour (2.1.292)") $script:St.Msg[0] "installation de clm ratee : erreur puis resultat de Claude Code"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.clmUpdateFailed" @("disque plein")) + "   a, b, c : Claude Code a jour (2.1.292)") $script:St.Msg[0] "installation de clm ratee : erreur puis resultat de Claude Code"
   Assert-Equal $script:Ink.Alert $script:St.Msg[1] "installation de clm ratee : couleur d'alerte"
   Assert-True (-not $script:ClmUpdated -and $null -eq $script:Su.Exit) "installation de clm ratee : pas de redemarrage"
   $script:FakeInstallError = $null

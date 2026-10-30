@@ -37,7 +37,7 @@ function Get-EntryTimer {
   if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
   $at = Format-Countdown ([int][math]::Max(0, [math]::Ceiling(($E.NextAt - $Now) / 1000)))
   if ($null -ne $E.U.Error) { return ,@((Get-ClmText "menu.timer.retry" @($at)), $script:Ink.Alert, $false) }
-  if ([long]$E.U.LimitedUntil -gt $UnixNow) { return ,@((Get-ClmText "menu.timer.api_pause" @($at)), $script:Levels["7d"][1], $false) }
+  if ([long]$E.U.LimitedUntil -gt $UnixNow) { return ,@((Get-ClmText "menu.timer.apiPause" @($at)), $script:Levels["7d"][1], $false) }
   return ,@((Get-ClmText "menu.timer.update" @($at)), $script:Ink.Dim, $false)
 }
 
@@ -58,10 +58,10 @@ function Get-ForcedReadMsg {
   if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
   $head = "  " + $E.Acc.Label + " : "
   $pause = [long]$E.U.LimitedUntil - $UnixNow
-  if ($pause -gt 0) { return ,@(($head + (Get-ClmText "menu.timer.forced.api_refused" @(Format-Countdown $pause))), $script:Levels["7d"][1]) }
+  if ($pause -gt 0) { return ,@(($head + (Get-ClmText "menu.timer.forced.apiRefused" @(Format-Countdown $pause))), $script:Levels["7d"][1]) }
   if ($E.U.Error) { return ,@(($head + (Get-ClmText "menu.timer.forced.failed" @($E.U.Error))), $script:Ink.Alert) }
   $pcts = Get-ClmText "menu.timer.forced.percents" @([int]$E.U.Pct5, [int]$E.U.Pct7)
-  if ($null -ne $E.U.Age) { return ,@(($head + (Get-ClmText "menu.timer.forced.up_to_date" @((Format-Age $E.U.Age), $pcts))), $script:Ink.Dim) }
+  if ($null -ne $E.U.Age) { return ,@(($head + (Get-ClmText "menu.timer.forced.upToDate" @((Format-Age $E.U.Age), $pcts))), $script:Ink.Dim) }
   return ,@(($head + (Get-ClmText "menu.timer.forced.reread" @((Get-Date -Format "HH:mm:ss"), $pcts))), $script:Levels["7d"][0])
 }
 
