@@ -75,7 +75,7 @@ try {
   Assert-Equal 1 (Invoke-PrefsCli @("--prefs-off", "*")) "* seul : deux groupes, refuse"
   Assert-Equal 1 (Invoke-PrefsCli @("--prefs-erase", "mcp:*", "--yes")) "groupe entier a effacer : refuse"
   Assert-Equal 1 (Invoke-PrefsCli @("--prefs-off", "global:*")) "global:* : plus de groupe a part pour les MCP globaux"
-  Assert-True ((Get-CliPrefsLines) -contains "  [-] mcp:*  tous les MCP  coches : 3 sur 5") "--prefs : groupe en partie coche"
+  Assert-True ((Get-CliPrefsLines) -contains ("  [-] mcp:*  " + (Get-ClmText "sync.prefs.all.mcp") + "  " + (Get-ClmText "sync.prefs.checkedCount" @(3, 5)))) "--prefs : groupe en partie coche"
   Assert-Equal 0 (Invoke-PrefsCli @("--prefs-off", "mcp:*")) "--prefs-off mcp:* : reussi"
   $ch = Read-SyncChoice
   Assert-True ($ch.globals["roblox"] -eq $false -and $ch.globals["blender"] -eq $false -and $ch.mcp["|outil"] -eq $false -and -not $ch.mcp.ContainsKey("|loin")) "--prefs-off mcp:* : MCP locaux et globaux decoches"
