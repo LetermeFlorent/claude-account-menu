@@ -55,17 +55,24 @@ function New-ItestClaude {
   & /bin/chmod 755 $path
 }
 
-function New-ItestRelease {
-  param($Box)
-  $pkg = Join-Path $Box.Root "pkg"
+function New-ItestZip {
+  param([string]$Dir)
+  $pkg = Join-Path $Dir "pkg"
   $null = Install-ClmFiles $bin (Join-Path $pkg "bin") ""
   [IO.File]::WriteAllText((Join-Path $pkg "install.ps1"), $script:ItestInstaller.Replace("VERSION", $script:ItestNew))
   [IO.File]::WriteAllText((Join-Path $pkg "install.sh"), "exec `"`$CLM_PWSH`" -NoProfile -File `"`$(dirname `"`$0`")/install.ps1`"`n")
-  $zip = Join-Path $Box.Release "clm.zip"
+  $zip = Join-Path $Dir "clm.zip"
   Compress-Archive -Path (Join-Path $pkg "*") -DestinationPath $zip
   $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLower()
-  [IO.File]::WriteAllText((Join-Path $Box.Release "clm.zip.sha256"), $hash + "  clm.zip`n")
+  [IO.File]::WriteAllText((Join-Path $Dir "clm.zip.sha256"), $hash + "  clm.zip`n")
   Remove-Item -LiteralPath $pkg -Recurse -Force
+}
+
+function New-ItestRelease {
+  param($Box)
+  $shared = Join-Path $script:Sandbox "itest-release"
+  if (-not [IO.File]::Exists((Join-Path $shared "clm.zip.sha256"))) { New-ItestZip $shared }
+  foreach ($name in @("clm.zip", "clm.zip.sha256")) { Copy-Item -LiteralPath (Join-Path $shared $name) -Destination (Join-Path $Box.Release $name) }
 }
 
 function Set-ItestRelease {
