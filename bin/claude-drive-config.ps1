@@ -1,11 +1,11 @@
-. Import-ClmModule claude-platform, claude-json, claude-state
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-platform, claude-json, claude-state, claude-text
 $script:DriveConfigPath = Get-StatePath "drive.json"
-$script:DriveConfigUnreadable = "drive.json illisible, a corriger ou a supprimer : "
 
 function Read-DriveConfig {
   if (-not (Test-Path -LiteralPath $script:DriveConfigPath)) { return $null }
   try { $data = Read-JsonFile $script:DriveConfigPath } catch { $data = $null }
-  if ($data -isnot [Collections.IDictionary]) { throw ($script:DriveConfigUnreadable + $script:DriveConfigPath) }
+  if ($data -isnot [Collections.IDictionary]) { throw (Get-ClmText "drive.config.unreadable" @($script:DriveConfigPath)) }
   $out = @{}
   foreach ($k in @($data.Keys)) { $out[$k] = $data[$k] }
   return $out

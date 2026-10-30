@@ -29,7 +29,7 @@ Set-Item Function:\Update-AccountToken $marginReal
 $ownerAcc = [PSCustomObject]@{ Label = "sansmail"; Dir = ".claude-sansmail" }
 $null = New-Item -ItemType Directory -Path (Join-Path $script:HomeDir ".claude-sansmail") -Force
 $remoteOwned = @{ Id = "c9"; Exp = 5; Props = @{ who = "b@y.fr" } }
-Assert-Throws { Assert-CredentialOwner $ownerAcc $remoteOwned } "adresse locale inconnue" "adresse locale vide : jeton du Drive refuse"
+Assert-Throws { Assert-CredentialOwner $ownerAcc $remoteOwned } (Get-ClmText "drive.cred.unknownOwner") "adresse locale vide : jeton du Drive refuse"
 Assert-Equal $null (Assert-CredentialOwner $ownerAcc @{ Id = "c9"; Exp = 5; Props = @{} }) "jeton du Drive sans adresse : pas de controle"
 Assert-Equal $null (Assert-CredentialOwner $ownerAcc $null) "pas de jeton distant : pas de controle"
 

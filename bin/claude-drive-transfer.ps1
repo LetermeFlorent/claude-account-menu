@@ -1,5 +1,4 @@
-. Import-ClmModule claude-drive-api, claude-sync-crypto, claude-drive-transfer-chunks, claude-drive-transfer-open
-$script:SealRequired = "telechargement refuse sans cle de synchro"
+. Import-ClmModule claude-text, claude-drive-api, claude-sync-crypto, claude-drive-transfer-chunks, claude-drive-transfer-open
 
 function New-MultipartBody {
   param([string]$MetaJson, [byte[]]$Bytes, [string]$Boundary)
@@ -75,7 +74,7 @@ function Save-DriveMedia {
 
 function Save-SealedMedia {
   param([string]$Id, [string]$Path, [string]$Seal, $Keys)
-  if ($null -eq $Keys) { throw $script:SealRequired }
+  if ($null -eq $Keys) { throw (Get-ClmText "drive.download.key.required") }
   $sealed = $Path + ".sealed.tmp"
   try {
     Save-DriveMedia $Id $sealed

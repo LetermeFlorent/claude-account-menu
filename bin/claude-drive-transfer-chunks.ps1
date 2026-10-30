@@ -1,4 +1,4 @@
-. Import-ClmModule claude-drive-api, claude-drive-transfer-reply
+. Import-ClmModule claude-text, claude-drive-api, claude-drive-transfer-reply
 $script:DriveChunkSize = 8MB
 $script:DriveChunkRetryMax = 5
 
@@ -21,7 +21,7 @@ function Open-UploadSession {
   $t = Get-UploadTarget $Id "resumable"
   $r = Invoke-DriveRequest $t.Method $t.Uri ([Text.Encoding]::UTF8.GetBytes($MetaJson)) $script:DriveJsonType $script:DriveMetaTimeout "" @{ "X-Upload-Content-Length" = ("" + $Length) }
   $session = [string]@($r.Headers["Location"])[0]
-  if (-not $session) { throw "Drive : session d'envoi refusee" }
+  if (-not $session) { throw (Get-ClmText "drive.upload.session.refused") }
   return $session
 }
 
@@ -38,7 +38,7 @@ function Read-ChunkWindow {
     if ($n -le 0) { break }
     $Window.Count += $n
   }
-  if ($Window.Count -eq 0 -and $Window.Start -lt $Source.Length) { throw "Drive : fichier plus court que prevu pendant l'envoi" }
+  if ($Window.Count -eq 0 -and $Window.Start -lt $Source.Length) { throw (Get-ClmText "drive.upload.file.shorter") }
 }
 
 function Get-ChunkBody {
@@ -52,7 +52,7 @@ function Get-ChunkBody {
 function Move-ChunkWindow {
   param($Window, [long]$Next)
   $end = $Window.Start + $Window.Count
-  if ($Next -lt $Window.Start -or $Next -gt $end) { throw ("Drive : position d'envoi incoherente " + $Next) }
+  if ($Next -lt $Window.Start -or $Next -gt $end) { throw (Get-ClmText "drive.upload.position.inconsistent" @($Next)) }
   $keep = [int]($end - $Next)
   [Array]::Copy($Window.Buffer, [int]($Next - $Window.Start), $Window.Buffer, 0, $keep)
   $Window.Count = $keep
@@ -72,7 +72,7 @@ function Resume-DriveSession {
 
 function Wait-ChunkStall {
   param($Window)
-  if ($Window.Failures -ge $script:DriveChunkRetryMax) { throw "Drive : l'envoi n'avance plus" }
+  if ($Window.Failures -ge $script:DriveChunkRetryMax) { throw (Get-ClmText "drive.upload.stalled") }
   & $script:DriveRetrySleep (Get-DriveRetryDelayMs $Window.Failures 0)
   $Window.Failures++
 }
@@ -96,7 +96,7 @@ function Send-DriveChunks {
     Read-ChunkWindow $window $Source
     $reply = Send-ChunkWindow $session $window $total
     if ($reply.Status -ge 200 -and $reply.Status -lt 300) { return ConvertTo-UploadResult $reply.Response }
-    if ($reply.Status -ne $script:DriveChunkResume) { throw ("Drive : reponse d'envoi inattendue " + $reply.Status) }
+    if ($reply.Status -ne $script:DriveChunkResume) { throw (Get-ClmText "drive.upload.reply.unexpected" @($reply.Status)) }
     $before = $window.Start
     Move-ChunkWindow $window $reply.Next
     if ($window.Start -gt $before) { $window.Failures = 0 } elseif (-not $window.Resumed) { Wait-ChunkStall $window }

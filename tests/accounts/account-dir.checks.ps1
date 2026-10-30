@@ -18,7 +18,7 @@ Assert-True (-not ((Get-SaveExcludes $dirBad 3>$null) -join "|").Contains("../x"
 foreach ($p in @(".claude/a.md", ".claude-c/b.md", ".claude.json", ".mcp.json", ".claude-accounts.json")) { Assert-True (Test-SafeSyncPath $p) ("chemin de synchro accepte : " + $p) }
 foreach ($p in @(".claudex/a.md", ".claude-a.b/x.md", ".claude/../x", ".claude/a\b", ".claude.json.x", ".autre/a.md", "")) { Assert-True (-not (Test-SafeSyncPath $p)) ("chemin de synchro refuse : " + $p) }
 foreach ($k in @("upload", "delete-local", "download", "keep-remote")) {
-  Assert-Throws { Invoke-SyncAction @{ Res = @{} } @{ Kind = $k; Path = ".claude/../x" } } "chemin refuse" ("synchro : " + $k + " refuse un chemin dangereux")
+  Assert-Throws { Invoke-SyncAction @{ Res = @{} } @{ Kind = $k; Path = ".claude/../x" } } (Get-ClmText "drive.action.unsafePath" @("")) ("synchro : " + $k + " refuse un chemin dangereux")
 }
 
 if ($null -ne $dirSaved) { [IO.File]::WriteAllBytes($script:RegistryPath, $dirSaved) } else { Remove-Item -LiteralPath $script:RegistryPath -Force }

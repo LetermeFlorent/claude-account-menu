@@ -1,6 +1,6 @@
-. Import-ClmModule claude-platform, claude-json, claude-state
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-platform, claude-json, claude-state, claude-text
 $script:DriveStatePath = Get-StatePath "drive-state.json"
-$script:DriveStateUnreadable = "drive-state.json illisible, a corriger ou a supprimer : "
 $script:JsonPlainValue = '"([^"\\\x00-\x1f]*)"'
 $script:JsonRowStart = New-Object regex '^    \{', ([Text.RegularExpressions.RegexOptions]::Multiline)
 $script:StateHead = New-Object regex ('\A\{\n  "at": (-?\d+),\n  "root": ' + $script:JsonPlainValue + ',\n  "files": \[')
@@ -28,10 +28,10 @@ function Read-DriveStateRows {
 function Read-DriveState {
   $st = @{ At = [long]0; Root = ""; Files = (New-PathMap) }
   if (-not [IO.File]::Exists($script:DriveStatePath)) { return $st }
-  try { $text = Read-SharedText $script:DriveStatePath } catch { throw ($script:DriveStateUnreadable + $script:DriveStatePath) }
+  try { $text = Read-SharedText $script:DriveStatePath } catch { throw (Get-ClmText "drive.state.unreadable" @($script:DriveStatePath)) }
   if (Read-DriveStateRows $st $text) { return $st }
   try { $data = ConvertFrom-JsonText $text } catch { $data = $null }
-  if ($data -isnot [Collections.IDictionary]) { throw ($script:DriveStateUnreadable + $script:DriveStatePath) }
+  if ($data -isnot [Collections.IDictionary]) { throw (Get-ClmText "drive.state.unreadable" @($script:DriveStatePath)) }
   $st.At = [long]$data["at"]
   $st.Root = [string]$data["root"]
   foreach ($v in @($data["files"])) {

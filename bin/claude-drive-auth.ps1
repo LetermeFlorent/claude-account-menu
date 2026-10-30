@@ -1,8 +1,8 @@
-. Import-ClmModule claude-drive-config
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-drive-config, claude-text
 $script:DriveAuthUrl = "https://accounts.google.com/o/oauth2/v2/auth"
 $script:DriveTokenUrl = "https://oauth2.googleapis.com/token"
 $script:DriveScope = "https://www.googleapis.com/auth/drive.file"
-$script:DriveReconnect = "reconnecter le Drive : clm --drive-login"
 $script:DriveClientId = "841970424266-pgppljvgm4sunmm9fhhggemhk976vm05.apps.googleusercontent.com"
 $script:DriveClientSecret = "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"
 
@@ -60,8 +60,8 @@ function Request-DriveToken {
   try { return Invoke-DriveTokenPost (ConvertTo-FormText $all) }
   catch {
     $detail = "" + $_.ErrorDetails.Message + " " + $_.Exception.Message
-    if ($detail -match "invalid_grant|invalid_client|unauthorized_client") { throw $script:DriveReconnect }
-    throw ("jeton Google refuse : " + $_.Exception.Message)
+    if ($detail -match "invalid_grant|invalid_client|unauthorized_client") { throw (Get-ClmText "drive.auth.reconnect") }
+    throw (Get-ClmText "drive.auth.token.refused" @($_.Exception.Message))
   }
 }
 
@@ -75,7 +75,7 @@ function Set-DriveTokenResponse {
 function Get-DriveToken {
   param([switch]$Renew)
   $c = Read-DriveConfig
-  if ($null -eq $c -or [string]::IsNullOrEmpty([string]$c["refreshToken"])) { throw $script:DriveReconnect }
+  if ($null -eq $c -or [string]::IsNullOrEmpty([string]$c["refreshToken"])) { throw (Get-ClmText "drive.auth.reconnect") }
   $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
   if (-not $Renew -and $c["accessToken"] -and [long]$c["expiresAt"] -gt $now + 60000) { return [string]$c["accessToken"] }
   $r = Request-DriveToken $c @{ grant_type = "refresh_token"; refresh_token = [string]$c["refreshToken"] }

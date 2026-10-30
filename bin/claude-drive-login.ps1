@@ -1,4 +1,5 @@
-. Import-ClmModule claude-drive-auth
+if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+. Import-ClmModule claude-drive-auth, claude-text
 $script:DriveLoginSeconds = 300
 $script:DriveLoginReadMs = 5000
 
@@ -40,15 +41,15 @@ function Receive-AuthCode {
       $reader = New-Object IO.StreamReader($stream, [Text.Encoding]::ASCII, $false, 4096, $true)
       $res = ConvertFrom-AuthRequest ([string]$reader.ReadLine())
       if ($res.State -cne $State) { $res = $null }
-      $text = "clm : reponse ignoree"
-      if ($null -ne $res -and $res.Code) { $text = "clm : Drive connecte, tu peux fermer cet onglet" }
-      if ($null -ne $res -and $res.Error) { $text = "clm : connexion refusee (" + $res.Error + ")" }
+      $text = Get-ClmText "drive.login.page.ignored"
+      if ($null -ne $res -and $res.Code) { $text = Get-ClmText "drive.login.page.ok" }
+      if ($null -ne $res -and $res.Error) { $text = Get-ClmText "drive.login.page.refused" @($res.Error) }
       Send-AuthPage $stream $text
     } catch [IO.IOException] { Write-Verbose $_.Exception.Message }
     finally { $client.Close() }
     if ($null -ne $res -and ($res.Code -or $res.Error)) { return $res }
   }
-  throw "delai depasse, aucune reponse de Google"
+  throw (Get-ClmText "drive.login.timeout")
 }
 
 function Open-Browser {
@@ -70,17 +71,17 @@ function Invoke-DriveLogin {
   try {
     $redirect = "http://127.0.0.1:" + $listener.LocalEndpoint.Port
     $url = Get-DriveAuthUrl (Get-DriveClient $c).Id $redirect $pkce.Challenge $state
-    Write-Host "  connexion Google dans le navigateur, sinon ouvrir ce lien :"
+    Write-Host ("  " + (Get-ClmText "drive.login.browser"))
     Write-Host ("  " + $url)
     Open-Browser $url
     $res = Receive-AuthCode $listener $script:DriveLoginSeconds $state
   } finally { $listener.Stop() }
-  if ($res.Error) { throw ("connexion refusee : " + $res.Error) }
-  if ($res.State -ne $state) { throw "reponse Google inattendue" }
+  if ($res.Error) { throw (Get-ClmText "drive.login.refused" @($res.Error)) }
+  if ($res.State -ne $state) { throw (Get-ClmText "drive.login.unexpected") }
   $r = Request-DriveToken $c @{ grant_type = "authorization_code"; code = $res.Code; redirect_uri = $redirect; code_verifier = $pkce.Verifier }
   Set-DriveTokenResponse $c $r ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
-  if ([string]::IsNullOrEmpty([string]$c["refreshToken"])) { throw "Google n'a pas rendu de jeton de renouvellement" }
+  if ([string]::IsNullOrEmpty([string]$c["refreshToken"])) { throw (Get-ClmText "drive.login.no.refresh") }
   Clear-DriveFolders $c
   Save-DriveConfig $c
-  return "Drive connecte sur " + (Get-DrivePcName)
+  return Get-ClmText "drive.login.done" @((Get-DrivePcName))
 }

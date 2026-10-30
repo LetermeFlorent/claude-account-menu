@@ -45,7 +45,7 @@ Assert-Equal "ok" (Invoke-WithMachineLock "test-with" 0 { "ok" }) "verrou : sort
 $held = Open-MachineLock "test-with"
 try {
   Assert-True (Test-MachineLockHeld "test-with") "verrou tenu : vu comme tenu"
-  Assert-Throws { Invoke-WithMachineLock "test-with" 0 { "ok" } } "laissee a un autre clm" "verrou tenu : erreur par defaut"
+  Assert-Throws { Invoke-WithMachineLock "test-with" 0 { "ok" } } (Get-ClmText "drive.lock.left") "verrou tenu : erreur par defaut"
   $err = Get-ErrorOf { Invoke-WithMachineLock "test-with" 0 { "ok" } }
   Assert-True (Test-LeftToOtherClm $err) "verrou tenu : erreur reconnue"
   Assert-Throws { Invoke-WithMachineLock "test-with" 0 { "ok" } "occupe ici" } "occupe ici" "verrou tenu : texte donne"

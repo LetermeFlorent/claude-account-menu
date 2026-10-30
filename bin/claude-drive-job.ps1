@@ -1,4 +1,4 @@
-. Import-ClmModule claude-drive-sync, claude-drive-lock
+. Import-ClmModule claude-drive-sync, claude-drive-lock, claude-text
 $script:DriveJob = $null
 $script:DriveQuitWaitMs = 2000
 $script:DriveRetryMs = 60000
@@ -52,7 +52,7 @@ function Complete-DriveJob {
   if ($res.Count -gt 0) { $r = $res[0][1]; if ($res[0][2]) { $err = $res[0][2] } }
   if ($r -isnot [hashtable]) { $r = @{ Ok = $false; Error = ("" + $err) } }
   if ($replaced) { $r = @{ Ok = $false; Busy = $true; Error = $script:DriveBusyText } }
-  if (-not $r.Error -and -not $r.Ok) { $r.Error = "synchro interrompue" }
+  if (-not $r.Error -and -not $r.Ok) { $r.Error = (Get-ClmText "drive.sync.interrupted") }
   $Job.Busy = [bool]$r.Busy
   $Job.RetryAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + $script:DriveRetryMs
   $Job.Failed = [bool]$r.Error -and -not $Job.Busy
@@ -88,23 +88,23 @@ function Get-DriveTag {
   if ($null -eq $Job -or -not $Job.Connected) { return @("", $script:Ink.Dim) }
   if (Test-DriveJobRunning $Job) {
     $p = "" + $Job.Ctl.Progress
-    if ($p) { return @(("sync " + $p), $script:Ink.Dim) }
-    return @("sync...", $script:Ink.Dim)
+    if ($p) { return @((Get-ClmText "drive.tag.sync" @($p)), $script:Ink.Dim) }
+    return @((Get-ClmText "drive.tag.syncing"), $script:Ink.Dim)
   }
-  if ($Job.Elsewhere) { return @("sync...", $script:Ink.Dim) }
-  if ($Job.Busy) { return @("sync attente", $script:Ink.Dim) }
-  if ($Job.Failed) { return @("sync erreur", $script:Ink.Alert) }
-  if ($Job.Last -gt 0) { return @(("sync " + [DateTimeOffset]::FromUnixTimeSeconds($Job.Last).LocalDateTime.ToString("HH:mm")), $script:Ink.Dim) }
-  return @("sync jamais", $script:Ink.Dim)
+  if ($Job.Elsewhere) { return @((Get-ClmText "drive.tag.syncing"), $script:Ink.Dim) }
+  if ($Job.Busy) { return @((Get-ClmText "drive.tag.waiting"), $script:Ink.Dim) }
+  if ($Job.Failed) { return @((Get-ClmText "drive.tag.error"), $script:Ink.Alert) }
+  if ($Job.Last -gt 0) { return @((Get-ClmText "drive.tag.sync" @([DateTimeOffset]::FromUnixTimeSeconds($Job.Last).LocalDateTime.ToString("HH:mm"))), $script:Ink.Dim) }
+  return @((Get-ClmText "drive.tag.never"), $script:Ink.Dim)
 }
 
 function Request-DriveSync {
   param($Job)
-  if ($null -eq $Job -or -not $Job.Connected) { return @("  Drive non connecte : clm --drive-login", $script:Ink.Dim) }
-  if (Test-DriveJobRunning $Job) { return @("  synchro Drive deja en cours", $script:Ink.Dim) }
+  if ($null -eq $Job -or -not $Job.Connected) { return @(("  " + (Get-ClmText "drive.request.off")), $script:Ink.Dim) }
+  if (Test-DriveJobRunning $Job) { return @(("  " + (Get-ClmText "drive.request.running")), $script:Ink.Dim) }
   $Job.Notify = $true
   Start-DriveJob $Job
-  return @("  synchro Drive lancee", $script:Ink.Dim)
+  return @(("  " + (Get-ClmText "drive.request.started")), $script:Ink.Dim)
 }
 
 function Get-AccountAway {
@@ -112,7 +112,7 @@ function Get-AccountAway {
   if ($null -eq $script:DriveJob -or $null -eq $Acc) { return "" }
   $pc = $script:DriveJob.Away[[string]$Acc.Dir]
   if (-not $pc) { return "" }
-  return "ouvert sur " + $pc
+  return (Get-ClmText "drive.away" @($pc))
 }
 
 function Open-DriveJob {

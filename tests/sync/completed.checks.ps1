@@ -9,7 +9,7 @@ $script:FailSend = @(".claude/a.md")
 $r = Invoke-DriveSync
 Assert-Equal 1 $r.Failed "echec d'un fichier : compte"
 Assert-Equal ".claude/a.md : panne reseau" $r.Failure "echec d'un fichier : chemin et raison gardes"
-Assert-Equal "1 fichier(s) en echec (.claude/a.md : panne reseau), nouvel essai a la prochaine synchro" $r.Error "echec d'un fichier : raison dans le message"
+Assert-Equal (Get-ClmText "drive.sync.failedFiles" @(1, " (.claude/a.md : panne reseau)")) $r.Error "echec d'un fichier : raison dans le message"
 Assert-Equal 0 (Read-DriveState).At "echec d'un fichier : synchro pas complete"
 $script:FailSend = @()
 

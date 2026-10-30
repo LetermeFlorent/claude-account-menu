@@ -15,16 +15,16 @@ $c["pc"] = "PC-TEST"
 Save-DriveConfig $c
 Assert-Equal "PC-TEST" (Get-DrivePcName) "nom du PC force par la config"
 [IO.File]::WriteAllText($script:DriveConfigPath, "{ pas du json")
-Assert-Throws { Read-DriveConfig } "illisible" "config illisible : lecture en erreur, pas absente"
+Assert-Throws { Read-DriveConfig } (Get-ClmText "drive.config.unreadable" @("")) "config illisible : lecture en erreur, pas absente"
 Assert-True (-not (Test-DriveConnected)) "config illisible : Drive non connecte"
 Assert-True (-not (Test-DriveAuto)) "config illisible : pas de synchro auto"
 Assert-Equal ([Environment]::MachineName) (Get-DrivePcName) "config illisible : nom du PC par defaut"
-Assert-Throws { Set-DriveAuto $false } "illisible" "config illisible : reglage refuse"
-Assert-Throws { Get-DriveToken } "illisible" "config illisible : pas de reconnexion proposee"
+Assert-Throws { Set-DriveAuto $false } (Get-ClmText "drive.config.unreadable" @("")) "config illisible : reglage refuse"
+Assert-Throws { Get-DriveToken } (Get-ClmText "drive.config.unreadable" @("")) "config illisible : pas de reconnexion proposee"
 Assert-Equal "{ pas du json" ([IO.File]::ReadAllText($script:DriveConfigPath)) "config illisible : fichier intact"
 [IO.File]::WriteAllText($script:DriveConfigPath, "")
-Assert-Throws { Read-DriveConfig } "illisible" "config vide : lecture en erreur"
+Assert-Throws { Read-DriveConfig } (Get-ClmText "drive.config.unreadable" @("")) "config vide : lecture en erreur"
 [IO.File]::WriteAllText($script:DriveConfigPath, "[1, 2]")
-Assert-Throws { Read-DriveConfig } "illisible" "config qui n'est pas un objet : lecture en erreur"
+Assert-Throws { Read-DriveConfig } (Get-ClmText "drive.config.unreadable" @("")) "config qui n'est pas un objet : lecture en erreur"
 Remove-Item -LiteralPath $script:DriveConfigPath -Force
 Assert-Null (Read-DriveConfig) "config absente lue comme absente"

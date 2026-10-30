@@ -26,7 +26,7 @@ Assert-Equal $ssPlain (Get-FakeText ".claude/m.md") "migration : contenu chiffre
 Assert-True (-not ([Text.Encoding]::UTF8.GetString($script:Fake[$script:SealedPrefix + ".claude/m.md"].Bytes)).Contains($ssPlain)) "migration : contenu illisible sur le Drive"
 Assert-True $script:Fake.ContainsKey(".claude/m.md") "migration : copie en clair gardee tant qu'un PC est en retard"
 Assert-Equal "OLD" ($r.Late -join ",") "migration : PC en retard nomme"
-Assert-True ((Get-DriveSyncMsg $r).Contains("PC sur une ancienne version de clm : OLD")) "migration : PC en retard dans le message"
+Assert-True ((Get-DriveSyncMsg $r).Contains((Get-ClmText "drive.notice.late" @("OLD")))) "migration : PC en retard dans le message"
 $script:FakePresence["OLD.json"].Props["fmt"] = ("" + $script:SyncFormat)
 $r = Invoke-DriveSync
 Assert-True (-not $script:Fake.ContainsKey(".claude/m.md")) "migration : copie en clair retiree quand tous les PC sont a jour"
@@ -40,7 +40,7 @@ $r = Invoke-DriveSync
 foreach ($i in 1..4) { Assert-Null (Get-PcText (".claude/p" + $i + ".md")) ("fichier en clair " + $i + " jamais ecrit") }
 Assert-Equal 4 $r.Failed "fichiers en clair comptes en echec"
 Assert-Equal 4 $r.Refused.Count "fichiers en clair notes comme refuses"
-Assert-True ((Get-DriveSyncMsg $r).Contains("refuses : .claude/p")) "fichiers refuses nommes dans le message"
+Assert-True ((Get-DriveSyncMsg $r).Contains((Get-ClmText "drive.notice.refused" @(".claude/p")))) "fichiers refuses nommes dans le message"
 Assert-Equal $ssPlain (Get-PcText ".claude/m.md") "fichier chiffre recu malgre les refus"
 Assert-Equal "fin" (Get-PcText ".claude/z.md") "refus en serie : la synchro continue"
 Assert-True $script:Fake.ContainsKey(".claude/p1.md") "fichier en clair refuse laisse sur le Drive"

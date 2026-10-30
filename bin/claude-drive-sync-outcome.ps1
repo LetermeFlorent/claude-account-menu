@@ -1,5 +1,4 @@
-. Import-ClmModule claude-drive-lock, claude-drive-config, claude-drive-folders
-$script:DriveSharedText = "faite par un autre clm"
+. Import-ClmModule claude-drive-lock, claude-drive-config, claude-drive-folders, claude-text
 
 function Test-DriveSyncClean {
   param($Res)
@@ -27,6 +26,6 @@ function Set-DriveSyncError {
 
 function Get-DriveSyncElsewhereText {
   param($Res)
-  if ($Res.Shared) { return $script:DriveSharedText }
-  return $script:LeftToOtherClm
+  if ($Res.Shared) { return (Get-ClmText "drive.sync.sharedText") }
+  return Get-LeftToOtherClm
 }

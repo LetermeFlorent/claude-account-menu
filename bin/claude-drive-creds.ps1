@@ -1,9 +1,6 @@
-. Import-ClmModule claude-drive-sealed, claude-drive-folders, claude-drive-presence, claude-state, claude-drive-lock
+. Import-ClmModule claude-drive-sealed, claude-drive-folders, claude-drive-presence, claude-state, claude-drive-lock, claude-text
 $script:CredentialMarginMs = 60000
 $script:CredLockWaitMs = 15000
-$script:CredentialUnknownOwner = "adresse locale inconnue, jeton du Drive refuse"
-$script:CredentialNoOwner = "jeton du Drive sans adresse, refuse"
-$script:CredentialTooFar = "jeton du Drive refuse : expiration trop lointaine"
 $script:CredentialMaxAheadMs = [long]30 * 24 * 3600 * 1000
 $script:CredentialArea = "credentials/"
 
@@ -30,7 +27,7 @@ function Read-LocalCredential {
   if ($script:OsName -eq "MacOS") { return Read-AccountCredential $Acc }
   $p = Join-Path (Get-AccountPath $Acc) ".credentials.json"
   if (-not (Test-Path -LiteralPath $p)) { return $null }
-  try { $raw = Read-SharedText $p } catch { throw "jeton local illisible" }
+  try { $raw = Read-SharedText $p } catch { throw (Get-ClmText "drive.cred.unreadable") }
   try { return $raw | ConvertFrom-Json } catch { return $null }
 }
 
@@ -39,25 +36,25 @@ function Assert-CredentialOwner {
   if ($null -eq $Remote -or $null -eq $Remote.Props) { return }
   $who = [string]$Remote.Props["who"]
   $mine = Get-AccountEmail $Acc
-  if ($who -and -not $mine) { throw $script:CredentialUnknownOwner }
-  if ($who -and $who -ne $mine) { throw ("jeton du Drive pour une autre adresse (" + $who + ")") }
+  if ($who -and -not $mine) { throw (Get-ClmText "drive.cred.unknownOwner") }
+  if ($who -and $who -ne $mine) { throw (Get-ClmText "drive.cred.otherOwner" @($who)) }
 }
 
 function Assert-RemoteCredentialTrusted {
   param($Acc, $Remote)
   $who = ""
   if ($null -ne $Remote.Props) { $who = [string]$Remote.Props["who"] }
-  if (-not $who) { throw $script:CredentialNoOwner }
-  if (-not (Get-AccountEmail $Acc)) { throw $script:CredentialUnknownOwner }
-  if ([long]$Remote.Exp -gt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + $script:CredentialMaxAheadMs) { throw $script:CredentialTooFar }
+  if (-not $who) { throw (Get-ClmText "drive.cred.noOwner") }
+  if (-not (Get-AccountEmail $Acc)) { throw (Get-ClmText "drive.cred.unknownOwner") }
+  if ([long]$Remote.Exp -gt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + $script:CredentialMaxAheadMs) { throw (Get-ClmText "drive.cred.tooFar") }
 }
 
 function Read-RemoteCredential {
   param($Acc, $Remote, $Keys)
   $text = Get-SealedText $Remote.Id ($script:CredentialArea + (Get-CredentialName $Acc)) $Keys
-  try { $cred = $text | ConvertFrom-Json } catch { throw "jeton du Drive invalide" }
-  if ($null -eq $cred -or [string]::IsNullOrEmpty([string]$cred.claudeAiOauth.accessToken)) { throw "jeton du Drive invalide" }
-  if ((Get-CredentialExpiry $cred) -ne [long]$Remote.Exp) { throw "jeton du Drive invalide" }
+  try { $cred = $text | ConvertFrom-Json } catch { throw (Get-ClmText "drive.cred.invalid") }
+  if ($null -eq $cred -or [string]::IsNullOrEmpty([string]$cred.claudeAiOauth.accessToken)) { throw (Get-ClmText "drive.cred.invalid") }
+  if ((Get-CredentialExpiry $cred) -ne [long]$Remote.Exp) { throw (Get-ClmText "drive.cred.invalid") }
   return $cred
 }
 
