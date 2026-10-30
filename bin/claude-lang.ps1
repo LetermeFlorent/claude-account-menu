@@ -1,5 +1,5 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
-. Import-ClmModule claude-platform, claude-display
+. Import-ClmModule claude-platform, claude-display-config
 $script:LangCodes = @("en", "fr")
 $script:LangFallback = "en"
 $script:LangEnvNames = @("LC_ALL", "LC_MESSAGES", "LANG")
