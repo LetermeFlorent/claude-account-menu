@@ -1,6 +1,7 @@
 $itLog = $env:CLM_ITEST_LOG
 $itVerb = "session"
 if ($args -contains "update") { $itVerb = "update" }
+if ($args -contains "--version") { "2.1.300 (Claude Code)"; exit 0 }
 [IO.File]::WriteAllText((Join-Path $itLog ("claude-" + $itVerb + "-" + $PID)), ($env:CLM_ITEST_ID + " " + $env:CLM_ITEST_STARTS + " " + (@($args) -join " ")))
 if ($itVerb -eq "update") {
   Start-Sleep -Milliseconds 800
