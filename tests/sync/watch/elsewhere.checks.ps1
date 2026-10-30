@@ -22,6 +22,17 @@ Assert-True (Step-DriveJob $job 9000) "synchro en attente, verrou pris ailleurs"
 Close-MachineLock $held
 Assert-True (Step-DriveJob $job 10000) "verrou libre"
 Assert-Equal "10000 True" ("" + $job.RetryAt + " " + $job.Busy) "synchro en attente relancee des que le verrou se libere"
+$wait = New-DriveJob $true 1700000500
+$held = Open-MachineLock "drive"
+$wait.Busy = $true
+$wait.RetryAt = 999999
+Assert-True (Step-DriveJob $wait 11000) "demarrage en attente, autre clm en pleine synchro"
+Save-DriveConfig @{ refreshToken = "r"; lastSync = 1700000900 }
+Close-MachineLock $held
+Assert-True (Step-DriveJob $wait 12000) "synchro de l'autre clm finie"
+Assert-Equal "False 999999 1700000900" ("" + $wait.Busy + " " + $wait.RetryAt + " " + $wait.Last) "synchro faite par l'autre clm pendant l'attente : pas de second tour"
+Assert-True (-not (Step-DriveJob $wait 999999)) "synchro faite par l'autre clm : aucun tour plus tard"
+Assert-Null $wait.Loader "synchro faite par l'autre clm : aucun tour lance"
 $off = New-DriveJob $false 0
 Assert-True (-not (Step-DriveJob $off 9000)) "Drive non connecte : pas de regard sur le verrou"
 

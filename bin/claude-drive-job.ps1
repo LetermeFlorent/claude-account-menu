@@ -21,8 +21,9 @@ function Update-DriveElsewhere {
   if ($held -eq $Job.Elsewhere) { return $false }
   $Job.Elsewhere = $held
   if ($held) { return $true }
-  if ($Job.Busy) { $Job.RetryAt = $NowMs }
   $last = Get-DriveLastSync
+  if ($Job.Busy -and $last -gt $Job.Last) { $Job.Busy = $false }
+  elseif ($Job.Busy) { $Job.RetryAt = $NowMs }
   if ($last -gt $Job.Last) { $Job.Last = $last }
   return $true
 }
