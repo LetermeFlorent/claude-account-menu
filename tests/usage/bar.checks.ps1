@@ -38,10 +38,10 @@ Assert-Equal 11 $u.Pct5 "barre lue il y a 20 s : pourcentage de la barre"
 Assert-True ($u.Age -ge 20 -and $u.Age -le 25) "barre lue il y a 20 s : age affiche"
 Assert-True (New-MenuEntry $barAcc @{} 0).Seen "barre recente : carte remplie des l'ouverture"
 Set-BarState ($barNow - 60)
-Assert-Equal "non connecte" (Get-FreshUsage $barAcc).Error "relecture forcee, barre de plus de 30 s : appel a l'API"
+Assert-Equal (Get-ClmText "ui.usage.notSignedIn") (Get-FreshUsage $barAcc).Error "relecture forcee, barre de plus de 30 s : appel a l'API"
 Assert-Equal 11 (Get-AccountUsage $barAcc).Pct5 "lecture normale, barre plus jeune que le delai de lecture : reprise"
 Set-BarState ($barNow - 400)
-Assert-Equal "non connecte" (Get-AccountUsage $barAcc).Error "barre plus vieille que le delai de lecture : appel a l'API"
+Assert-Equal (Get-ClmText "ui.usage.notSignedIn") (Get-AccountUsage $barAcc).Error "barre plus vieille que le delai de lecture : appel a l'API"
 
 Save-UsageEntry "barre" ([PSCustomObject]@{ Pct5 = 50; Reset5 = $null; Pct7 = 6; Reset7 = $null })
 Set-BarState ($barNow - 20)

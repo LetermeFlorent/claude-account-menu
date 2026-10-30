@@ -1,17 +1,8 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
-. Import-ClmModule claude-usage-cache, claude-usage-poll, claude-usage-pace, claude-accounts, claude-token-refresh, claude-usage-bar, claude-machine-lock, claude-usage-format
+. Import-ClmModule claude-usage-cache, claude-usage-poll, claude-usage-pace, claude-accounts, claude-token-refresh, claude-usage-bar, claude-machine-lock, claude-usage-format, claude-usage-plan, claude-text
 $script:UsageApiUrl = "https://api.anthropic.com/api/oauth/usage"
 $script:UsageApiTimeoutSec = 10
 $script:UsageLockWaitMs = 15000
-$script:UsageBusyText = "API de suivi occupee"
-
-function Get-PlanName {
-  param($Oauth)
-  if ($Oauth.rateLimitTier -match "max_(\d+)x") { return "Max " + $Matches[1] + "x" }
-  $t = "" + $Oauth.subscriptionType
-  if ($t -eq "") { return "" }
-  return $t.Substring(0, 1).ToUpper() + $t.Substring(1)
-}
 
 function Get-RetryAfter {
   param($Response)
@@ -23,16 +14,16 @@ function Get-RetryAfter {
 
 function Get-UsageToken {
   param($Acc, $Cred, [switch]$NoRefresh)
-  if ($null -eq $Cred -or [string]::IsNullOrEmpty($Cred.claudeAiOauth.accessToken)) { return @{ Error = "non connecte" } }
+  if ($null -eq $Cred -or [string]::IsNullOrEmpty($Cred.claudeAiOauth.accessToken)) { return @{ Error = Get-ClmText "ui.usage.notSignedIn" } }
   $expMs = [long]$Cred.claudeAiOauth.expiresAt
   $nowMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
   if ($expMs -le 0 -or $expMs -ge $nowMs + $script:CredentialMarginMs) { return @{ Token = $Cred.claudeAiOauth.accessToken } }
   if ($NoRefresh) {
     if ($expMs -ge $nowMs) { return @{ Token = $Cred.claudeAiOauth.accessToken } }
-    return @{ Error = "jeton expire, lancer le compte une fois" }
+    return @{ Error = Get-ClmText "ui.usage.tokenExpired" }
   }
   $fresh = Update-AccountToken $Acc $Cred
-  if ($null -eq $fresh) { return @{ Error = "compte deconnecte, lancer le compte une fois" } }
+  if ($null -eq $fresh) { return @{ Error = Get-ClmText "ui.usage.signedOut" } }
   return @{ Token = $fresh.claudeAiOauth.accessToken }
 }
 
@@ -40,8 +31,8 @@ function Get-UsageErrorText {
   param($Response)
   $code = 0
   if ($null -ne $Response) { $code = [int]$Response.StatusCode }
-  if ($code -eq 401) { return "jeton refuse, lancer le compte une fois" }
-  return "API de suivi injoignable"
+  if ($code -eq 401) { return Get-ClmText "ui.usage.tokenRefused" }
+  return Get-ClmText "ui.usage.unreachable"
 }
 
 function Set-UsageLimited {
@@ -51,7 +42,7 @@ function Set-UsageLimited {
     $Out.LimitedUntil = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() + $Seconds
     return
   }
-  $Out.Error = "quota inconnu, l'API de suivi refuse les appels (reessai dans " + (Format-Age $Seconds) + ")"
+  $Out.Error = Get-ClmText "ui.usage.limited" (Format-Age $Seconds)
 }
 
 function Register-UsageRefusal {
@@ -86,7 +77,7 @@ function Test-UsageSettled {
 function Set-UsageBusy {
   param($Out, $Known)
   if ($null -ne $Known -and [long]$Known.At -gt 0) { Copy-CacheEntry $Known $Out; return }
-  $Out.Error = $script:UsageBusyText
+  $Out.Error = Get-ClmText "ui.usage.busy"
 }
 
 function Request-AccountUsage {
@@ -109,15 +100,14 @@ function Request-AccountUsage {
 function Get-AccountUsage {
   param($Acc, [int]$MaxAge = (Read-UsagePollSeconds), [switch]$NoRefresh)
   $out = New-UsageRow $Acc
-  $cred = Read-AccountCredential $Acc
-  if ($null -ne $cred) { $out.Plan = Get-PlanName $cred.claudeAiOauth }
+  $out.Plan = Get-CachedPlan $Acc
   $known = Get-KnownUsage $Acc (Read-UsageCache)
   if (Test-UsageSettled $out $known $MaxAge) { return $out }
   $lock = Open-MachineLock (Get-UsageLockName $Acc) $script:UsageLockWaitMs
   if ($null -eq $lock) { Set-UsageBusy $out $known; return $out }
   try {
     try { $known = Get-KnownUsage $Acc (Read-UsageCacheMap) } catch { Set-UsageBusy $out $known; return $out }
-    if (-not (Test-UsageSettled $out $known $MaxAge)) { Request-AccountUsage $out $Acc $cred $known -NoRefresh:$NoRefresh }
+    if (-not (Test-UsageSettled $out $known $MaxAge)) { Request-AccountUsage $out $Acc (Read-AccountCredential $Acc) $known -NoRefresh:$NoRefresh }
   } finally { Close-MachineLock $lock }
   return $out
 }

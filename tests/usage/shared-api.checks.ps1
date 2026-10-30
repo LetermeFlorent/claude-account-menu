@@ -94,7 +94,7 @@ try {
     Write-UsageCache $m
     $u = Get-AccountUsage $apiAcc 0
     Assert-Equal 2 $script:UsageApiCalls "lecture tenue, rien de connu : aucun appel"
-    Assert-Equal "API de suivi occupee" $u.Error "lecture tenue, rien de connu : API occupee"
+    Assert-Equal (Get-ClmText "ui.usage.busy") $u.Error "lecture tenue, rien de connu : API occupee"
   } finally { Close-MachineLock $apiLock }
   $script:UsageLockWaitMs = $apiLockWait
 

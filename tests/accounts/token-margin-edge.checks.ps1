@@ -30,7 +30,7 @@ try {
   Assert-Equal 0 $edgeRefreshed "jeton sans expiresAt : pas de renouvellement"
   $edgeRefreshed = 0
   $edgeTok = Get-UsageToken $null (New-EdgeCred 1000) -NoRefresh
-  Assert-Equal "jeton expire, lancer le compte une fois" $edgeTok.Error "jeton deja expire en lecture seule : signale"
+  Assert-Equal (Get-ClmText "ui.usage.tokenExpired") $edgeTok.Error "jeton deja expire en lecture seule : signale"
   Assert-Equal 0 $edgeRefreshed "jeton deja expire en lecture seule : pas de renouvellement"
   $edgeTok = Get-UsageToken $null (New-EdgeCred ($edgeNow + 55000)) -NoRefresh
   Assert-Equal "vieux" $edgeTok.Token "jeton dans la marge en lecture seule : garde"
