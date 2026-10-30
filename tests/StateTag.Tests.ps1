@@ -1,6 +1,6 @@
 Describe "Get-StateTag" {
   BeforeAll {
-    . (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "bin") "claude-platform.ps1")
+    . (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "bin") "machine/claude-platform.ps1")
   }
 
   It "donne le tag de chaque dossier de compte" {

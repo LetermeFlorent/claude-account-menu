@@ -1,5 +1,5 @@
-. (Join-Path $bin "claude-color.ps1")
-. (Join-Path $bin "claude-web-page.ps1")
+. (Join-Path $bin "ui/color/claude-color.ps1")
+. (Join-Path $bin "web/server/claude-web-page.ps1")
 
 Assert-Equal "21" ([math]::Round((Get-ColorContrast "#ffffff" "#000000"), 2)) "couleurs : contraste noir sur blanc"
 Assert-Equal "0" (Get-ColorContrast "bleu" "#000000") "couleurs : couleur illisible sans erreur"

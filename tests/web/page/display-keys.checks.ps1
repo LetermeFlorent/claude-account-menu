@@ -1,4 +1,4 @@
-. (Join-Path $bin "claude-display.ps1")
+. (Join-Path $bin "ui/display/claude-display.ps1")
 
 $dkHome = Join-Path $script:Sandbox "display-keys-home"
 $dkVars = @{ USERPROFILE = $dkHome; HOME = $dkHome }

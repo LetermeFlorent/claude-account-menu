@@ -1,4 +1,4 @@
-. (Join-Path $bin "claude-theme.ps1")
+. (Join-Path $bin "ui/color/claude-theme.ps1")
 
 $toHome = Join-Path $script:Sandbox "theme-os-home"
 $toVars = @{ USERPROFILE = $toHome; HOME = $toHome; XDG_CONFIG_HOME = (Join-Path $toHome "cfg") }

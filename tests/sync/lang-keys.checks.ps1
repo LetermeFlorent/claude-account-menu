@@ -1,4 +1,4 @@
-$langDomainFiles = @(Get-ChildItem -LiteralPath $bin -Filter "*.ps1" | Where-Object { $_.Name -like "claude-sync*" -or $_.Name -like "claude-mcp-*" -or $_.Name -eq "claude-peers.ps1" -or $_.Name -like "claude-menu-prefs*" })
+$langDomainFiles = @(Get-ChildItem -LiteralPath $bin -Filter "*.ps1" -Recurse | Where-Object { $_.Name -like "claude-sync*" -or $_.Name -like "claude-mcp-*" -or $_.Name -eq "claude-peers.ps1" -or $_.Name -like "claude-menu-prefs*" })
 $langDynamic = @("sync.prefs.off.skills", "sync.prefs.off.mcp", "sync.prefs.off.globals", "sync.prefs.erase.skills", "sync.prefs.erase.mcp", "sync.prefs.erase.globals")
 $langUsed = New-Object 'System.Collections.Generic.SortedSet[string]' ([StringComparer]::Ordinal)
 foreach ($f in $langDomainFiles) {

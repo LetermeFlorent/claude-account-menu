@@ -1,5 +1,5 @@
-. (Join-Path $bin "claude-web-server.ps1")
-. (Join-Path $bin "claude-web-actions.ps1")
+. (Join-Path $bin "web/server/claude-web-server.ps1")
+. (Join-Path $bin "web/actions/claude-web-actions.ps1")
 
 $pgRoot = Join-Path $bin "clm-web"
 $pgFull = [IO.Path]::GetFullPath($pgRoot)
@@ -37,7 +37,7 @@ $pgDo = @([regex]::Matches($pgCode, 'do: "([a-z-]+)"') | ForEach-Object { $_.Gro
 Assert-Equal ((@($script:WebHandlers.Keys) | Sort-Object) -join " ") ($pgDo -join " ") "page web : chaque action de clm a son bouton, aucune inconnue"
 $pgViews = @([regex]::Matches($pgCode, 'clmRead\("([a-z]+)"\)') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
 Assert-Equal "backups prefs state" ($pgViews -join " ") "page web : vues lues"
-$pgMenuWeb = [IO.File]::ReadAllText((Join-Path $bin "claude-menu-web.ps1"))
+$pgMenuWeb = [IO.File]::ReadAllText((Join-Path $bin "menu/loop/claude-menu-web.ps1"))
 Assert-Equal "" (@($pgViews | Where-Object { $pgMenuWeb -notmatch ('\b' + $_ + ' = \{') }) -join " ") "page web : vues servies par le menu"
 $pgNav = @([regex]::Matches([regex]::Match($pgCode, 'navNames = \[([^\]]*)\]').Groups[1].Value, '"([a-z]+)"') | ForEach-Object { $_.Groups[1].Value })
 Assert-Equal "accounts drive backups settings" ($pgNav -join " ") "page web : navigation dans l'ordre"

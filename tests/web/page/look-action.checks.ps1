@@ -1,4 +1,4 @@
-. (Join-Path (Split-Path -Parent $PSScriptRoot) "actions-fakes.ps1")
+. (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "actions") "actions-fakes.ps1")
 
 $laFaked = @("Read-UsagePollSeconds", "Set-DisplayUsagePoll", "Get-SystemTheme", "Read-WindowsAccent")
 $laKept = @{}

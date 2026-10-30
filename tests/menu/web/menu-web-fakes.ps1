@@ -1,11 +1,11 @@
-if (-not (Test-Path Function:\Invoke-DriveSetup)) { . (Join-Path $bin "claude-sync-passphrase.ps1") }
-. (Join-Path $bin "claude-menu-loop.ps1")
-. (Join-Path $bin "claude-menu-startup.ps1")
-. (Join-Path $bin "claude-menu-rename.ps1")
-. (Join-Path $bin "claude-menu-remove.ps1")
-. (Join-Path $bin "claude-menu-prefs.ps1")
-. (Join-Path $bin "claude-menu-save.ps1")
-. (Join-Path $bin "claude-cli.ps1")
+if (-not (Test-Path Function:\Invoke-DriveSetup)) { . (Join-Path $bin "sync/crypto/claude-sync-passphrase.ps1") }
+. (Join-Path $bin "menu/loop/claude-menu-loop.ps1")
+. (Join-Path $bin "menu/startup/claude-menu-startup.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-rename.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-remove.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-prefs.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-save.ps1")
+. (Join-Path $bin "cli/claude-cli.ps1")
 
 $mwMocked = @("Read-UiInput", "Open-Browser", "Start-WebServer", "Open-MenuWeb", "Read-MenuAction", "Invoke-MenuCommand", "Close-AccountMenu", "Step-MenuFrame", "Enter-UiScreen", "Open-MenuSession", "Invoke-MenuLoop")
 $mwKept = @{}

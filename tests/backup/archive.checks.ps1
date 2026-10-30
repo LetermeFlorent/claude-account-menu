@@ -1,7 +1,7 @@
-. (Join-Path $bin "claude-menu-archive.ps1")
-. (Join-Path $bin "claude-self-version.ps1")
-. (Join-Path $bin "claude-menu-save.ps1")
-. (Join-Path $bin "claude-menu-remove.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-archive.ps1")
+. (Join-Path $bin "self/claude-self-version.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-save.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-remove.ps1")
 $backupHome = $script:HomeDir
 $backupRegistry = $script:RegistryPath
 $script:HomeDir = Join-Path $script:Sandbox "maison sauvegarde"
@@ -88,7 +88,7 @@ foreach ($pick in @($null, @(), @([PSCustomObject]@{ Label = "x"; Dir = ".claude
 }
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir "Documents"))) "archive sans compte : rien ecrit dans le dossier perso"
 
-. (Join-Path $bin "claude-menu-archive.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-archive.ps1")
 Remove-LinkOrTree $script:HomeDir
 Remove-Item -LiteralPath $script:BackupDl, (Join-Path $script:Sandbox "intrus"), (Join-Path $script:Sandbox "ancienne"), (Split-Path -Parent $script:RegistryPath) -Recurse -Force
 $script:HomeDir = $backupHome

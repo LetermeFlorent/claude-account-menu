@@ -1,5 +1,5 @@
-. (Join-Path $bin "claude-menu-archive.ps1")
-. (Join-Path $bin "claude-menu-save.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-archive.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-save.ps1")
 $argCases = [ordered]@{ "abc" = "abc"; "a b" = '"a b"'; "" = '""'; 'a"b' = '"a\"b"'; 'a\b' = 'a\b'; 'a\"b' = '"a\\\"b"'; 'C:\x y\' = '"C:\x y\\"'; 'a\\' = 'a\\'; "a`tb" = "`"a`tb`"" }
 foreach ($k in $argCases.Keys) { Assert-Equal $argCases[$k] (ConvertTo-ProcessArgument $k) ("argument de processus echappe : [" + $k + "]") }
 Assert-Equal 'a "b c" ""' (ConvertTo-ProcessCommandLine @("a", "b c", "")) "ligne de commande : arguments joints"

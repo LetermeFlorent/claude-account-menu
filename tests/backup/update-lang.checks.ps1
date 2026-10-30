@@ -1,8 +1,8 @@
-. (Join-Path $bin "claude-text.ps1")
+. (Join-Path $bin "core/claude-text.ps1")
 
 $ulRoot = Split-Path -Parent $bin
 $ulNames = @("claude-backup-*.ps1", "claude-menu-restore.ps1", "claude-menu-save.ps1", "claude-menu-archive.ps1", "claude-menu-clm-check.ps1", "claude-menu-startup-clm.ps1", "claude-menu-startup-claude.ps1", "claude-self-*.ps1", "claude-update*.ps1")
-$ulFiles = @(foreach ($n in $ulNames) { Get-ChildItem -LiteralPath $bin -Filter $n -File | ForEach-Object { $_.FullName } })
+$ulFiles = @(foreach ($n in $ulNames) { Get-ChildItem -LiteralPath $bin -Filter $n -Recurse -File | ForEach-Object { $_.FullName } })
 $ulFiles += @((Join-Path $ulRoot "install.ps1"), (Join-Path $ulRoot "install-hook.ps1"))
 $ulShell = @((Join-Path $ulRoot "install.sh"), (Join-Path $bin "clm"), (Join-Path $bin "clm-text.sh"))
 $ulKeys = New-Object Collections.Generic.List[string]

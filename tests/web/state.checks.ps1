@@ -1,10 +1,10 @@
-. (Join-Path $bin "claude-menu-remove.ps1")
-. (Join-Path $bin "claude-menu-prefs.ps1")
-. (Join-Path $bin "claude-menu-save.ps1")
-. (Join-Path $bin "claude-menu-startup.ps1")
-. (Join-Path $bin "claude-cli.ps1")
-. (Join-Path $bin "claude-web-state.ps1")
-. (Join-Path $bin "claude-web-lists.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-remove.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-prefs.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-save.ps1")
+. (Join-Path $bin "menu/startup/claude-menu-startup.ps1")
+. (Join-Path $bin "cli/claude-cli.ps1")
+. (Join-Path $bin "web/server/claude-web-state.ps1")
+. (Join-Path $bin "web/server/claude-web-lists.ps1")
 
 $webMocked = @("Get-DrivePcName", "Test-DriveAuto", "Test-DriveConnected", "Read-CliPrefs", "Get-DownloadsDir")
 $webKept = @{}

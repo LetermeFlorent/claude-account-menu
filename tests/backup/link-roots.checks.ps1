@@ -1,6 +1,6 @@
-. (Join-Path $bin "claude-menu-archive.ps1")
-. (Join-Path $bin "claude-menu-save.ps1")
-. (Join-Path $bin "claude-menu-remove.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-archive.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-save.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-remove.ps1")
 $lrHome = $script:HomeDir
 $lrRegistry = $script:RegistryPath
 $lrRoot = Join-Path $script:Sandbox "liens racine"

@@ -1,4 +1,4 @@
-. (Join-Path (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "menu") "startup-fakes.ps1")
+. (Join-Path (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "menu/startup") "startup-fakes.ps1")
 $lockShaFn = (Get-Item "function:Get-ClmSha").ScriptBlock
 $lockLoaded = $script:ClmLoadedSha
 $lockWait = $script:ClmUpdateWaitMs

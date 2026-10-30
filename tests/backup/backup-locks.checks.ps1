@@ -1,8 +1,8 @@
 $raceLab = Join-Path (Split-Path -Parent $PSScriptRoot) "race"
 . (Join-Path $raceLab "race-helpers.ps1")
 . (Join-Path (Join-Path $raceLab "backup") "lock-holder-start.ps1")
-. (Join-Path $bin "claude-menu-archive.ps1")
-. (Join-Path $bin "claude-menu-save.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-archive.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-save.ps1")
 . Import-ClmModule claude-machine-lock
 $script:LocksDl = Join-Path $script:Sandbox "verrous dl"
 $null = New-Item -ItemType Directory -Path $script:LocksDl -Force
@@ -45,5 +45,5 @@ try { $null = Restore-Accounts $restoreZip -Yes } catch { $restoreErr = $_.Excep
 $null = Wait-RaceChild $restoreHolder
 Assert-True (-not ("" + $restoreErr).Contains((Get-ClmText "backup.restore.busy"))) "restauration juste apres une autre : attend son tour"
 
-. (Join-Path $bin "claude-menu-archive.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-archive.ps1")
 Remove-Item -LiteralPath $script:LocksDl -Recurse -Force

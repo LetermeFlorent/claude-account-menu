@@ -1,4 +1,4 @@
-. (Join-Path $bin "claude-text.ps1")
+. (Join-Path $bin "core/claude-text.ps1")
 
 $txRoot = Join-Path $bin "lang"
 $txPage = Join-Path $bin "clm-web"
@@ -34,7 +34,7 @@ foreach ($m in [regex]::Matches($txCode, '(?:data-text|data-label)"?[=:]\s*"([a-
 foreach ($m in [regex]::Matches($txCode, 'clmText\("([a-zA-Z.]+[a-zA-Z])"')) { $txWanted.Add("web." + $m.Groups[1].Value) }
 foreach ($m in [regex]::Matches($txCode, '"(backups\.warn[A-Za-z]+)"')) { $txWanted.Add("web." + $m.Groups[1].Value) }
 foreach ($k in @("quota.q5", "quota.q7", "settings.palette.auto", "settings.palette.dark", "settings.palette.light", "settings.anim.auto", "settings.anim.on", "settings.anim.off")) { $txWanted.Add("web." + $k) }
-$txServer = (@(Get-ChildItem -LiteralPath $bin -Filter "*.ps1" | ForEach-Object { [IO.File]::ReadAllText($_.FullName) }) -join "`n")
+$txServer = (@(Get-ChildItem -LiteralPath $bin -Filter "*.ps1" -Recurse | ForEach-Object { [IO.File]::ReadAllText($_.FullName) }) -join "`n")
 foreach ($m in [regex]::Matches($txServer, '"(server\.[A-Za-z]+)"')) { $txWanted.Add($m.Groups[1].Value) }
 Assert-True ($txWanted.Count -gt 100) "textes : cles de la page et du serveur trouvees"
 $txMissing = @($txWanted | Sort-Object -Unique | Where-Object { $txEn -notcontains $_ })

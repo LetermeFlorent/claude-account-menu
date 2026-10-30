@@ -1,4 +1,4 @@
-. (Join-Path (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "menu") "startup-fakes.ps1")
+. (Join-Path (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "menu/startup") "startup-fakes.ps1")
 $claudeWait = $script:ClaudeUpdateWaitMs
 $claudeStampPath = Get-StatePath ($script:ClaudeCheckStamp + ".done")
 

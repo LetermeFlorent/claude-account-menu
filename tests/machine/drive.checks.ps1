@@ -1,4 +1,4 @@
-. (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "sync") "fake-drive.ps1")
+. (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "sync/fakes") "fake-drive.ps1")
 . (Join-Path $PSScriptRoot "settings-text.ps1")
 $rel = ".claude/settings.json"
 $slA = '"statusLine": { "type": "command", "command": "powershell -File \"C:/Users/a/.local/bin/statusline.ps1\"" }'
@@ -47,4 +47,4 @@ Assert-Equal 1 $r.Up "ancien CLM : Drive nettoye en un envoi"
 Assert-Equal (New-SettingsText @($opus, $canonHooks)) (Get-FakeText $rel) "ancien CLM : Drive sans statusLine"
 Assert-Equal 0 (Invoke-DriveSync).Total "ancien CLM : stable ensuite"
 Restore-FakeDrive
-. (Join-Path $bin "claude-drive-creds.ps1")
+. (Join-Path $bin "drive/core/claude-drive-creds.ps1")

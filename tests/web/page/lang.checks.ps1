@@ -1,4 +1,4 @@
-. (Join-Path $bin "claude-lang.ps1")
+. (Join-Path $bin "core/claude-lang.ps1")
 
 $langHome = Join-Path $script:Sandbox "lang-home"
 New-Item -ItemType Directory -Path $langHome -Force | Out-Null

@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 . (Join-Path (Join-Path $PSScriptRoot "bin") "claude-import.ps1")
-. (Join-Path (Join-Path $PSScriptRoot "bin") "claude-machine-settings.ps1")
+. (Join-Path (Join-Path $PSScriptRoot "bin") "machine/claude-machine-settings.ps1")
 . Import-ClmModule claude-text
 $hookCommand = Get-SeedHookCommand $script:OsName
 $homeDir = $env:USERPROFILE

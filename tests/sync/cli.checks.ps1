@@ -42,4 +42,4 @@ Assert-True ($script:CliCalls[1] -match "^sync \d{13} ") "fermeture : echeance a
 
 Remove-Item -LiteralPath $script:DriveConfigPath -Force
 $script:DriveConfigPath = $cliCfg
-. (Join-Path $bin "claude-drive-sync.ps1")
+. (Join-Path $bin "drive/sync/claude-drive-sync.ps1")

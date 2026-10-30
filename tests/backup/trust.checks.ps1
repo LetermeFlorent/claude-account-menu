@@ -1,7 +1,7 @@
-. (Join-Path $bin "claude-menu-archive.ps1")
-. (Join-Path $bin "claude-menu-save.ps1")
-. (Join-Path $bin "claude-menu-restore.ps1")
-. (Join-Path $bin "claude-cli.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-archive.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-save.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-restore.ps1")
+. (Join-Path $bin "cli/claude-cli.ps1")
 $trHome = $script:HomeDir
 $trRegistry = $script:RegistryPath
 $trRoot = Join-Path $script:Sandbox "confiance"
@@ -52,7 +52,7 @@ $trBytes[$trBytes.Length - 1] = $trBytes[$trBytes.Length - 1] -bxor 1
 [IO.File]::WriteAllBytes($trZip, $trBytes)
 Assert-True (-not (Test-BackupTrusted $trZip)) "archive modifiee : plus reconnue"
 
-. (Join-Path $bin "claude-menu-archive.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-archive.ps1")
 Remove-Item Function:\Set-TrustText
 Remove-Item -LiteralPath $trRoot -Recurse -Force
 $script:HomeDir = $trHome

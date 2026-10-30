@@ -55,16 +55,16 @@ try {
   $env:STATUSLINE_BG = "dark"
   $script:SyncKeyStoreOs = "Linux"
   . (Join-Path $bin "claude-import.ps1")
-  . (Join-Path $bin "claude-usage.ps1")
-  . (Join-Path $bin "claude-menu-view.ps1")
-  . (Join-Path $bin "claude-menu-archive.ps1")
-  . (Join-Path $bin "claude-update.ps1")
-  . (Join-Path $bin "claude-self-update.ps1")
+  . (Join-Path $bin "usage/claude-usage.ps1")
+  . (Join-Path $bin "menu/view/claude-menu-view.ps1")
+  . (Join-Path $bin "menu/manage/claude-menu-archive.ps1")
+  . (Join-Path $bin "update/claude-update.ps1")
+  . (Join-Path $bin "self/claude-self-update.ps1")
   . (Join-Path $bin "claude-statusline-seed.ps1")
-  . (Join-Path $bin "claude-drive-sync.ps1")
-  . (Join-Path $bin "claude-drive-watch.ps1")
-  . (Join-Path $bin "claude-drive-cli.ps1")
-  . (Join-Path $bin "claude-account-guard.ps1")
+  . (Join-Path $bin "drive/sync/claude-drive-sync.ps1")
+  . (Join-Path $bin "drive/watch/claude-drive-watch.ps1")
+  . (Join-Path $bin "drive/session/claude-drive-cli.ps1")
+  . (Join-Path $bin "accounts/claude-account-guard.ps1")
   Remove-Item Env:STATUSLINE_BG
   $script:SyncKeyStoreOs = "Linux"
   foreach ($checkFile in Get-ChildItem -LiteralPath $PSScriptRoot -Filter "*.checks.ps1" -Recurse | Sort-Object Name) {

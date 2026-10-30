@@ -1,5 +1,5 @@
 $script:ClmModuleDir = $PSScriptRoot
-$script:ClmModuleFolders = @()
+$script:ClmModuleFolders = @("drive/core", "drive/transfer", "drive/sync", "drive/data", "drive/watch", "drive/session", "menu/startup", "menu/view", "menu/loop", "menu/manage", "ui/terminal", "ui/color", "ui/render", "ui/display", "sync/core", "sync/crypto", "sync/mcp", "web/actions", "web/server", "usage", "update", "self", "cli", "accounts", "core", "machine", "backup", "statusline")
 $script:ClmModulePaths = $null
 $script:ClmInstallingStamp = "installing"
 $script:ClmInstallStaleSeconds = 120
@@ -7,7 +7,7 @@ $script:ClmInstallStaleSeconds = 120
 function Get-ClmModulePaths {
   $paths = @{}
   foreach ($folder in @($script:ClmModuleFolders) + @("")) {
-    $dir = [IO.Path]::Combine($script:ClmModuleDir, $folder)
+    $dir = [IO.Path]::Combine($script:ClmModuleDir, $folder.Replace("/", [string][IO.Path]::DirectorySeparatorChar))
     if (-not [IO.Directory]::Exists($dir)) { continue }
     foreach ($file in [IO.Directory]::GetFiles($dir, "*.ps1") | Where-Object { $_.EndsWith(".ps1", [StringComparison]::OrdinalIgnoreCase) }) {
       $name = [IO.Path]::GetFileNameWithoutExtension($file)
@@ -17,19 +17,24 @@ function Get-ClmModulePaths {
   return $paths
 }
 
+function Get-ClmModulePath {
+  param([string]$Name)
+  if ($null -eq $script:ClmModulePaths) { $script:ClmModulePaths = Get-ClmModulePaths }
+  $path = $script:ClmModulePaths[$Name]
+  if ($null -eq $path) { $path = Join-Path $script:ClmModuleDir ($Name + ".ps1") }
+  return $path
+}
+
 function Import-ClmModule {
   param([string[]]$ClmImportNames)
-  if ($null -eq $script:ClmModulePaths) { $script:ClmModulePaths = Get-ClmModulePaths }
   try {
     foreach ($ClmImportName in $ClmImportNames) {
       if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add($ClmImportName)) {
-        $ClmImportPath = $script:ClmModulePaths[$ClmImportName]
-        if ($null -eq $ClmImportPath) { $ClmImportPath = Join-Path $script:ClmModuleDir ($ClmImportName + ".ps1") }
-        . $ClmImportPath
+        . (Get-ClmModulePath $ClmImportName)
       }
     }
   } finally {
-    Remove-Variable ClmImportNames, ClmImportName, ClmImportPath -ErrorAction Ignore
+    Remove-Variable ClmImportNames, ClmImportName -ErrorAction Ignore
   }
 }
 
@@ -50,7 +55,9 @@ function Test-ClmStampSteady {
 }
 
 $script:ClmGuardedLoad = @'
-$clmEntry = Join-Path (Split-Path -Parent $Source) "claude-import.ps1"
+$clmRoot = Split-Path -Parent $Source
+while ($clmRoot -and -not [IO.File]::Exists([IO.Path]::Combine($clmRoot, "claude-import.ps1"))) { $clmRoot = Split-Path -Parent $clmRoot }
+$clmEntry = [IO.Path]::Combine("" + $clmRoot, "claude-import.ps1")
 $clmStamp = $null
 if ([IO.File]::Exists($clmEntry)) { . $clmEntry; if (Test-Path Function:\Read-ClmStamp) { $clmStamp = Read-ClmStamp } }
 try { if ($clmStamp -cne "installing") { . $Source } } catch { if ($null -eq $clmStamp -or (Test-ClmStampSteady $clmStamp)) { throw } }
