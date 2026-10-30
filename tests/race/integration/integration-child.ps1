@@ -63,17 +63,17 @@ function Get-ItestKey {
 }
 
 function Read-ItestKey {
-  if ($itestClock.ElapsedMilliseconds -gt $itestStuckMs) { [Console]::Out.WriteLine("stuck " + $itestId); exit 1 }
+  if ($itestClock.ElapsedMilliseconds -gt $itestStuckMs) { [Console]::Out.WriteLine("`n" + "stuck " + $itestId); exit 1 }
   if (-not (Test-ItestSettled)) { return $null }
   if (-not $script:itestShown) {
     $script:itestShown = $true
-    [Console]::Out.WriteLine("menu " + $itestId + " " + $script:ClmLoadedSha + " " + ($itestArgs -join " "))
+    [Console]::Out.WriteLine("`n" + "menu " + $itestId + " " + $script:ClmLoadedSha + " " + ($itestArgs -join " "))
     [IO.File]::WriteAllText((Join-Path $env:CLM_ITEST_LOG ("menu-" + $itestStarts + "-" + $itestId)), $script:ClmLoadedSha)
   }
   $key = Get-ItestKey
   if (-not $key -or $script:itestPressed -eq $key) { return $null }
   $script:itestPressed = $key
-  [Console]::Out.WriteLine("key " + $itestId + " " + $key)
+  [Console]::Out.WriteLine("`n" + "key " + $itestId + " " + $key)
   return New-KeyInfo $key
 }
 
