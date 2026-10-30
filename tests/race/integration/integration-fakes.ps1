@@ -37,7 +37,7 @@ function Stop-ItestToken { throw "jeton interdit pendant les tests" }
 function Stop-ItestKeyStore { throw "trousseau interdit pendant les tests" }
 function Read-ItestSyncKey { return ConvertTo-SyncKeyRecord (Get-DriveRaceKeys) }
 function Test-ItestNetwork { return $true }
-function Start-ItestDriveWatcher { Add-ItestMark "watcher"; return $true }
+function Start-ItestDriveWatcher { Add-ItestMark "watcher"; return $false }
 
 function Invoke-ItestGitHubGet {
   param([string]$Uri, [int]$Timeout, [string]$OutFile = "")
