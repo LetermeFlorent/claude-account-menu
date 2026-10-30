@@ -1,13 +1,36 @@
 $script:ClmModuleDir = $PSScriptRoot
+$script:ClmModuleFolders = @()
+$script:ClmModulePaths = $null
 $script:ClmInstallingStamp = "installing"
 $script:ClmInstallStaleSeconds = 120
 
+function Get-ClmModulePaths {
+  $paths = @{}
+  foreach ($folder in @($script:ClmModuleFolders) + @("")) {
+    $dir = [IO.Path]::Combine($script:ClmModuleDir, $folder)
+    if (-not [IO.Directory]::Exists($dir)) { continue }
+    foreach ($file in [IO.Directory]::GetFiles($dir, "*.ps1") | Where-Object { $_.EndsWith(".ps1", [StringComparison]::OrdinalIgnoreCase) }) {
+      $name = [IO.Path]::GetFileNameWithoutExtension($file)
+      if (-not $paths.ContainsKey($name)) { $paths[$name] = $file }
+    }
+  }
+  return $paths
+}
+
 function Import-ClmModule {
   param([string[]]$ClmImportNames)
-  foreach ($ClmImportName in $ClmImportNames) {
-    if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add($ClmImportName)) { . (Join-Path $script:ClmModuleDir ($ClmImportName + ".ps1")) }
+  if ($null -eq $script:ClmModulePaths) { $script:ClmModulePaths = Get-ClmModulePaths }
+  try {
+    foreach ($ClmImportName in $ClmImportNames) {
+      if ($null -eq $script:ClmOnce -or $script:ClmOnce.Add($ClmImportName)) {
+        $ClmImportPath = $script:ClmModulePaths[$ClmImportName]
+        if ($null -eq $ClmImportPath) { $ClmImportPath = Join-Path $script:ClmModuleDir ($ClmImportName + ".ps1") }
+        . $ClmImportPath
+      }
+    }
+  } finally {
+    Remove-Variable ClmImportNames, ClmImportName, ClmImportPath -ErrorAction Ignore
   }
-  Remove-Variable ClmImportNames, ClmImportName -ErrorAction Ignore
 }
 
 function Read-ClmStamp {
