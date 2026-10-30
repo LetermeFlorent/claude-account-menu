@@ -34,7 +34,7 @@ Assert-Equal "3" (@($itRestMenus | Where-Object { (Get-ItestLastSha $_) -eq $itR
 Assert-Equal "2 2 2" ((@($itRestMenus | ForEach-Object { @(Get-RaceLines $_ "start").Count })) -join " ") "relance : une seule relance par menu, sans boucle"
 Assert-Equal "1" (Get-ItestMarks $itRestBox "install").Count "relance : une seule installation"
 Assert-Equal "2" (@(Get-RaceLines $itRestRuns["r2"] "menu") + @(Get-RaceLines $itRestRuns["r3"] "menu") | Where-Object { $_ -like "*--no-update*" }).Count "relance : la relance sur place passe --no-update"
-Assert-Equal "" ((Get-ItestMarkTexts $itRestBox "claude-update" | Where-Object { $_.Split(" ")[0] -ne "r1" -and $_.Split(" ")[1] -ne "1" }) -join " | ") "relance : aucune mise a jour de Claude Code apres une relance sur place"
+Assert-Equal "" ((Get-ItestMarkTexts $itRestBox "claude-update" | Where-Object { $_.Split(" ")[1] -ne "1" }) -join " | ") "relance : aucune mise a jour de Claude Code apres une relance, touche u comprise"
 Assert-Equal "r4 1" ((Get-ItestMarkTexts $itRestBox "claude-session" | ForEach-Object { $_.Split(" ")[0] + " " + $_.Split(" ")[1] }) -join " | ") "relance : seul le compte deja en session a lance claude"
 Assert-Equal "1" @(Get-RaceLines $itRestRuns["r4"] "start").Count "relance : le clm en session n'est pas relance"
 Assert-Equal "1" (Get-ItestMarks $itRestBox "claude-ended").Count "relance : la session va jusqu'a sa fin"
