@@ -2,6 +2,7 @@
 
 try {
   $cat = New-PrefsFixture
+  $script:UiRows = 30
   $cat.Waiting = [string[]]@("vieux", "mac")
   Assert-Equal (Get-ClmText "sync.prefs.sub.waiting" @("vieux, mac")) (Get-PrefsSub $cat) "sous-titre : PC pas a jour"
   $cat.Waiting = [string[]]@()

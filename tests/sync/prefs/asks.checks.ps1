@@ -67,7 +67,7 @@ $cat = @{ Pcs = $pcs; Skills = [string[]]@("neuf", "vieux", "seul"); PerPc = $fa
 $lines = Get-PcPrefsLines $mine $cat "moi" "cible"
 $shown = @($lines | Where-Object { -not $_.Head -and -not $_.All } | ForEach-Object { $_.Key + "=" + $_.On + "/" + $_.Base + "/" + $_.Wait })
 Assert-Equal "neuf=True/False/True seul=True/True/False vieux=False/False/False" ($shown -join " ") "cases d'un autre PC : son choix, puis les demandes, la plus recente gagne"
-Assert-True ($lines[1].All -and $lines[1].Mixed -and $lines[1].Tag -eq "coches : 2 sur 3") "cases d'un autre PC : une case pour tous les skills"
+Assert-True ($lines[1].All -and $lines[1].Mixed -and $lines[1].Tag -eq (Get-ClmText "sync.prefs.checkedCount" @(2, 3))) "cases d'un autre PC : une case pour tous les skills"
 Assert-Equal 0 (Get-PcPrefsLines $mine $cat "moi" "autre").Count "PC sans clm a jour : rien a regler"
 Assert-Equal 0 (Get-PcPrefsLines $mine $cat "moi" "inconnu").Count "PC inconnu : rien a regler"
 

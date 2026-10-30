@@ -16,9 +16,9 @@ function ConvertFrom-SyncKeyRecord {
     $r = $Text | ConvertFrom-Json
     $master = [Convert]::FromBase64String([string]$r.key)
     $keys = New-SyncKeys $master ([Convert]::FromBase64String([string]$r.salt)) ([int]$r.iterations)
-  } catch { throw $script:SyncKeyBroken }
+  } catch { throw (Get-ClmText "sync.key.broken") }
   $same = Test-SyncBytesEqual ([Text.Encoding]::ASCII.GetBytes($keys.Check)) ([Text.Encoding]::ASCII.GetBytes([string]$r.check))
-  if ($master.Length -ne 32 -or -not $same) { throw $script:SyncKeyBroken }
+  if ($master.Length -ne 32 -or -not $same) { throw (Get-ClmText "sync.key.broken") }
   return $keys
 }
 
@@ -55,7 +55,7 @@ function Read-SyncKeyText {
   if (-not [IO.File]::Exists($script:SyncKeyStorePath)) { return $null }
   $text = (Read-SharedText $script:SyncKeyStorePath).Trim()
   if ($script:SyncKeyStoreOs -ne "Windows") { return $text }
-  try { return Unprotect-WindowsText $text } catch { throw $script:SyncKeyBroken }
+  try { return Unprotect-WindowsText $text } catch { throw (Get-ClmText "sync.key.broken") }
 }
 
 function Save-SyncKeys {
@@ -65,7 +65,7 @@ function Save-SyncKeys {
 
 function Get-SyncKeys {
   $text = Read-SyncKeyText
-  if (-not $text) { throw $script:SyncKeyMissing }
+  if (-not $text) { throw (Get-ClmText "sync.key.missing") }
   return ConvertFrom-SyncKeyRecord $text
 }
 

@@ -96,7 +96,7 @@ try {
 
   $p = Get-WebPrefs
   Assert-True (-not $p.connected -and @($p.lines).Count -eq 0) "web listes : reglages sans Drive"
-  Assert-True ($p.warn["skills"] -like "Le skill part a la corbeille*") "web listes : avertissement d'effacement"
+  Assert-True ($p.warn["skills"] -eq (Get-PrefsEraseWarn "skills").Trim()) "web listes : avertissement d'effacement"
   $script:WebDriveOn = $true
   function Read-CliPrefs {
     $skill = New-PrefsItem @{ Kind = "skills"; Key = "dessin"; Label = "dessin"; Tag = ""; On = $true; Erasing = $false }
@@ -112,8 +112,8 @@ try {
   Assert-True $l[3].all "web listes : case de groupe"
   Assert-Equal (Get-PrefsOffWarn "skills").Trim().Replace((Get-PrefsThisPc), (Get-ClmText "web.thisPc")) (@($l[1].off) -join "|") "web listes : texte montre avant de decocher"
   Assert-Equal 0 @($l[4].off).Count "web listes : MCP en cours d'effacement, rien a decocher"
-  Assert-True ((ConvertTo-JsonText $p) -match '"off"\s*:\s*\[\s*"Le skill') "web listes : texte avant de decocher envoye en liste"
-  Assert-Equal "case cochee : synchronise sur ce PC" $p.sub "web listes : explication"
+  Assert-True ((ConvertTo-JsonText $p) -match ('"off"\s*:\s*\[\s*"' + [regex]::Escape((Get-PrefsOffWarn "skills").Trim().Substring(0, 9)))) "web listes : texte avant de decocher envoye en liste"
+  Assert-Equal (Get-ClmText "sync.prefs.sub.checked") $p.sub "web listes : explication"
   Assert-Equal "bureau 0" ($p.me + " " + @($p.pcs).Count) "web listes : ce PC seul"
 
   Assert-Equal 0 @((Get-WebBackups).items).Count "web listes : aucune sauvegarde"

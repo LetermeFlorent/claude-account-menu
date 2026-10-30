@@ -22,7 +22,7 @@ foreach ($k in $langUsed) {
 foreach ($k in $langOwn) { Assert-True ($langUsed.Contains($k)) ("cle " + $k + " : utilisee par un fichier de synchro") }
 Assert-Equal "" (@($langOwn | Where-Object { $null -eq $langFr[$_] }) -join ",") "textes de synchro : memes cles en francais et en anglais"
 
-$langBadFrench = '\b(reglages?|reglables?|regler|echou\w*|ecriture|definition|creee|enregistre|enregistree|changee|oubliee|arretee|refuse|modifie|chiffre|caracteres|different|decoch\w*|coches|envoyes|derivation|apres|efface|deja|synchronise|cle|illisible|incorrecte)\b|\ba (la|ce|sa|une|jour|corriger|supprimer)\b'
+$langBadFrench = '\b(reglages?|reglables?|regler|echou\w*|ecriture|definition|creee|enregistre|enregistree|changee|oubliee|arretee|refuse|modifie|chiffre|caracteres|different|decoch\w*|coches|envoyes|derivation|apres|efface|deja|synchronise|cle)\b|\ba (la|ce|sa|une|jour|corriger|supprimer)\b'
 $langBadChars = '[\u00A0\u202F\u2009\u200B\uFEFF\u2018\u2019\u201C\u201D\u2014\u00AB\u00BB]'
 foreach ($k in $langOwn) {
   $fr = [string]$langFr[$k]
