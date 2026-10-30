@@ -1,10 +1,8 @@
-. Import-ClmModule claude-text
 $script:NetworkHosts = @("api.anthropic.com", "github.com")
 $script:NetworkPort = 443
 $script:NetworkTimeoutMs = 3000
 $script:NetworkTries = 3
 $script:NetworkRetryMs = 200
-$script:OfflineText = Get-ClmText "accounts.network.offline"
 
 function Test-NetworkOnce {
   param($Clock)

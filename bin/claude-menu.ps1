@@ -34,7 +34,7 @@ function Start-Account {
 function Assert-Online {
   if (Test-Network) { return }
   Stop-BootBar
-  Write-Output ("  " + $script:OfflineText)
+  Write-Output ("  " + (Get-ClmText "accounts.network.offline"))
   exit 1
 }
 
@@ -115,7 +115,7 @@ if ($menuMode) {
   }
 }
 if ($script:MenuOffline) {
-  Write-Output ("  " + $script:OfflineText)
+  Write-Output ("  " + (Get-ClmText "accounts.network.offline"))
   exit 1
 }
 if ($script:ClmUpdated) {
