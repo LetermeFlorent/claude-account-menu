@@ -37,6 +37,7 @@ function New-ItestEnv {
   $vars["CLM_ITEST_GATE"] = $Box.Gate
   $vars["STATUSLINE_BG"] = "dark"
   $vars["CLM_ANIM"] = "0"
+  $vars["TERM"] = "xterm-256color"
   foreach ($k in @("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY")) { $vars[$k] = "http://127.0.0.1:9" }
   $vars["NO_PROXY"] = $null
   return $vars
