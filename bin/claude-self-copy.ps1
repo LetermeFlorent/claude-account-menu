@@ -1,6 +1,7 @@
 . Import-ClmModule claude-file-io, claude-self-version
 $script:ClmMarkerFile = "clm.installing"
 $script:ClmManifestFile = "clm.files"
+$script:ClmOwnedTops = @("lang", "clm-web")
 
 function Get-ClmTreeFiles {
   param([string]$Root)
@@ -50,9 +51,10 @@ function Get-ClmStaleFiles {
   param([string]$Target, [string[]]$Shipped)
   $keep = New-Object 'Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
   foreach ($s in $Shipped) { [void]$keep.Add($s) }
-  $tops = @($Shipped | Where-Object { $_.Contains("/") } | ForEach-Object { $_.Split("/")[0] } | Select-Object -Unique)
+  $tops = @($Shipped | Where-Object { $_.Contains("/") } | ForEach-Object { $_.Split("/")[0] } | Select-Object -Unique | Where-Object { $script:ClmOwnedTops -contains $_ })
   $seen = @(foreach ($t in $tops) { Get-ClmTreeFiles ([IO.Path]::Combine($Target, $t)) | ForEach-Object { $t + "/" + $_ } })
-  return @(@($seen) + @(Read-ClmManifest $Target) | Select-Object -Unique | Where-Object { -not $keep.Contains($_) })
+  $moved = @($Shipped | Where-Object { $_ -match '/claude-[a-z0-9-]+\.ps1$' } | ForEach-Object { $_.Substring($_.LastIndexOf("/") + 1) } | Where-Object { [IO.File]::Exists([IO.Path]::Combine($Target, $_)) })
+  return @(@($seen) + @(Read-ClmManifest $Target) + $moved | Select-Object -Unique | Where-Object { -not $keep.Contains($_) })
 }
 
 function Remove-ClmEmptyDirs {

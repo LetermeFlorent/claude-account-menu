@@ -53,7 +53,8 @@ EOF
 
 stale_candidates() {
   if [ -f "$manifest" ]; then tr -d '\r' < "$manifest"; fi
-  printf '%s\n' "$files" | sed -n 's|^\([^/]*\)/.*|\1|p' | LC_ALL=C sort -u | while IFS= read -r top; do
+  printf '%s\n' "$files" | sed -n 's|^.*/\(claude-[a-z0-9-]*\.ps1\)$|\1|p'
+  printf '%s\n' "$files" | grep -E '^(lang|clm-web)/' | sed 's|/.*||' | LC_ALL=C sort -u | while IFS= read -r top; do
     if [ -d "$dst/$top" ]; then (cd "$dst" && find "./$top" -type f) | sed 's|^\./||'; fi
   done
 }
