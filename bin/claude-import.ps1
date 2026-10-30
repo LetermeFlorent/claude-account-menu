@@ -55,6 +55,7 @@ function Test-ClmStampSteady {
 }
 
 $script:ClmGuardedLoad = @'
+$script:ClmOnce = New-Object "System.Collections.Generic.HashSet[string]"
 $clmRoot = Split-Path -Parent $Source
 while ($clmRoot -and -not [IO.File]::Exists([IO.Path]::Combine($clmRoot, "claude-import.ps1"))) { $clmRoot = Split-Path -Parent $clmRoot }
 $clmEntry = [IO.Path]::Combine("" + $clmRoot, "claude-import.ps1")
