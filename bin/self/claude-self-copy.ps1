@@ -1,4 +1,4 @@
-. Import-ClmModule claude-file-io, claude-self-version
+. Import-ClmModule claude-file-io, claude-self-version, claude-text
 $script:ClmMarkerFile = "clm.installing"
 $script:ClmManifestFile = "clm.files"
 $script:ClmOwnedTops = @("lang", "clm-web")
@@ -83,6 +83,18 @@ function Write-ClmStampFile {
   else { Remove-ClmFile $p }
 }
 
+function Assert-ClmFoldersFree {
+  param([string]$Target, [string[]]$Files)
+  $folders = @($Files | Where-Object { $_.Contains("/") } | ForEach-Object { $_.Substring(0, $_.LastIndexOf("/")) } | Select-Object -Unique)
+  foreach ($folder in $folders) {
+    $parts = $folder.Split("/")
+    for ($n = 1; $n -le $parts.Length; $n++) {
+      $p = [IO.Path]::Combine($Target, ($parts[0..($n - 1)] -join [IO.Path]::DirectorySeparatorChar))
+      if ([IO.File]::Exists($p)) { throw (Get-ClmText "install.folderBlocked" @($p)) }
+    }
+  }
+}
+
 function Copy-ClmTree {
   param([string]$Source, [string]$Target, [string[]]$Files)
   $fresh = @($Files | Where-Object { -not [IO.File]::Exists([IO.Path]::Combine($Target, $_)) })
@@ -99,6 +111,7 @@ function Install-ClmFiles {
   [IO.File]::WriteAllText($marker, [string]$PID)
   try {
     $files = @(Get-ClmTreeFiles $Source | Where-Object { $Skip -cnotcontains $_ })
+    Assert-ClmFoldersFree $Target $files
     Copy-ClmTree $Source $Target $files
     Remove-ClmStaleFiles $Target $files
     Write-TextFileAtomic ([IO.Path]::Combine($Target, $script:ClmManifestFile)) ((@($files) -join "`n") + "`n")

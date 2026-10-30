@@ -35,6 +35,19 @@ place_file() {
   pending=
 }
 
+check_folders() {
+  printf '%s
+' "$files" | sed -n 's|/[^/]*$||p' | LC_ALL=C sort -u | while IFS= read -r folder; do
+    while [ "$folder" != . ]; do
+      if [ -e "$dst/$folder" ] && [ ! -d "$dst/$folder" ]; then
+        clm_text install.sh.folderBlocked "{0} is a file, so the folder of the same name cannot be created: move it, then run the installation again" "$dst/$folder"
+        exit 1
+      fi
+      folder=$(dirname "$folder")
+    done
+  done
+}
+
 copy_missing() {
   while IFS= read -r rel; do
     if [ -n "$rel" ] && [ ! -e "$dst/$rel" ]; then place_file "$rel"; fi
@@ -116,6 +129,7 @@ if [ -z "$files" ]; then
   clm_text install.sh.noFiles "no file to install in {0}" "$src/bin"
   exit 1
 fi
+check_folders || exit 1
 copy_missing
 copy_changed
 remove_stale

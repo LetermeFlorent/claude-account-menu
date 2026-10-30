@@ -28,3 +28,9 @@ foreach ($case in @("manifeste", "sans manifeste")) {
   Assert-Equal "tiers|tiers|tiers|tiers|tiers" (Get-LayoutText $dst @($layoutForeign.Keys | Sort-Object)) ("ancienne installation a plat, " + $case + " : fichiers de l'utilisateur gardes")
   Assert-Equal (($layoutShipped -join "`n") + "`n") (Get-LayoutText $dst @("clm.files")) ("ancienne installation a plat, " + $case + " : liste des fichiers du nouvel arbre")
 }
+$blockedDst = Join-Path $script:Sandbox "layout-dst-blocked"
+foreach ($rel in $layoutOld.Keys) { $null = New-SandboxFile ("layout-dst-blocked/" + $rel) $layoutOld[$rel] }
+$null = New-SandboxFile "layout-dst-blocked/drive" "tiers"
+$blockedFile = Join-Path $blockedDst "drive"
+Assert-Throws { Install-ClmFiles $layoutSrc $blockedDst $layoutVersion @("clm") } (Get-ClmText "install.folderBlocked" @($blockedFile)) "fichier de l'utilisateur au nom d'un dossier livre : installation refusee, fichier nomme"
+Assert-Equal "m1|d1|tiers|<absent>|<absent>" (Get-LayoutText $blockedDst @("claude-menu.ps1", "claude-drive-api.ps1", "drive", "ui/claude-ui-term.ps1", "clm.installing")) "fichier de l'utilisateur au nom d'un dossier livre : rien copie ni retire avant le refus"
