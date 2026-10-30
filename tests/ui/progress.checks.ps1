@@ -19,7 +19,7 @@ Assert-Equal "telechargement" $script:UiProgress.Label "nouveau libelle, nouvell
 $t = Get-RowText (Get-ProgressRow 80 0)
 Assert-True ($t -notmatch "%") "pas de pourcentage inconnu"
 $script:UiQuit = $true
-Assert-True ((Get-RowText (Get-ProgressRow 80 0)) -match "arret demande") "arret annonce"
+Assert-True ((Get-RowText (Get-ProgressRow 80 0)) -match [regex]::Escape((Get-ClmText "ui.progress.stopping"))) "arret annonce"
 $script:UiQuit = $false
 $script:UiProgress = $null
 

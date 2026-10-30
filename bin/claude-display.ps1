@@ -1,14 +1,11 @@
-. Import-ClmModule claude-platform, claude-json, claude-state
+. Import-ClmModule claude-platform, claude-json, claude-state, claude-text
 $script:DisplayFileName = "display.json"
 $script:DisplayPalettes = @("auto", "dark", "light")
 $script:DisplayAnims = @("auto", "on", "off")
 $script:DisplayLangs = @("auto", "en", "fr")
 $script:DisplayWebThemes = @("system", "light", "dark")
 $script:DisplayAliases = @{ sombre = "dark"; clair = "light"; "1" = "on"; "0" = "off" }
-$script:DisplayRefusals = @{
-  palette = "couleurs inconnues : {0}, choisir auto, dark ou light"; anim = "animations inconnues : {0}, choisir auto, on ou off"
-  lang = "langue inconnue : {0}, choisir auto, en ou fr"; webTheme = "theme de la page inconnu : {0}, choisir system, light ou dark"
-}
+$script:DisplayRefusals = @{ palette = "ui.display.badPalette"; anim = "ui.display.badAnim"; lang = "ui.display.badLang"; webTheme = "ui.display.badWebTheme" }
 
 function Get-DisplayPath {
   param($Vars = $null)
@@ -55,9 +52,9 @@ function Set-DisplayValues {
   $choices = Get-DisplayChoices
   $clean = [ordered]@{}
   foreach ($k in @($Values.Keys)) {
-    if (-not $choices.Contains($k)) { throw ("reglage d'affichage inconnu : " + $k) }
+    if (-not $choices.Contains($k)) { throw (Get-ClmText "ui.display.badKey" $k) }
     $v = ConvertTo-DisplayValue $Values[$k] $choices[$k]
-    if (-not $v) { throw ($script:DisplayRefusals[$k] -f $Values[$k]) }
+    if (-not $v) { throw (Get-ClmText $script:DisplayRefusals[$k] $Values[$k]) }
     $clean[$k] = $v
   }
   $data = Read-DisplayFile $Vars

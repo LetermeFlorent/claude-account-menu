@@ -18,7 +18,7 @@ try {
   $r = Invoke-DisplayCli @("--palette", "sombre")
   Assert-Equal "dark off" ((Read-DisplayConfig).palette + " " + (Read-DisplayConfig).anim) "cli affichage : nom francais accepte"
   $r = Invoke-DisplayCli @("--palette", "rouge")
-  Assert-True ($r.Code -eq "1" -and $r.Text -like "couleurs inconnues : rouge*") "cli affichage : couleur inconnue refusee"
+  Assert-True ($r.Code -eq "1" -and $r.Text -like ((Get-ClmText "ui.display.badPalette" "rouge").Split(",")[0] + "*")) "cli affichage : couleur inconnue refusee"
   $r = Invoke-DisplayCli @("--anim")
   Assert-Equal ("1 " + (Get-ClmText "cli.anim.needs")) ($r.Code + " " + $r.Text) "cli affichage : valeur manquante"
   $r = Invoke-DisplayCli @("--palette", "dark", "light")

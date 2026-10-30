@@ -57,7 +57,7 @@ try {
   Assert-Equal "en" (Read-DisplayConfig (New-LangVars)).lang "langue : choix garde dans les reglages"
   $null = Set-DisplayValues @{ lang = "auto" } (New-LangVars)
   Assert-Equal "fr" (Get-ClmLang "Linux" (New-LangVars @{ LANG = "fr_FR.UTF-8" })) "langue : auto rend la main au systeme"
-  Assert-Throws { Set-DisplayValues @{ lang = "de" } (New-LangVars) } "langue inconnue" "langue : choix inconnu refuse"
+  Assert-Throws { Set-DisplayValues @{ lang = "de" } (New-LangVars) } ((Get-ClmText "ui.display.badLang" "de").Split(":")[0]) "langue : choix inconnu refuse"
 } finally {
   foreach ($n in $langFaked) { Set-Item ("function:" + $n) $langKept[$n] }
   Remove-Item -LiteralPath (Get-DisplayPath (New-LangVars)) -ErrorAction SilentlyContinue
