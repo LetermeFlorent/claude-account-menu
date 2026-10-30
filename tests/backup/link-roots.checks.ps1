@@ -35,7 +35,7 @@ $null = New-SandboxFile "liens racine/source/.claude-compte3/dedans.md" "d"
 Initialize-Tar
 $lrZip = Join-Path $lrRoot ("arch" + (Get-ArchiveExtension $script:TarFlavor))
 & $script:Tar -a -c -f $lrZip -C (Join-Path $lrRoot "source") ".claude-compte3"
-Assert-Throws { Restore-Accounts $lrZip } "lien" "restauration : dossier de compte en lien sur ce PC refuse"
+Assert-Throws { Restore-Accounts $lrZip } (Get-ClmText "backup.restore.linkOnPc" @(".claude-compte3")) "restauration : dossier de compte en lien sur ce PC refuse"
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $lrOut "dedans.md"))) "restauration : rien ecrit a travers le lien"
 
 Remove-LinkOrTree (Join-Path $script:HomeDir ".claude-compte3")

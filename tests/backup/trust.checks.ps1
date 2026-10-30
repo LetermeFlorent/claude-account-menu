@@ -29,7 +29,7 @@ $trForeign = Join-Path $script:TrustDl ("claude-comptes-autre" + (Get-ArchiveExt
 & $script:Tar -a -c -f $trForeign -C (Join-Path $trRoot "autre") ".claude"
 Assert-Equal 0 @(Get-Backups | Where-Object { $_.FullName -eq $trForeign }).Count "archive d'ailleurs : absente de la liste"
 Assert-True (-not (Test-BackupTrusted $trForeign)) "archive d'ailleurs : pas reconnue"
-Assert-Throws { Restore-Accounts $trForeign } "pas creee par clm" "archive d'ailleurs : restauration refusee sans chemin explicite"
+Assert-Throws { Restore-Accounts $trForeign } (Get-ClmText "backup.restore.foreign") "archive d'ailleurs : restauration refusee sans chemin explicite"
 $trWarn = @(Restore-Accounts $trForeign -AllowForeign 3>&1 | Where-Object { $_ -is [Management.Automation.WarningRecord] })
 Assert-True ($trWarn.Count -ge 1) "archive d'ailleurs : restauree a la demande, avec un avertissement"
 Assert-Equal "autre" ([IO.File]::ReadAllText((Join-Path $script:HomeDir ".claude/CLAUDE.md"))) "archive d'ailleurs : fichiers remis"

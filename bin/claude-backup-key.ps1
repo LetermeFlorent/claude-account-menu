@@ -1,9 +1,8 @@
-. Import-ClmModule claude-state, claude-file-io, claude-machine-lock
+. Import-ClmModule claude-state, claude-file-io, claude-machine-lock, claude-text
 $script:BackupKeyName = "backup-key"
 $script:BackupKeyLock = "backup-key"
 $script:BackupKeyWaitMs = 30000
 $script:BackupKeyBytes = 32
-$script:BackupKeyBusyText = "cle des sauvegardes en cours de creation par un autre clm, reessayer dans un instant"
 
 function Read-BackupKey {
   $path = Get-StatePath $script:BackupKeyName
@@ -28,7 +27,7 @@ function Get-BackupKey {
   try {
     $key = Read-BackupKey
     if ($null -ne $key) { return ,$key }
-    if ($null -eq $lock) { throw $script:BackupKeyBusyText }
+    if ($null -eq $lock) { throw (Get-ClmText "backup.key.busy") }
     return ,(New-BackupKey)
   } finally { Close-MachineLock $lock }
 }

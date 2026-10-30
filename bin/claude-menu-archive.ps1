@@ -1,4 +1,4 @@
-. Import-ClmModule claude-platform, claude-menu-progress, claude-process-args
+. Import-ClmModule claude-platform, claude-menu-progress, claude-process-args, claude-text
 $script:Tar = $null
 $script:TarFlavor = $null
 
@@ -31,10 +31,10 @@ function Initialize-Tar {
 
 function Assert-ArchiveReadable {
   param([string]$Path)
-  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw ("sauvegarde introuvable : " + $Path) }
+  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw (Get-ClmText "backup.archive.notFound" @($Path)) }
   Initialize-Tar
   if ($script:TarFlavor -eq "gnu" -and $Path -like "*.zip") {
-    throw "GNU tar ne lit pas les zip : installer bsdtar (paquet libarchive-tools) pour restaurer ce fichier"
+    throw (Get-ClmText "backup.archive.gnuZip")
   }
 }
 

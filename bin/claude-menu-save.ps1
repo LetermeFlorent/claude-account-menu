@@ -1,5 +1,5 @@
 . Import-ClmModule claude-menu-archive, claude-self-version, claude-machine-settings, claude-registry,
-  claude-backup-trust, claude-backup-restore
+  claude-backup-trust, claude-backup-restore, claude-text
 $script:SaveExcludes = @("cache", "paste-cache", "session-env", "shell-snapshots", "ide", "*.lock", ".local/bin/*.exe") + $script:SkipConversations
 $script:ArchiveRegistryName = ".claude-accounts.json"
 $script:ArchiveNameTries = 1000
@@ -50,7 +50,7 @@ function Get-FreeArchivePath {
     try { [IO.File]::Open($path, "CreateNew", "Write", "None").Dispose(); return $path }
     catch { if (-not (Test-Path -LiteralPath $path)) { throw } }
   }
-  throw ("aucun nom libre pour " + $Name + $Ext + " dans " + $dir)
+  throw (Get-ClmText "backup.save.noFreeName" @(($Name + $Ext), $dir))
 }
 
 function Save-Accounts {
@@ -67,8 +67,8 @@ function Save-Accounts {
   foreach ($x in $ex) { $argv += @("--exclude", $x) }
   $items = @(Get-SaveItems $Accs)
   $argv += $items
-  $label = "sauvegarde"
-  if ($Tag) { $label = "copie de l'etat actuel" }
+  $label = Get-ClmText "backup.tar.saving"
+  if ($Tag) { $label = Get-ClmText "backup.tar.copyOfState" }
   $stage = New-RegistryStage
   if ($stage) { $argv += @("-C", $stage, $script:ArchiveRegistryName) }
   try { $warn = Invoke-Tar $argv (Measure-Entries $items $ex) $label }
@@ -76,16 +76,16 @@ function Save-Accounts {
     if ($stage) { Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue }
     if ([IO.File]::Exists($zip) -and ([IO.FileInfo]$zip).Length -eq 0) { [IO.File]::Delete($zip) }
   }
-  if (-not (Test-Path -LiteralPath $zip)) { throw ("echec tar : " + ($warn -join " ")) }
+  if (-not (Test-Path -LiteralPath $zip)) { throw (Get-ClmText "backup.save.tarFailed" @(($warn -join " "))) }
   if ($warn.Count -gt 0 -and -not (Test-ArchiveIntact $zip)) {
     Remove-Item -LiteralPath $zip -Force
-    throw ("sauvegarde illisible, effacee : " + (@($warn | Select-Object -First 3) -join " "))
+    throw (Get-ClmText "backup.save.unreadable" @((@($warn | Select-Object -First 3) -join " ")))
   }
   Set-PrivateMode $zip
   Add-BackupMark $zip
   $mb = [math]::Round((Get-Item -LiteralPath $zip).Length / 1MB)
-  $res = $zip + " (" + $mb + " Mo, " + (@($Accs | ForEach-Object { $_.Label }) -join ", ") + ")"
-  if ($warn.Count -gt 0) { $res += ", " + $warn.Count + " avertissement(s)" }
+  $res = Get-ClmText "backup.save.result" @($zip, (Get-ClmText "backup.size" @($mb)), (@($Accs | ForEach-Object { $_.Label }) -join ", "))
+  if ($warn.Count -gt 0) { $res += Get-ClmText "backup.save.warnings" @($warn.Count) }
   return $res
 }
 

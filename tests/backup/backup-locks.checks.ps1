@@ -37,13 +37,13 @@ Assert-True (Test-BackupListed ([IO.FileInfo]$markFile)) "liste des sauvegardes 
 
 $restoreZip = Join-Path $script:LocksDl "claude-comptes-absente.zip"
 $restoreHeld = Open-MachineLock "backup"
-Assert-Throws { Restore-Accounts $restoreZip -Yes } "une autre restauration" "restauration pendant une autre : dit clairement"
+Assert-Throws { Restore-Accounts $restoreZip -Yes } (Get-ClmText "backup.restore.busy") "restauration pendant une autre : dit clairement"
 Close-MachineLock $restoreHeld
 $restoreHolder = Start-LockHolder "backup" 800
 $restoreErr = $null
 try { $null = Restore-Accounts $restoreZip -Yes } catch { $restoreErr = $_.Exception.Message }
 $null = Wait-RaceChild $restoreHolder
-Assert-True (-not ("" + $restoreErr).Contains("une autre restauration")) "restauration juste apres une autre : attend son tour"
+Assert-True (-not ("" + $restoreErr).Contains((Get-ClmText "backup.restore.busy"))) "restauration juste apres une autre : attend son tour"
 
 . (Join-Path $bin "claude-menu-archive.ps1")
 Remove-Item -LiteralPath $script:LocksDl -Recurse -Force

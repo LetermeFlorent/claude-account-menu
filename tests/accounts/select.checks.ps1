@@ -9,7 +9,7 @@ Assert-Equal (Get-ClmText "menu.select.unknown" @("prso")) $err "nom mal tape re
 $err = $null
 $missing = Join-Path $script:Sandbox "absent.zip"
 try { Assert-ArchiveReadable $missing } catch { $err = $_.Exception.Message }
-Assert-Equal ("sauvegarde introuvable : " + $missing) $err "restauration d'un fichier absent refusee"
+Assert-Equal (Get-ClmText "backup.archive.notFound" @($missing)) $err "restauration d'un fichier absent refusee"
 $clearKept = (Get-Item function:Clear-ConsoleInput -ErrorAction SilentlyContinue).ScriptBlock
 $script:ChoiceLog = New-Object 'System.Collections.Generic.List[string]'
 function Clear-ConsoleInput { $script:ChoiceLog.Add("flush") }

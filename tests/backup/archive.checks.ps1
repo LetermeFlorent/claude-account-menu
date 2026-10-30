@@ -59,7 +59,7 @@ $msg = Restore-Accounts $zip
 Assert-Equal "A1|B1|outil|regles" (@((Get-HomeText ".claude/.credentials.json"), (Get-HomeText ".claude-compte2/.credentials.json"), (Get-HomeText ".claude/skills/outil/SKILL.md"), (Get-HomeText ".claude-compte2/CLAUDE.md")) -join "|") "restauration : fichiers remis, partages relies"
 $safe = @(Get-Backups | Where-Object { $_.Name -like "claude-comptes-avant-restauration-*" })
 Assert-Equal 1 $safe.Count "restauration : etat d'avant sauvegarde"
-Assert-True ($safe.Count -eq 1 -and $msg.EndsWith("Etat precedent garde dans " + $safe[0].Name)) ("restauration : copie citee par son nom, " + $msg)
+Assert-True ($safe.Count -eq 1 -and $msg.EndsWith((Get-ClmText "backup.restore.safetyKept" @($safe[0].Name)))) ("restauration : copie citee par son nom, " + $msg)
 
 Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
 Remove-LinkOrTree (Join-Path $script:HomeDir ".claude-compte2")
@@ -84,7 +84,7 @@ $empty = Join-Path $script:BackupDl ("claude-comptes-vide" + (Get-ArchiveExtensi
 foreach ($pick in @($null, @(), @([PSCustomObject]@{ Label = "x"; Dir = ".claude-compte9" }))) {
   $err = $null
   try { $null = Restore-Accounts $empty $pick } catch { $err = $_.Exception.Message }
-  Assert-Equal "aucun compte a restaurer dans cette sauvegarde" $err "archive sans ce compte : refusee"
+  Assert-Equal (Get-ClmText "backup.restore.noAccount") $err "archive sans ce compte : refusee"
 }
 Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:HomeDir "Documents"))) "archive sans compte : rien ecrit dans le dossier perso"
 
