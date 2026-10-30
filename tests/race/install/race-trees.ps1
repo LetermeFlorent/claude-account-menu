@@ -29,7 +29,7 @@ function Get-RaceEntryLines {
     'function Get-RaceUsage { param($Account) return (Get-RaceLetters) }',
     'function Invoke-DriveSync { param($Ctl = $null, [long]$DeadlineMs = 0, [switch]$Force) return @{ Ok = $true; Seen = (Get-RaceLetters) } }',
     'function Get-SyncBytes { param([string]$Rel, [string]$Full) return (Get-RaceLetters) }',
-    'function Send-SealedFile { param($Folder, $Rel, $Bytes, $Props, $Id, $Keys) return ("" + $Bytes) }')
+    'function Send-SealedFile { param($Item) return ("" + $Item.Bytes) }')
   return $lines
 }
 

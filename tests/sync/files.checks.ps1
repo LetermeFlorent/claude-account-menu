@@ -9,7 +9,7 @@ $accs = @([PSCustomObject]@{ Label = "a"; Dir = ".claude" }, [PSCustomObject]@{ 
 $roots = Get-SyncRoots $accs
 Assert-True ($roots -contains ".claude-accounts.json" -and $roots -contains ".claude.json" -and $roots -contains ".claude-compte2") "racines : comptes, config et registre"
 $patterns = Get-SyncPatterns $accs
-$res = Get-LocalFiles $fh $roots $patterns (New-PathMap)
+$res = Get-LocalFiles @{ Root = $fh; Roots = $roots; Patterns = $patterns; Base = (New-PathMap) }
 $keys = [string[]]@($res.Files.Keys); [Array]::Sort($keys, [StringComparer]::Ordinal)
 Assert-Equal ".claude-accounts.json|.claude-compte2/notes.md|.claude.json|.claude/projects/C--x/memory/a b.md|.claude/settings.json" ($keys -join "|") "perimetre : exclusions et elements partages ecartes"
 Assert-Equal $script:RegistryPath $res.Files[".claude-accounts.json"].Full "liste des comptes : lue dans le dossier de clm, nom Drive garde"
@@ -28,26 +28,26 @@ $n = $res.Files[".claude-compte2/notes.md"]
 $base = New-PathMap
 $base[".claude-compte2/notes.md"] = @{ Md5 = "cafe"; M = $n.M; Size = $n.Size; Id = "i" }
 $base[".claude/settings.json"] = @{ Md5 = "cafe"; M = $e.M; Size = $e.Size; Id = "i" }
-$res2 = Get-LocalFiles $fh $roots $patterns $base
+$res2 = Get-LocalFiles @{ Root = $fh; Roots = $roots; Patterns = $patterns; Base = $base }
 Assert-Equal "cafe" $res2.Files[".claude-compte2/notes.md"].Md5 "taille et date inchangees, MD5 repris de la base"
 Assert-Equal $e.Md5 $res2.Files[".claude/settings.json"].Md5 "reglages d'un compte : MD5 toujours recalcule"
 $base[".claude-compte2/notes.md"].M = $n.M - 5
-Assert-Equal $n.Md5 (Get-LocalFiles $fh $roots $patterns $base).Files[".claude-compte2/notes.md"].Md5 "date changee, MD5 recalcule"
+Assert-Equal $n.Md5 (Get-LocalFiles @{ Root = $fh; Roots = $roots; Patterns = $patterns; Base = $base }).Files[".claude-compte2/notes.md"].Md5 "date changee, MD5 recalcule"
 
 New-Item -ItemType Directory -Path (Join-Path $fh "cible") -Force | Out-Null
 $null = New-SandboxFile "pc-files/cible/dedans.md" "x"
 New-Item -ItemType (Get-DirLinkType) -Path (Join-Path $fh ".claude/lien") -Target (Join-Path $fh "cible") | Out-Null
-$res3 = Get-LocalFiles $fh $roots $patterns (New-PathMap)
+$res3 = Get-LocalFiles @{ Root = $fh; Roots = $roots; Patterns = $patterns; Base = (New-PathMap) }
 Assert-True (-not $res3.Files.ContainsKey(".claude/lien/dedans.md")) "jonction ou lien ignore"
 
 if ($script:OsName -eq "Windows") {
   $fs = [IO.File]::Open((Join-Path $fh ".claude-compte2/notes.md"), "Open", "ReadWrite", "None")
-  try { $res4 = Get-LocalFiles $fh $roots $patterns (New-PathMap) } finally { $fs.Dispose() }
+  try { $res4 = Get-LocalFiles @{ Root = $fh; Roots = $roots; Patterns = $patterns; Base = (New-PathMap) } } finally { $fs.Dispose() }
   Assert-True (-not $res4.Files.ContainsKey(".claude-compte2/notes.md")) "fichier verrouille absent de la liste"
   Assert-True ($res4.Skipped -contains ".claude-compte2/notes.md") "fichier verrouille marque illisible"
 }
 
-$res5 = Get-LocalFiles $fh $roots $patterns (New-PathMap) @{ Stop = $true }
+$res5 = Get-LocalFiles @{ Root = $fh; Roots = $roots; Patterns = $patterns; Base = (New-PathMap); Ctl = @{ Stop = $true } }
 Assert-True $res5.Stopped "arret demande : analyse interrompue"
 Assert-True (-not $res5.Files.ContainsKey(".claude/settings.json")) "arret demande : dossiers non parcourus"
 Assert-Equal '"ab\n"' (ConvertTo-JsonString "ab`n") "retour a la ligne final echappe"

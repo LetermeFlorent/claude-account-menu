@@ -7,9 +7,9 @@ function Save-SealedMedia {
 }
 
 function Send-SealedFile {
-  param([string]$FolderId, [string]$Rel, [byte[]]$Bytes, $Props, [string]$Id, $Keys)
-  if ($null -eq $Keys) { throw "cle absente" }
-  return @{ Id = "up-" + $Rel + "-" + $Bytes.Length + "-" + $Props["pc"]; Md5 = "" }
+  param($Item)
+  if ($null -eq $Item.Keys) { throw "cle absente" }
+  return @{ Id = "up-" + $Item.Rel + "-" + $Item.Bytes.Length + "-" + $Item.Props["pc"]; Md5 = "" }
 }
 
 function Get-SyncBytes {

@@ -21,7 +21,7 @@ function Send-DriveBytes {
   $boundary = "clm" + [guid]::NewGuid().ToString("N")
   $t = Get-UploadTarget $Id "multipart"
   $body = New-MultipartBody $MetaJson $Bytes $boundary
-  return ConvertTo-UploadResult (Invoke-DriveRequest $t.Method $t.Uri $body ("multipart/related; boundary=" + $boundary) $script:DriveDataTimeout)
+  return ConvertTo-UploadResult (Invoke-DriveRequest @{ Method = $t.Method; Uri = $t.Uri; Body = $body; ContentType = ("multipart/related; boundary=" + $boundary); Timeout = $script:DriveDataTimeout })
 }
 
 function Read-ByteSource {
@@ -62,14 +62,14 @@ function Send-DriveText {
 
 function Get-DriveBytes {
   param([string]$Id)
-  $r = Invoke-DriveRequest "GET" ($script:DriveApi + "/" + $Id + "?alt=media") $null "" $script:DriveDataTimeout
+  $r = Invoke-DriveRequest @{ Method = "GET"; Uri = ($script:DriveApi + "/" + $Id + "?alt=media"); Timeout = $script:DriveDataTimeout }
   if ($null -eq $r -or $null -eq $r.RawContentStream) { return ,(New-Object byte[] 0) }
   return ,$r.RawContentStream.ToArray()
 }
 
 function Save-DriveMedia {
   param([string]$Id, [string]$OutFile)
-  $null = Invoke-DriveRequest "GET" ($script:DriveApi + "/" + $Id + "?alt=media") $null "" $script:DriveDataTimeout $OutFile
+  $null = Invoke-DriveRequest @{ Method = "GET"; Uri = ($script:DriveApi + "/" + $Id + "?alt=media"); Timeout = $script:DriveDataTimeout; OutFile = $OutFile }
 }
 
 function Save-SealedMedia {

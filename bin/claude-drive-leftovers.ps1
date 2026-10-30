@@ -28,7 +28,7 @@ function Invoke-TrashBatch {
   param([string[]]$Ids)
   $boundary = "clm" + [guid]::NewGuid().ToString("N")
   $body = [Text.Encoding]::UTF8.GetBytes((New-TrashBatchBody $Ids $boundary))
-  $r = Invoke-DriveRequest "POST" $script:DriveBatchUri $body ("multipart/mixed; boundary=" + $boundary) $script:DriveDataTimeout
+  $r = Invoke-DriveRequest @{ Method = "POST"; Uri = $script:DriveBatchUri; Body = $body; ContentType = ("multipart/mixed; boundary=" + $boundary); Timeout = $script:DriveDataTimeout }
   return ([regex]::Matches((Get-ResponseText $r), "HTTP/1\.1 2\d\d")).Count
 }
 

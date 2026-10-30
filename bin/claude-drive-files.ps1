@@ -73,7 +73,9 @@ function Test-SyncStop {
 }
 
 function Get-LocalFiles {
-  param([string]$Root, $Roots, $Patterns, $Base, $Ctl = $null, [long]$DeadlineMs = 0)
+  param($Scan)
+  $Root = [string]$Scan.Root; $Roots = $Scan.Roots; $Patterns = $Scan.Patterns; $Base = $Scan.Base
+  $Ctl = $Scan.Ctl; $DeadlineMs = [long]$Scan.DeadlineMs
   $res = @{ Files = (New-PathMap); Skipped = (New-Object 'System.Collections.Generic.List[string]'); Stopped = $false }
   $stack = New-Object Collections.Stack
   $rx = Get-ExcludeRegex $Patterns

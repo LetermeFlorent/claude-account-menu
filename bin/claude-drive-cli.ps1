@@ -32,7 +32,11 @@ function Invoke-DriveCli {
     if ($Action.On) { Write-Host (Get-ClmText "drive.cli.auto.on") } else { Write-Host (Get-ClmText "drive.cli.auto.off") }
     return 0
   }
-  try { Write-Host (& $script:DriveCliRuns[$Action.Name]) } catch { Write-Host $_.Exception.Message; return 1 }
+  try { Write-Host (& $script:DriveCliRuns[$Action.Name]) }
+  catch {
+    if (Test-LeftToOtherClm $_) { Write-Host (Get-ClmText "drive.passphrase.busy") } else { Write-Host $_.Exception.Message }
+    return 1
+  }
   return 0
 }
 

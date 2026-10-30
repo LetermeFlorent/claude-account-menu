@@ -17,7 +17,7 @@ while (-not $Ctl.Stop -and $Work.TryDequeue([ref]$item)) {
       Save-SealedMedia $item.Id $item.Tmp $item.Seal $Ctl.Keys
       $out = @{ Ok = $true }
     } else {
-      $out = @{ Ok = $true; Sent = (Send-SealedFile $item.Folder $item.Rel (Get-SyncBytes $item.Rel $item.Full) $item.Props $item.Id $Ctl.Keys) }
+      $out = @{ Ok = $true; Sent = (Send-SealedFile @{ FolderId = $item.Folder; Rel = $item.Rel; Bytes = (Get-SyncBytes $item.Rel $item.Full); Props = $item.Props; Id = $item.Id; Keys = $Ctl.Keys }) }
     }
   } catch {
     if ($item.Kind -eq "download") { Remove-DriveTemp $item.Tmp }

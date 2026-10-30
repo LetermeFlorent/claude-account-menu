@@ -3,7 +3,7 @@ $script:DriveChangesUri = "https://www.googleapis.com/drive/v3/changes"
 $script:DriveChangeFields = "nextPageToken,newStartPageToken,changes(fileId,removed,file(id,name,md5Checksum,appProperties,parents,trashed))"
 
 function Get-DriveStartToken {
-  $r = ConvertFrom-DriveJson (Invoke-DriveRequest "GET" ($script:DriveChangesUri + "/startPageToken?fields=startPageToken"))
+  $r = ConvertFrom-DriveJson (Invoke-DriveRequest @{ Method = "GET"; Uri = ($script:DriveChangesUri + "/startPageToken?fields=startPageToken") })
   $t = [string]$r.startPageToken
   if (-not $t) { throw (Get-ClmText "drive.changes.noToken") }
   return $t
@@ -16,7 +16,7 @@ function Read-DriveChanges {
   $next = $Token
   while ($true) {
     $uri = $script:DriveChangesUri + "?pageToken=" + [Uri]::EscapeDataString($next) + "&pageSize=1000&includeRemoved=true&spaces=drive&fields=" + $fields
-    $r = ConvertFrom-DriveJson (Invoke-DriveRequest "GET" $uri)
+    $r = ConvertFrom-DriveJson (Invoke-DriveRequest @{ Method = "GET"; Uri = $uri })
     foreach ($c in @($r.changes)) { if ($null -ne $c) { $all.Add($c) } }
     if ($r.nextPageToken) { $next = [string]$r.nextPageToken; continue }
     if (-not $r.newStartPageToken) { throw (Get-ClmText "drive.changes.noEnd") }

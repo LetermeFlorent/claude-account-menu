@@ -80,7 +80,7 @@ try {
   $r = Invoke-ActTest @{ do = "pref"; id = "skill:*"; move = "erase" }
   Assert-Equal (Get-ClmText "server.groupErase") $r.Msg "web action : groupe jamais efface d'un coup"
   Assert-Equal (Get-ClmText "server.unknownMove" @("vider")) (Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "vider" }).Msg "web action : choix inconnu"
-  Assert-True ((Invoke-ActTest @{ do = "pref"; id = "skill:rien"; move = "on" }).Msg -like "reglage inconnu : skill:rien*") "web action : reglage inconnu"
+  Assert-True ((Invoke-ActTest @{ do = "pref"; id = "skill:rien"; move = "on" }).Msg -like ((Get-ClmText "drive.prefs.unknown" @("skill:rien")).Split(",")[0] + "*")) "web action : reglage inconnu"
   $script:ActSyncs = 0
   $r = Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "off"; pc = "loin" }
   Assert-Equal ("True " + (Get-ClmText "server.pcPrefOff" @("dessin", "loin"))) ("" + $r.Ok + " " + $r.Msg) "web action : skill decoche pour un autre PC"

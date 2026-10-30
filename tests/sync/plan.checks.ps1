@@ -15,7 +15,7 @@ Assert-Equal "keep-remote" (Get-PathAction (New-L "b" 30) (New-B "a") (New-R "c"
 Assert-Equal "keep-local" (Get-PathAction (New-L "b" 50) $null (New-R "c" 40)) "conflit sans base, le plus recent gagne"
 Assert-Equal "keep-remote" (Get-PathAction (New-L "b" 50) $null (New-R "c" 40) -Joining) "premier passage du PC : le Drive gagne, le local garde en copie"
 Assert-Equal "keep-local" (Get-PathAction (New-L "b" 50) (New-B "a") (New-R "c" 40) -Joining) "premier passage, fichier deja connu : le plus recent gagne"
-$jp = Get-SyncPlan @{ "x" = (New-L "b" 50) } @{} @{ "x" = (New-R "c" 40) } @() -Joining
+$jp = Get-SyncPlan @{ Local = @{ "x" = (New-L "b" 50) }; Base = @{}; Remote = @{ "x" = (New-R "c" 40) }; Skipped = @(); Joining = $true }
 Assert-Equal "keep-remote" $jp[0].Kind "plan du premier passage : le Drive gagne"
 Assert-Equal "delete-remote" (Get-PathAction $null (New-B "a") (New-R "a")) "supprime ici, supprime sur le Drive"
 Assert-Equal "download" (Get-PathAction $null (New-B "a") (New-R "b")) "supprime ici mais modifie ailleurs, recu"
@@ -27,13 +27,13 @@ $local = New-PathMap; $base = New-PathMap; $remote = New-PathMap
 $remote[".claude/projects/p/x.jsonl"] = New-R "a"
 $remote[".claude/settings.json"] = New-R "b"
 $remote[".claude-accounts.json"] = New-R "c"
-$plan = Get-SyncPlan $local $base $remote
+$plan = Get-SyncPlan @{ Local = $local; Base = $base; Remote = $remote }
 Assert-Equal "download,download,download" (($plan | ForEach-Object { $_.Kind }) -join ",") "PC neuf : tout est recu, rien n'est supprime"
 Assert-Equal ".claude-accounts.json|.claude/settings.json|.claude/projects/p/x.jsonl" (($plan | ForEach-Object { $_.Path }) -join "|") "config avant les conversations"
 
 $base[".claude/locked/a.md"] = New-B "a"; $remote[".claude/locked/a.md"] = New-R "a"
 $base[".claude/busy.json"] = New-B "a"; $remote[".claude/busy.json"] = New-R "a"
-$plan = Get-SyncPlan $local $base $remote @(".claude/locked", ".claude/busy.json")
+$plan = Get-SyncPlan @{ Local = $local; Base = $base; Remote = $remote; Skipped = @(".claude/locked", ".claude/busy.json") }
 Assert-True (@($plan | Where-Object { $_.Path -like ".claude/locked*" -or $_.Path -eq ".claude/busy.json" }).Count -eq 0) "dossier ou fichier illisible : aucune action"
 Assert-Equal 3 $plan.Count "le reste du plan garde"
 
@@ -41,11 +41,11 @@ $local = New-PathMap; $base = New-PathMap; $remote = New-PathMap
 $local[".claude/a.md"] = New-L "n"
 $local[".claude/z.md"] = New-L "s"; $remote[".claude/z.md"] = New-R "s"
 $base[".claude/parti.md"] = New-B "g"
-Assert-Equal "forget,adopt,upload" ((Get-SyncPlan $local $base $remote | ForEach-Object { $_.Kind }) -join ",") "adoptions et oublis en tete du plan"
-Assert-Equal "forget,adopt,upload" ((Get-SyncPlan $local $base $remote -CaseFold | ForEach-Object { $_.Kind }) -join ",") "sans doublon de casse, plan inchange"
+Assert-Equal "forget,adopt,upload" ((Get-SyncPlan @{ Local = $local; Base = $base; Remote = $remote } | ForEach-Object { $_.Kind }) -join ",") "adoptions et oublis en tete du plan"
+Assert-Equal "forget,adopt,upload" ((Get-SyncPlan @{ Local = $local; Base = $base; Remote = $remote; CaseFold = $true } | ForEach-Object { $_.Kind }) -join ",") "sans doublon de casse, plan inchange"
 $local[".claude/A.md"] = New-L "m"; $remote[".claude/a.md"] = New-R "k"
-Assert-Equal ".claude/parti.md|.claude/z.md" ((Get-SyncPlan $local $base $remote -CaseFold | ForEach-Object { $_.Path }) -join "|") "doublon de casse ecarte des deux cotes"
-Assert-Equal 4 (Get-SyncPlan $local $base $remote).Count "doublon de casse garde si la casse compte"
+Assert-Equal ".claude/parti.md|.claude/z.md" ((Get-SyncPlan @{ Local = $local; Base = $base; Remote = $remote; CaseFold = $true } | ForEach-Object { $_.Path }) -join "|") "doublon de casse ecarte des deux cotes"
+Assert-Equal 4 (Get-SyncPlan @{ Local = $local; Base = $base; Remote = $remote }).Count "doublon de casse garde si la casse compte"
 
 $listing = New-PathMap
 foreach ($k in @(".claude/a.md", ".claude-compte2/b.md", ".claude.json", ".mcp.json", ".CLAUDE/x.md", ".claude-x/y.md", ".claude//b.md", ".claude/../b.md", ".claude/./b.md", ".claude/", "", ".claude\b.md", ".claude/c:d.md", ".autre/z.md", ".claude/node_modules/m.js", ".claudeplus/q.md")) { $listing[$k] = @{ Id = $k } }

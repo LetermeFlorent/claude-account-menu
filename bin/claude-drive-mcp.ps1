@@ -96,7 +96,7 @@ function Save-OwnPcFile {
   $id = ""
   if ($null -ne $own) { $id = [string]$own.Id }
   $props = @{ $script:SyncFormatKey = ("" + $script:SyncFormat); k = $Prefs.Keys.Id }
-  $r = Send-SealedText $Prefs.Folders.Presence $name ($script:PcFileArea + $name) $text $props $id $Prefs.Keys
+  $r = Send-SealedText @{ FolderId = $Prefs.Folders.Presence; Name = $name; Seal = ($script:PcFileArea + $name); Text = $text; Props = $props; Id = $id; Keys = $Prefs.Keys }
   if ($null -ne $own -and $null -ne $own.Props) { $own.Props["k"] = $Prefs.Keys.Id }
   (Get-OwnPcContent $Prefs.Catalog $Prefs.Pc).Md5 = [string]$r.Md5
   $Prefs.Sent = $text

@@ -24,6 +24,10 @@ function Set-DriveSyncError {
   try { Reset-DriveFoldersCheck } catch { Write-Verbose $_.Exception.Message }
 }
 
+function Get-DriveBusyText {
+  return Get-ClmText "drive.sync.replaced"
+}
+
 function Get-DriveSyncElsewhereText {
   param($Res)
   if ($Res.Shared) { return (Get-ClmText "drive.sync.sharedText") }

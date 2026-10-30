@@ -7,7 +7,7 @@ if ([IO.File]::Exists((Join-Path $PSScriptRoot "bump"))) { [IO.File]::WriteAllTe
 function Get-LateUsage { param($Account) return "charge" }
 function Invoke-DriveSync { param($Ctl = $null, [long]$DeadlineMs = 0, [switch]$Force) return @{ Ok = $true; Up = 1; Error = "" } }
 function Get-SyncBytes { param([string]$Rel, [string]$Full) return "octets" }
-function Send-SealedFile { param($Folder, $Rel, $Bytes, $Props, $Id, $Keys) return "envoye" }
+function Send-SealedFile { param($Item) return "envoye" }
 '@
 $lateSyncSource = $script:FreshSyncSource
 $script:FreshSyncSource = $lateEntry
@@ -49,7 +49,7 @@ try {
     Assert-Equal "True||0|0" (($u.Replaced, $u.Error, $u.Shown, $u.Items) -join "|") ("chargement tardif, " + $name + " : arret discret, rien lu")
     Assert-Equal "resultats=0 restants=1 erreurs=0" (Invoke-LatePrefetch) ("transfert en avance, " + $name + " : arret discret, rien envoye")
     $r = Invoke-FreshDriveSync $null 0 $false
-    Assert-Equal ("False|" + $script:DriveBusyText + "|True|0") (($r.Ok, $r.Error, $r.Busy, $r.Up) -join "|") ("synchro fraiche, " + $name + " : reportee sans erreur")
+    Assert-Equal ("False|" + (Get-DriveBusyText) + "|True|0") (($r.Ok, $r.Error, $r.Busy, $r.Up) -join "|") ("synchro fraiche, " + $name + " : reportee sans erreur")
     Remove-Item -LiteralPath $flag -Force
   }
 } finally { $script:FreshSyncSource = $lateSyncSource }

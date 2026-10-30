@@ -36,7 +36,7 @@ function Send-SyncFile {
   param($Ctx, [string]$Rel)
   $L = $Ctx.Local[$Rel]
   $r = Get-PrefetchedUpload $Ctx.Prefetch $Rel
-  if ($null -eq $r) { $r = Send-LocalFile $Ctx.Folder $Rel $L.Full (Get-UploadProps $Ctx $Rel) (Get-RemoteId $Ctx $Rel) $Ctx.Keys }
+  if ($null -eq $r) { $r = Send-LocalFile @{ FolderId = $Ctx.Folder; Rel = $Rel; Path = $L.Full; Props = (Get-UploadProps $Ctx $Rel); Id = (Get-RemoteId $Ctx $Rel); Keys = $Ctx.Keys } }
   $md5 = $r.Md5
   if (-not $md5) { $md5 = $L.Md5 }
   $Ctx.State.Files[$Rel] = @{ Md5 = $md5; M = $L.M; Size = $L.Size; Id = $r.Id }

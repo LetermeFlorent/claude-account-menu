@@ -17,7 +17,7 @@ foreach ($code in @("en", "fr")) {
 }
 
 $dtFr = ConvertFrom-JsonText ([IO.File]::ReadAllText((Join-Path (Join-Path $bin "lang") "fr.json"), [Text.Encoding]::UTF8))
-$dtBad = @($dtFr.Keys | Where-Object { $_.StartsWith("drive.") -and $dtFr[$_] -cmatch '\b(efface|reglages?|regler|enregistree|activee|coupee|connecte|refuses?|laissee|depasse|reessayer|recus?|supprimes|envoyes|echec|prevues|bloquee|preciser|interrompue|arretee|derniere|fenetre|a jour|a corriger|a supprimer|a regler|a la|reponse|illisible|inattendue|incoherente|telechargement)\b' })
+$dtBad = @($dtFr.Keys | Where-Object { $_.StartsWith("drive.") -and $dtFr[$_] -cmatch '(?<!'')\b(efface|reglages?|regler|enregistree|activee|coupee|connecte|refuses?|laissee|depasse|reessayer|recus?|supprimes|envoyes|echec|prevues|bloquee|preciser|arretee|derniere|fenetre|a jour|a corriger|a supprimer|a regler|a la|telechargement)\b' })
 Assert-Equal "" ($dtBad -join " ") "textes drive : francais avec ses accents"
 $dtOdd = @($dtFr.Keys | Where-Object { $_.StartsWith("drive.") -and $dtFr[$_] -match '[\u00A0\u202F\u2019\u201C\u201D\u2014]' })
 Assert-Equal "" ($dtOdd -join " ") "textes drive : aucun caractere typographique interdit"

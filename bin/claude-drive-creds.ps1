@@ -67,7 +67,7 @@ function Send-LocalCredential {
   if ($who) { $props["who"] = $who }
   $json = $Local | ConvertTo-Json -Depth 10 -Compress
   $name = Get-CredentialName $Acc
-  $null = Send-SealedText $Folders.Credentials $name ($script:CredentialArea + $name) $json $props $id $Keys
+  $null = Send-SealedText @{ FolderId = $Folders.Credentials; Name = $name; Seal = ($script:CredentialArea + $name); Text = $json; Props = $props; Id = $id; Keys = $Keys }
 }
 
 function Sync-CredentialUnlocked {

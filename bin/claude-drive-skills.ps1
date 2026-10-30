@@ -86,7 +86,9 @@ function Remove-DriveSkill {
 }
 
 function Update-SkillPrefs {
-  param($Choice, $Catalog, [string]$Me, $Listing, $Ctl, [long]$DeadlineMs)
+  param($Update)
+  $Choice = $Update.Choice; $Catalog = $Update.Catalog; $Me = [string]$Update.Me
+  $Listing = $Update.Listing; $Ctl = $Update.Ctl; $DeadlineMs = [long]$Update.DeadlineMs
   $erased = New-Object 'System.Collections.Generic.List[string]'
   foreach ($n in @($Choice.Erase.skills)) {
     if (-not (Test-SkillName $n) -or (Remove-DriveSkill $Listing $n $Ctl $DeadlineMs)) { $erased.Add($n) }
@@ -99,7 +101,7 @@ function Update-SkillPrefs {
 
 function Test-SkillCopySynced {
   param([string]$Name, $Patterns, $Base)
-  $scan = Get-LocalFiles $script:HomeDir @($script:SkillsRoot + "/" + $Name) $Patterns $Base
+  $scan = Get-LocalFiles @{ Root = $script:HomeDir; Roots = @($script:SkillsRoot + "/" + $Name); Patterns = $Patterns; Base = $Base }
   if ($scan.Stopped -or $scan.Skipped.Count -gt 0) { return $false }
   foreach ($k in $scan.Files.Keys) {
     $b = $Base[$k]

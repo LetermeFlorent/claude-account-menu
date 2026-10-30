@@ -1,11 +1,14 @@
 . Import-ClmModule claude-drive-files, claude-drive-sealed, claude-drive-transfer, claude-drive-transfer-chunks, claude-drive-transfer-seal
 
 function Send-SealedPath {
-  param([string]$FolderId, [string]$Rel, [string]$Path, $Props, [string]$Id, $Keys)
-  $md5 = Get-FileMd5 $Path
-  $meta = Get-DriveMeta $FolderId ($script:SealedPrefix + $Rel) (New-SealedProps $Keys $md5 $Props) $Id
-  $source = Open-SealedSource $Keys ($script:SealedFilesArea + $Rel) $Path
-  try { $r = Send-DriveChunks $meta $source $Id } finally { Close-SealedSource $source }
+  param($Item)
+  $rel = [string]$Item.Rel
+  $path = [string]$Item.Path
+  $id = [string]$Item.Id
+  $md5 = Get-FileMd5 $path
+  $meta = Get-DriveMeta ([string]$Item.FolderId) ($script:SealedPrefix + $rel) (New-SealedProps $Item.Keys $md5 $Item.Props) $id
+  $source = Open-SealedSource $Item.Keys ($script:SealedFilesArea + $rel) $path
+  try { $r = Send-DriveChunks $meta $source $id } finally { Close-SealedSource $source }
   return @{ Id = $r.Id; Md5 = $md5 }
 }
 
@@ -17,7 +20,8 @@ function Test-StreamedUpload {
 }
 
 function Send-LocalFile {
-  param([string]$FolderId, [string]$Rel, [string]$Path, $Props, [string]$Id, $Keys)
-  if (Test-StreamedUpload $Rel $Path) { return Send-SealedPath $FolderId $Rel $Path $Props $Id $Keys }
-  return Send-SealedFile $FolderId $Rel (Get-SyncBytes $Rel $Path) $Props $Id $Keys
+  param($Item)
+  if (Test-StreamedUpload ([string]$Item.Rel) ([string]$Item.Path)) { return Send-SealedPath $Item }
+  $bytes = Get-SyncBytes ([string]$Item.Rel) ([string]$Item.Path)
+  return Send-SealedFile @{ FolderId = $Item.FolderId; Rel = $Item.Rel; Bytes = $bytes; Props = $Item.Props; Id = $Item.Id; Keys = $Item.Keys }
 }

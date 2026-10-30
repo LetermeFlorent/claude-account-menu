@@ -11,10 +11,10 @@ function New-FolderResponse {
 }
 
 function Invoke-DriveRequest {
-  param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
-  $q = [Uri]::UnescapeDataString($Uri)
-  $script:FolderCalls.Add($Method + " " + $q)
-  if ($Method -eq "POST") { $script:FolderNew++; return New-FolderResponse ('{"id":"new' + $script:FolderNew + '"}') }
+  param($Request)
+  $q = [Uri]::UnescapeDataString($Request.Uri)
+  $script:FolderCalls.Add($Request.Method + " " + $q)
+  if ($Request.Method -eq "POST") { $script:FolderNew++; return New-FolderResponse ('{"id":"new' + $script:FolderNew + '"}') }
   if ($q -match "'r1' in parents and mimeType") { return New-FolderResponse $script:FolderChildren }
   return New-FolderResponse '{"files":[]}'
 }

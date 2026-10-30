@@ -19,7 +19,7 @@ function ConvertTo-UploadResult {
 function Open-UploadSession {
   param([string]$MetaJson, [long]$Length, [string]$Id)
   $t = Get-UploadTarget $Id "resumable"
-  $r = Invoke-DriveRequest $t.Method $t.Uri ([Text.Encoding]::UTF8.GetBytes($MetaJson)) $script:DriveJsonType $script:DriveMetaTimeout "" @{ "X-Upload-Content-Length" = ("" + $Length) }
+  $r = Invoke-DriveRequest @{ Method = $t.Method; Uri = $t.Uri; Body = [Text.Encoding]::UTF8.GetBytes($MetaJson); ContentType = $script:DriveJsonType; Timeout = $script:DriveMetaTimeout; Headers = @{ "X-Upload-Content-Length" = ("" + $Length) } }
   $session = [string]@($r.Headers["Location"])[0]
   if (-not $session) { throw (Get-ClmText "drive.upload.session.refused") }
   return $session

@@ -16,16 +16,18 @@ function Invoke-DriveWeb {
 }
 
 function Invoke-DriveRequest {
-  param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
+  param($Request)
+  $timeout = 15
+  if ($null -ne $Request.Timeout) { $timeout = [int]$Request.Timeout }
   $renew = $false
   $attempt = 0
   while ($true) {
     $h = @{ Authorization = "Bearer " + (Get-DriveToken -Renew:$renew) }
-    if ($null -ne $Headers) { foreach ($k in $Headers.Keys) { $h[$k] = $Headers[$k] } }
-    $req = @{ Method = $Method; Uri = $Uri; Headers = $h; TimeoutSec = $Timeout; UseBasicParsing = $true }
-    if ($null -ne $Body) { $req.Body = $Body }
-    if ($ContentType) { $req.ContentType = $ContentType }
-    if ($OutFile) { $req.OutFile = $OutFile }
+    if ($null -ne $Request.Headers) { foreach ($k in $Request.Headers.Keys) { $h[$k] = $Request.Headers[$k] } }
+    $req = @{ Method = $Request.Method; Uri = $Request.Uri; Headers = $h; TimeoutSec = $timeout; UseBasicParsing = $true }
+    if ($null -ne $Request.Body) { $req.Body = $Request.Body }
+    if ($Request.ContentType) { $req.ContentType = $Request.ContentType }
+    if ($Request.OutFile) { $req.OutFile = $Request.OutFile }
     try { return Invoke-DriveWeb $req }
     catch {
       $failure = $_
@@ -93,7 +95,8 @@ function Get-DriveListing {
   do {
     $uri = $script:DriveApi + "?q=" + $q + "&pageSize=1000&fields=" + $fields
     if ($token) { $uri += "&pageToken=" + [Uri]::EscapeDataString($token) }
-    $r = ConvertFrom-DriveJson (Invoke-DriveRequest "GET" $uri)
+    try { $r = ConvertFrom-DriveJson (Invoke-DriveRequest @{ Method = "GET"; Uri = $uri }) }
+    catch { if ($_.Exception.Data["HttpStatus"] -eq 404) { $_.Exception.Data["FolderGone"] = $true }; throw }
     foreach ($f in @($r.files)) {
       if ($null -eq $f) { continue }
       $e = ConvertTo-RemoteEntry $f
@@ -110,7 +113,7 @@ function Get-DriveListing {
 
 function Set-DriveFileMeta {
   param([string]$Id, $Meta)
-  $null = Invoke-DriveRequest "PATCH" ($script:DriveApi + "/" + $Id) (ConvertTo-JsonBytes $Meta) $script:DriveJsonType $script:DriveMetaTimeout
+  $null = Invoke-DriveRequest @{ Method = "PATCH"; Uri = ($script:DriveApi + "/" + $Id); Body = (ConvertTo-JsonBytes $Meta); ContentType = $script:DriveJsonType; Timeout = $script:DriveMetaTimeout }
 }
 
 function Remove-DriveFile {

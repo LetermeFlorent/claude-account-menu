@@ -107,7 +107,7 @@ $null = Read-SealedSource $sealSrc $sealBuf 0 1000
 $sealFs = [IO.File]::Open($sealShrink, 'Open', 'ReadWrite', 'ReadWrite')
 $sealFs.SetLength(10)
 $sealFs.Dispose()
-Assert-Throws { while ((Read-SealedSource $sealSrc $sealBuf 0 1000) -gt 0) { } } "modifie pendant l'envoi" "chiffrement en flux : fichier raccourci refuse"
+Assert-Throws { while ((Read-SealedSource $sealSrc $sealBuf 0 1000) -gt 0) { } } (Get-ClmText "drive.upload.source.changed") "chiffrement en flux : fichier raccourci refuse"
 Close-SealedSource $sealSrc
 Assert-True (Test-Deletable $sealShrink) "chiffrement en flux : fermeture libere le fichier"
 
@@ -116,7 +116,7 @@ $sealPlain = New-SealPlain $sealBig
 [IO.File]::WriteAllBytes($sealPath, $sealPlain)
 $script:DriveChunkSize = 256KB
 $script:SealKeep = $true
-$sealSent = Send-SealedPath "folder1" ".claude/big.bin" $sealPath @{} "" $sealKeys
+$sealSent = Send-SealedPath @{ FolderId = "folder1"; Rel = ".claude/big.bin"; Path = $sealPath; Props = @{}; Id = ""; Keys = $sealKeys }
 $sealDoc = $script:SealMeta | ConvertFrom-Json
 $sealMd5 = Get-FileMd5 $sealPath
 Assert-Equal "clm-enc/.claude/big.bin" $sealDoc.name "envoi en flux : nom du Drive"
@@ -139,7 +139,7 @@ $script:SealBytesIn = 0
 $script:SealMaxBody = 0
 $sealBase = Get-SealLiveBytes
 $script:SealMaxMem = $sealBase
-$null = Send-SealedPath "folder1" ".claude/huge.bin" $sealHuge @{} "" $sealKeys
+$null = Send-SealedPath @{ FolderId = "folder1"; Rel = ".claude/huge.bin"; Path = $sealHuge; Props = @{}; Id = ""; Keys = $sealKeys }
 $null = Test-Deletable $sealHuge
 Assert-Equal (5 + 16 + 16 * (4194304 + 1) + 32) $script:SealBytesIn "envoi en flux : 64 Mo, octets recus"
 Assert-True (($script:SealMaxMem - $sealBase) -lt 24MB) "envoi en flux : memoire stable sur 64 Mo"

@@ -11,6 +11,6 @@ $orderRemote = New-PathMap
 foreach ($p in @(".claude/memory/m.md", ".claude/projects/p/x.jsonl", ".claude/skills/a/SKILL.md", ".claude/a-note.md", ".claude/settings.json", ".mcp.json")) { $orderRemote[$p] = New-OrderRemote $p }
 $orderBase = New-PathMap
 $orderBase[".claude/old.md"] = @{ Md5 = "o"; M = 10; Size = 1; Id = "i" }
-$orderPlan = Get-SyncPlan (New-PathMap) $orderBase $orderRemote
+$orderPlan = Get-SyncPlan @{ Local = (New-PathMap); Base = $orderBase; Remote = $orderRemote }
 Assert-Equal ".claude/old.md|.claude/settings.json|.claude/skills/a/SKILL.md|.mcp.json|.claude/a-note.md|.claude/memory/m.md|.claude/projects/p/x.jsonl" (($orderPlan | ForEach-Object { $_.Path }) -join "|") "oublis, puis reglages, puis le reste, conversations a la fin"
 Assert-Equal "forget" $orderPlan[0].Kind "oubli en premier"

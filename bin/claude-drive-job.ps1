@@ -51,7 +51,7 @@ function Complete-DriveJob {
   $r = $null
   if ($res.Count -gt 0) { $r = $res[0][1]; if ($res[0][2]) { $err = $res[0][2] } }
   if ($r -isnot [hashtable]) { $r = @{ Ok = $false; Error = ("" + $err) } }
-  if ($replaced) { $r = @{ Ok = $false; Busy = $true; Error = $script:DriveBusyText } }
+  if ($replaced) { $r = @{ Ok = $false; Busy = $true; Error = (Get-DriveBusyText) } }
   if (-not $r.Error -and -not $r.Ok) { $r.Error = (Get-ClmText "drive.sync.interrupted") }
   $Job.Busy = [bool]$r.Busy
   $Job.RetryAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() + $script:DriveRetryMs

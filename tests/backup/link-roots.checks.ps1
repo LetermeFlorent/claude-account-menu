@@ -18,7 +18,7 @@ Assert-True (-not (Test-ReparsePath (Join-Path $script:HomeDir ".claude-compte2"
 Assert-True (-not (Test-ReparsePath (Join-Path $script:HomeDir "absent"))) "chemin absent : pas un lien"
 
 $lrAccs = @([PSCustomObject]@{ Label = "a"; Dir = ".claude" }, [PSCustomObject]@{ Label = "c"; Dir = ".claude-compte3" })
-$lrScan = Get-LocalFiles $script:HomeDir (Get-SyncRoots $lrAccs) (Get-SyncPatterns $lrAccs) (New-PathMap)
+$lrScan = Get-LocalFiles @{ Root = $script:HomeDir; Roots = (Get-SyncRoots $lrAccs); Patterns = (Get-SyncPatterns $lrAccs); Base = (New-PathMap) }
 Assert-True (-not $lrScan.Files.ContainsKey(".claude-compte3/vole.md")) "synchro : dossier de compte en lien ignore"
 Assert-True ($lrScan.Skipped -contains ".claude-compte3") "synchro : dossier de compte en lien marque illisible"
 

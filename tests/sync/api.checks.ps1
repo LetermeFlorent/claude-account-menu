@@ -13,11 +13,11 @@ Assert-Equal "0,255,13,10,65" (@($body[$at..($at + 4)]) -join ",") "octets binai
 
 $script:Calls = New-Object 'System.Collections.Generic.List[object]'
 function Invoke-DriveRequest {
-  param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
-  $script:Calls.Add(@{ Method = $Method; Uri = $Uri; Body = $Body; ContentType = $ContentType; Headers = $Headers })
-  if ($Uri -match "pageToken=p2") { return New-FakeResponse '{"files":[{"id":"i3","name":".claude/projets été/a b.md","md5Checksum":"m3","appProperties":{"m":"7","pc":"MAC"}}]}' }
-  if ($Method -eq "GET") { return New-FakeResponse '{"nextPageToken":"p2","files":[{"id":"i1","name":"x","md5Checksum":"m1","appProperties":{"m":"5","pc":"A"}},{"id":"i2","name":"x","md5Checksum":"m2","appProperties":{"m":"9","pc":"B","exp":"123"}},{"id":"i4","name":"X","md5Checksum":"m4"}]}' }
-  if ($Uri -match "uploadType=resumable") { return New-FakeResponse "" @{ Location = "https://upload.example/session1" } }
+  param($Request)
+  $script:Calls.Add(@{ Method = $Request.Method; Uri = $Request.Uri; Body = $Request.Body; ContentType = [string]$Request.ContentType; Headers = $Request.Headers })
+  if ($Request.Uri -match "pageToken=p2") { return New-FakeResponse '{"files":[{"id":"i3","name":".claude/projets été/a b.md","md5Checksum":"m3","appProperties":{"m":"7","pc":"MAC"}}]}' }
+  if ($Request.Method -eq "GET") { return New-FakeResponse '{"nextPageToken":"p2","files":[{"id":"i1","name":"x","md5Checksum":"m1","appProperties":{"m":"5","pc":"A"}},{"id":"i2","name":"x","md5Checksum":"m2","appProperties":{"m":"9","pc":"B","exp":"123"}},{"id":"i4","name":"X","md5Checksum":"m4"}]}' }
+  if ($Request.Uri -match "uploadType=resumable") { return New-FakeResponse "" @{ Location = "https://upload.example/session1" } }
   return New-FakeResponse '{"id":"new1","md5Checksum":"abc"}'
 }
 $l = Get-DriveListing "fold'er"
@@ -72,16 +72,16 @@ $script:Calls.Clear()
 Set-DriveProps "P1" @{ ".claude" = "55" }
 Assert-True ($script:Calls[0].Uri.EndsWith("/files/P1") -and [Text.Encoding]::UTF8.GetString($script:Calls[0].Body).Contains('".claude": "55"')) "proprietes modifiees"
 function Invoke-DriveRequest {
-  param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
-  if ($Method -eq "GET") { return New-FakeResponse '{"files":[{"id":"k1","name":"c.json","appProperties":{"exp":"100"}},{"id":"k2","name":"c.json","appProperties":{"exp":"200"}}]}' }
+  param($Request)
+  if ($Request.Method -eq "GET") { return New-FakeResponse '{"files":[{"id":"k1","name":"c.json","appProperties":{"exp":"100"}},{"id":"k2","name":"c.json","appProperties":{"exp":"200"}}]}' }
   return New-FakeResponse "{}"
 }
 Assert-Equal "k2" (Get-DriveListing "creds")["c.json"].Id "jetons en double : expiration la plus lointaine gardee"
 $apiKeys = New-SyncKeys ([byte[]](50..81)) ([byte[]](1..16)) 600000
 $script:MediaBody = Protect-SyncBytes $apiKeys "files/.claude/notes [v2].md" ([Text.Encoding]::UTF8.GetBytes("media"))
 function Invoke-DriveRequest {
-  param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
-  [IO.File]::WriteAllBytes($OutFile, $script:MediaBody)
+  param($Request)
+  [IO.File]::WriteAllBytes($Request.OutFile, $script:MediaBody)
 }
 $media = Join-Path $script:Sandbox "notes [v2].md"
 Save-SealedMedia "m1" $media "files/.claude/notes [v2].md" $apiKeys
@@ -101,8 +101,8 @@ Assert-True ($script:Calls[0].Body -is [byte[]]) "metadonnees envoyees en octets
 
 $script:Calls.Clear()
 function Invoke-DriveRequest {
-  param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
-  $script:Calls.Add(@{ Method = $Method; Uri = $Uri; Body = $Body; ContentType = $ContentType })
+  param($Request)
+  $script:Calls.Add(@{ Method = $Request.Method; Uri = $Request.Uri; Body = $Request.Body; ContentType = [string]$Request.ContentType })
   return New-FakeResponse "--b`r`nContent-Type: application/http`r`n`r`nHTTP/1.1 200 OK`r`n`r`n{}`r`n--b`r`nContent-Type: application/http`r`n`r`nHTTP/1.1 404 Not Found`r`n`r`n{}`r`n--b--"
 }
 $batch = New-TrashBatchBody @("a1", "b2") "BND"

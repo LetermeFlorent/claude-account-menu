@@ -11,12 +11,13 @@ function New-ChangeResponse {
 }
 
 function Invoke-DriveRequest {
-  param([string]$Method, [string]$Uri, $Body = $null, [string]$ContentType = "", [int]$Timeout = 15, [string]$OutFile = "", $Headers = $null)
-  $script:ChangeCalls.Add($Uri)
-  if ($Uri.EndsWith("/changes/startPageToken?fields=startPageToken")) { return New-ChangeResponse '{"startPageToken":"t1"}' }
-  if ($Uri.StartsWith($script:DriveChangesUri + "?")) {
+  param($Request)
+  $uri = $Request.Uri
+  $script:ChangeCalls.Add($uri)
+  if ($uri.EndsWith("/changes/startPageToken?fields=startPageToken")) { return New-ChangeResponse '{"startPageToken":"t1"}' }
+  if ($uri.StartsWith($script:DriveChangesUri + "?")) {
     if ($script:ChangeFail) { throw "jeton refuse" }
-    $tok = [Uri]::UnescapeDataString(([regex]::Match($Uri, "pageToken=([^&]+)")).Groups[1].Value)
+    $tok = [Uri]::UnescapeDataString(([regex]::Match($uri, "pageToken=([^&]+)")).Groups[1].Value)
     return New-ChangeResponse $script:ChangePages[$tok]
   }
   return New-ChangeResponse '{"files":[{"id":"a1","name":"a","md5Checksum":"ma","appProperties":{"m":"5","pc":"PCL"}},{"id":"b1","name":".claude/projets \"ete\"/b.md","md5Checksum":"mb","appProperties":{"m":"6","pc":"MAC"}}]}'

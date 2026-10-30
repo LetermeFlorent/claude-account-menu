@@ -45,7 +45,9 @@ function Test-UnderSkipped {
 }
 
 function Get-SyncPlan {
-  param($Local, $Base, $Remote, $Skipped = @(), [switch]$Joining, [switch]$CaseFold)
+  param($Request)
+  $Local = $Request.Local; $Base = $Request.Base; $Remote = $Request.Remote
+  $Skipped = @($Request.Skipped); $Joining = [bool]$Request.Joining; $CaseFold = [bool]$Request.CaseFold
   $paths = New-Object 'System.Collections.Generic.SortedSet[string]' ([StringComparer]::Ordinal)
   foreach ($m in @($Local, $Base, $Remote)) { if ($m.Count -gt 0) { $paths.UnionWith([string[]]@($m.Keys)) } }
   $skip = New-Object 'System.Collections.Generic.List[string]'

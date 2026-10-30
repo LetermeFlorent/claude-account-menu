@@ -16,7 +16,7 @@ try {
   Assert-True $script:ChunkFailed.StartsWith("!") "envoi par morceaux : echecs repetes finissent en erreur"
   Assert-True (@(Get-ChkPuts).Count -le 6) ("envoi par morceaux : nombre d'appels borne, " + @(Get-ChkPuts).Count)
   Start-ChkCase 600000 @(1..30 | ForEach-Object { New-ChunkMore $null })
-  Assert-True $script:ChunkFailed.StartsWith("!Drive : l'envoi n'avance plus") ("envoi par morceaux : 308 sans progres finit en erreur, " + $script:ChunkFailed)
+  Assert-True $script:ChunkFailed.StartsWith("!" + (Get-ClmText "drive.upload.stalled")) ("envoi par morceaux : 308 sans progres finit en erreur, " + $script:ChunkFailed)
   Assert-Equal 3 @(Get-ChkPuts).Count "envoi par morceaux : 308 sans progres, renvois bornes"
   Assert-Equal 2 $script:ChunkSlept.Count "envoi par morceaux : 308 sans progres, attente avant chaque renvoi"
   $script:DriveChunkRetryMax = $script:ChunkSaved.Max

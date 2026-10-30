@@ -9,8 +9,9 @@ function Get-BytesMd5 {
 }
 
 function Send-SealedText {
-  param([string]$FolderId, [string]$Name, [string]$Seal, [string]$Text, $Props, [string]$Id, $Keys)
-  return Send-DriveContent $FolderId $Name (Protect-SyncBytes $Keys $Seal ([Text.Encoding]::UTF8.GetBytes($Text))) $Props $Id
+  param($Item)
+  $bytes = [Text.Encoding]::UTF8.GetBytes([string]$Item.Text)
+  return Send-DriveContent ([string]$Item.FolderId) ([string]$Item.Name) (Protect-SyncBytes $Item.Keys ([string]$Item.Seal) $bytes) $Item.Props ([string]$Item.Id)
 }
 
 function Get-SealedText {
@@ -26,10 +27,12 @@ function New-SealedProps {
 }
 
 function Send-SealedFile {
-  param([string]$FolderId, [string]$Rel, [byte[]]$Bytes, $Props, [string]$Id, $Keys)
-  $md5 = Get-BytesMd5 $Bytes
-  $p = New-SealedProps $Keys $md5 $Props
-  $r = Send-DriveContent $FolderId ($script:SealedPrefix + $Rel) (Protect-SyncBytes $Keys ($script:SealedFilesArea + $Rel) $Bytes) $p $Id
+  param($Item)
+  $bytes = [byte[]]$Item.Bytes
+  $rel = [string]$Item.Rel
+  $md5 = Get-BytesMd5 $bytes
+  $p = New-SealedProps $Item.Keys $md5 $Item.Props
+  $r = Send-DriveContent ([string]$Item.FolderId) ($script:SealedPrefix + $rel) (Protect-SyncBytes $Item.Keys ($script:SealedFilesArea + $rel) $bytes) $p ([string]$Item.Id)
   return @{ Id = $r.Id; Md5 = $md5 }
 }
 

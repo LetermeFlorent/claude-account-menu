@@ -1,7 +1,9 @@
 . Import-ClmModule claude-mcp-globals, claude-drive-asks
 
 function Start-SyncPrefs {
-  param($Folders, $Presence, [string]$Pc, $Accs, $Res, $Keys)
+  param($Setup)
+  $Folders = $Setup.Folders; $Presence = $Setup.Presence; $Pc = [string]$Setup.Pc
+  $Accs = $Setup.Accs; $Res = $Setup.Res; $Keys = $Setup.Keys
   $prefs = @{ Folders = $Folders; Presence = $Presence; Pc = $Pc; Catalog = (Read-SyncCatalog); Choice = (Read-SyncChoice); Keys = $Keys }
   $prefs.Catalog.Waiting = Get-WaitingPcs $Presence $script:McpFormat
   $script:McpPerPc = $prefs.Catalog.Waiting.Count -eq 0
@@ -26,7 +28,7 @@ function Start-SyncPrefs {
 function Complete-SyncPrefs {
   param($Prefs, $Listing, $Ctl, [long]$DeadlineMs)
   $before = Get-OwnPcText $Prefs.Catalog $Prefs.Pc
-  $skillsErased = Update-SkillPrefs $Prefs.Choice $Prefs.Catalog $Prefs.Pc $Listing $Ctl $DeadlineMs
+  $skillsErased = Update-SkillPrefs @{ Choice = $Prefs.Choice; Catalog = $Prefs.Catalog; Me = $Prefs.Pc; Listing = $Listing; Ctl = $Ctl; DeadlineMs = $DeadlineMs }
   if ($skillsErased.Count -gt 0) {
     Add-ErasedSkills $Prefs.Catalog $Prefs.Pc $skillsErased
     Save-OwnPcFile $Prefs $before

@@ -68,5 +68,7 @@ function New-DriveFailure {
   if ($detail.Length -gt $script:DriveErrorBodyMax) { $detail = $detail.Substring(0, $script:DriveErrorBodyMax) }
   $message = $ErrorRecord.Exception.Message
   if ($detail) { $message = $message + " : " + $detail }
-  return New-Object Exception($message, $ErrorRecord.Exception)
+  $failure = New-Object Exception($message, $ErrorRecord.Exception)
+  $failure.Data["HttpStatus"] = Get-HttpStatus $ErrorRecord
+  return $failure
 }
