@@ -12,7 +12,7 @@ $script:SealMeta = ""
 $script:SealStartLen = ""
 $script:SealMaxBody = 0
 $script:SealBytesIn = 0
-$script:SealMaxMem = 0
+function Get-SealLiveBytes { [Runtime.GCSettings]::LargeObjectHeapCompactionMode = 'CompactOnce'; return [GC]::GetTotalMemory($true) }
 
 function Get-DriveToken { param([switch]$Renew) return "tok" }
 function Invoke-DriveWeb {
@@ -28,7 +28,7 @@ function Invoke-DriveWeb {
   if ($len -gt $script:SealMaxBody) { $script:SealMaxBody = $len }
   if ($script:SealKeep) { $script:SealUp.Write([byte[]]$Request.Body, 0, $len) }
   else {
-    $mem = [GC]::GetTotalMemory($true)
+    $mem = Get-SealLiveBytes
     if ($mem -gt $script:SealMaxMem) { $script:SealMaxMem = $mem }
   }
   $last = [long]$m.Groups[2].Value
@@ -137,7 +137,7 @@ $script:DriveChunkSize = 1MB
 $script:SealKeep = $false
 $script:SealBytesIn = 0
 $script:SealMaxBody = 0
-$sealBase = [GC]::GetTotalMemory($true)
+$sealBase = Get-SealLiveBytes
 $script:SealMaxMem = $sealBase
 $null = Send-SealedPath "folder1" ".claude/huge.bin" $sealHuge @{} "" $sealKeys
 $null = Test-Deletable $sealHuge
@@ -145,6 +145,6 @@ Assert-Equal (5 + 16 + 16 * (4194304 + 1) + 32) $script:SealBytesIn "envoi en fl
 Assert-True (($script:SealMaxMem - $sealBase) -lt 24MB) "envoi en flux : memoire stable sur 64 Mo"
 $script:DriveChunkSize = $script:SealSavedChunk
 . (Join-Path $bin "claude-drive-api.ps1"); if ($script:SealToken) { Set-Item Function:\Get-DriveToken $script:SealToken } else { Remove-Item Function:\Get-DriveToken }
-Remove-Item Function:\New-SealPlain, Function:\Read-SealAll, Function:\Get-SealRoundTrip, Function:\Test-SameBytes, Function:\Test-Deletable
+Remove-Item Function:\New-SealPlain, Function:\Read-SealAll, Function:\Get-SealRoundTrip, Function:\Test-SameBytes, Function:\Test-Deletable, Function:\Get-SealLiveBytes
 Remove-Variable SealToken, SealSavedChunk, SealKeep, SealUp, SealMeta, SealStartLen, SealMaxBody, SealBytesIn, SealMaxMem -Scope Script -ErrorAction SilentlyContinue
 Remove-Variable -Name sealKeys, sealBig, sealBigLen, sealRt, sealShrink, sealSrc, sealBuf, sealFs, sealPath, sealPlain, sealSent, sealDoc, sealMd5, sealHuge, sealChunk, sealBase, sealIndex -ErrorAction SilentlyContinue
