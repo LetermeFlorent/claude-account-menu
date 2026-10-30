@@ -29,12 +29,12 @@ function Get-UsagePace {
   $left = ($r - $Now).TotalSeconds
   if ($left -le 0) { return $null }
   $p = [double]$Pct
-  if ($p -ge 100) { return New-Pace "spent" "alert" }
+  if ($p -ge 100) { return New-Pace "epuise" "alert" }
   $part = ($dur - $left) / $dur
-  if ($part -lt 0.10) { return New-Pace "start" "dim" }
+  if ($part -lt 0.10) { return New-Pace "debut" "dim" }
   $projectedPct = $p / $part
-  if ($projectedPct -lt 70) { return New-Pace "low" "ok" }
+  if ($projectedPct -lt 70) { return New-Pace "faible" "ok" }
   if ($projectedPct -le 100) { return New-Pace "normal" "dim" }
-  if ($projectedPct -le 130) { return New-Pace "high" "warn" }
-  return New-Pace "excessive" "alert"
+  if ($projectedPct -le 130) { return New-Pace "fort" "warn" }
+  return New-Pace "excessif" "alert"
 }

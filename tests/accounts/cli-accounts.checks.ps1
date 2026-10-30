@@ -39,10 +39,8 @@ try {
   Assert-Equal "" (@($documented | Where-Object { -not $text.Contains($_) }) -join ",") "aide : chaque option decrite"
   Assert-Equal "" (@($help | Where-Object { $_.Length -gt 80 }) -join "|") "aide : 80 colonnes au plus"
   if ((Get-ClmLang) -eq "en") { Assert-Equal "" (@($help | Where-Object { $_ -match "[^\x20-\x7E]" }) -join "|") "aide : ascii" }
-  $footer = @{}
-  for ($i = 0; $i + 1 -lt $script:MenuFooter.Count; $i += 2) { $footer[$script:MenuFooter[$i]] = $script:MenuFooter[$i + 1] }
-  Assert-True ($help -contains ("  " + "p".PadRight(8) + $footer["p"])) "aide : touches du menu"
-  Assert-True ($help -contains ("  " + "w".PadRight(8) + $footer["w"])) "aide : touche de la page web"
+  Assert-True ($help -contains ("  p       " + (Get-ClmText "ui.footer.settings"))) "aide : touches du menu"
+  Assert-True ($help -contains ("  w       " + (Get-ClmText "ui.footer.web"))) "aide : touche de la page web"
   Assert-Equal 0 (Invoke-CliArgs @("--help")) "aide : reussie"
 
   Save-Registry @(

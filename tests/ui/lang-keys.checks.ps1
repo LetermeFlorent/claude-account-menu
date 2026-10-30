@@ -16,12 +16,12 @@ foreach ($f in $keyFiles) {
 }
 Assert-True ($keyUsed.Count -gt 30) "textes : les fichiers de l'interface et de la page web utilisent des cles"
 foreach ($k in $keyUsed) {
-  Assert-True ($keyTables["en"].Contains($k)) ("textes : " + $k + " existe en anglais")
-  Assert-True ($keyTables["fr"].Contains($k)) ("textes : " + $k + " existe en francais")
+  Assert-True ($keyTables["en"].ContainsKey($k)) ("textes : " + $k + " existe en anglais")
+  Assert-True ($keyTables["fr"].ContainsKey($k)) ("textes : " + $k + " existe en francais")
 }
 
 $accented = [ordered]@{
-  "ui.footer.settings" = 'r\u00e9glages'; "ui.pace.spent" = '\u00e9puis\u00e9'; "ui.pace.start" = 'd\u00e9but'
+  "ui.footer.settings" = 'r\u00e9glages'; "ui.pace.epuise" = '\u00e9puis\u00e9'; "ui.pace.debut" = 'd\u00e9but'
   "ui.reset.past" = 'pass\u00e9'; "ui.stale.expired" = 'fen\u00eatre pass\u00e9e'; "ui.usage.signedOut" = 'd\u00e9connect\u00e9'
   "ui.usage.tokenExpired" = 'expir\u00e9'; "ui.usage.tokenRefused" = 'refus\u00e9'; "ui.usage.notSignedIn" = 'connect\u00e9'
   "ui.usage.busy" = 'occup\u00e9e'; "ui.usage.limited" = 'r\u00e9essai'; "ui.display.badKey" = 'r\u00e9glage'

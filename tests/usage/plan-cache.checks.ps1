@@ -14,6 +14,7 @@ function Read-AccountCredential {
 function Write-PlanCredential {
   param([string]$Type, [int]$Skew = 0)
   $cred = [PSCustomObject]@{ claudeAiOauth = [PSCustomObject]@{ accessToken = "t"; expiresAt = 0; subscriptionType = $Type } }
+  New-Item -ItemType Directory -Force -Path (Split-Path $planFile) | Out-Null
   Write-CredentialFile $planFile $cred
   if ($Skew -ne 0) { [IO.File]::SetLastWriteTimeUtc($planFile, [DateTime]::UtcNow.AddSeconds($Skew)) }
 }
