@@ -1,5 +1,32 @@
 . (Join-Path (Join-Path (Split-Path -Parent $PSScriptRoot) "drive") "drive-race-store.ps1")
 
+$global:ItestSeedPath = $PSCommandPath
+[Net.WebRequest]::DefaultWebProxy = New-Object Net.WebProxy("http://127.0.0.1:9")
+
+function New-ItestRunspace {
+  $rs = [RunspaceFactory]::CreateRunspace()
+  $rs.Open()
+  $ps = [PowerShell]::Create()
+  $ps.Runspace = $rs
+  [void]$ps.AddScript('param($Seed) . $Seed').AddArgument($global:ItestSeedPath)
+  [void]$ps.Invoke()
+  $ps.Dispose()
+  return $rs
+}
+
+function Invoke-ItestFreshSync {
+  param($Ctl, [long]$DeadlineMs, [bool]$Force)
+  Add-ItestMark "fresh"
+  $ps = [PowerShell]::Create()
+  $ps.Runspace = New-ItestRunspace
+  try {
+    [void]$ps.AddScript($script:FreshSyncScript).AddArgument($script:FreshSyncSource).AddArgument($Ctl).AddArgument($DeadlineMs).AddArgument($Force)
+    $out = @($ps.Invoke())
+    if ($out.Count -gt 0 -and $out[-1] -is [hashtable]) { return $out[-1] }
+    throw ("synchro fraiche sans resultat : " + ($ps.Streams.Error -join " ; "))
+  } finally { $ps.Runspace.Dispose(); $ps.Dispose() }
+}
+
 function Add-ItestMark {
   param([string]$Kind)
   [IO.File]::WriteAllText((Join-Path $env:CLM_ITEST_LOG ($Kind + "-" + $PID + "-" + [guid]::NewGuid().ToString("N"))), $Kind)
@@ -95,6 +122,6 @@ $itestFakes = @{
   "Get-DriveFolders" = "Get-ItestDriveFolders"; "Sync-DriveCredentials" = "Sync-ItestDriveCredentials"; "Get-DriveListing" = "Get-ItestDriveListing"
   "Get-DriveFilesListing" = "Get-ItestDriveFilesListing"; "Send-DriveContent" = "Send-ItestDriveContent"; "Get-DriveBytes" = "Get-ItestDriveBytes"
   "Remove-DriveFiles" = "Remove-ItestDriveFiles"; "Remove-DriveFile" = "Remove-ItestDriveFiles"; "Set-DriveProps" = "Set-ItestDriveProps"
-  "Read-SyncKeyText" = "Read-ItestSyncKey"; "Write-SyncKeyText" = "Stop-ItestKeyStore"
+  "Invoke-FreshDriveSync" = "Invoke-ItestFreshSync"; "Read-SyncKeyText" = "Read-ItestSyncKey"; "Write-SyncKeyText" = "Stop-ItestKeyStore"
 }
 foreach ($itestName in $itestFakes.Keys) { Set-Alias -Name $itestName -Value $itestFakes[$itestName] -Scope Global -Force }

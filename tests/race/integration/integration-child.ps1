@@ -23,7 +23,7 @@ function Test-ItestFlag {
 function Start-ItestLoader {
   param($Accounts, [string]$Source = "", [string]$Reader = "Get-AccountUsage", [switch]$Hold, $Runspace = $null)
   if (-not $Source) { $Source = Join-Path (Split-Path -Parent $itestMenu) "claude-usage.ps1" }
-  if ($null -eq $Runspace) { $Runspace = [RunspaceFactory]::CreateRunspace(); $Runspace.Open() }
+  if ($null -eq $Runspace) { $Runspace = New-ItestRunspace; $null = $itestSeeded.Add($Runspace.InstanceId) }
   if ($itestSeeded.Add($Runspace.InstanceId)) {
     $ps = [PowerShell]::Create()
     $ps.Runspace = $Runspace
