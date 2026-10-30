@@ -5,7 +5,6 @@ $script:LangFallback = "en"
 $script:LangEnvNames = @("LC_ALL", "LC_MESSAGES", "LANG")
 $script:LangMacPattern = New-Object regex '^\s*\(\s*"?([A-Za-z]{2,3}(?:[-_][A-Za-z0-9]+)*)'
 $script:LangSystemFound = $null
-$script:LangPrefCache = $null
 
 function ConvertTo-LangCode {
   param($Value)
