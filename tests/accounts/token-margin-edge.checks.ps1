@@ -13,6 +13,7 @@ function New-EdgeCred {
 }
 
 Assert-Equal 60000 $script:CredentialMarginMs "marge : 60 s"
+Assert-Equal $script:CredentialMarginMs $script:UsageTokenMarginMs "marge de la lecture du quota : celle des jetons"
 try {
   foreach ($edgeCase in @(@(55000, "renouvele", 1), @(65000, "vieux", 0), @(-5000, "renouvele", 1), @(-86400000, "renouvele", 1))) {
     $edgeRefreshed = 0

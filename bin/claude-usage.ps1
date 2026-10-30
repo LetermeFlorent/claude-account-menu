@@ -3,6 +3,7 @@ if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "c
 $script:UsageApiUrl = "https://api.anthropic.com/api/oauth/usage"
 $script:UsageApiTimeoutSec = 10
 $script:UsageLockWaitMs = 15000
+$script:UsageTokenMarginMs = 60000
 
 function Get-RetryAfter {
   param($Response)
@@ -17,7 +18,7 @@ function Get-UsageToken {
   if ($null -eq $Cred -or [string]::IsNullOrEmpty($Cred.claudeAiOauth.accessToken)) { return @{ Error = Get-ClmText "ui.usage.notSignedIn" } }
   $expMs = [long]$Cred.claudeAiOauth.expiresAt
   $nowMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-  if ($expMs -le 0 -or $expMs -ge $nowMs + $script:CredentialMarginMs) { return @{ Token = $Cred.claudeAiOauth.accessToken } }
+  if ($expMs -le 0 -or $expMs -ge $nowMs + $script:UsageTokenMarginMs) { return @{ Token = $Cred.claudeAiOauth.accessToken } }
   if ($NoRefresh) {
     if ($expMs -ge $nowMs) { return @{ Token = $Cred.claudeAiOauth.accessToken } }
     return @{ Error = Get-ClmText "ui.usage.tokenExpired" }
