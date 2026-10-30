@@ -4,7 +4,7 @@ $frRoot = Join-Path $script:Sandbox "flat-restart"
 $frBin = Join-Path $frRoot "bin"
 $frOld = "1111111111111111111111111111111111111111 1760000000 1"
 $frNew = "2222222222222222222222222222222222222222 1770000000 2"
-$frEntries = @("claude-import.ps1", "claude-menu.ps1", "claude-statusline-seed.ps1")
+$frEntries = @("claude-import.ps1", "claude-menu.ps1", "claude-statusline-seed.ps1", "claude-drive-watcher.ps1")
 $frEncoding = New-Object Text.UTF8Encoding($false)
 
 function Write-FlatCopy {
@@ -49,7 +49,7 @@ try {
   Install-ClmFiles $bin $frBin $frNew @("clm")
   Assert-Equal "" ((Get-FlatLeftovers $frBin) -join ",") "installation sur un clm a plat : plus aucun module a la racine"
   Assert-Equal "" ((Get-TreeMismatch $bin $frBin) -join ",") "installation sur un clm a plat : tout le nouvel arbre est en place"
-  Assert-Equal "True|True|True|True" ((@("claude-menu.ps1", "claude-menu.cmd", "clm.cmd", "claude-statusline-seed.ps1") | ForEach-Object { [IO.File]::Exists([IO.Path]::Combine($frBin, $_)) }) -join "|") "installation sur un clm a plat : les points d'entree restent a la racine"
+  Assert-Equal "True|True|True|True|True" ((@("claude-menu.ps1", "claude-menu.cmd", "clm.cmd", "claude-statusline-seed.ps1", "claude-drive-watcher.ps1") | ForEach-Object { [IO.File]::Exists([IO.Path]::Combine($frBin, $_)) }) -join "|") "installation sur un clm a plat : les points d'entree restent a la racine"
 
   $frOldClm.Commands.Clear()
   $frOldClm.Streams.Error.Clear()
@@ -84,3 +84,9 @@ $frEnv = @{ USERPROFILE = $frRoot; HOME = $frRoot; LOCALAPPDATA = (Join-Path $fr
 $frRun = Wait-RaceChild (Start-RaceChild ((Join-Path $frBin "claude-menu.ps1") + '" "--help') @{} $frEnv) 60000
 Assert-Equal "0|" ([string]$frRun.Code + "|" + $frRun.Err) "clm redemarre apres la mise a jour : le menu demarre sans erreur"
 Assert-True ($frRun.Out.Contains("--list")) "clm redemarre apres la mise a jour : aide affichee"
+$frWatcher = [PowerShell]::Create()
+try {
+  [void]$frWatcher.AddScript('param($Bin) . ([IO.Path]::Combine($Bin, "claude-import.ps1")); function Read-ClmStamp { throw "watcher reached" }; try { . ([IO.Path]::Combine($Bin, "claude-drive-watcher.ps1")) } catch { $_.Exception.Message }').AddArgument($frBin)
+  $frWatcherSeen = (@($frWatcher.Invoke()) -join "") + (@($frWatcher.Streams.Error | ForEach-Object { " " + $_.ToString() }) -join "")
+} finally { $frWatcher.Dispose() }
+Assert-Equal "watcher reached" $frWatcherSeen "ancien observateur Drive relance par son chemin a plat : la racine mene au nouveau script"
