@@ -34,8 +34,8 @@ try {
   $lkText = '{"skills":{"a":true}}'
   [IO.File]::WriteAllText($script:SyncChoicePath, $lkText)
   Invoke-LkLocked $script:SyncChoicePath {
-    Assert-Throws { Read-SyncChoice } "illisible" "sync-choice.json verrouille : lecture en erreur, pas absent"
-    Assert-Throws { Update-SyncChoice { param($x) Set-ChoiceCheck $x "skills" "z" $false $true } } "illisible" "sync-choice.json verrouille : changement refuse"
+    Assert-Throws { Read-SyncChoice } (Get-ClmText "sync.choice.unreadable" @("")) "sync-choice.json verrouille : lecture en erreur, pas absent"
+    Assert-Throws { Update-SyncChoice { param($x) Set-ChoiceCheck $x "skills" "z" $false $true } } (Get-ClmText "sync.choice.unreadable" @("")) "sync-choice.json verrouille : changement refuse"
   }
   Assert-Equal $lkText ([IO.File]::ReadAllText($script:SyncChoicePath)) "sync-choice.json verrouille : fichier intact"
   Remove-Item -LiteralPath $script:SyncChoicePath -Force
@@ -43,7 +43,7 @@ try {
   $lkText = '{"perPc":true}'
   [IO.File]::WriteAllText($script:SyncCatalogPath, $lkText)
   Invoke-LkLocked $script:SyncCatalogPath {
-    Assert-Throws { Read-SyncCatalog } "illisible" "sync-catalog.json verrouille : lecture en erreur, pas absent"
+    Assert-Throws { Read-SyncCatalog } (Get-ClmText "sync.catalog.unreadable" @("")) "sync-catalog.json verrouille : lecture en erreur, pas absent"
   }
   Assert-Equal $lkText ([IO.File]::ReadAllText($script:SyncCatalogPath)) "sync-catalog.json verrouille : fichier intact"
   Remove-Item -LiteralPath $script:SyncCatalogPath -Force
