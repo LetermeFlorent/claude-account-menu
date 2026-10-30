@@ -4,7 +4,8 @@ $script:CliHelpSections = @("cli.help.intro", "cli.help.launch", "cli.help.accou
 function Get-CliKeyLines {
   $lines = New-Object 'System.Collections.Generic.List[string]'
   $lines.Add((Get-ClmText "cli.help.menuKeys"))
-  for ($i = 0; $i + 1 -lt $script:MenuFooter.Count; $i += 2) { $lines.Add("  " + $script:MenuFooter[$i].PadRight(8) + $script:MenuFooter[$i + 1]) }
+  $foot = Get-MenuFooter
+  for ($i = 0; $i + 1 -lt $foot.Count; $i += 2) { $lines.Add("  " + $foot[$i].PadRight(8) + $foot[$i + 1]) }
   $lines.Add("  " + "u".PadRight(8) + (Get-ClmText "cli.help.menuInstall"))
   return ,$lines.ToArray()
 }

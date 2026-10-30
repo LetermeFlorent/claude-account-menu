@@ -11,7 +11,7 @@ function Get-MenuLayout {
   $n = [math]::Max(1, $Count)
   $inner = $Cols - 1 - $script:FrameCols
   $w = Get-Clamped $inner $script:MenuMinWidth $script:MenuMaxWidth
-  $foot = (Get-FooterRows $script:MenuFooter $w).Count
+  $foot = (Get-FooterRows (Get-MenuFooter) $w).Count
   $fixed = 7 + $foot + $Extra
   $l = @{ W = $w; FooterRows = $foot; Clip = [math]::Max(1, $Cols - 1); Visible = $n; Cells = 0 }
   if ($inner -lt $script:MenuMinWidth -or $Rows -lt $fixed + 3) {

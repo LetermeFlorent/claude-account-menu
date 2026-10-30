@@ -4,12 +4,15 @@ $script:DownArrow = [string][char]0x2193
 $script:FrameSide = 0x2502
 $script:FrameCols = 2
 $script:FooterLimits = @{}
-$script:MenuFooter = @(
-  "Entree", (Get-ClmText "ui.footer.launch"), "a", (Get-ClmText "ui.footer.add"), "x", (Get-ClmText "ui.footer.remove"), "n", (Get-ClmText "ui.footer.rename")
-  "m", (Get-ClmText "ui.footer.update"), "y", (Get-ClmText "ui.footer.sync"), "p", (Get-ClmText "ui.footer.settings"), "s", (Get-ClmText "ui.footer.save")
-  "r", (Get-ClmText "ui.footer.restore"), "w", (Get-ClmText "ui.footer.web"), "q", (Get-ClmText "ui.footer.quit")
-)
 $script:MenuFooterAccent = @("w")
+
+function Get-MenuFooter {
+  return @(
+    "Entree", (Get-ClmText "ui.footer.launch"), "a", (Get-ClmText "ui.footer.add"), "x", (Get-ClmText "ui.footer.remove"), "n", (Get-ClmText "ui.footer.rename")
+    "m", (Get-ClmText "ui.footer.update"), "y", (Get-ClmText "ui.footer.sync"), "p", (Get-ClmText "ui.footer.settings"), "s", (Get-ClmText "ui.footer.save")
+    "r", (Get-ClmText "ui.footer.restore"), "w", (Get-ClmText "ui.footer.web"), "q", (Get-ClmText "ui.footer.quit")
+  )
+}
 
 function Get-HeaderRow {
   param([string]$Title, [int]$W, [string]$Right = "")

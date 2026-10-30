@@ -12,7 +12,7 @@ Assert-Equal 3 (Get-MenuLayout 60 40 2).FooterRows "pied sur trois lignes a 60 c
 Assert-Equal 2 (Get-MenuLayout 200 40 2).FooterRows "pied sur deux lignes a la largeur maximale"
 function Get-FooterLengths {
   param([int]$W)
-  return (@(foreach ($r in (Get-FooterRows $script:MenuFooter $W)) { $t = ""; foreach ($s in $r) { $t += $s[0] }; $t.Length }) -join " ")
+  return (@(foreach ($r in (Get-FooterRows (Get-MenuFooter) $W)) { $t = ""; foreach ($s in $r) { $t += $s[0] }; $t.Length }) -join " ")
 }
 $footerSplit = @{ fr = "64 63"; en = "52 59" }[(Get-ClmLang)]
 Assert-Equal $footerSplit (Get-FooterLengths 105) "pied equilibre entre ses deux lignes"

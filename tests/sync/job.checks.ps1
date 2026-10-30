@@ -123,6 +123,6 @@ Assert-True ((Get-JobSegsText (Get-CardHead $awayE 1 @{ Mode = "full"; W = 80 } 
 Assert-True ((Get-JobSegsText (Get-CardHead $awayE 1 @{ Mode = "compact"; W = 80 } 1.0)[0]) -match ((Get-ClmText "drive.away" @("MAC  Pro")) + '$')) "carte compacte : compte ouvert ailleurs"
 $awayE.U.Acc = [PSCustomObject]@{ Label = "c1"; Dir = ".claude" }
 Assert-True ((Get-JobSegsText (Get-CardHead $awayE 0 @{ Mode = "full"; W = 80 } 1.0)[0]) -notmatch "ouvert") "carte : compte libre, rien"
-Assert-True (@(foreach ($fr in (Get-FooterRows $script:MenuFooter 105)) { $fr | Where-Object { $_[3] -eq "y" } }).Count -gt 0) "pied de page : touche y"
+Assert-True (@(foreach ($fr in (Get-FooterRows (Get-MenuFooter) 105)) { $fr | Where-Object { $_[3] -eq "y" } }).Count -gt 0) "pied de page : touche y"
 
 $script:DriveJob = $keptJob

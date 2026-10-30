@@ -11,7 +11,7 @@ Assert-Equal "a" (New-KeyInfo "a").KeyChar "lettre du pied de page"
 Assert-Equal "A" (New-KeyInfo "a").Key "touche de la lettre"
 Assert-Null (New-KeyInfo "fleche") "nom inconnu"
 
-$foot = Get-FooterRows $script:MenuFooter 100
+$foot = Get-FooterRows (Get-MenuFooter) 100
 $rows = @((New-Row), $foot[0])
 Assert-Equal "Entree" (Get-FooterKeyAt $rows 3 1) "clic sur Entree"
 Assert-Equal "a" (Get-FooterKeyAt $rows 19 1) "clic sur le libelle ajouter"

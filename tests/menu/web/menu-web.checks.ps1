@@ -10,12 +10,12 @@ try {
   function Open-Browser { param([string]$Url) $script:MwUrls.Add($Url) }
 
   Assert-Equal "web" (Get-MenuAction (New-KeyInfo "w") 3).Name "menu web : touche w"
-  Assert-True ($script:MenuFooter -join " ").Contains("w " + (Get-ClmText "ui.footer.web")) "menu web : touche w au pied du menu"
-  $segs = @(foreach ($fr in (Get-FooterRows $script:MenuFooter 100 $script:MenuFooterAccent)) { $fr })
+  Assert-True ((Get-MenuFooter) -join " ").Contains("w " + (Get-ClmText "ui.footer.web")) "menu web : touche w au pied du menu"
+  $segs = @(foreach ($fr in (Get-FooterRows (Get-MenuFooter) 100 $script:MenuFooterAccent)) { $fr })
   $accent = ($script:Levels["5h"][0] -join ",")
   Assert-Equal ($accent + "|" + $accent) ((@($segs | Where-Object { $_[3] -eq "w" }) | ForEach-Object { $_[1] -join "," }) -join "|") "menu web : touche w et son texte en couleur"
   Assert-Equal (($script:Ink.Text -join ",") + "|" + ($script:Ink.Dim -join ",")) ((@($segs | Where-Object { $_[3] -eq "q" }) | ForEach-Object { $_[1] -join "," }) -join "|") "menu web : autres touches inchangees"
-  Assert-True (@(foreach ($fr in (Get-FooterRows $script:MenuFooter 100)) { $fr | Where-Object { $_[3] -eq "w" -and ($_[1] -join ",") -eq $accent } }).Count -eq 0) "pied de page sans accent : couleurs habituelles"
+  Assert-True (@(foreach ($fr in (Get-FooterRows (Get-MenuFooter) 100)) { $fr | Where-Object { $_[3] -eq "w" -and ($_[1] -join ",") -eq $accent } }).Count -eq 0) "pied de page sans accent : couleurs habituelles"
   $su = New-Startup @("claude")
   $su.Steps[0].State = "run"
   Assert-Equal "web" (Get-StartupGate $su @{ Name = "web" } $script:MenuState).Name "menu web : page ouverte pendant le demarrage"
