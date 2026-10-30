@@ -20,7 +20,7 @@ The menu opens full screen with one block per account: its number, name and plan
 
 The pace word comes from projecting the current percentage to the end of the window: `debut` (under 10 % of the window elapsed), `faible` (projected under 70 %), `normal` (70 to 100 %), `fort` (100 to 130 %), `excessif` (over 130 %) and `epuise` (quota used up).
 
-The terminal menu text is in French and the web page speaks English or French (see Language). In a terminal that cannot draw it (input or output redirected, or no VT support) clm prints the account list with the quotas and asks for a number instead. Under 41 columns, or in a very short terminal, the menu shows one line per account. While the startup updates run, the cursor keys, `y`, `w` and `m` work and the others wait until they finish; Enter or a number is kept and the account starts when they end.
+The menu, the command line messages and the web page speak English or French (see Language). In a terminal that cannot draw it (input or output redirected, or no VT support) clm prints the account list with the quotas and asks for a number instead. Under 41 columns, or in a very short terminal, the menu shows one line per account. While the startup updates run, the cursor keys, `y`, `w` and `m` work and the others wait until they finish; Enter or a number is kept and the account starts when they end.
 
 ### Keys
 
@@ -116,7 +116,7 @@ The first address carries a code that works once and expires after 60 seconds. T
 
 ## Language
 
-The web page and clm's messages for it come in English and French. The language is, in order: the choice made in the page's language selector (saved as `lang` in `display.json`: `auto`, `en` or `fr`), the `CLM_LANG` variable, the system language (Windows UI culture, macOS `AppleLanguages`), then `LC_ALL`, `LC_MESSAGES` and `LANG`. A value starting with `fr` gives French, any other gives English, and English is the default.
+The terminal menu, the command line messages and the web page come in English and French. The language is, in order: the choice made in the page's language selector (saved as `lang` in `display.json`: `auto`, `en` or `fr`), the `CLM_LANG` variable, the system language (Windows UI culture, macOS `AppleLanguages`), then `LC_ALL`, `LC_MESSAGES` and `LANG`. A value starting with `fr` gives French, any other gives English, and English is the default.
 
 ## Colours and animation
 
