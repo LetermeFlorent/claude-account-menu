@@ -87,31 +87,31 @@ $clock = { return $script:FakeMs }
 $boom = { throw "console fermee" }
 
 Reset-FakeKeys (@(Split-FakeText ($esc + "]11;rgb:0c")) + @($null, $null) + @(Split-FakeText ("0c/0c0c/0c0c" + $st)) + @($null) + @(Split-FakeText $da)) 1
-$got = Read-ReplyText -TestKey $testKey -ReadKey $readKey -Clock $clock
+$got = Read-ReplyText @{ TestKey = $testKey; ReadKey = $readKey; Clock = $clock }
 Assert-Equal ($darkReply + $da) $got "OSC 11 : reponse arrivee en morceaux lue en entier"
 Assert-Equal "12,12,12" ((ConvertFrom-OscReply $got) -join ",") "OSC 11 : reponse en morceaux decodee"
 
 Reset-FakeKeys (@(Split-FakeText $da) + @("z", "z")) 1
-Assert-Equal $da (Read-ReplyText -TestKey $testKey -ReadKey $readKey -Clock $clock) "OSC 11 : arret des la reponse DA1 seule"
+Assert-Equal $da (Read-ReplyText @{ TestKey = $testKey; ReadKey = $readKey; Clock = $clock }) "OSC 11 : arret des la reponse DA1 seule"
 Assert-Equal 2 $script:FakeKeys.Count "OSC 11 : rien n'est lu apres la reponse DA1"
 Assert-Equal 0 $script:FakeMs "OSC 11 : la reponse DA1 seule n'attend pas"
 
 Reset-FakeKeys @() 40
-Assert-Equal "" (Read-ReplyText -TestKey $testKey -ReadKey $readKey -Clock $clock) "OSC 11 : terminal muet donne une reponse vide"
+Assert-Equal "" (Read-ReplyText @{ TestKey = $testKey; ReadKey = $readKey; Clock = $clock }) "OSC 11 : terminal muet donne une reponse vide"
 Assert-Equal 160 $script:FakeMs "OSC 11 : terminal muet arrete apres 100 ms puis 50 ms de calme"
 
 Reset-FakeKeys (@($null, $null, $null) + @(Split-FakeText ($darkReply + "[?6"))) 40
-Assert-Equal ($darkReply + "[?6") (Read-ReplyText -TestKey $testKey -ReadKey $readKey -Clock $clock) "OSC 11 : reponse en retard videe pendant le calme"
+Assert-Equal ($darkReply + "[?6") (Read-ReplyText @{ TestKey = $testKey; ReadKey = $readKey; Clock = $clock }) "OSC 11 : reponse en retard videe pendant le calme"
 Assert-Equal 0 $script:FakeKeys.Count "OSC 11 : aucun octet en retard laisse en entree"
 
 $script:FakeMs = 0
-$flood = Read-ReplyText -TestKey { $true } -ReadKey { $script:FakeMs += 10; "x" } -Clock $clock
+$flood = Read-ReplyText @{ TestKey = { $true }; ReadKey = { $script:FakeMs += 10; "x" }; Clock = $clock }
 Assert-Equal 250 $script:FakeMs "OSC 11 : un flot de touches s'arrete a la borne dure de 250 ms"
 Assert-Equal 25 $flood.Length "OSC 11 : un flot de touches n'est lu que jusqu'a la borne"
 
 Reset-FakeKeys (@(Split-FakeText "abc")) 1
-Assert-Equal "" (Read-ReplyText -TestKey $testKey -ReadKey $boom -Clock $clock) "OSC 11 : source de touches en erreur sans exception"
-Assert-Equal "" (Read-ReplyText -TestKey $boom -ReadKey $readKey -Clock $clock) "OSC 11 : test de touche en erreur sans exception"
+Assert-Equal "" (Read-ReplyText @{ TestKey = $testKey; ReadKey = $boom; Clock = $clock }) "OSC 11 : source de touches en erreur sans exception"
+Assert-Equal "" (Read-ReplyText @{ TestKey = $boom; ReadKey = $readKey; Clock = $clock }) "OSC 11 : test de touche en erreur sans exception"
 
 $hexReply = " 1b 5d 31 31 3b 72 67 62 3a 30 63 30 63 2f 30 63 30 63 2f 30 63 30 63 1b 5c`n 1b 5b 3f 36 31 3b 34 3b 36 3b 37 3b 31 34 3b 32 31 3b 32 32 3b 32 33 3b 32 34 3b 32 38 3b 33 32 3b 34 32 63"
 Assert-Equal ($darkReply + $da) (ConvertFrom-ByteHex $hexReply) "OSC 11 : octets du tty decodes depuis l'hexadecimal"
