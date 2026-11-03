@@ -15,8 +15,9 @@ function Test-NetworkOnce {
       try { $tasks += $c.ConnectAsync($h, $script:NetworkPort) } catch { continue }
     }
     while ($tasks.Count -gt 0 -and $Clock.ElapsedMilliseconds -lt $script:NetworkTimeoutMs) {
-      if (@($tasks | Where-Object { $_.Status -eq "RanToCompletion" }).Count -gt 0) { return $true }
-      if (@($tasks | Where-Object { -not $_.IsCompleted }).Count -eq 0) { return $false }
+      $done = @($tasks | Where-Object { $_.IsCompleted })
+      if (@($done | Where-Object { $_.Status -eq "RanToCompletion" }).Count -gt 0) { return $true }
+      if ($done.Count -eq $tasks.Count) { return $false }
       Start-Sleep -Milliseconds 20
     }
     return $false
