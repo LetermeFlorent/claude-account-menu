@@ -1,8 +1,8 @@
 . Import-ClmModule claude-file-io
 function Read-JsonFile {
   param([string]$Path)
-  if (-not (Test-Path -LiteralPath $Path)) { return $null }
-  return ConvertFrom-JsonText (Read-SharedText $Path)
+  try { $raw = Read-SharedText $Path } catch { if ([IO.File]::Exists($Path)) { throw }; return $null }
+  return ConvertFrom-JsonText $raw
 }
 
 function ConvertFrom-JsonText {

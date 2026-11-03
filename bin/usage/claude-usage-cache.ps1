@@ -8,8 +8,7 @@ $script:RetryAfterMaxSec = 3600
 $script:UsageCacheLockMs = 15000
 
 function Read-UsageCacheMap {
-  if (-not (Test-Path -LiteralPath $script:UsageCachePath)) { return @{} }
-  $text = Read-SharedText $script:UsageCachePath
+  try { $text = Read-SharedText $script:UsageCachePath } catch { if ([IO.File]::Exists($script:UsageCachePath)) { throw }; return @{} }
   $map = @{}
   try { $raw = $text | ConvertFrom-Json } catch { return $map }
   foreach ($p in $raw.PSObject.Properties) { $map[$p.Name] = $p.Value }

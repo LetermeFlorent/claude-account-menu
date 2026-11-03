@@ -27,3 +27,11 @@ $left = @(Get-ChildItem -LiteralPath $raceDir -Filter "*.tmp")
 Assert-Equal 0 $left.Count "trois clm ecrivent le meme fichier : aucun temporaire laisse"
 $final = Read-JsonFile (Join-Path $raceDir "shared.json")
 Assert-Equal "299" ("" + $final["n"]) "trois clm ecrivent le meme fichier : le fichier final est entier"
+
+function global:Stop-RaceTestPath { throw (New-Object UnauthorizedAccessException "Access is denied") }
+$busyPath = Join-Path $raceDir "busy.json"
+[IO.File]::WriteAllText($busyPath, '{"id":"busy"}')
+Set-Alias -Name Test-Path -Value Stop-RaceTestPath -Scope Global -Force
+try { $busy = Read-JsonFile $busyPath; $gone = Read-JsonFile (Join-Path $raceDir "gone.json") } catch { $busy = @{ id = "error " + $_.Exception.Message }; $gone = "error" } finally { Remove-Item -LiteralPath Alias:Test-Path -Force; Remove-Item -LiteralPath Function:Stop-RaceTestPath -Force }
+Assert-Equal "busy" ("" + $busy["id"]) "un fichier que Windows refuse de tester pendant un remplacement se relit quand meme"
+Assert-True ($null -eq $gone) "un fichier absent se relit comme vide"
