@@ -47,6 +47,7 @@ function Save-UsageEntry {
     $map[$Label] = [PSCustomObject]@{
       At = $At
       Pct5 = $Usage.Pct5; Reset5 = $Usage.Reset5; Pct7 = $Usage.Pct7; Reset7 = $Usage.Reset7
+      No5 = [bool]$Usage.No5; Plan = $Usage.Plan
       Fails = 0; Until = 0
     }
   }
@@ -60,6 +61,7 @@ function Save-UsageCooldown {
     $old = $map[$Label]
     $map[$Label] = [PSCustomObject]@{
       At = [long]$old.At; Pct5 = $old.Pct5; Reset5 = $old.Reset5; Pct7 = $old.Pct7; Reset7 = $old.Reset7
+      No5 = $old.No5; Plan = $old.Plan
       Fails = $Fails; Until = $until
     }
   }
@@ -97,6 +99,8 @@ function Copy-CacheEntry {
   param($Entry, $Out)
   $Out.Pct5 = $Entry.Pct5; $Out.Reset5 = $Entry.Reset5
   $Out.Pct7 = $Entry.Pct7; $Out.Reset7 = $Entry.Reset7
+  if ($null -ne $Entry.No5) { $Out.No5 = [bool]$Entry.No5 }
+  if ($Entry.Plan) { $Out.Plan = [string]$Entry.Plan }
   $Out.Age = Get-CacheAge $Entry
   Add-Member -InputObject $Out -NotePropertyName At -NotePropertyValue ([long]$Entry.At) -Force
   $now = [DateTimeOffset]::UtcNow

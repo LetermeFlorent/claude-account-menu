@@ -89,6 +89,9 @@ function Request-AccountUsage {
     $r = Invoke-UsageApi $tok.Token
     if ($null -ne $r.five_hour) { $Out.Pct5 = [math]::Round([double]$r.five_hour.utilization); $Out.Reset5 = $r.five_hour.resets_at }
     if ($null -ne $r.seven_day) { $Out.Pct7 = [math]::Round([double]$r.seven_day.utilization); $Out.Reset7 = $r.seven_day.resets_at }
+    $Out.No5 = ($null -eq $r.five_hour -and $null -ne $r.seven_day)
+    $name = Get-ApiPlanName $Acc $tok.Token
+    if ($name) { $Out.Plan = $name }
     $Out.At = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     Save-UsageEntry $Acc.Label $Out $Out.At
   } catch {

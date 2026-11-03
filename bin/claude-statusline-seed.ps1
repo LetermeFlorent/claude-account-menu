@@ -28,7 +28,7 @@ function Find-CurrentAccount {
 . Import-ClmModule claude-machine-lock, claude-statusline-lock, claude-statusline-changes
 $script:StatusLockName = "statusline"
 $script:StatusLockWaitMs = 400
-$script:StatusKeys = "^(q5_at|q5_pct|q7_at|q7_pct|q_at)"
+$script:StatusKeys = "^(q5_at|q5_pct|q5_none|q7_at|q7_pct|q_at)"
 $script:StatusChangesTag = "clm-"
 
 function Get-StatusEntries {
@@ -37,8 +37,9 @@ function Get-StatusEntries {
   $r7 = Convert-ToEpoch $Usage.Reset7
   $values = @{ q_at = ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [long]$Usage.Age) }
   if ($null -ne $r5) { $values["q5_at"] = $r5; $values["q5_pct"] = [int]$Usage.Pct5 }
+  if ($Usage.No5) { $values["q5_none"] = 1 }
   if ($null -ne $r7) { $values["q7_at"] = $r7; $values["q7_pct"] = [int]$Usage.Pct7 }
-  return @(foreach ($k in "q5_at", "q5_pct", "q7_at", "q7_pct", "q_at") {
+  return @(foreach ($k in "q5_at", "q5_pct", "q5_none", "q7_at", "q7_pct", "q_at") {
       if ($values.ContainsKey($k)) { $k + "@" + $Tag + " " + $values[$k] } else { $k + "@" + $Tag }
     })
 }

@@ -50,6 +50,8 @@ function Get-CardBody {
     $rows[0].Add(@(("  " + (Get-ClmText "menu.card.reading")), $script:Ink.Dim, $false))
   } elseif ($n -eq 1) {
     $rows[0].AddRange((Get-CompactUsageSegs @{ Usage = $u; Cells = $L.Cells; View = $v; Tween5 = $E.T5; Tween7 = $E.T7; Now = $Now }))
+  } elseif ($u.No5) {
+    Add-UsageSegs @{ Segs = $rows[0]; Kind = "7d"; Tween = $E.T7; Left = $v.Left7; Pace = $v.Pace7; Cells = $L.Cells; Now = $Now; Wide = $true }
   } else {
     Add-UsageSegs @{ Segs = $rows[0]; Kind = "5h"; Tween = $E.T5; Left = $v.Left5; Pace = $v.Pace5; Cells = $L.Cells; Now = $Now; Wide = $true }
     Add-UsageSegs @{ Segs = $rows[1]; Kind = "7d"; Tween = $E.T7; Left = $v.Left7; Pace = $v.Pace7; Cells = $L.Cells; Now = $Now; Wide = $true }

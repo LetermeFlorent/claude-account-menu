@@ -29,6 +29,7 @@ function Set-LiveUsage {
   if ($null -eq $Bar -or $Bar.At -le [long]$E.U.At) { return $false }
   $u = New-UsageRow $E.Acc $E.U.Email
   $u.Plan = $E.U.Plan
+  $u.No5 = [bool]$E.U.No5
   $u.LimitedUntil = $E.U.LimitedUntil
   Copy-CacheEntry $Bar $u
   $u.At = $Bar.At

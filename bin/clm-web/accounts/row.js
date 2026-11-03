@@ -30,7 +30,7 @@ function rowNode(a, count) {
   return el("li", { class: a.selected ? "account selected" : "account", "data-key": a.dir }, [
     el("span", { class: "account-n", text: String(a.n), "aria-hidden": "true" }),
     rowWho(a),
-    quotaBar("q5", a.q5, a.pending),
+    a.q5 ? quotaBar("q5", a.q5, a.pending) : el("div", { class: "quota q5" }),
     quotaBar("q7", a.q7, a.pending),
     menu,
     rowFacts(a),

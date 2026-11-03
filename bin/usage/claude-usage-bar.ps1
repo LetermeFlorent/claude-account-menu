@@ -27,7 +27,7 @@ function Read-StatusUsage {
   $tag = "@" + (Get-StateTag (Get-AccountPath $Acc))
   $at = ConvertTo-StatusNumber $map["q_at" + $tag]
   if ($null -eq $at) { return $null }
-  $e = [PSCustomObject]@{ At = [long][math]::Floor($at); Pct5 = $null; Reset5 = $null; Pct7 = $null; Reset7 = $null; Fails = 0; Until = 0 }
+  $e = [PSCustomObject]@{ At = [long][math]::Floor($at); Pct5 = $null; Reset5 = $null; Pct7 = $null; Reset7 = $null; No5 = $null; Plan = $null; Fails = 0; Until = 0 }
   $found = $false
   foreach ($k in @("5", "7")) {
     $reset = ConvertTo-StatusNumber $map["q" + $k + "_at" + $tag]
@@ -37,6 +37,7 @@ function Read-StatusUsage {
     $e.("Reset" + $k) = [DateTimeOffset]::FromUnixTimeMilliseconds([long][math]::Round($reset * 1000)).ToString("o", $script:Invariant)
     $found = $true
   }
+  if ($null -ne (ConvertTo-StatusNumber $map["q5_none" + $tag])) { $e.No5 = $true }
   if (-not $found) { return $null }
   return $e
 }
@@ -44,7 +45,7 @@ function Read-StatusUsage {
 function Select-NewestUsage {
   param($Cached, $Bar)
   if ($null -eq $Bar -or ($null -ne $Cached -and [long]$Cached.At -ge $Bar.At)) { return $Cached }
-  if ($null -ne $Cached) { $Bar.Fails = [int]$Cached.Fails; $Bar.Until = [long]$Cached.Until }
+  if ($null -ne $Cached) { $Bar.Fails = [int]$Cached.Fails; $Bar.Until = [long]$Cached.Until; if ($null -eq $Bar.No5) { $Bar.No5 = $Cached.No5 }; $Bar.Plan = $Cached.Plan }
   return $Bar
 }
 
@@ -56,7 +57,7 @@ function Get-KnownUsage {
 function New-UsageRow {
   param($Acc, [string]$Email = "")
   if ($Email -eq "") { $Email = Get-AccountEmail $Acc }
-  return [PSCustomObject]@{ Label = $Acc.Label; Email = $Email; Acc = $Acc; Plan = ""; Pct5 = $null; Reset5 = $null; Pct7 = $null; Reset7 = $null; Error = $null; Age = $null; At = $null; Expired = $false; LimitedUntil = $null }
+  return [PSCustomObject]@{ Label = $Acc.Label; Email = $Email; Acc = $Acc; Plan = ""; Pct5 = $null; Reset5 = $null; Pct7 = $null; Reset7 = $null; No5 = $false; Error = $null; Age = $null; At = $null; Expired = $false; LimitedUntil = $null }
 }
 
 function Get-LatestUsage {

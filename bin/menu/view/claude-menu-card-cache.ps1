@@ -22,7 +22,7 @@ function Get-CardSign {
   $v = $E.View
   $timer = ""
   if ($E.Timer) { $timer = $E.Timer[0] + "/" + ($E.Timer[1] -join ",") }
-  $parts = @($I, $L.Mode, $L.W, $L.Cells, $W, $u.Label, $u.Email, $u.Plan, ($null -eq $u.Error), $u.Error, $u.Pct5, $u.Pct7, (Get-AccountAway $u.Acc), $timer,
+  $parts = @($I, $L.Mode, $L.W, $L.Cells, $W, $u.Label, $u.Email, $u.Plan, ($null -eq $u.Error), $u.Error, $u.Pct5, $u.Pct7, $u.No5, (Get-AccountAway $u.Acc), $timer,
     $v.Badge, $v.Note, $v.Left5, $v.Left7, (Get-PaceSign $v.Pace5), (Get-PaceSign $v.Pace7), $E.Pending, $E.Seen, $E.T5.To, $E.T7.To, (Get-ThemeSign))
   return ($parts -join [char]1)
 }

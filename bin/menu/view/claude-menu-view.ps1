@@ -44,7 +44,7 @@ function Write-Segs {
 
 function Get-PlanColor {
   param([string]$Plan)
-  if ($Plan -match "20x") { return $script:Levels["5h"][1] }
+  if ($Plan -match "20x|Ultra") { return $script:Levels["5h"][1] }
   if ($Plan -match "5x") { return $script:Levels["5h"][0] }
   return $script:Levels["7d"][0]
 }

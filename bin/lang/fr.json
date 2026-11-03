@@ -287,6 +287,7 @@
   "menu.timer.apiPause": "pause API {0}",
   "menu.timer.forced.apiRefused": "l'API refuse la relecture, réessai dans {0}",
   "menu.timer.forced.failed": "relecture impossible, {0}",
+  "menu.timer.forced.percent7": "7j {0} %",
   "menu.timer.forced.percents": "5h {0} %, 7j {1} %",
   "menu.timer.forced.reread": "quotas relus à {0} ({1})",
   "menu.timer.forced.upToDate": "déjà à jour, lu il y a {0} ({1})",

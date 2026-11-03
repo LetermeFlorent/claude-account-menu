@@ -66,8 +66,10 @@ function Get-CompactUsageSegs {
   if ($null -eq $T5) { $T5 = New-Tween ([double]$U.Pct5) ([double]$U.Pct5) 0 0 }
   if ($null -eq $T7) { $T7 = New-Tween ([double]$U.Pct7) ([double]$U.Pct7) 0 0 }
   $segs = New-Row
-  Add-UsageSegs @{ Segs = $segs; Kind = "5h"; Tween = $T5; Left = $View.Left5; Pace = $View.Pace5; Cells = $Cells; Now = $Now; Wide = $false }
-  $segs.Add(@(" | ", $script:Ink.Text, $true))
+  if (-not $U.No5) {
+    Add-UsageSegs @{ Segs = $segs; Kind = "5h"; Tween = $T5; Left = $View.Left5; Pace = $View.Pace5; Cells = $Cells; Now = $Now; Wide = $false }
+    $segs.Add(@(" | ", $script:Ink.Text, $true))
+  }
   Add-UsageSegs @{ Segs = $segs; Kind = "7d"; Tween = $T7; Left = $View.Left7; Pace = $View.Pace7; Cells = $Cells; Now = $Now; Wide = $false }
   return ,$segs
 }

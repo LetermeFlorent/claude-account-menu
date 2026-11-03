@@ -61,6 +61,7 @@ function Get-ForcedReadMsg {
   if ($pause -gt 0) { return ,@(($head + (Get-ClmText "menu.timer.forced.apiRefused" @(Format-Countdown $pause))), $script:Levels["7d"][1]) }
   if ($E.U.Error) { return ,@(($head + (Get-ClmText "menu.timer.forced.failed" @($E.U.Error))), $script:Ink.Alert) }
   $pcts = Get-ClmText "menu.timer.forced.percents" @([int]$E.U.Pct5, [int]$E.U.Pct7)
+  if ($E.U.No5) { $pcts = Get-ClmText "menu.timer.forced.percent7" @([int]$E.U.Pct7) }
   if ($null -ne $E.U.Age) { return ,@(($head + (Get-ClmText "menu.timer.forced.upToDate" @((Format-Age $E.U.Age), $pcts))), $script:Ink.Dim) }
   return ,@(($head + (Get-ClmText "menu.timer.forced.reread" @((Get-Date -Format "HH:mm:ss"), $pcts))), $script:Levels["7d"][0])
 }

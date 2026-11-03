@@ -46,6 +46,7 @@ function Get-SimpleRows {
     $r.Add(@(("" + ($i + 1) + "  " + $u.Label + "  "), $script:Ink.Text, ($i -eq $State.Sel)))
     if ($null -ne $u.Error) { $r.Add(@(("" + $u.Error), $script:Ink.Alert, $false)) }
     elseif ($e.Pending -and -not $e.Seen) { $r.Add(@((Get-ClmText "menu.screen.reading"), $script:Ink.Dim, $false)) }
+    elseif ($u.No5) { $r.Add(@(("7d " + [int]$u.Pct7 + "%"), $script:Ink.Dim, $false)) }
     else { $r.Add(@(("5h " + [int]$u.Pct5 + "%  7d " + [int]$u.Pct7 + "%"), $script:Ink.Dim, $false)) }
     $rows.Add($r)
   }

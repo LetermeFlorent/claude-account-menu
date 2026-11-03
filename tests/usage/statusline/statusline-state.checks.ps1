@@ -78,7 +78,8 @@ if ([IO.File]::Exists($barMine)) { $barRaw = [IO.File]::ReadAllText($barMine) }
 $barLines = @($barRaw.TrimEnd("`n").Split("`n"))
 Assert-True ($barRaw.EndsWith("`n") -and -not $barRaw.Contains("`r") -and [IO.File]::ReadAllBytes($barMine)[0] -ne 0xEF) "fichier de changements : UTF-8 sans BOM, fins de ligne LF"
 Assert-Equal 5 @($barLines | Where-Object { $_ -cmatch "^(q5_at|q5_pct|q7_at|q7_pct|q_at)@claude \S+$" }).Count "fichier de changements : nos cles seulement"
-Assert-Equal 5 $barLines.Count "fichier de changements : rien d'autre"
+Assert-True ($barLines -ccontains "q5_none@claude") "fichier de changements : sans compte Ultra, la marque sans 5h est effacee"
+Assert-Equal 6 $barLines.Count "fichier de changements : rien d'autre"
 Assert-True ($barLines -contains "q5_pct@claude 42") "fichier de changements : valeurs fraiches"
 function Get-AccountUsage {
   param($Acc, [switch]$NoRefresh)
