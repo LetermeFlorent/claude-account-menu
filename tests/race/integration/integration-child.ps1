@@ -53,6 +53,14 @@ function Test-ItestSettled {
   return -not (Test-DriveJobRunning $script:DriveJob)
 }
 
+function Get-ItestWhy {
+  $su = $script:Startup
+  $steps = if ($null -eq $su) { "none" } else { (@($su.Steps | ForEach-Object { $_.Name + ":" + $_.State }) -join ",") + " exit " + ($null -ne $su.Exit) }
+  $st = $script:MenuState
+  $wait = if ($null -eq $st) { "nostate" } else { "opened " + $st.Opened + " pending " + @($st.Entries | Where-Object { $_.Pending }).Count }
+  return "steps " + $steps + " " + $wait + " drive " + (Test-DriveJobRunning $script:DriveJob)
+}
+
 function Get-ItestKey {
   if ($itestMode -eq "session") { return "1" }
   if ($itestMode -eq "quit" -or (Test-ItestFlag "quit-all")) { return "q" }
@@ -63,7 +71,7 @@ function Get-ItestKey {
 }
 
 function Read-ItestKey {
-  if ($itestClock.ElapsedMilliseconds -gt $itestStuckMs) { [Console]::Out.WriteLine("`n" + "stuck " + $itestId); exit 1 }
+  if ($itestClock.ElapsedMilliseconds -gt $itestStuckMs) { [Console]::Out.WriteLine("`n" + "stuck " + $itestId + " " + (Get-ItestWhy)); exit 1 }
   if (-not (Test-ItestSettled)) { return $null }
   if (-not $script:itestShown) {
     $script:itestShown = $true
