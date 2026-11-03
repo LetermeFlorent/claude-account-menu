@@ -81,3 +81,11 @@ Assert-True (@($a | Where-Object { $_ -like "fn Invoke-AccountMenu *" }).Count -
 Assert-True (@($a | Where-Object { $_ -like "var ClmImport*" }).Count -eq 0) "chargement unique : Import-ClmModule ne laisse aucune variable derriere lui"
 $diff = @(Compare-Object $a $b | ForEach-Object { $_.SideIndicator + " " + $_.InputObject })
 Assert-Equal "" ($diff -join " | ") "chargement unique : memes fonctions et memes variables qu'en rechargeant tout"
+$onceLoader = Start-UsageLoader @("ClmOnce") (Get-ClmModulePath "claude-drive-sync") "Get-Variable"
+$onceUntil = [DateTime]::UtcNow.AddSeconds(60)
+while (-not $onceLoader.Ctl.Done -and [DateTime]::UtcNow -lt $onceUntil) { Start-Sleep -Milliseconds 50 }
+$onceRes = Receive-UsageResults $onceLoader
+Close-UsageLoader $onceLoader
+$onceSet = $null
+if ($onceRes.Count -eq 1 -and $null -ne $onceRes[0][1]) { $onceSet = $onceRes[0][1].Value }
+Assert-True ($null -ne $onceSet -and $onceSet.Count -gt 20) "chargement unique : un chargeur en arriere-plan garde la liste des modules deja charges"
