@@ -64,6 +64,13 @@ Assert-True (Update-MenuTimers $st 1000 5000) "compteurs dessines au premier pas
 Assert-True (-not (Update-MenuTimers $st 1200 5000)) "meme seconde, rien a redessiner"
 Assert-True (Update-MenuTimers $st 2100 5000) "seconde suivante, compteurs redessines"
 Assert-Equal (((Get-ClmText "menu.timer.update" @("29s")), (Get-ClmText "menu.timer.update" @("59s"))) -join "|") (($st.Entries | ForEach-Object { $_.Timer[0] }) -join "|") "un compteur par compte"
+$st = @{ Entries = @((New-TimerCard "a" 1 1), (New-TimerCard "b" 1 1)); Busy = $false; Clock = $null }
+$st.Entries[0].NextAt = 31300
+$st.Entries[1].NextAt = 31800
+$null = Update-MenuTimers $st 1000 5000
+Assert-True (-not (Update-MenuTimers $st 1400 5000)) "comptes decales, rien a redessiner avant la seconde"
+Assert-True (-not (Update-MenuTimers $st 1900 5000)) "comptes decales, un seul dessin par seconde"
+Assert-True (Update-MenuTimers $st 2000 5000) "comptes decales, redessines ensemble a la seconde"
 $st = @{ Entries = @((New-TimerCard "a" 1 1)); Busy = $false; Clock = $null }
 $st.Entries[0].NextAt = 184000
 $null = Update-MenuTimers $st 1000 5000

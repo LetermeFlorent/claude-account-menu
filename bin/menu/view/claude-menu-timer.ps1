@@ -35,7 +35,7 @@ function Get-EntryTimer {
   if ($E.Pending -and -not $E.Seen) { return ,@("", $script:Ink.Dim, $false) }
   if ($E.Pending -or $E.Force -or $null -eq $E.NextAt) { return ,@((Get-ClmText "menu.timer.reading"), $script:Ink.Dim, $false) }
   if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
-  $secs = [int][math]::Max(0, [math]::Ceiling(($E.NextAt - $Now) / 1000))
+  $secs = [int][math]::Max(0, [math]::Ceiling($E.NextAt / 1000) - [math]::Floor($Now / 1000))
   if ($secs -gt 60) { $secs = [int][math]::Ceiling($secs / 5) * 5 }
   $at = Format-Countdown $secs
   if ($null -ne $E.U.Error) { return ,@((Get-ClmText "menu.timer.retry" @($at)), $script:Ink.Alert, $false) }
