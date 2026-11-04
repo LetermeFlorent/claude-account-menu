@@ -67,7 +67,7 @@ Assert-Equal "state.c.changes.tmp" ((@(Get-ChildItem -LiteralPath $barDir -File 
 
 $script:StatusStateLockWaitMs = 300
 Reset-BarState "theme dark`n"
-$barHolder = Start-BarHolder 4000
+$barHolder = Start-BarHolder 10000
 $barErr = $null
 try { Update-StatusState $barAcc } catch { $barErr = $_.Exception.Message }
 Assert-Null $barErr "barre trop longue a rendre son verrou : abandon sans erreur"
