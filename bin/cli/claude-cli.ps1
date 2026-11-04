@@ -1,22 +1,7 @@
-. Import-ClmModule claude-cli-help, claude-cli-accounts, claude-cli-drive, claude-theme, claude-usage-poll, claude-text
+. Import-ClmModule claude-cli-args, claude-cli-help, claude-cli-accounts, claude-cli-drive, claude-theme, claude-usage-poll, claude-text
 $script:CliRestart = $false
-$script:CliCommands = @("--help", "-h", "--version", "--list", "--add", "--rename", "--move", "--remove", "--backups", "--update", "--drive-status", "--prefs", "--prefs-on", "--prefs-off", "--prefs-erase", "--palette", "--anim", "--usage-poll")
 $script:CliDisplayNeeds = @{ palette = "cli.palette.needs"; anim = "cli.anim.needs" }
 $script:CliDisplayEnv = @{ palette = "STATUSLINE_BG"; anim = "CLM_ANIM" }
-
-function Get-CliCommand {
-  param([object[]]$ArgList)
-  $list = [string[]]@($ArgList | ForEach-Object { [string]$_ })
-  if (@($list | Where-Object { $_ -match "^-[1-9]$" }).Count -gt 0) { return $null }
-  for ($i = 0; $i -lt $list.Count; $i++) {
-    if ($script:CliCommands -notcontains $list[$i]) { continue }
-    $rest = @($list | Select-Object -Skip ($i + 1))
-    $name = $list[$i].TrimStart("-")
-    if ($name -eq "h") { $name = "help" }
-    return @{ Name = $name; Values = [string[]]@($rest | Where-Object { -not $_.StartsWith("--") }); Yes = $list -contains "--yes"; Erase = $list -contains "--erase" }
-  }
-  return $null
-}
 
 function Write-CliLines {
   param([string[]]$Lines)

@@ -5,11 +5,14 @@ $script:ClmEntryStamp = Wait-ClmInstall
 try {
   . Import-ClmModule claude-state-migrate
   if (-not (Test-ClmReloadNeeded $script:ClmEntryStamp)) { $null = Invoke-StateMigration }
-  . Import-ClmModule claude-boot-bar, claude-text
+  . Import-ClmModule claude-boot-bar, claude-text, claude-cli-args
   $script:BootBar = Start-BootBar $args $PSScriptRoot $script:ClmOnce
-  . Import-ClmModule claude-usage, claude-menu-view, claude-menu-save, claude-menu-restore, claude-menu-select,
-    claude-menu-remove, claude-menu-rename, claude-menu-prefs, claude-statusline-seed, claude-update, claude-self-update,
-    claude-menu-loop, claude-menu-startup, claude-drive-cli, claude-account-guard, claude-cli, claude-lazy-load
+  if (Test-CliQuick $args) { . Import-ClmModule claude-cli, claude-accounts, claude-self-update, claude-ui-chrome }
+  else {
+    . Import-ClmModule claude-usage, claude-menu-view, claude-menu-save, claude-menu-restore, claude-menu-select,
+      claude-menu-remove, claude-menu-rename, claude-menu-prefs, claude-statusline-seed, claude-update, claude-self-update,
+      claude-menu-loop, claude-menu-startup, claude-drive-cli, claude-account-guard, claude-cli, claude-lazy-load
+  }
 } catch { if (-not (Test-ClmReloadNeeded $script:ClmEntryStamp)) { throw } }
 if (Test-ClmReloadNeeded $script:ClmEntryStamp) {
   if (Test-Path Function:\Stop-BootBar) { Stop-BootBar }
@@ -47,7 +50,7 @@ function Invoke-TextStartup {
 
 $cli = Get-CliCommand $args
 if ($null -ne $cli) {
-  Import-ClmGroupOrReload @("drive", "sync", "mcp") $PSCommandPath $args
+  if (-not (Test-CliQuick $args)) { Import-ClmGroupOrReload @("drive", "sync", "mcp") $PSCommandPath $args }
   $code = Invoke-CliCommand $cli $args
   if ($script:CliRestart) { Restart-Clm $PSCommandPath $args }
   exit $code

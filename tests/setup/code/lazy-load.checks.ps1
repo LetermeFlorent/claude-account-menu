@@ -112,3 +112,21 @@ foreach ($case in @("sans", "avec")) {
   $other = @($late | Where-Object { $_ -match "^claude-web-" })
   Assert-Equal "||" (($lines | Select-Object -First 1) + "|" + ($missing -join ",") + "|" + ($other -join ",")) "demarrage avec Drive : modules drive charges a la demande, aucun module web"
 }
+$quickProbe = @'
+param([string]$Bin, [string]$Out, [string]$Cmd)
+try { . (Join-Path $Bin "claude-menu.ps1") $Cmd } finally { [IO.File]::WriteAllLines($Out, [string[]]@($script:ClmOnce)) }
+'@
+$quickProbeFile = New-SandboxFile "quick-probe.ps1" $quickProbe
+foreach ($quick in @("--version", "--list", "--help")) {
+  $out = Join-Path $script:Sandbox ("quick" + $quick + ".txt")
+  $state = Join-Path $script:Sandbox "quick-state"
+  $savedProfile = $env:USERPROFILE; $savedHome = $env:HOME; $savedLocal = $env:LOCALAPPDATA
+  $env:USERPROFILE = $state; $env:HOME = $state; $env:LOCALAPPDATA = Join-Path $state "AppData"
+  try { $said = @(& $lazyExe -NoProfile -ExecutionPolicy Bypass -File $quickProbeFile -Bin $bin -Out $out -Cmd $quick) }
+  finally { $env:USERPROFILE = $savedProfile; $env:HOME = $savedHome; $env:LOCALAPPDATA = $savedLocal }
+  $lines = @()
+  if (Test-Path -LiteralPath $out) { $lines = [IO.File]::ReadAllLines($out) }
+  $heavy = @($lines | Where-Object { $_ -match "^claude-(menu-|drive-|web-|mcp-|sync|usage$)" })
+  Assert-Equal ("|" + $quick) (($heavy -join ",") + "|" + $quick) ("demarrage " + $quick + " : aucun module du menu, du Drive ou de la synchro")
+  Assert-True ($said.Count -gt 0) ("demarrage " + $quick + " : texte affiche")
+}

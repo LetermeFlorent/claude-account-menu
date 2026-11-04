@@ -27,6 +27,8 @@ try {
   Assert-Null (Get-CliCommand @("--resume")) "cli : option de Claude Code, menu"
   Assert-Null (Get-CliCommand @("-2", "--help")) "cli : -2 --help va a Claude Code"
   Assert-Equal "help" (Get-CliCommand @("-h")).Name "cli : -h"
+  Assert-Equal "True True True True" ((@("--version"), @("--help"), @("-h"), @("--list") | ForEach-Object { Test-CliQuick $_ }) -join " ") "cli : version, aide et liste sans le menu"
+  Assert-Equal "False False False False" ((@(), @("--add", "x"), @("-2", "--help"), @("--prefs") | ForEach-Object { Test-CliQuick $_ }) -join " ") "cli : autres options avec le menu"
   $c = Get-CliCommand @("--remove", "Pro", "--erase", "--yes")
   Assert-True ($c.Name -eq "remove" -and $c.Values.Count -eq 1 -and $c.Values[0] -eq "Pro" -and $c.Erase -and $c.Yes) "cli : --remove et ses drapeaux"
   Assert-Equal "global:roblox|blender" ((Get-CliCommand @("--prefs-off", "global:roblox", "blender")).Values -join "|") "cli : plusieurs ids"
