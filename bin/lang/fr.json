@@ -560,7 +560,7 @@
   "web.lock.away": "clm est sur une autre page dans le terminal. Les boutons reviennent quand il revient au menu.",
   "web.lock.busy": "clm est occupé dans le terminal (saisie, connexion ou travail en cours). La page reprend quand il revient au menu.",
   "web.lock.denied": "Accès refusé : rouvrir la page depuis clm, touche w.",
-  "web.lock.gone": "clm ne répond plus. Nouvel essai dans {0} s.",
+  "web.lock.gone": "clm est fermé. Rouvre la page depuis clm, touche w.",
   "web.lock.startup": "clm finit de démarrer, les boutons arrivent dans un instant.",
   "web.menu.failed": "page web impossible : {0}",
   "web.menu.url": "page web : {0}",

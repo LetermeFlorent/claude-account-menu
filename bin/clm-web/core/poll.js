@@ -9,7 +9,6 @@ function clmStatus(text, tone) {
 function clmLockNote() {
   const s = clm.state;
   if (clm.denied) return clmText("lock.denied");
-  if (clm.gone) return clmText("lock.gone", Math.round(clm.goneMs / 1000));
   if (clm.pending) return "";
   if (clm.busy) return clmText("lock.busy");
   if (s && s.startup) return clmText("lock.startup");
@@ -25,18 +24,22 @@ function clmRefreshLock() {
   const busy = byId("busy");
   clmSetText(busy, note);
   busy.classList.toggle("quiet", note === "");
-  busy.classList.toggle("alert", clm.denied || clm.gone);
+  busy.classList.toggle("alert", clm.denied);
 }
 
 function clmFail(err) {
-  if (err instanceof ClmGone) {
-    clm.gone = true;
-    clm.goneMs = Math.min(clm.goneMaxMs, Math.max(clm.pollMs, clm.goneMs * 2));
-    const dlg = byId("ask");
-    if (dlg.open) dlg.close("");
-  } else if (err instanceof ClmDenied) clm.denied = true;
+  if (err instanceof ClmGone) clm.gone = true;
+  else if (err instanceof ClmDenied) clm.denied = true;
   else if (err instanceof ClmBusy) clm.busy = true;
   else clmStatus(err.message, "alert");
+}
+
+function clmBlank() {
+  clearTimeout(clm.timer);
+  const note = document.createElement("p");
+  note.className = "gone";
+  note.textContent = clmText("lock.gone");
+  document.body.replaceChildren(note);
 }
 
 function clmRedraw() {
@@ -46,35 +49,33 @@ function clmRedraw() {
 function clmNextPoll(ms) {
   clearTimeout(clm.timer);
   clm.timer = 0;
-  if (document.hidden || clm.denied) return;
+  if (document.hidden || clm.denied || clm.gone) return;
   clm.timer = setTimeout(clmPoll, ms);
 }
 
 async function clmPoll() {
+  if (clm.gone) return;
   if (clm.polling) {
     clm.again = true;
     return;
   }
   clm.polling = true;
   clearTimeout(clm.timer);
-  let wait = clm.pollMs;
   try {
     const s = await clmRead("state");
     clm.busy = false;
-    clm.gone = false;
-    clm.goneMs = 0;
     clm.state = s;
     if (await clmLoadTexts()) clmTextsArrived();
     clmRedraw();
     if (!clm.pending && s.msg.text && clmChanged("msg", s.msg)) clmStatus(s.msg.text, s.msg.tone);
   } catch (err) {
     clmFail(err);
-    if (clm.gone) wait = clm.goneMs;
   } finally {
     clm.polling = false;
   }
+  if (clm.gone) return clmBlank();
   clmRefreshLock();
-  clmNextPoll(clm.again ? 0 : wait);
+  clmNextPoll(clm.again ? 0 : clm.pollMs);
   clm.again = false;
 }
 

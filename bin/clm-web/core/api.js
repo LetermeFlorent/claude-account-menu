@@ -3,8 +3,6 @@
 const clm = {
   pollMs: 2000,
   readMs: 4000,
-  goneMaxMs: 30000,
-  goneMs: 0,
   state: null,
   look: null,
   pending: false,
