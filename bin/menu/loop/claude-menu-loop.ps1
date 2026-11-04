@@ -43,6 +43,7 @@ function Close-AccountMenu {
   param($Idx)
   Close-Startup
   Stop-MenuLoader 1000
+  Close-UsageRunspace
   Stop-ClmCheck
   if ($null -eq $Idx) { Stop-DriveJob $script:DriveJob }
   Hide-Screen

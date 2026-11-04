@@ -27,6 +27,12 @@ function Close-LeftRunspaces {
   $script:LeftRunspaces = $keep
 }
 
+function Close-UsageRunspace {
+  if ($null -ne $script:UsageRunspace) { $script:LeftRunspaces += $script:UsageRunspace }
+  $script:UsageRunspace = $null
+  Close-LeftRunspaces
+}
+
 function Get-UsageRunspace {
   Close-LeftRunspaces
   $rs = $script:UsageRunspace

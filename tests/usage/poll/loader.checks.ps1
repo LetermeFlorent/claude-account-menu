@@ -63,3 +63,23 @@ Assert-Equal "ok b" (Receive-UsageResults $ld)[0][1] "deuxieme lot lu dans le me
 Close-UsageLoader $ld
 Assert-True ([object]::ReferenceEquals($rs, (Get-UsageRunspace))) "un seul runspace pour toutes les lectures"
 Assert-Equal "Opened" ("" + $rs.RunspaceStateInfo.State) "runspace garde ouvert entre deux lots"
+Close-UsageRunspace
+Assert-Null $script:UsageRunspace "runspace des lectures rendu avant de lancer Claude"
+Assert-Equal "Closed" ("" + $rs.RunspaceStateInfo.State) "runspace des lectures ferme"
+$rsBack = Get-UsageRunspace
+Assert-True (-not [object]::ReferenceEquals($rs, $rsBack) -and "" + $rsBack.RunspaceStateInfo.State -eq "Opened") "menu de retour, runspace des lectures refait"
+if (-not (Test-Path Function:\Clear-ClmMemory)) { . (Join-Path $bin "core/claude-memory.ps1") }
+Assert-Equal ([Environment]::OSVersion.Platform -eq "Win32NT") (Clear-ClmMemory) "memoire rendue au systeme, sous Windows seulement"
+Assert-Equal "Default" ("" + [Runtime.GCSettings]::LargeObjectHeapCompactionMode) "compactage des gros objets fait une seule fois"
+$memKept = (Get-Item "function:Clear-ClmMemory").ScriptBlock
+$memExe = $script:ClaudeExe
+try {
+  $script:MemOrder = New-Object 'System.Collections.Generic.List[string]'
+  Set-Item -Path "function:Clear-ClmMemory" -Value { $script:MemOrder.Add("memoire"); return $true }
+  $script:ClaudeExe = { $script:MemOrder.Add("claude") }
+  Invoke-AsAccount ([PSCustomObject]@{ Label = "a"; Dir = ".claude" }) @()
+  Assert-Equal "memoire claude" ($script:MemOrder -join " ") "memoire rendue juste avant de lancer Claude"
+} finally {
+  Set-Item -Path "function:Clear-ClmMemory" -Value $memKept
+  $script:ClaudeExe = $memExe
+}

@@ -82,6 +82,9 @@ function Invoke-WithKeys {
 
 try {
   Assert-Equal "b" (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter)).Label "fleche bas puis Entree"
+  $loopRs = Get-UsageRunspace
+  Assert-Equal "a" (Invoke-WithKeys @([ConsoleKey]::Enter)).Label "Entree lance le compte"
+  Assert-True ($null -eq $script:UsageRunspace -and "" + $loopRs.RunspaceStateInfo.State -eq "Closed") "compte lance, runspace des lectures rendu"
   Assert-Equal "c" (Invoke-WithKeys @([ConsoleKey]::UpArrow, [ConsoleKey]::Enter)).Label "fleche haut fait le tour"
   Assert-Equal "b" (Invoke-WithKeys @("2")).Label "chiffre lance le compte"
   Assert-Null (Invoke-WithKeys @([ConsoleKey]::Escape)) "Echap quitte"

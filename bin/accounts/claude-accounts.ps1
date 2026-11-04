@@ -1,4 +1,4 @@
-. Import-ClmModule claude-platform, claude-credentials, claude-account-add, claude-state, claude-registry, claude-account-email, claude-text, claude-network
+. Import-ClmModule claude-platform, claude-credentials, claude-account-add, claude-state, claude-registry, claude-account-email, claude-text, claude-network, claude-memory
 $script:HomeDir = Get-HomeDir
 $script:RegistryPath = Get-StatePath "accounts.json"
 $script:ClaudeExe = Find-ClaudeExe
@@ -41,6 +41,7 @@ function Invoke-InAccountEnv {
 
 function Invoke-AsAccount {
   param($Acc, [object[]]$ArgList)
+  $null = Clear-ClmMemory
   Invoke-InAccountEnv $Acc { & $script:ClaudeExe @ArgList }
 }
 
