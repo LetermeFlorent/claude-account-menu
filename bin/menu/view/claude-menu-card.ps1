@@ -72,7 +72,7 @@ function Get-CardHead {
   $txt = $script:Ink.Text
   $end = $L.W - 2
   $mail = @(("" + $u.Email), (Get-MixedRgb $script:Ink.Dim $txt $W), ($W -gt 0.5))
-  $plan = @(("" + $u.Plan), (Get-PlanColor $u.Plan), $true)
+  $plan = @($(if ($null -eq $u.Error) { "" + $u.Plan } else { "" }), (Get-PlanColor $u.Plan), $true)
   $badge = New-TailSeg $v.Badge $script:Ink.Alert $true
   $note = New-TailSeg $v.Note $script:Ink.Dim
   $away = New-TailSeg (Get-AccountAway $u.Acc) $script:Ink.Alert

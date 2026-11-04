@@ -15,7 +15,7 @@ function Get-WebAccount {
   $err = $null
   if ($u.Error) { $err = [string]$u.Error }
   return [ordered]@{
-    n = $Index + 1; label = [string]$Entry.Acc.Label; dir = [string]$Entry.Acc.Dir; email = [string]$u.Email; plan = [string]$u.Plan
+    n = $Index + 1; label = [string]$Entry.Acc.Label; dir = [string]$Entry.Acc.Dir; email = [string]$u.Email; plan = $(if ($err) { "" } else { [string]$u.Plan })
     pending = [bool]$Entry.Pending; seen = [bool]$Entry.Seen; error = $err; badge = $v.Badge; note = $v.Note; away = (Get-AccountAway $Entry.Acc)
     erasable = (Test-ErasableDir $Entry.Acc.Dir); selected = ($Index -eq $Sel)
     q5 = $(if ($u.No5) { $null } else { Get-WebQuota $u.Pct5 $v.Pace5 $v.Left5 }); q7 = (Get-WebQuota $u.Pct7 $v.Pace7 $v.Left7)

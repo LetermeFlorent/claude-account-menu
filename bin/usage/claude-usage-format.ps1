@@ -21,8 +21,8 @@ function Format-Reset {
 
 function Format-Row {
   param($U)
+  if ($null -ne $U.Error) { return $U.Label + " " + $U.Email + " | " + $U.Error }
   $line = $U.Label + " " + $U.Email + " " + $U.Plan + " | "
-  if ($null -ne $U.Error) { return $line + $U.Error }
   if (-not $U.No5) { $line = $line + (Get-ClmText "ui.row.window" @("5h", $U.Pct5, (Format-Reset $U.Reset5))) + (Format-PaceSuffix "5h" $U.Pct5 $U.Reset5) + " | " }
   $line = $line + (Get-ClmText "ui.row.window" @("7d", $U.Pct7, (Format-Reset $U.Reset7))) + (Format-PaceSuffix "7d" $U.Pct7 $U.Reset7)
   return $line + (Format-Stale $U)

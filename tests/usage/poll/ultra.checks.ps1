@@ -64,3 +64,5 @@ $ulNames = @(
 ) | ForEach-Object { Get-PlanName ([PSCustomObject]$_) }
 Assert-Equal "Ultra Max Pro Free" ($ulNames -join " ") "offre sans nom de Claude : Ultra, Max, Pro et Free, sans 20x ni 5x"
 Assert-True ((Get-PlanColor "Ultra") -ne (Get-PlanColor "Max") -and (Get-PlanColor "Max") -ne (Get-PlanColor "Pro")) "Ultra, Max et Pro gardent chacun leur couleur"
+$ulOut = [PSCustomObject]@{ Label = "c2"; Email = "c2@b.c"; Plan = "Ultra"; Error = (Get-ClmText "ui.usage.signedOut"); No5 = $true }
+Assert-Equal ("c2 c2@b.c | " + (Get-ClmText "ui.usage.signedOut")) (Format-Row $ulOut) "compte non connecte : seulement le message, sans offre ni quotas"
