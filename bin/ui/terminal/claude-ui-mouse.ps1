@@ -60,15 +60,23 @@ function ConvertFrom-MouseEvent {
   return @{ Mouse = $kind; X = $x; Y = $y }
 }
 
+function Read-ConInEvent {
+  $ev = [ClmConIn]::Next()
+  if ($null -eq $ev) { return $null }
+  return ,$ev
+}
+
 function Read-UiInput {
   if ($script:MouseMode -lt 0) {
     if ([Console]::KeyAvailable) { return [Console]::ReadKey($true) }
     return $null
   }
   while ($true) {
-    $ev = [ClmConIn]::Next()
+    $ev = Read-ConInEvent
     if ($null -eq $ev) { return $null }
+    if ($ev[0] -eq 4) { Set-UiFocus ($ev[1] -eq 1); continue }
     if ($ev[0] -eq 1) {
+      Set-UiFocus $true
       if ([Console]::KeyAvailable) { return [Console]::ReadKey($true) }
       return $null
     }
@@ -76,6 +84,6 @@ function Read-UiInput {
     $top = 0
     try { $top = [Console]::WindowTop } catch { Write-Verbose $_.Exception.Message }
     $m = ConvertFrom-MouseEvent $ev $script:LastRows $top
-    if ($null -ne $m) { return $m }
+    if ($null -ne $m) { Set-UiFocus $true; return $m }
   }
 }

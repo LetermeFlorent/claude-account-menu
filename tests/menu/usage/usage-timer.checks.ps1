@@ -64,6 +64,30 @@ Assert-True (Update-MenuTimers $st 1000 5000) "compteurs dessines au premier pas
 Assert-True (-not (Update-MenuTimers $st 1200 5000)) "meme seconde, rien a redessiner"
 Assert-True (Update-MenuTimers $st 2100 5000) "seconde suivante, compteurs redessines"
 Assert-Equal (((Get-ClmText "menu.timer.update" @("29s")), (Get-ClmText "menu.timer.update" @("59s"))) -join "|") (($st.Entries | ForEach-Object { $_.Timer[0] }) -join "|") "un compteur par compte"
+$st = @{ Entries = @((New-TimerCard "a" 1 1)); Busy = $false; Clock = $null }
+$st.Entries[0].NextAt = 184000
+$null = Update-MenuTimers $st 1000 5000
+Assert-Equal (Get-ClmText "menu.timer.update" @("3m05s")) $st.Entries[0].Timer[0] "plus d'une minute, compteur par pas de cinq secondes"
+Assert-True (-not (Update-MenuTimers $st 2100 5000)) "plus d'une minute, rien a redessiner chaque seconde"
+Assert-True (Update-MenuTimers $st 4100 5000) "plus d'une minute, redessine au pas suivant"
+Assert-Equal (Get-ClmText "menu.timer.update" @("3m00s")) $st.Entries[0].Timer[0] "plus d'une minute, pas suivant affiche"
+$st.Entries[0].NextAt = 62000
+Assert-Equal (Get-ClmText "menu.timer.update" @("1m05s")) (Get-EntryTimer $st.Entries[0] $false 1000 5000)[0] "juste au dessus d'une minute, pas de cinq secondes"
+$fst = @{ Entries = @((New-TimerCard "a" 1 1)); Busy = $false; Clock = $null }
+$fst.Entries[0].NextAt = 31000
+$null = Update-MenuTimers $fst 1000 5000
+$script:UiFocused = $false
+try {
+  $fst.Clock = Get-Date -Format "HH:mm"
+  Assert-True (-not (Update-MenuTimers $fst 5100 5000)) "sans focus, le compteur seul ne redessine pas"
+  Assert-Equal (Get-ClmText "menu.timer.update" @("26s")) $fst.Entries[0].Timer[0] "sans focus, compteur tenu juste pour le prochain dessin"
+  $fst.Clock = "00:99"
+  Assert-True (Update-MenuTimers $fst 5200 5000) "sans focus, l'heure change encore l'ecran"
+} finally { $script:UiFocused = $true }
+$fst.Clock = Get-Date -Format "HH:mm"
+Assert-True (Update-MenuTimers $fst 6100 5000) "focus revenu, compteur redessine"
+Assert-Equal (Get-ClmText "menu.timer.update" @("1m00s")) (Get-EntryTimer $st.Entries[0] $false 2000 5000)[0] "une minute pile"
+Assert-Equal (Get-ClmText "menu.timer.update" @("59s")) (Get-EntryTimer $st.Entries[0] $false 3000 5000)[0] "sous la minute, seconde par seconde"
 
 $st = @{ Entries = @((New-TimerCard "a" 1 1), (New-TimerCard "b" 1 1), (New-TimerCard "c" 1 1)); Busy = $false; Moved = $true; Sel = 0; Dirty = $false; LoaderIdx = @(2) }
 $q = New-Object 'System.Collections.Concurrent.ConcurrentQueue[object]'

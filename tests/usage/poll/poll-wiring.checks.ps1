@@ -119,7 +119,7 @@ try {
   Assert-Equal 90 $pwSet[3] "usage-poll 90 : lot lu avec 90 s"
   Assert-True ($pwSet[0] -ge 90000 -and $pwSet[0] -lt 99000) ("usage-poll 90 : API relue apres 90 s, " + $pwSet[0])
   Assert-Equal 45000 $pwSet[1] "usage-poll 90 : second compte decale de 45 s"
-  Assert-True ($pwSet[2] -match ('^' + $pwMaj + '1m3[0-9]s$')) ("usage-poll 90 : compteur " + $pwSet[2])
+  Assert-True ($pwSet[2] -match ('^' + $pwMaj + '1m(3[05]|40)s$')) ("usage-poll 90 : compteur " + $pwSet[2])
 } finally {
   foreach ($n in $pwFaked) { Set-Item ("function:" + $n) $pwKept[$n] }
   foreach ($p in @($pwFiles.Keys)) {

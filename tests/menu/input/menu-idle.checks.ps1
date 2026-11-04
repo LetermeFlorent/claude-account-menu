@@ -28,6 +28,13 @@ try {
   $r = Invoke-TimelineMenu 3 @(@(1500, "Down"), @(1500, "Down"), @(1500, "Down"), @(1500, "Up"), @(2000, "Escape"))
   Assert-Null $r.Label "menu au repos : quatre fleches puis Echap, aucun compte"
   Assert-Equal "read read read read" (Get-ReadRun @($script:TimelineLog) 4) "menu au repos : entrees videes avant tout rendu"
+
+  $script:UiFocused = $false
+  try { $r = Invoke-TimelineMenu 3 @(,@(3000, "Escape")) } finally { $script:UiFocused = $true }
+  $frames = @($script:TimelineLog | Where-Object { $_ -eq "frame" }).Count
+  Assert-Null $r.Label "sans focus : Echap apres une attente, aucun compte"
+  Assert-Equal "dans les bornes" (Get-BoundText $frames -Max 4) "sans focus : au plus 4 tours de rendu pendant 2 s"
+  Assert-Equal "dans les bornes" (Get-BoundText $r.End -Max 3060) "sans focus : Echap traitee sans retard"
 } finally {
   Restore-TimelineFakes
 }

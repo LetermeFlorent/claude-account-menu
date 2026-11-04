@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 public static class ClmConIn {
   [StructLayout(LayoutKind.Explicit, Size = 20)]
-  struct Rec {
+  public struct Rec {
     [FieldOffset(0)] public ushort Type;
     [FieldOffset(4)] public int KeyDown;
     [FieldOffset(10)] public ushort Vk;
@@ -46,7 +46,22 @@ public static class ClmConIn {
 
   static bool Counts(Rec e) {
     if (e.Type == 1) { return e.KeyDown != 0 && !IsModifier(e.Vk); }
-    return e.Type == 2 && e.Flags != 1;
+    return e.Type == 16 || e.Type == 2 && e.Flags != 1;
+  }
+
+  public static int FocusLength(Rec[] r, int n, out int focus) {
+    focus = -1;
+    if (n > 0 && r[0].Type == 16) { focus = r[0].KeyDown != 0 ? 1 : 0; return 1; }
+    int k = 0;
+    for (int i = 0; i < n; i++) {
+      if (r[i].Type != 1) { return 0; }
+      if (r[i].KeyDown == 0 || IsModifier(r[i].Vk)) { continue; }
+      ushort c = r[i].Ch;
+      if (k == 0 && c != 27 || k == 1 && c != 91 || k == 2 && c != 73 && c != 79) { return 0; }
+      if (k == 2) { focus = c == 73 ? 1 : 0; return i + 1; }
+      k++;
+    }
+    return 0;
   }
 
   public static bool Pending() {
@@ -59,9 +74,17 @@ public static class ClmConIn {
 
   public static int[] Next() {
     Rec[] r = new Rec[1];
+    Rec[] p = new Rec[8];
     uint n;
+    int focus;
     while (GetNumberOfConsoleInputEvents(In, out n) && n > 0) {
-      if (!PeekConsoleInput(In, r, 1, out n) || n == 0) { return null; }
+      if (!PeekConsoleInput(In, p, 8, out n) || n == 0) { return null; }
+      int used = FocusLength(p, (int)n, out focus);
+      if (used > 0) {
+        if (!ReadConsoleInput(In, p, (uint)used, out n) || n == 0) { return null; }
+        return new int[] { 4, focus };
+      }
+      r[0] = p[0];
       if (r[0].Type == 1 && r[0].KeyDown != 0 && !IsModifier(r[0].Vk)) { return new int[] { 1 }; }
       if (!ReadConsoleInput(In, r, 1, out n) || n == 0) { return null; }
       if (r[0].Type == 1 && !IsModifier(r[0].Vk)) { return new int[] { 3, r[0].Vk, r[0].Ch }; }

@@ -3,6 +3,8 @@ $script:UiCtrlC = $false
 $script:UiMinute = -1
 $script:ThemeWatch = $null
 $script:MotionRead = $false
+$script:UiFocused = $true
+$script:UiRefocus = $false
 
 function Test-RichTerminal {
   try {
@@ -10,6 +12,12 @@ function Test-RichTerminal {
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) { return $false }
     return [bool]$Host.UI.SupportsVirtualTerminal
   } catch { return $false }
+}
+
+function Set-UiFocus {
+  param([bool]$On)
+  if ($On -and -not $script:UiFocused) { $script:UiRefocus = $true }
+  $script:UiFocused = $On
 }
 
 function Write-Ui {
@@ -38,7 +46,10 @@ function Enter-UiScreen {
   $script:LastRows = $null
   $script:FadeArmed = $true
   $script:UiOn = $true
+  $script:UiFocused = $true
+  $script:UiRefocus = $false
   Enable-UiMouse
+  if ($script:MouseMode -ge 0) { Write-Ui ($e + "[?1004h") }
   if ($null -eq $script:ThemeWatch) { $script:ThemeWatch = New-ThemeWatch $script:OsName $null (Get-NowMs) }
 }
 
@@ -47,7 +58,7 @@ function Exit-UiScreen {
   $script:UiOn = $false
   Disable-UiMouse
   $e = $script:Esc
-  Write-Ui ($e + "[0m" + $e + "[?2026l" + $e + "[?25h" + $e + "[?1049l")
+  Write-Ui ($e + "[0m" + $e + "[?2026l" + $e + "[?1004l" + $e + "[?25h" + $e + "[?1049l")
   try { [Console]::TreatControlCAsInput = $script:UiCtrlC } catch { Write-Verbose $_.Exception.Message }
 }
 
@@ -66,6 +77,7 @@ function Update-UiTick {
     if ($t) { Set-UiTheme $t $Now }
   }
   if (Update-InkFade $Now) { $redraw = $true }
+  if ($script:UiRefocus) { $script:UiRefocus = $false; $redraw = $true }
   $m = [DateTime]::Now.Minute
   if ($m -ne $script:UiMinute) { $script:UiMinute = $m; $redraw = $true }
   return $redraw
