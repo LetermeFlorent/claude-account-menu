@@ -18,12 +18,14 @@ function Update-DriveElsewhere {
   if (-not $Job.Connected -or $NowMs - $Job.ProbeAt -lt $script:DriveProbeMs -or -not (Import-ClmGroup drive)) { return $false }
   $Job.ProbeAt = $NowMs
   $held = Test-DriveLockHeld
-  if ($held -eq $Job.Elsewhere) { return $false }
+  if ($held -eq $Job.Elsewhere -and ($held -or -not $Job.Busy)) { return $false }
+  $flip = $held -ne $Job.Elsewhere
   $Job.Elsewhere = $held
   if ($held) { return $true }
   $last = Get-DriveLastSync
   if ($Job.Busy -and $last -gt $Job.Last) { $Job.Busy = $false }
-  elseif ($Job.Busy) { $Job.RetryAt = $NowMs }
+  elseif ($Job.Busy -and $flip) { $Job.RetryAt = $NowMs }
+  elseif (-not $flip) { return $false }
   if ($last -gt $Job.Last) { $Job.Last = $last }
   return $true
 }

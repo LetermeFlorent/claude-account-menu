@@ -33,6 +33,12 @@ Assert-True (Step-DriveJob $wait 12000) "synchro de l'autre clm finie"
 Assert-Equal "False 999999 1700000900" ("" + $wait.Busy + " " + $wait.RetryAt + " " + $wait.Last) "synchro faite par l'autre clm pendant l'attente : pas de second tour"
 Assert-True (-not (Step-DriveJob $wait 999999)) "synchro faite par l'autre clm : aucun tour plus tard"
 Assert-Null $wait.Loader "synchro faite par l'autre clm : aucun tour lance"
+$missed = New-DriveJob $true 1700000900
+$missed.Busy = $true
+$missed.RetryAt = 999999
+Save-DriveConfig @{ refreshToken = "r"; lastSync = 1700001200 }
+Assert-True (Step-DriveJob $missed 13000) "synchro de l'autre clm finie avant le premier regard sur le verrou"
+Assert-Equal "False 1700001200" ("" + $missed.Busy + " " + $missed.Last) "synchro de l'autre clm vue sans avoir vu le verrou pris"
 $off = New-DriveJob $false 0
 Assert-True (-not (Step-DriveJob $off 9000)) "Drive non connecte : pas de regard sur le verrou"
 
