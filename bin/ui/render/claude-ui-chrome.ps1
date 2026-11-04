@@ -1,17 +1,25 @@
-. Import-ClmModule claude-ui-width, claude-text
+. Import-ClmModule claude-ui-width, claude-text, claude-ui-frame
 $script:UpArrow = [string][char]0x2191
 $script:DownArrow = [string][char]0x2193
 $script:FrameSide = 0x2502
 $script:FrameCols = 2
 $script:FooterLimits = @{}
 $script:MenuFooterAccent = @("w")
+$script:FramedCache = [hashtable]::new([StringComparer]::Ordinal)
+$script:FooterCache = [hashtable]::new([StringComparer]::Ordinal)
+$script:MenuFooterOf = $null
 
 function Get-MenuFooter {
-  return @(
+  $lang = Get-ClmLang
+  $hit = $script:MenuFooterOf
+  if ($null -ne $hit -and $hit.Lang -ceq $lang -and [object]::ReferenceEquals($hit.Tables, $script:TextTables)) { return $hit.Pairs }
+  $pairs = @(
     "Entree", (Get-ClmText "ui.footer.launch"), "a", (Get-ClmText "ui.footer.add"), "x", (Get-ClmText "ui.footer.remove"), "n", (Get-ClmText "ui.footer.rename")
     "m", (Get-ClmText "ui.footer.update"), "y", (Get-ClmText "ui.footer.sync"), "p", (Get-ClmText "ui.footer.settings"), "s", (Get-ClmText "ui.footer.save")
     "r", (Get-ClmText "ui.footer.restore"), "w", (Get-ClmText "ui.footer.web"), "q", (Get-ClmText "ui.footer.quit")
   )
+  $script:MenuFooterOf = @{ Lang = $lang; Tables = $script:TextTables; Pairs = $pairs }
+  return $pairs
 }
 
 function Get-HeaderRow {
@@ -68,7 +76,14 @@ function Get-FooterRows {
   param([string[]]$Pairs, [int]$W, [string[]]$Accent = @())
   $key = "" + $W + "|" + ($Pairs -join "|")
   if (-not $script:FooterLimits.ContainsKey($key)) { $script:FooterLimits[$key] = Get-FooterLimit $Pairs $W }
-  return ,(Split-FooterPairs $Pairs $script:FooterLimits[$key] $Accent)
+  $sign = $key + [char]1 + ($Accent -join "|") + [char]1 + ($script:Ink.Text -join ";") + [char]1 + ($script:Ink.Dim -join ";") + [char]1 + ($script:Levels["5h"][0] -join ";")
+  $rows = $script:FooterCache[$sign]
+  if ($null -eq $rows) {
+    if ($script:FooterCache.Count -ge 16) { $script:FooterCache.Clear() }
+    $rows = Split-FooterPairs $Pairs $script:FooterLimits[$key] $Accent
+    $script:FooterCache[$sign] = $rows
+  }
+  return ,$rows
 }
 
 function Limit-Text {
@@ -114,11 +129,20 @@ function Get-FramedRows {
   param($Rows, $Fades, [int]$W)
   $out = New-Object 'System.Collections.Generic.List[object]'
   $out.Add((Get-FrameEdge 0x256D 0x256E $W))
+  $base = "" + $W + [char]1 + ($script:Ink.Empty -join ";") + [char]1 + ($script:Ink.Bg -join ";") + [char]1
+  $old = $script:FramedCache
+  $new = [hashtable]::new([StringComparer]::Ordinal)
   for ($i = 1; $i -lt $Rows.Count; $i++) {
     $f = 1.0
     if ($null -ne $Fades -and $i -lt $Fades.Count) { $f = $Fades[$i] }
-    $out.Add((Get-FramedRow $Rows[$i] $W $f))
+    $key = $base + $f + [char]1 + (Get-RowSign $Rows[$i])
+    $r = $new[$key]
+    if ($null -eq $r) { $r = $old[$key] }
+    if ($null -eq $r) { $r = Get-FramedRow $Rows[$i] $W $f }
+    $new[$key] = $r
+    $out.Add($r)
   }
+  $script:FramedCache = $new
   $out.Add((Get-FrameEdge 0x2570 0x256F $W))
   return ,$out
 }

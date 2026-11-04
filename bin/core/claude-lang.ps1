@@ -92,9 +92,15 @@ function Get-PreferredLang {
 
 function Get-ClmLang {
   param([string]$Os = $script:OsName, $Vars = $null)
-  $pref = Get-PreferredLang $Vars
-  if ($pref) { return $pref }
-  $found = Get-DetectedLang $Os $Vars
-  if ($found) { return $found }
-  return $script:LangFallback
+  if ($null -eq $Vars) {
+    $now = [Diagnostics.Stopwatch]::GetTimestamp()
+    $where = "" + $Os + "|" + $env:CLM_LANG + "|" + $env:HOME + "|" + $env:USERPROFILE + "|" + $env:LOCALAPPDATA + "|" + $env:XDG_STATE_HOME
+    $hit = $script:LangMemo
+    if ($null -ne $hit -and $hit.Where -ceq $where -and $now - $hit.At -lt $script:LangPrefTicks -and [object]::ReferenceEquals($hit.Pref, $script:LangPrefCache) -and $hit.Sys -ceq $script:LangSystemFound) { return $hit.Lang }
+  }
+  $lang = Get-PreferredLang $Vars
+  if (-not $lang) { $lang = Get-DetectedLang $Os $Vars }
+  if (-not $lang) { $lang = $script:LangFallback }
+  if ($null -eq $Vars) { $script:LangMemo = @{ Where = $where; At = $now; Lang = $lang; Pref = $script:LangPrefCache; Sys = $script:LangSystemFound } }
+  return $lang
 }

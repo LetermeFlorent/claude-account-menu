@@ -54,3 +54,26 @@ $k = Get-MenuAction (New-TestKey ([char]'2') D2) 3
 Assert-Equal "pick 1" ($k.Name + " " + $k.Index) "chiffre choisit le compte"
 Assert-Equal "none" (Get-MenuAction (New-TestKey ([char]'4') D4) 3).Name "chiffre hors liste ignore"
 Assert-Equal "none" (Get-MenuAction (New-TestKey ([char]'z') Z) 3).Name "touche inconnue ignoree"
+$footSplit = (Get-Item "function:Split-FooterPairs").ScriptBlock
+$footInk = $script:Ink
+try {
+  $script:FootSplits = 0
+  Set-Item -Path "function:Split-FooterPairs" -Value { $script:FootSplits++; & $footSplit @args }
+  $footFirst = @(foreach ($r in (Get-FooterRows (Get-MenuFooter) 77 $script:MenuFooterAccent)) { @($r | ForEach-Object { $_[0] + ":" + ($_[1] -join ",") }) -join "" }) -join "`n"
+  $script:FootSplits = 0
+  $null = Get-MenuFooter
+  $footAgain = @(foreach ($r in (Get-FooterRows (Get-MenuFooter) 77 $script:MenuFooterAccent)) { @($r | ForEach-Object { $_[0] + ":" + ($_[1] -join ",") }) -join "" }) -join "`n"
+  Assert-Equal 0 $script:FootSplits "pied de page : pas recoupe d'une image a l'autre"
+  Assert-Equal $footFirst $footAgain "pied de page : meme image"
+  $script:Ink = $script:Palettes["light"]
+  $footLight = Get-FooterRows (Get-MenuFooter) 77 $script:MenuFooterAccent
+  Assert-Equal ($script:Ink.Dim -join ",") ($footLight[0][1][1] -join ",") "pied de page : theme change, nouvelles couleurs"
+  $script:Ink = $footInk
+  $footLang = $env:CLM_LANG
+  $env:CLM_LANG = "fr"
+  Assert-True ((Get-MenuFooter) -contains "quitter") "pied de page : langue changee, textes changes"
+  $env:CLM_LANG = $footLang
+} finally {
+  Set-Item -Path "function:Split-FooterPairs" -Value $footSplit
+  $script:Ink = $footInk
+}

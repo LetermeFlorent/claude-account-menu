@@ -72,6 +72,31 @@ try {
   $env:LOCALAPPDATA = $langApp
   Set-Item function:Get-DisplayPath $langPath
   Assert-True ($script:LangPathCalls -gt 0) "langue : autre dossier d'etat, choix regarde de nouveau"
+  $langPref = (Get-Item "function:Get-PreferredLang").ScriptBlock
+  $langForced = $env:CLM_LANG
+  $langFile = Get-DisplayPath
+  $langHadFile = Test-Path -LiteralPath $langFile
+  try {
+    $script:LangPrefCalls = 0
+    Set-Item function:Get-PreferredLang { $script:LangPrefCalls++; & $langPref @args }
+    $null = Get-ClmText "ui.footer.quit"
+    $script:LangPrefCalls = 0
+    foreach ($i in 1..20) { $null = Get-ClmText "ui.footer.quit" }
+    Assert-Equal 0 $script:LangPrefCalls "langue : vingt textes de suite sans chercher la langue"
+    Set-Item function:Get-PreferredLang $langPref
+    $env:CLM_LANG = "fr"
+    Assert-Equal "quitter" (Get-ClmText "ui.footer.quit") "langue : CLM_LANG en francais, texte aussitot en francais"
+    $env:CLM_LANG = "en"
+    Assert-Equal "quit" (Get-ClmText "ui.footer.quit") "langue : CLM_LANG en anglais, texte aussitot en anglais"
+    $null = Set-DisplayValues @{ lang = "fr" }
+    Assert-Equal "quitter" (Get-ClmText "ui.footer.quit") "langue : choix enregistre, texte aussitot dans la langue choisie"
+  } finally {
+    Set-Item function:Get-PreferredLang $langPref
+    $env:CLM_LANG = $langForced
+    if (-not $langHadFile) { Remove-Item -LiteralPath $langFile -ErrorAction SilentlyContinue }
+    else { $null = Set-DisplayValues @{ lang = "auto" } }
+    $script:LangPrefCache = $null
+  }
 } finally {
   foreach ($n in $langFaked) { Set-Item ("function:" + $n) $langKept[$n] }
   Remove-Item -LiteralPath (Get-DisplayPath (New-LangVars)) -ErrorAction SilentlyContinue

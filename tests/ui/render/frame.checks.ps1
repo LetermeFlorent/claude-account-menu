@@ -60,3 +60,82 @@ Assert-Equal ($side + "  " + $cjk + " " + $side) $wt[3] "cadre : ideogramme coup
 Assert-Equal ($cjk + "...") (Limit-Text ($cjk + $cjk) 9) "texte coupe a la largeur affichee"
 Assert-Equal $cjk (Limit-Text $cjk 6) "texte assez court garde"
 $script:UiColorDepth = $savedDepth
+$keptFramedRow = (Get-Item "function:Get-FramedRow").ScriptBlock
+$keptLineText = (Get-Item "function:ConvertTo-LineText").ScriptBlock
+$keptWriteUi = (Get-Item "function:Write-Ui").ScriptBlock
+$keptFrameInk = $script:Ink
+$keptFrameLines = $script:FrameLines
+$keptUiRows = $script:UiRows
+try {
+  $script:FrameBuilds = 0
+  $script:LineBuilds = 0
+  Set-Item -Path "function:Get-FramedRow" -Value { $script:FrameBuilds++; & $keptFramedRow @args }
+  Set-Item -Path "function:ConvertTo-LineText" -Value { $script:LineBuilds++; & $keptLineText @args }
+  Set-Item -Path "function:Write-Ui" -Value { param($Text) }
+  $script:UiRows = 40
+  $cache = New-Object 'System.Collections.Generic.List[object]'
+  $cache.Add((New-Row))
+  $cache.Add([System.Collections.Generic.List[object]]@(, @("  un", @(200, 200, 200), $true)))
+  $cache.Add([System.Collections.Generic.List[object]]@(@("  ", @(1, 1, 1), $false), @("Entree", @(1, 1, 1), $false, "Entree")))
+  $cache.Add([System.Collections.Generic.List[object]]@(, @("  trois", @(1, 1, 1), $false)))
+  $joinRows = { param($Rows) (@(foreach ($r in $Rows) { @($r | ForEach-Object { $_[0] + ":" + ($_[1] -join ",") + ":" + [int][bool]$_[2] + ":" + $_[3] }) -join "" }) -join "`n") }
+  $first = & $joinRows (Get-FramedRows $cache $null 12)
+  Assert-Equal 3 $script:FrameBuilds "cadre en cache : trois rangees au premier dessin"
+  $script:FrameBuilds = 0
+  Assert-Equal $first (& $joinRows (Get-FramedRows $cache $null 12)) "cadre en cache : meme image"
+  Assert-Equal 0 $script:FrameBuilds "cadre en cache : rien refait si rien ne change"
+  $script:FrameBuilds = 0
+  $cache[3] = [System.Collections.Generic.List[object]]@(, @("  TROIS", @(1, 1, 1), $false))
+  $changed = Get-FramedRows $cache $null 12
+  Assert-Equal 1 $script:FrameBuilds "cadre en cache : seule la rangee changee refaite"
+  Assert-True ((& $joinRows $changed) -match "TROIS") "cadre en cache : nouveau texte affiche"
+  $script:FrameBuilds = 0
+  $null = Get-FramedRows $cache @(1.0, 0.5, 1.0, 1.0) 12
+  Assert-Equal 1 $script:FrameBuilds "cadre en cache : rangee estompee refaite"
+  $script:FrameBuilds = 0
+  $null = Get-FramedRows $cache $null 14
+  Assert-Equal 3 $script:FrameBuilds "cadre en cache : largeur changee, tout refait"
+  $script:FrameBuilds = 0
+  $cache[2] = [System.Collections.Generic.List[object]]@(@("  ", @(1, 1, 1), $false), @("Entree", @(1, 1, 1), $false, "q"))
+  Assert-Equal "q" (Get-FooterKeyAt (Get-FramedRows $cache $null 14) 3 2) "cadre en cache : touche cliquable a jour"
+  $script:Ink = $script:Palettes["light"]
+  $script:FrameBuilds = 0
+  $light = Get-FramedRows $cache $null 14
+  Assert-Equal 3 $script:FrameBuilds "cadre en cache : theme change, tout refait"
+  Assert-Equal ($script:Ink.Empty -join " ") ($light[1][0][1] -join " ") "cadre en cache : bord a la couleur du nouveau theme"
+  $script:Ink = $keptFrameInk
+  $script:FrameLines = $null
+  $script:LineBuilds = 0
+  Write-Frame $cache 80
+  $lines1 = $script:FrameLines -join "`n"
+  Assert-Equal 4 $script:LineBuilds "lignes en cache : toutes au premier dessin"
+  $script:LineBuilds = 0
+  Write-Frame $cache 80
+  Assert-Equal 0 $script:LineBuilds "lignes en cache : rien refait si rien ne change"
+  Assert-Equal $lines1 ($script:FrameLines -join "`n") "lignes en cache : meme image"
+  $plain = @(foreach ($r in $cache) { & $keptLineText $r 80 1 $script:Ink.Bg }) -join "`n"
+  Assert-Equal $plain $lines1 "lignes en cache : meme texte que sans cache"
+  $script:LineBuilds = 0
+  $cache[1] = [System.Collections.Generic.List[object]]@(, @("  UN", @(200, 200, 200), $true))
+  Write-Frame $cache 80
+  Assert-Equal 1 $script:LineBuilds "lignes en cache : seule la ligne changee refaite"
+  $script:LineBuilds = 0
+  Write-Frame $cache 80 @(1.0, 0.5, 1.0, 1.0)
+  Assert-Equal 1 $script:LineBuilds "lignes en cache : ligne estompee refaite"
+  $script:LineBuilds = 0
+  Write-Frame $cache 9
+  Assert-Equal 4 $script:LineBuilds "lignes en cache : largeur changee, tout refait"
+  $script:LineBuilds = 0
+  $script:UiColorDepth = "256"
+  Write-Frame $cache 9
+  Assert-Equal 4 $script:LineBuilds "lignes en cache : profondeur de couleur changee, tout refait"
+  Assert-True ($script:FrameLines[1] -match "38;5;") "lignes en cache : couleurs 256 appliquees"
+} finally {
+  Set-Item -Path "function:Get-FramedRow" -Value $keptFramedRow
+  Set-Item -Path "function:ConvertTo-LineText" -Value $keptLineText
+  Set-Item -Path "function:Write-Ui" -Value $keptWriteUi
+  $script:Ink = $keptFrameInk
+  $script:FrameLines = $keptFrameLines
+  $script:UiRows = $keptUiRows
+  $script:UiColorDepth = $savedDepth
+}

@@ -7,9 +7,17 @@ $script:FadeArmed = $false
 $script:UiCols = 80
 $script:UiRows = 24
 $script:UiClip = 79
+$script:LineCache = [hashtable]::new([StringComparer]::Ordinal)
 
 function Reset-Frame {
   $script:FrameLines = $null
+}
+
+function Get-RowSign {
+  param($Row)
+  $k = ""
+  foreach ($s in $Row) { $k += [string]$s[0] + [char]1 + ($s[1] -join ";") + [char]1 + [int][bool]$s[2] + [char]1 + $s[3] + [char]2 }
+  return $k
 }
 
 function Get-FadedRgb {
@@ -66,11 +74,20 @@ function Write-Frame {
   $n = [math]::Min($Rows.Count, $script:UiRows)
   $lines = [string[]]::new($n)
   $bg = $script:Ink.Bg
+  $base = "" + $Max + [char]1 + $script:UiColorDepth + [char]1 + ($bg -join ";") + [char]1
+  $old = $script:LineCache
+  $new = [hashtable]::new([StringComparer]::Ordinal)
   for ($i = 0; $i -lt $n; $i++) {
     $f = 1.0
     if ($null -ne $Fades) { $f = $Fades[$i] }
-    $lines[$i] = ConvertTo-LineText $Rows[$i] $Max $f $bg
+    $key = $base + $f + [char]1 + (Get-RowSign $Rows[$i])
+    $line = $new[$key]
+    if ($null -eq $line) { $line = $old[$key] }
+    if ($null -eq $line) { $line = ConvertTo-LineText $Rows[$i] $Max $f $bg }
+    $new[$key] = $line
+    $lines[$i] = $line
   }
+  $script:LineCache = $new
   $u = Get-FrameUpdate $lines $script:FrameLines
   $script:FrameLines = $lines
   if ($u.Length -gt 0) { Write-Ui ($script:Esc + "[?2026h" + $u + $script:Esc + "[?2026l") }
