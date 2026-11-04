@@ -31,6 +31,10 @@ foreach ($f in Get-ChildItem -LiteralPath $bin -Filter "*.ps1" -Recurse | Where-
   }
 }
 Assert-Equal "" ($bad -join " | ") "chargement unique : chaque fichier charge ses modules par un seul appel a Import-ClmModule"
+$onceMissing = foreach ($f in Get-ChildItem -LiteralPath $bin -Filter "*.ps1" -Recurse | Where-Object { $_.Name -in $importEntries }) {
+  if (-not [IO.File]::ReadAllText($f.FullName).Contains('$script:ClmOnce = New-Object')) { $f.FullName.Substring($bin.Length) }
+}
+Assert-Equal "" (@($onceMissing) -join " | ") "chargement unique : chaque point d'entree ne charge chaque module qu'une fois"
 
 $oldLoader = 'param($Source, $Reader) $ProgressPreference = "SilentlyContinue"; . $Source; [bool](Get-Command $Reader -CommandType Function -ErrorAction SilentlyContinue)'
 foreach ($pair in @(@("claude-usage.ps1", "Get-AccountUsage"), @("claude-self-update.ps1", "Get-LatestClm"), @("claude-drive-sync.ps1", "Invoke-DriveSync"), @("claude-drive-actions.ps1", "Save-SealedMedia"))) {

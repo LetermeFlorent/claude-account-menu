@@ -1,4 +1,5 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "../../claude-import.ps1") }
+if ($null -eq $script:ClmOnce) { $script:ClmOnce = New-Object "System.Collections.Generic.HashSet[string]" }
 $script:WatcherStamp = Read-ClmStamp
 if ($script:WatcherStamp -ceq $script:ClmInstallingStamp) { exit 0 }
 try { . Import-ClmModule claude-state-migrate } catch { if (Test-ClmStampSteady $script:WatcherStamp) { throw } }

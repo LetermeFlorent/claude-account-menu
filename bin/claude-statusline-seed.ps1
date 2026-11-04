@@ -1,4 +1,5 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "claude-import.ps1") }
+if ($MyInvocation.InvocationName -ne ".") { $script:ClmOnce = New-Object "System.Collections.Generic.HashSet[string]" }
 $script:SeedStamp = Read-ClmStamp
 $script:SeedHook = $MyInvocation.InvocationName -ne "."
 if ($script:SeedHook -and $script:SeedStamp -ceq $script:ClmInstallingStamp) { exit 0 }
