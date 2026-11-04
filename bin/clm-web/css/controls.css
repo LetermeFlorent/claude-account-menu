@@ -11,24 +11,28 @@ button {
   justify-content: center;
   gap: var(--space-2);
   min-height: var(--target);
-  padding: 0 var(--space-4);
-  border: 1px solid var(--border);
+  padding: 0 14px;
+  border: 1px solid var(--edge);
   border-radius: var(--radius-control);
   background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  font-weight: 600;
   cursor: pointer;
 }
 
 button:not(:disabled):hover { background: var(--hover); }
 button:not(:disabled):active { background: var(--selected); }
-button.small { padding: 0 var(--space-3); font-size: var(--text-caption); }
-button.accent { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
-button.accent:not(:disabled):hover { background: var(--accent); filter: brightness(0.9); }
-button.accent:not(:disabled):active { background: var(--accent); filter: brightness(0.8); }
-button.danger { border-color: var(--alert); color: var(--alert); }
-button.danger:not(:disabled):hover { background: var(--alert-soft); }
-button.icon { width: var(--target); padding: 0; border-color: transparent; background: transparent; }
-button.more[aria-expanded="true"] { background: var(--selected); }
-button.cross { width: var(--target-min); min-height: var(--target-min); padding: 0; border-color: transparent; background: transparent; }
+button.small { min-height: var(--target-sm); padding: 0 var(--space-3); }
+button.accent { border-color: var(--accent); background: var(--accent); color: var(--on-accent); box-shadow: var(--shadow-xs), var(--shadow-skeu); }
+button.accent:not(:disabled):hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
+button.accent:not(:disabled):active { background: color-mix(in srgb, var(--accent) 78%, #000); }
+button.danger { border-color: var(--alert-line); color: var(--alert); }
+button.danger:not(:disabled):hover,
+button.danger:not(:disabled):active { background: var(--alert-soft); }
+button.icon { width: var(--target); padding: 0; border-color: transparent; background: transparent; box-shadow: none; color: var(--muted); }
+button.icon:not(:disabled):hover { color: var(--text); }
+button.more[aria-expanded="true"] { background: var(--selected); color: var(--text); }
+button.cross { width: var(--target-min); min-height: var(--target-min); padding: 0; border-color: transparent; border-radius: var(--radius-item); background: transparent; box-shadow: none; }
 .glyph { display: block; font-size: var(--text-subtitle); line-height: 1; pointer-events: none; }
 
 input[type="text"],
@@ -36,13 +40,19 @@ input[type="search"],
 input[type="number"],
 select {
   min-height: var(--target);
-  padding: 0 var(--space-3);
+  padding: 0 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--surface);
+  box-shadow: var(--shadow-xs);
 }
 
-select { cursor: pointer; }
+input[type="text"]:focus-visible,
+input[type="search"]:focus-visible,
+input[type="number"]:focus-visible,
+select:focus-visible { border-color: var(--accent); outline-offset: -1px; box-shadow: var(--shadow-xs), 0 0 0 4px var(--ring); }
+
+select { padding-right: var(--space-2); cursor: pointer; }
 ::placeholder { color: var(--muted); opacity: 1; }
 input[type="text"],
 input[type="search"] { width: 100%; }
@@ -56,13 +66,17 @@ input[type="checkbox"] {
   height: var(--space-4);
   margin: 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-box);
   background: var(--surface);
   cursor: pointer;
 }
 
+input[type="checkbox"]:not(:disabled):hover { border-color: var(--accent); background: var(--accent-soft); }
+
 input[type="checkbox"]:checked,
-input[type="checkbox"]:indeterminate { border-color: var(--accent); background: var(--accent); }
+input[type="checkbox"]:indeterminate,
+input[type="checkbox"]:checked:not(:disabled):hover,
+input[type="checkbox"]:indeterminate:not(:disabled):hover { border-color: var(--accent); background: var(--accent); }
 
 input[type="checkbox"]:checked::after,
 input[type="checkbox"]:indeterminate::after {
@@ -81,7 +95,7 @@ input[type="checkbox"]:indeterminate::after { left: 3px; top: 6px; width: 8px; h
 
 button:disabled,
 input:disabled,
-select:disabled { opacity: 0.7; cursor: default; }
+select:disabled { opacity: 0.7; box-shadow: none; cursor: default; }
 
 label:has(:disabled) { opacity: 0.7; cursor: default; }
 label input:disabled { opacity: 1; }
