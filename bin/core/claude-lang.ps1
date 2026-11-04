@@ -5,6 +5,7 @@ $script:LangFallback = "en"
 $script:LangEnvNames = @("LC_ALL", "LC_MESSAGES", "LANG")
 $script:LangMacPattern = New-Object regex '^\s*\(\s*"?([A-Za-z]{2,3}(?:[-_][A-Za-z0-9]+)*)'
 $script:LangSystemFound = $null
+$script:LangPrefTicks = [Diagnostics.Stopwatch]::Frequency
 
 function ConvertTo-LangCode {
   param($Value)
@@ -78,11 +79,14 @@ function Get-LangPrefStamp {
 function Get-PreferredLang {
   param($Vars = $null)
   if ($null -ne $Vars) { return Read-PreferredLang $Vars }
-  $stamp = Get-LangPrefStamp
+  $now = [Diagnostics.Stopwatch]::GetTimestamp()
+  $where = "" + $env:HOME + "|" + $env:USERPROFILE + "|" + $env:LOCALAPPDATA + "|" + $env:XDG_STATE_HOME
   $hit = $script:LangPrefCache
-  if ($stamp -and $null -ne $hit -and $hit.Stamp -ceq $stamp) { return $hit.Lang }
+  if ($null -ne $hit -and $hit.Where -ceq $where -and $now - $hit.At -lt $script:LangPrefTicks) { return $hit.Lang }
+  $stamp = Get-LangPrefStamp
+  if ($stamp -and $null -ne $hit -and $hit.Stamp -ceq $stamp) { $hit.At = $now; $hit.Where = $where; return $hit.Lang }
   $lang = Read-PreferredLang
-  $script:LangPrefCache = @{ Stamp = $stamp; Lang = $lang }
+  $script:LangPrefCache = @{ Stamp = $stamp; Lang = $lang; At = $now; Where = $where }
   return $lang
 }
 

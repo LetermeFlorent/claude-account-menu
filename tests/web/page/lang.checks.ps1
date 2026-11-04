@@ -58,6 +58,20 @@ try {
   $null = Set-DisplayValues @{ lang = "auto" } (New-LangVars)
   Assert-Equal "fr" (Get-ClmLang "Linux" (New-LangVars @{ LANG = "fr_FR.UTF-8" })) "langue : auto rend la main au systeme"
   Assert-Throws { Set-DisplayValues @{ lang = "de" } (New-LangVars) } ((Get-ClmText "ui.display.badLang" "de").Split(":")[0]) "langue : choix inconnu refuse"
+  $langPath = (Get-Item "function:Get-DisplayPath").ScriptBlock
+  $script:LangPathCalls = 0
+  function Get-DisplayPath { param($Vars = $null) $script:LangPathCalls++; & $langPath $Vars }
+  $script:LangPrefCache = $null
+  $null = Get-PreferredLang
+  $script:LangPathCalls = 0
+  foreach ($i in 1..20) { $null = Get-PreferredLang }
+  Assert-Equal 0 $script:LangPathCalls "langue : choix enregistre regarde une fois pour vingt textes de suite"
+  $langApp = $env:LOCALAPPDATA
+  $env:LOCALAPPDATA = $langHome
+  $null = Get-PreferredLang
+  $env:LOCALAPPDATA = $langApp
+  Set-Item function:Get-DisplayPath $langPath
+  Assert-True ($script:LangPathCalls -gt 0) "langue : autre dossier d'etat, choix regarde de nouveau"
 } finally {
   foreach ($n in $langFaked) { Set-Item ("function:" + $n) $langKept[$n] }
   Remove-Item -LiteralPath (Get-DisplayPath (New-LangVars)) -ErrorAction SilentlyContinue
