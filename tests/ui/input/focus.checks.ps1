@@ -43,6 +43,7 @@ if ($script:OsName -eq "Windows") {
 }
 
 try {
+  function script:Get-UiSize { return ,@(80, 24) }
   function script:Read-ConInEvent { if ($script:FocusEvents.Count -eq 0) { return $null }; return ,$script:FocusEvents.Dequeue() }
   $script:MouseMode = 0
   $script:LastRows = $null

@@ -5,8 +5,8 @@ $script:FrameSide = 0x2502
 $script:FrameCols = 2
 $script:FooterLimits = @{}
 $script:MenuFooterAccent = @("w")
-$script:FramedCache = [hashtable]::new([StringComparer]::Ordinal)
-$script:FooterCache = [hashtable]::new([StringComparer]::Ordinal)
+$script:FramedCache = New-PathMap
+$script:FooterCache = New-PathMap
 $script:MenuFooterOf = $null
 
 function Get-MenuFooter {
@@ -131,7 +131,7 @@ function Get-FramedRows {
   $out.Add((Get-FrameEdge 0x256D 0x256E $W))
   $base = "" + $W + [char]1 + ($script:Ink.Empty -join ";") + [char]1 + ($script:Ink.Bg -join ";") + [char]1
   $old = $script:FramedCache
-  $new = [hashtable]::new([StringComparer]::Ordinal)
+  $new = New-PathMap
   for ($i = 1; $i -lt $Rows.Count; $i++) {
     $f = 1.0
     if ($null -ne $Fades -and $i -lt $Fades.Count) { $f = $Fades[$i] }

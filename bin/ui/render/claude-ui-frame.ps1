@@ -1,4 +1,4 @@
-. Import-ClmModule claude-ui-width, claude-ui-color-depth
+. Import-ClmModule claude-ui-width, claude-ui-color-depth, claude-json
 $script:FrameLines = $null
 $script:LastRows = $null
 $script:LastFades = $null
@@ -7,7 +7,7 @@ $script:FadeArmed = $false
 $script:UiCols = 80
 $script:UiRows = 24
 $script:UiClip = 79
-$script:LineCache = [hashtable]::new([StringComparer]::Ordinal)
+$script:LineCache = New-PathMap
 
 function Reset-Frame {
   $script:FrameLines = $null
@@ -76,7 +76,7 @@ function Write-Frame {
   $bg = $script:Ink.Bg
   $base = "" + $Max + [char]1 + $script:UiColorDepth + [char]1 + ($bg -join ";") + [char]1
   $old = $script:LineCache
-  $new = [hashtable]::new([StringComparer]::Ordinal)
+  $new = New-PathMap
   for ($i = 0; $i -lt $n; $i++) {
     $f = 1.0
     if ($null -ne $Fades) { $f = $Fades[$i] }

@@ -29,7 +29,7 @@ function Get-ClmText {
   param([string]$Key, [object[]]$Values = @(), [string]$Lang = "")
   if (-not $Lang) { $Lang = Get-ClmLang }
   if (-not [object]::ReferenceEquals($script:TextCacheOf, $script:TextTables)) {
-    $script:TextCache = [hashtable]::new([StringComparer]::Ordinal)
+    $script:TextCache = New-PathMap
     $script:TextCacheOf = $script:TextTables
   }
   $id = $Lang + [char]1 + $Key
