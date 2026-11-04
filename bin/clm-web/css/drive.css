@@ -9,7 +9,7 @@
 .prefs.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--nav-width), 1fr)); gap: var(--space-1) var(--space-3); }
 .prefs:not(.grid) > .pref + .pref { border-top: 1px solid var(--divider); }
 
-.pref { display: flex; align-items: center; gap: var(--space-2); min-height: var(--target-sm); padding: 0 var(--space-2); border-radius: var(--radius-item); }
+.pref { display: flex; align-items: center; gap: var(--space-2); min-height: var(--target); padding: 0 var(--space-2); }
 .pref:hover { background: var(--hover); }
 .pref .check { display: flex; flex: 1; min-width: 0; }
 .pref span.check { cursor: default; }
@@ -20,11 +20,9 @@
 details.off > summary {
   display: flex;
   align-items: center;
-  min-height: var(--target-sm);
+  min-height: var(--target);
   padding: 0 var(--space-2);
-  border-radius: var(--radius-item);
   color: var(--muted);
-  font-weight: 500;
   cursor: pointer;
 }
 

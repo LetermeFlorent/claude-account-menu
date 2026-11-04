@@ -32,8 +32,12 @@ body {
   line-height: var(--line-body);
   color: var(--text);
   background: var(--bg);
-  -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
+}
+
+body > p.gone {
+  padding: var(--space-6) var(--gutter);
+  color: var(--muted);
 }
 
 h1,
@@ -47,7 +51,7 @@ p {
 h2 {
   font-size: var(--text-title);
   line-height: var(--line-title);
-  font-weight: 600;
+  font-weight: 300;
 }
 
 h3 {
@@ -67,7 +71,7 @@ ul {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 

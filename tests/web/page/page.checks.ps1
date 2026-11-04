@@ -31,7 +31,7 @@ $pgStyles = (@($pgServed | Where-Object { $_.EndsWith(".css") } | ForEach-Object
 $pgAll = $pgHtml + "`n" + $pgCode + "`n" + $pgStyles
 Assert-True ($pgAll -notmatch 'https?:|//[a-z0-9.-]+\.[a-z]{2,}/|@import|@font-face|url\((?!data:)') "page web : aucune ressource exterieure"
 Assert-True ($pgStyles -notmatch '(?i)\bInter\b|indigo|violet|backdrop-filter|linear-gradient|radial-gradient') "page web : ni police Inter, ni degrade, ni verre depoli"
-Assert-True ($pgStyles -match '--font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", -apple-system') "page web : polices du systeme"
+Assert-True ($pgStyles -match '--font: "Segoe UI", -apple-system') "page web : polices du systeme"
 
 $pgDo = @([regex]::Matches($pgCode, 'do: "([a-z-]+)"') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
 Assert-Equal ((@($script:WebHandlers.Keys) | Sort-Object) -join " ") ($pgDo -join " ") "page web : chaque action de clm a son bouton, aucune inconnue"

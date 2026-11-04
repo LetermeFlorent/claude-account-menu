@@ -4,101 +4,76 @@
 .group > legend { float: left; width: 100%; margin-bottom: var(--space-3); padding: 0; font-weight: 600; }
 .group > legend + * { clear: both; margin-top: 0; }
 
-.card { padding: var(--space-5); border: 1px solid var(--divider); border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--shadow-xs); }
 .card > * + *,
 .group > * + * { margin-top: var(--space-3); }
 .card > h3 + .muted { margin-top: var(--space-1); }
-.empty { padding: var(--space-6) var(--space-4); text-align: center; }
+.empty { padding: var(--space-6) 0; }
 
-.actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .actions.end { justify-content: flex-end; }
-.card > .actions { margin-top: var(--space-5); }
+.card > .actions { margin-top: var(--space-4); }
 .checks { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); }
 .checks.column { flex-direction: column; }
-.check, .switch { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--target-min); font-weight: 500; cursor: pointer; }
+.check, .switch { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--target-min); cursor: pointer; }
 .setting { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
-.setting label { flex: 0 0 var(--nav-width); font-weight: 500; }
+.setting label { flex: 0 0 var(--nav-width); }
 .setting select { min-width: var(--nav-width); }
 
-.pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--accent-line);
-  border-radius: var(--radius-full);
-  background: var(--accent-soft);
-  color: var(--text);
-  font-size: var(--text-caption);
-  line-height: var(--line-caption);
-  font-weight: 500;
-  white-space: nowrap;
-}
+.pill { padding: 0 var(--space-1); background: var(--accent); color: var(--on-accent); font-size: var(--text-caption); line-height: var(--line-caption); white-space: nowrap; }
 
 .switch input[role="switch"] {
-  width: calc(var(--space-6) + var(--space-1));
-  height: calc(var(--space-5) - var(--space-1));
+  width: 40px;
+  height: 20px;
+  border-color: var(--muted);
   border-radius: var(--radius-full);
-  background: var(--track);
 }
 
 .switch input[role="switch"]::after,
 .switch input[role="switch"]:checked::after {
   content: "";
   position: absolute;
-  left: 2px;
-  top: 2px;
-  width: 14px;
-  height: 14px;
+  left: 3px;
+  top: 3px;
+  width: 10px;
+  height: 10px;
   border: 0;
   border-radius: var(--radius-full);
   background: var(--muted);
   transform: none;
-  transition: transform 0.12s;
 }
 
-.switch input[role="switch"]:checked { background: var(--accent); }
-.switch input[role="switch"]:checked::after { background: var(--on-accent); box-shadow: var(--shadow-xs); transform: translateX(var(--space-4)); }
+.switch input[role="switch"]:checked { border-color: var(--accent); background: var(--accent); }
+.switch input[role="switch"]:checked::after { left: 23px; background: var(--on-accent); }
 
-.segmented { display: flex; flex-wrap: wrap; align-self: flex-start; }
-.segmented button { border-radius: 0; box-shadow: none; }
-.segmented button + button { margin-left: -1px; }
-.segmented button:first-child { border-radius: var(--radius-control) 0 0 var(--radius-control); }
-.segmented button:last-child { border-radius: 0 var(--radius-control) var(--radius-control) 0; }
-.segmented button:only-child { border-radius: var(--radius-control); }
-.segmented button:focus-visible { position: relative; z-index: 1; }
-.segmented button[aria-pressed="true"] { position: relative; border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.segmented { display: flex; flex-wrap: wrap; gap: var(--space-1); align-self: flex-start; }
+.segmented button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 
 .menu-host { position: relative; display: flex; justify-content: flex-end; }
 
 .menu {
   position: absolute;
   right: 0;
-  top: calc(100% + var(--space-1));
+  top: 100%;
   z-index: 20;
   display: flex;
   flex-direction: column;
-  gap: 1px;
   min-width: calc(var(--nav-width) * 0.8);
-  padding: var(--space-1);
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-control);
+  padding: var(--space-1) 0;
+  border: 1px solid var(--edge);
   background: var(--surface);
-  box-shadow: var(--flyout-shadow);
 }
 
-.menu button { justify-content: flex-start; min-height: var(--target-sm); padding: 0 10px; border-color: transparent; border-radius: var(--radius-item); background: transparent; box-shadow: none; font-weight: 500; text-align: left; white-space: nowrap; }
-.menu button.danger:not(:disabled):hover { background: var(--alert-soft); }
+.menu button { justify-content: flex-start; padding: 0 var(--space-3); border: 0; background: transparent; text-align: left; white-space: nowrap; }
+.menu button:not(:disabled):hover { background: var(--hover); }
 .menu button:focus-visible { outline-offset: -2px; }
 
 #ask {
   width: min(calc(var(--nav-width) * 2), calc(100vw - var(--space-6)));
   max-height: calc(100vh - var(--space-6));
   padding: var(--space-5);
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-card);
+  border: 1px solid var(--accent);
   background: var(--surface);
   color: var(--text);
-  box-shadow: var(--dialog-shadow);
 }
 
 #ask[open] { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -107,21 +82,16 @@
 #ask-body .group > legend, #ask-body .check { color: var(--text); }
 #ask > .actions { margin-top: var(--space-5); }
 #ask > .actions button { flex: 1 1 0; }
-#ask-yes.danger { border-color: var(--alert); background: var(--alert); color: var(--surface); box-shadow: var(--shadow-xs), var(--shadow-skeu); }
-#ask-yes.danger:not(:disabled):hover { background: color-mix(in srgb, var(--alert) 88%, #000); }
+#ask-yes.danger { background: var(--alert); color: var(--surface); }
 
 @media (max-width: 719px) {
-  .card { padding: var(--space-4); }
   .setting label { flex-basis: 100%; }
   .setting select { flex: 1 1 auto; min-width: 0; }
 }
 
 @media (forced-colors: active) {
-  .card, .menu, #ask { border-color: CanvasText; }
-  .menu, #ask { background: Canvas; }
-  .pill { border-color: Highlight; color: Highlight; }
+  .menu, #ask { border-color: CanvasText; background: Canvas; }
   .segmented button[aria-pressed="true"] { border-color: Highlight; background: Highlight; color: HighlightText; forced-color-adjust: none; }
-
   .switch input[role="switch"] { background: Canvas; }
   .switch input[role="switch"]:checked { background: Highlight; }
   .switch input[role="switch"]::after { forced-color-adjust: none; background: CanvasText; }
