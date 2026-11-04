@@ -56,3 +56,11 @@ try {
   foreach ($n in $ulKept.Keys) { Set-Item ("function:" + $n) $ulKept[$n] }
   $null = Update-UsageCache { param($map) $map.Remove("ultra") }
 }
+$ulNames = @(
+  @{ subscriptionType = "max"; rateLimitTier = "default_claude_max_20x" },
+  @{ subscriptionType = "max"; rateLimitTier = "default_claude_max_5x" },
+  @{ subscriptionType = "pro"; rateLimitTier = "default_claude_pro" },
+  @{ subscriptionType = "free" }
+) | ForEach-Object { Get-PlanName ([PSCustomObject]$_) }
+Assert-Equal "Ultra Max Pro Free" ($ulNames -join " ") "offre sans nom de Claude : Ultra, Max, Pro et Free, sans 20x ni 5x"
+Assert-True ((Get-PlanColor "Ultra") -ne (Get-PlanColor "Max") -and (Get-PlanColor "Max") -ne (Get-PlanColor "Pro")) "Ultra, Max et Pro gardent chacun leur couleur"

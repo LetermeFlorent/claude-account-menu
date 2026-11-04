@@ -24,7 +24,7 @@ function Get-ApiPlanName {
 
 function Get-PlanName {
   param($Oauth)
-  if ($Oauth.rateLimitTier -match "max_(\d+)x") { return "Max " + $Matches[1] + "x" }
+  if ($Oauth.rateLimitTier -match "max_20x") { return "Ultra" }
   $t = "" + $Oauth.subscriptionType
   if ($t -eq "") { return "" }
   return $t.Substring(0, 1).ToUpper() + $t.Substring(1)
