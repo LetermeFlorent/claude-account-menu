@@ -85,6 +85,12 @@ Assert-Equal 3 $r.Left "arret : reste a faire"
 Assert-Equal "2/5" $ctl.Progress "progression n/total"
 Assert-Equal 3 (Invoke-DriveSync).Up "arret : base partielle sauvee, le reste part ensuite"
 
+foreach ($i in 1..5) { Set-PcFile (".claude/auto/a" + $i + ".md") ("a" + $i) }
+$script:OnSend = { param($Rel) if ($Rel -like ".claude/auto/*") { Set-DriveAuto $false } }
+try { $r = Invoke-DriveSync @{ Stop = $false; Auto = $true } } finally { $script:OnSend = $null; Set-DriveAuto $true }
+Assert-Equal "1 4" ("" + $r.Up + " " + $r.Left) "synchro auto coupee : arret des le fichier en cours fini"
+Assert-Equal 4 (Invoke-DriveSync).Up "synchro auto coupee : le reste part a la synchro suivante"
+
 foreach ($i in 1..3) { Set-PcFile (".claude/tard/t" + $i + ".md") ("t" + $i) }
 $before = [long](Read-DriveConfig)["lastSync"]
 $r = Invoke-DriveSync $null 1

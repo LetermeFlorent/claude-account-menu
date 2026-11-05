@@ -68,7 +68,7 @@ function Add-LocalFile {
 
 function Test-SyncStop {
   param($Ctl, [long]$DeadlineMs)
-  if ($null -ne $Ctl -and $Ctl.Stop) { return $true }
+  if ($null -ne $Ctl -and ($Ctl.Stop -or ($Ctl.Auto -and -not (Test-DriveAuto)))) { return $true }
   return $DeadlineMs -gt 0 -and [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() -ge $DeadlineMs
 }
 

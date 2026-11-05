@@ -34,7 +34,7 @@ function Start-DriveJob {
   param($Job, [switch]$Hold)
   if ($null -eq $Job -or -not (Import-ClmGroup drive)) { return }
   if ($null -ne $Job.Loader) { if (-not $Hold) { Resume-UsageLoader $Job.Loader }; return }
-  $Job.Ctl = [hashtable]::Synchronized(@{ Stop = $false; Progress = "" })
+  $Job.Ctl = [hashtable]::Synchronized(@{ Stop = $false; Progress = ""; Auto = (Test-DriveAuto) })
   $Job.Seen = ""
   $Job.Loader = Start-UsageLoader @(, $Job.Ctl) (Get-ClmModulePath "claude-drive-sync") "Invoke-DriveSync" -Hold:$Hold
 }

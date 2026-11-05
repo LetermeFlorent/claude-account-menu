@@ -24,7 +24,7 @@ function Update-WatchFs {
 }
 
 function Invoke-WatchSync {
-  if (Test-DriveAuto) { return Invoke-DriveSync $null 0 }
+  if (Test-DriveAuto) { return Invoke-DriveSync @{ Stop = $false; Auto = $true } 0 }
   $res = New-SyncResult
   try {
     $res.Failed = [int](Sync-DriveCredentials (Get-DriveFolders) @(Get-Accounts))
