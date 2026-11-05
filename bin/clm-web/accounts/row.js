@@ -14,7 +14,6 @@ function rowWho(a) {
   return el("div", { class: "account-who" }, [
     el("div", { class: "account-name" }, [
       el("span", { class: "account-label", text: a.label }),
-      a.selected ? el("span", { class: "pill", text: clmText("accounts.chosen") }) : null,
     ]),
     el("div", { class: "account-sub muted" }, [
       a.email ? el("span", { text: a.email }) : null,
@@ -27,7 +26,7 @@ function rowWho(a) {
 function rowNode(a, count) {
   const menu = menuNew(accEntries(a, count));
   menuLabel(menu, clmText("accounts.actions", a.label));
-  return el("li", { class: a.selected ? "account selected" : "account", "data-key": a.dir }, [
+  return el("li", { class: "account", "data-key": a.dir }, [
     el("span", { class: "account-n", text: String(a.n), "aria-hidden": "true" }),
     rowWho(a),
     a.q5 ? quotaBar("q5", a.q5, a.pending) : el("div", { class: "quota q5" }),

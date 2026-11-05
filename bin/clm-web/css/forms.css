@@ -21,7 +21,6 @@
 .setting label { flex: 0 0 var(--label); }
 .setting select { min-width: var(--label); }
 
-.pill { padding: 2px var(--space-2); border-radius: var(--radius-full); background: var(--accent); color: var(--on-accent); font-size: var(--text-caption); line-height: var(--line-caption); white-space: nowrap; }
 
 .switch input[role="switch"] {
   width: 40px;

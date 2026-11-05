@@ -493,7 +493,6 @@
   "web.accounts.addName": "New account name",
   "web.accounts.addTitle": "Add an account",
   "web.accounts.addYes": "Add",
-  "web.accounts.chosen": "chosen in the terminal",
   "web.accounts.down": "Move down",
   "web.accounts.eraseBox": "Also erase its folder: sign-in, history, settings",
   "web.accounts.eraseNote": "A safety archive is stored in Downloads first.",

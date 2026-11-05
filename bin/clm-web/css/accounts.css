@@ -11,7 +11,6 @@
   background: var(--surface);
 }
 
-.account.selected { border-color: var(--accent); }
 .account-n { grid-column: 1; grid-row: 1; padding-top: 2px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: center; }
 .account-who { grid-column: 2 / 4; grid-row: 1; min-width: 0; }
 .account .menu-host { grid-column: 4; grid-row: 1; margin: calc(var(--space-1) * -1) 0; }
@@ -46,7 +45,6 @@
 }
 
 @media (forced-colors: active) {
-  .account.selected { border-color: Highlight; }
   .bar { box-sizing: content-box; border: 1px solid CanvasText; background: Canvas; forced-color-adjust: none; }
   .fill { background: Highlight; forced-color-adjust: none; }
 }

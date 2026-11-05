@@ -51,7 +51,6 @@ try {
   Assert-True ($a[0].q5.left -match '^[0-9]h[0-9]{2}m$') "web etat : temps restant 5h"
   Assert-True ($a[0].q7.left -match '^[0-9]d[0-9]{2}h$') "web etat : temps restant 7d"
   Assert-Equal "epuise alert" ($a[0].q7.pace + " " + $a[0].q7.tone) "web etat : rythme du quota plein"
-  Assert-True ((-not $a[0].selected) -and $a[1].selected) "web etat : compte choisi dans le terminal"
   Assert-True ((-not $a[0].erasable) -and $a[1].erasable) "web etat : dossier .claude jamais efface"
   Assert-Equal "jeton expire" $a[1].error "web etat : erreur de lecture"
   Assert-Null $a[0].error "web etat : pas d'erreur"
