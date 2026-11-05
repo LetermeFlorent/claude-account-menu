@@ -37,7 +37,7 @@ function Find-WtSettingsFile {
   $base = Read-EnvVar "LOCALAPPDATA" $Vars
   if ($base -eq "") { return "" }
   foreach ($rel in $script:WtSettingsPaths) {
-    $path = [IO.Path]::Combine($base, $rel)
+    $path = Join-Path $base $rel
     $info = New-Object IO.FileInfo $path
     if (-not $info.Exists -or $info.Length -gt 1MB) { continue }
     return $path
