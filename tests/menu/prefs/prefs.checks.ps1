@@ -69,6 +69,18 @@ try {
   $rows = Get-PrefsRows $many 20
   Assert-Equal 18 $rows.Count "liste longue : fleches en plus des lignes"
   Assert-Equal ("    " + $script:UpArrow) $rows[0][0][0] "liste longue : fleche du haut"
+  $inkKept = $script:Ink
+  $script:Ink = $script:Palettes["dark"]
+  $script:PrefsInks = @()
+  function Show-UiRows {
+    param($Rows, [double]$Now, $RowFades = $null)
+    foreach ($r in $Rows) { foreach ($s in $r) { if ([string]$s[0] -ceq "  ligne") { $script:PrefsInks += ($s[1] -join " ") } } }
+    if ($script:PrefsInks.Count -eq 1) { $script:Ink = $script:Palettes["light"] } else { $script:UiKeys.Enqueue((New-Object System.ConsoleKeyInfo "o", ([ConsoleKey]::O), $false, $false, $false)) }
+  }
+  $script:UiKeys.Clear()
+  Assert-True (Confirm-PrefsPage "Question" @("  ligne")) "confirmation : touche o acceptee"
+  Assert-Equal (($script:Palettes["light"].Dim) -join " ") $script:PrefsInks[-1] "confirmation : couleurs relues apres un changement de theme"
+  $script:Ink = $inkKept
 } finally {
   Restore-PrefsFakes
 }

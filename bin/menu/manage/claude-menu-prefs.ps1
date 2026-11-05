@@ -73,14 +73,12 @@ function Find-PrefsLine {
 
 function Confirm-PrefsPage {
   param([string]$Ask, [string[]]$Lines)
-  $body = @(foreach ($l in $Lines) { , (New-TextRow $l $script:Ink.Dim) })
-  $k = Read-PageKey { Get-PageRows $Ask $body @("o", (Get-ClmText "sync.prefs.confirm.ok"), (Get-ClmText "sync.prefs.confirm.any"), (Get-ClmText "sync.prefs.confirm.cancel")) }
+  $k = Read-PageKey { Get-PageRows $Ask @(foreach ($l in $Lines) { , (New-TextRow $l $script:Ink.Dim) }) @("o", (Get-ClmText "sync.prefs.confirm.ok"), (Get-ClmText "sync.prefs.confirm.any"), (Get-ClmText "sync.prefs.confirm.cancel")) }
   return $k.KeyChar -eq "o"
 }
 
 function Show-PrefsEmpty {
-  $body = @(, (New-TextRow ("  " + (Get-ClmText "sync.prefs.empty")) $script:Ink.Dim))
-  $null = Read-PageKey { Get-PageRows (Get-ClmText "sync.prefs.title") $body @() }
+  $null = Read-PageKey { Get-PageRows (Get-ClmText "sync.prefs.title") @(, (New-TextRow ("  " + (Get-ClmText "sync.prefs.empty")) $script:Ink.Dim)) @() }
   return Get-ClmText "sync.prefs.noneToShow"
 }
 

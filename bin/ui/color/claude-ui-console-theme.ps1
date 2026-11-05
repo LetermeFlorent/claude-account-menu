@@ -15,21 +15,21 @@ function Get-TerminalTheme {
   param([string]$Os = $script:OsName, $Vars = $null, [bool]$Rich = $false, [scriptblock]$OscReader = $null)
   $t = ConvertFrom-ColorFgBg (Read-EnvVar "COLORFGBG" $Vars)
   if ($t) { return $t }
-  $t = Get-WtTheme $Vars
-  if ($t) { return $t }
-  return "" + (Get-OscTheme $Os $Vars $Rich $OscReader)
+  if ((Read-EnvVar "TERM_PROGRAM" $Vars) -eq "") {
+    $t = Get-WtTheme $Vars
+    if ($t) { return $t }
+  }
+  if ($null -eq $script:OscTheme) { $script:OscTheme = "" + (Get-OscTheme $Os $Vars $Rich $OscReader) }
+  return $script:OscTheme
 }
 
 function Get-AutoTheme {
   param([string]$Os = $script:OsName, $Vars = $null, [scriptblock]$Terminal = $null, [scriptblock]$System = $null)
   if ($null -eq $Terminal) { $Terminal = { param($O, $V) Get-TerminalTheme $O $V (Test-RichTerminal) } }
   if ($null -eq $System) { $System = { param($O, $V) Get-SystemTheme $O $V } }
-  if ($null -eq $script:TerminalTheme) {
-    $script:TerminalTheme = ""
-    try { $script:TerminalTheme = "" + (& $Terminal $Os $Vars) } catch { Write-Verbose $_.Exception.Message }
-  }
-  if ($script:TerminalTheme) { return $script:TerminalTheme }
   $t = $null
+  try { $t = "" + (& $Terminal $Os $Vars) } catch { Write-Verbose $_.Exception.Message }
+  if ($t) { return $t }
   try { $t = & $System $Os $Vars } catch { Write-Verbose $_.Exception.Message }
   if ($t) { return $t }
   return "dark"

@@ -38,8 +38,14 @@ Assert-Equal "dark" (Get-WtCaseResult $two) "Windows Terminal : profil par defau
 $defScheme = '{ "defaultProfile": "' + $idA + '", "profiles": { "defaults": { "colorScheme": "One Half Light" }, "list": [ { "guid": "' + $idA + '" } ] } }'
 Assert-Equal "light" (Get-WtCaseResult $defScheme) "Windows Terminal : schema des defaults utilise"
 
-$obj = '{ "defaultProfile": "' + $idA + '", "profiles": { "list": [ { "guid": "' + $idA + '", "colorScheme": { "dark": "Campbell", "light": "One Half Light" } } ] } }'
-Assert-Equal "" (Get-WtCaseResult $obj) "Windows Terminal : schema en objet inconnu"
+$pair = '"defaultProfile": "' + $idA + '", "profiles": { "list": [ { "guid": "' + $idA + '", "colorScheme": { "dark": "Campbell", "light": "One Half Light" } } ] } }'
+Assert-Equal "dark" (Get-WtCaseResult ('{ "theme": "dark", ' + $pair)) "Windows Terminal : paire de schemas, theme sombre"
+Assert-Equal "light" (Get-WtCaseResult ('{ "theme": "legacyLight", ' + $pair)) "Windows Terminal : paire de schemas, theme clair"
+Assert-Equal "light" (Get-WtCaseResult ('{ "theme": "Mien", "themes": [ { "name": "Mien", "window": { "applicationTheme": "light" } } ], ' + $pair)) "Windows Terminal : paire de schemas, theme maison clair"
+$wtSystem = Get-SystemTheme
+if (-not $wtSystem) { $wtSystem = "dark" }
+Assert-Equal $wtSystem (Get-WtCaseResult ('{ "theme": "system", ' + $pair)) "Windows Terminal : paire de schemas, theme du systeme"
+Assert-Equal "" (Get-WtCaseResult ('{ "theme": "dark", "defaultProfile": "' + $idA + '", "profiles": { "list": [ { "guid": "' + $idA + '", "colorScheme": { "light": "One Half Light" } } ] } }')) "Windows Terminal : paire incomplete inconnue"
 
 $unknown = '{ "defaultProfile": "' + $idA + '", "profiles": { "list": [ { "guid": "' + $idA + '", "colorScheme": "Inconnu" } ] } }'
 Assert-Equal "" (Get-WtCaseResult $unknown) "Windows Terminal : nom de schema inconnu"

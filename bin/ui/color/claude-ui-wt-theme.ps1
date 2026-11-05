@@ -1,4 +1,4 @@
-. Import-ClmModule claude-ui-contrast
+. Import-ClmModule claude-ui-contrast, claude-theme
 
 $script:WtSchemeColors = @{
   "Campbell" = "#0C0C0C"; "Campbell Powershell" = "#012456"; "Vintage" = "#000000"
@@ -11,6 +11,8 @@ $script:WtSettingsPaths = @(
   "Packages\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\LocalState\settings.json",
   "Microsoft\Windows Terminal\settings.json"
 )
+$script:WtSettingsSeen = $null
+$script:WtModeUsed = $false
 
 function ConvertFrom-WtHexColor {
   param([string]$Hex)
@@ -35,9 +37,9 @@ function Find-WtSettingsFile {
   $base = Read-EnvVar "LOCALAPPDATA" $Vars
   if ($base -eq "") { return "" }
   foreach ($rel in $script:WtSettingsPaths) {
-    $path = Join-Path $base $rel
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
-    if ((Get-Item -LiteralPath $path).Length -gt 1MB) { continue }
+    $path = [IO.Path]::Combine($base, $rel)
+    $info = New-Object IO.FileInfo $path
+    if (-not $info.Exists -or $info.Length -gt 1MB) { continue }
     return $path
   }
   return ""
@@ -78,8 +80,24 @@ function Get-WtFirstValue {
   return $null
 }
 
+function Get-WtMode {
+  param($Settings)
+  $name = Get-JsonProperty $Settings "theme"
+  if ($name -is [string]) {
+    foreach ($t in (Get-JsonProperty $Settings "themes")) {
+      if ([string](Get-JsonProperty $t "name") -eq $name) { $name = [string](Get-JsonProperty (Get-JsonProperty $t "window") "applicationTheme") }
+    }
+    $mode = ConvertTo-ThemeName ($name -replace '^legacy', '')
+    if ($mode) { return $mode }
+  }
+  $sys = Get-SystemTheme
+  if ($sys) { return $sys }
+  return "dark"
+}
+
 function Get-WtSchemeColor {
   param($Settings, $Name)
+  if ($null -ne $Name -and $Name -isnot [string]) { $script:WtModeUsed = $true; $Name = Get-JsonProperty $Name (Get-WtMode $Settings) }
   if ($Name -isnot [string]) { return $null }
   foreach ($scheme in (Get-JsonProperty $Settings "schemes")) {
     if ([string](Get-JsonProperty $scheme "name") -eq $Name) { return ConvertFrom-WtHexColor ([string](Get-JsonProperty $scheme "background")) }
@@ -104,9 +122,19 @@ function Get-WtTheme {
     if ((Read-EnvVar "WT_SESSION" $Vars) -eq "") { return "" }
     $file = Find-WtSettingsFile $Vars
     if ($file -eq "") { return "" }
-    $settings = ConvertFrom-JsonWithComments ([IO.File]::ReadAllText($file))
-    $rgb = Get-WtBackground $settings (Read-EnvVar "WT_PROFILE_ID" $Vars)
-    return (Get-BackgroundTheme $rgb)
+    $item = New-Object IO.FileInfo $file
+    $profileId = Read-EnvVar "WT_PROFILE_ID" $Vars
+    $stamp = $file + "|" + $item.LastWriteTimeUtc.Ticks + "|" + $item.Length + "|" + $profileId
+    $seen = $script:WtSettingsSeen
+    if ($null -eq $seen -or $seen.Stamp -cne $stamp) {
+      $seen = @{ Stamp = $stamp; Settings = (ConvertFrom-JsonWithComments ([IO.File]::ReadAllText($file))); Theme = $null }
+      $script:WtSettingsSeen = $seen
+    }
+    if ($null -ne $seen.Theme) { return $seen.Theme }
+    $script:WtModeUsed = $false
+    $theme = Get-BackgroundTheme (Get-WtBackground $seen.Settings $profileId)
+    if (-not $script:WtModeUsed) { $seen.Theme = $theme }
+    return $theme
   }
   catch { Write-Verbose $_.Exception.Message }
   return ""
