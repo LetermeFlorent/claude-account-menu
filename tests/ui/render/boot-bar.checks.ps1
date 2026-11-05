@@ -72,9 +72,9 @@ Stop-BootBar $null
 Set-BootBarReady $null
 Assert-True $true "barre de demarrage : arret et fin de chargement sans barre, sans erreur"
 
-Assert-True ($script:BootLook.Fill.Contains("38;2;" + ($script:LevelSets["dark"]["7d"][0] -join ";") + "m")) "barre de demarrage : cases pleines dans la couleur du theme"
-Assert-True ($script:BootLook.Empty.Contains("38;2;" + ($script:Palettes["dark"].Empty -join ";") + "m")) "barre de demarrage : cases vides dans la couleur du theme sombre"
-Assert-True ((New-BootBarLook "light" "truecolor").Empty.Contains("38;2;" + ($script:Palettes["light"].Empty -join ";") + "m")) "barre de demarrage : cases vides dans la couleur du theme clair"
+Assert-True ($script:BootLook.Fill.Contains("38;2;" + ($script:BarHues["7d"][0] -join ";") + "m")) "barre de demarrage : cases pleines dans la couleur du theme"
+Assert-True ($script:BootLook.Empty.Contains("38;2;" + ($script:Palettes["dark"].Cell -join ";") + "m")) "barre de demarrage : cases vides dans la couleur du theme sombre"
+Assert-True ((New-BootBarLook "light" "truecolor").Empty.Contains("38;2;" + ($script:Palettes["light"].Cell -join ";") + "m")) "barre de demarrage : cases vides dans la couleur du theme clair"
 $plainLook = New-BootBarLook "dark" "none"
 Assert-True (-not ($plainLook.Fill + $plainLook.Empty + $plainLook.Sweep).Contains("38;")) "barre de demarrage : NO_COLOR, aucune couleur"
 Assert-True ($plainLook.EmptyGlyph -ne $plainLook.FillGlyph) "barre de demarrage : NO_COLOR, cases vides d'un autre dessin"

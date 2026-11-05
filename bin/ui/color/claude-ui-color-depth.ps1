@@ -32,6 +32,9 @@ function Get-Ansi16Map {
       for ($i = 0; $i -lt 3; $i++) { $map[(Get-RgbKey $set[$kind][$i])] = $script:Ansi16Levels[$kind][$i] }
     }
   }
+  foreach ($kind in $script:Ansi16Levels.Keys) {
+    for ($i = 0; $i -lt 3; $i++) { $map[(Get-RgbKey $script:BarHues[$kind][$i])] = $script:Ansi16Levels[$kind][$i] }
+  }
   $script:Ansi16Map = $map
   return $map
 }

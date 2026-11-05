@@ -48,8 +48,8 @@ function Test-BootBarWanted {
 
 function New-BootBarLook {
   param([string]$Theme, [string]$Depth)
-  $fill = $script:LevelSets[$Theme]["7d"][0]
-  $empty = $script:Palettes[$Theme].Empty
+  $fill = $script:BarHues["7d"][0]
+  $empty = $script:Palettes[$Theme].Cell
   $look = @{ FillGlyph = [string][char]0x25A0; EmptyGlyph = [string][char]0x25A0 }
   if ($Depth -eq "none") { $look.EmptyGlyph = [string][char]0x25A1 }
   $e = [string][char]27

@@ -32,7 +32,7 @@ function Add-StartupBarSegs {
   param($Row, $Step, [int]$C, [double]$Now)
   if ($Step.State -eq "wait") { Add-SpanSeg $Row $script:BarEmpty $C $script:Ink.Cell; return }
   if ($Step.State -eq "run" -and $Step.Pct -lt 0) { Add-ShimmerSegs $Row $C $Now; return }
-  $base = $script:Levels["7d"][0]
+  $base = $script:BarHues["7d"][0]
   if ($Step.Kind -eq "failed") { $base = $script:Ink.Alert }
   Add-BarSegs $Row "7d" (Get-TweenValue $Step.Bar $Now) $base $C
 }

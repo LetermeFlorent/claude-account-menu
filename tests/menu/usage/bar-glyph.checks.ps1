@@ -4,14 +4,27 @@ function Get-GlyphText {
 }
 
 $full = [string][char]0x25A0
-$empty = [string][char]0x25A1
+$hole = [string][char]0x25A1
+$half = [string][char]0x25AA
+Assert-True ($script:BarEmpty -ceq $full -and $script:BarFull -ceq $full -and $script:BarHalf -ceq $half) "cases : memes carres que la barre de statut"
 $segs = New-Row
 Add-BarSegs $segs "5h" 50 @(120, 110, 200) 20
-Assert-Equal (($full * 9) + [char]0x25AA + ($empty * 10)) (Get-GlyphText $segs) "barre sans couleur : cases vides dessinees autrement que les pleines"
-Assert-True ($script:BarEmpty -cne $script:BarFull -and $script:BarEmpty -cne $script:BarHalf) "case vide : glyphe a part"
+Assert-Equal ($full * 20) (Get-GlyphText $segs) "barre a 50 % : dix cases pleines sans case reduite"
+Assert-Equal 10 (@($segs | Where-Object { ($_[1] -join ",") -eq ($script:Ink.Cell -join ",") } | ForEach-Object { $_[0].Length }) | Measure-Object -Sum).Sum "barre a 50 % : dix cases vides a la couleur des cases vides"
 $segs = New-Row
-Add-ShimmerSegs $segs 20 600
-Assert-Equal ($empty * 20) (Get-GlyphText $segs) "scintillement : cases vides"
+Add-BarSegs $segs "5h" 47.5 @(120, 110, 200) 20
+Assert-Equal (($full * 9) + $half + ($full * 10)) (Get-GlyphText $segs) "case a moitie pleine : petit carre, comme la barre de statut"
 $segs = New-Row
 Add-ProgressSegs $segs 25 20 0
-Assert-Equal (($full * 4) + [char]0x25AA + ($empty * 15)) (Get-GlyphText $segs) "progression : cases restantes vides"
+Assert-Equal ($full * 20) (Get-GlyphText $segs) "progression : cases restantes vides"
+$bgDepth = $script:UiColorDepth
+try {
+  $env:NO_COLOR = "1"
+  $script:UiColorDepth = "none"
+  . (Get-ClmModulePath "claude-ui-bars")
+  Assert-Equal $hole $script:BarEmpty "sans couleur : cases vides dessinees autrement que les pleines"
+} finally {
+  Remove-Item Env:\NO_COLOR -ErrorAction SilentlyContinue
+  $script:UiColorDepth = $bgDepth
+  . (Get-ClmModulePath "claude-ui-bars")
+}

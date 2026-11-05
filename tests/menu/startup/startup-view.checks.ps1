@@ -40,9 +40,9 @@ $su.Hidden = $false
 $L = Get-MenuLayout 120 40 3 4
 $v = Get-StartupViewRows $su $L
 Assert-Equal 4 $v.Rows.Count "barres puis rangee vide"
-Assert-Equal ("  clm          " + ($script:BarFull * 19) + $script:BarHalf + "  a jour") $v.Texts[0] "clm a jour : barre pleine"
+Assert-Equal ("  clm          " + ($script:BarFull * 20) + "  a jour") $v.Texts[0] "clm a jour : barre pleine"
 Assert-Equal $green ($v.Rows[0][1][1] -join " ") "barre pleine en vert, comme la barre 7d"
-Assert-Equal ("  Claude Code  " + ($script:BarFull * 8) + $script:BarHalf + ($script:BarEmpty * 11) + "   45%  telechargement 2.1.300  45 / 100 Mo") $v.Texts[1] "Claude Code : barre, pourcentage et detail"
+Assert-Equal ("  Claude Code  " + ($script:BarFull * 9) + ($script:BarEmpty * 11) + "   45%  telechargement 2.1.300  45 / 100 Mo") $v.Texts[1] "Claude Code : barre, pourcentage et detail"
 Assert-Equal ("  Drive        " + ($script:BarEmpty * 20) + "  " + (Get-ClmText "menu.startup.after" @("clm"))) $v.Texts[2] "Drive en attente : barre vide"
 Assert-Equal (($script:Ink.Cell -join " ") + " " + ($script:Ink.Dim -join " ")) (($v.Rows[2][1][1] -join " ") + " " + ($v.Rows[2][2][1] -join " ")) "attente : cases vides et texte attenue"
 Assert-Equal "" $v.Texts[3] "rangee vide avant les comptes"
