@@ -35,13 +35,6 @@ try {
   Copy-CacheEntry $ulCached $ulCopy
   Assert-True ($ulCopy.No5 -and $ulCopy.Plan -eq "Ultra") "ultra : le cache garde le forfait et l'absence de 5h"
 
-  $ulBar = [PSCustomObject]@{ At = [long]$ulCached.At + 10; Pct5 = $null; Reset5 = $null; Pct7 = 41; Reset7 = $ulFuture; No5 = $null; Plan = $null; Fails = 0; Until = 0 }
-  $ulPick = Select-NewestUsage $ulCached $ulBar
-  Assert-True ($ulPick.No5 -and $ulPick.Plan -eq "Ultra") "ultra : une lecture plus recente de la barre d'etat garde le forfait"
-
-  $ulTag = "@" + (Get-StateTag (Get-AccountPath $ulAcc))
-  $ulMap = @{ ("q_at" + $ulTag) = "1800000000"; ("q7_at" + $ulTag) = "1800003600"; ("q7_pct" + $ulTag) = "40"; ("q5_none" + $ulTag) = "1" }
-  Assert-True (Read-StatusUsage $ulAcc $ulMap).No5 "ultra : la barre d'etat dit qu'il n'y a pas de 5h"
   Assert-True (@(Get-StatusEntries "t" $ulRow) -contains "q5_none@t 1") "ultra : clm ecrit l'absence de 5h pour la barre d'etat"
 
   Assert-True (-not ((Format-Row $ulRow) -match "\| 5h ")) "ultra : la ligne texte n'a pas de 5h"
@@ -57,8 +50,6 @@ try {
   $ulMaxCopy = New-UsageRow $ulAcc "u@exemple.fr"
   Copy-CacheEntry ([PSCustomObject]@{ At = $ulMaxCached.At; Pct7 = 40; Reset7 = $ulFuture; No5 = $true; Plan = "Max" }) $ulMaxCopy
   Assert-True (-not $ulMaxCopy.No5) "max : un ancien cache sans 5h ne cache plus le 5h d'un compte non Ultra"
-  $ulMaxBar = [PSCustomObject]@{ At = [long]$ulMaxCached.At + 10; Pct5 = $null; Reset5 = $null; Pct7 = 41; Reset7 = $ulFuture; No5 = $true; Plan = $null; Fails = 0; Until = 0 }
-  Assert-True (-not (Select-NewestUsage $ulMaxCached $ulMaxBar).No5) "max : la barre d'etat ne cache plus le 5h d'un compte non Ultra"
   $script:UlPlan = "Ultra"
   $script:UlFive = [PSCustomObject]@{ utilization = 12; resets_at = $ulFuture }
   $ulMax = New-UsageRow $ulAcc "u@exemple.fr"

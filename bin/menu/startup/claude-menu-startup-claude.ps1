@@ -17,7 +17,10 @@ function Close-ClaudeStepLock {
 function Complete-ClaudeStartup {
   param($Su, $Step, $State, [double]$Now)
   Close-ClaudeStepLock
-  $State.Msg = Add-ClmFailure (Get-UpdateSummary $Step.Parts $Step.Kinds) $Su.ClmError
+  $msg = Get-UpdateSummary $Step.Parts $Step.Kinds
+  if (@($Step.Kinds | Where-Object { $_ -ne "ok" }).Count -eq 0) { $msg = @("", $script:Ink.Dim) }
+  $State.Msg = Add-ClmFailure $msg $Su.ClmError
+  if ($null -ne $Step.Last) { $ver = Get-ClaudeCheckVersion $Step.Last; if ($ver -ne "-") { $State.ClaudeVersion = $ver } }
   $kind = Get-UpdateKind $Step.Kinds
   $text = $Step.Texts -join ", "
   if ($kind -eq "failed") { $text = Get-ClmText "update.startup.claudeFailed" }

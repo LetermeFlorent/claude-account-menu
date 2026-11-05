@@ -66,15 +66,6 @@ try {
   Assert-Equal 2 $script:UsageApiCalls "sans reglage, delai de 30 s : donnees de 45 s relues"
 
   Write-ApiDisplay '{ "usagePoll": 60 }'
-  Set-ApiCacheAge 500
-  New-Item -ItemType Directory -Force -Path (Split-Path $apiState) | Out-Null
-  $apiNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-  $lines = @(("q_at@claude-appel " + ($apiNow - 5)), ("q5_at@claude-appel " + ($apiNow + 3600)), "q5_pct@claude-appel 33", ("q7_at@claude-appel " + ($apiNow + 86400)), "q7_pct@claude-appel 4")
-  [IO.File]::WriteAllText($apiState, (($lines -join "`n") + "`n"), (New-Object Text.UTF8Encoding($false)))
-  $u = Get-AccountUsage $apiAcc
-  Assert-Equal 2 $script:UsageApiCalls "barre plus recente que le cache : aucun appel"
-  Assert-Equal 33 $u.Pct5 "barre plus recente que le cache : chiffres de la barre"
-  Remove-Item -LiteralPath $apiState -Force
 
   Set-ApiCacheAge 500
   Save-UsageCooldown "appel" 120 1

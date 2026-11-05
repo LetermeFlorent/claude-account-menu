@@ -1,7 +1,7 @@
 function New-TimerCard {
   param([string]$Label, $P5, $P7, $Err = $null, [bool]$Pending = $false)
   $u = [PSCustomObject]@{ Label = $Label; Email = ($Label + "@exemple.fr"); Plan = ""; Error = $Err; Age = $null; At = $null; Expired = $false; LimitedUntil = $null; Pct5 = $P5; Reset5 = $null; Pct7 = $P7; Reset7 = $null }
-  $e = @{ Acc = [PSCustomObject]@{ Label = $Label; Dir = (".claude-timer-" + $Label) }; U = $u; Pending = $Pending; Seen = (-not $Pending); In = $null; View = $null; NextAt = $null; Slot = 0; Force = $false }
+  $e = @{ Acc = [PSCustomObject]@{ Label = $Label; Dir = (".claude-timer-" + $Label) }; U = $u; Pending = $Pending; Seen = (-not $Pending); In = $null; View = $null; NextAt = $null; Force = $false }
   $e.T5 = New-Tween ([double]$P5) ([double]$P5) 0 0
   $e.T7 = New-Tween ([double]$P7) ([double]$P7) 0 0
   Update-EntryView $e
@@ -30,25 +30,24 @@ Assert-Equal (Get-ClmText "menu.timer.paused") (Get-EntryTimer $e $true 1000 500
 
 
 $e = New-TimerCard "a" 10 10
-$at = Get-NextReadAt $e 1000 5000 -PollSec 40
-Assert-True ($at -ge 41000 -and $at -le 45000) "sans valeur connue, relecture au delai choisi plus un petit alea"
-$e.Slot = 60000
-Assert-Equal 101000 (Get-NextReadAt $e 1000 5000 -Jitter 0 -PollSec 40) "compte decale au premier tour"
-Assert-Equal 0 $e.Slot "decalage pris une seule fois"
+Assert-Equal 41000 (Get-NextReadAt $e 1000 5000 -PollSec 40) "sans valeur connue, relecture au delai choisi, sans alea"
+$e.U.At = 4990
+Assert-Equal 31000 (Get-NextReadAt $e 1000 5000 -PollSec 40) "heure de lecture partagee : relecture au meme instant pour tous les clm"
+$e.U.At = $null
 $e.U.Age = 10
-Assert-Equal 31000 (Get-NextReadAt $e 1000 5000 -Jitter 0 -PollSec 40) "valeur connue, relecture quand elle depasse le delai"
+Assert-Equal 31000 (Get-NextReadAt $e 1000 5000 -PollSec 40) "valeur connue, relecture quand elle depasse le delai"
 $e.U.Age = 100
-Assert-Equal 6000 (Get-NextReadAt $e 1000 5000 -Jitter 0 -PollSec 40) "valeur plus vieille que le delai, relecture apres un court repit"
+Assert-Equal 6000 (Get-NextReadAt $e 1000 5000 -PollSec 40) "valeur plus vieille que le delai, relecture apres un court repit"
 $e.U.LimitedUntil = 5250
 Assert-Equal 252000 (Get-NextReadAt $e 1000 5000 -PollSec 40) "pause de l'API, relecture a sa fin"
 $e.U.LimitedUntil = $null
 $e.U.Error = "panne"
-Assert-Equal 181000 (Get-NextReadAt $e 1000 5000 -Jitter 0 -PollSec 40) "echec, nouvel essai dans 3 min"
+Assert-Equal 181000 (Get-NextReadAt $e 1000 5000 -PollSec 40) "echec, nouvel essai dans 3 min"
 $e.U.Error = $null
 $e.U.Age = $null
 $timerDisplay = Get-StatePath "display.json"
 [IO.File]::WriteAllText($timerDisplay, "{ ""usagePoll"": 45 }", (New-Object Text.UTF8Encoding($false)))
-Assert-Equal 46000 (Get-NextReadAt $e 1000 5000 -Jitter 0) "delai pris dans les reglages de ce PC"
+Assert-Equal 46000 (Get-NextReadAt $e 1000 5000) "delai pris dans les reglages de ce PC"
 Remove-Item -LiteralPath $timerDisplay -Force
 
 $st = @{ Entries = @((New-TimerCard "a" 1 1), (New-TimerCard "b" 1 1), (New-TimerCard "c" 1 1)); Busy = $false }

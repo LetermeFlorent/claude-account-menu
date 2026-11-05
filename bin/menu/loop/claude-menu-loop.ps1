@@ -79,6 +79,7 @@ function Reset-MenuState {
   $accs = @(Get-Accounts)
   $st = New-MenuState $accs (Get-NowMs) $false ([math]::Min($Sel, $accs.Count - 1))
   $st.Msg = $Msg
+  $st.ClaudeVersion = $script:MenuState.ClaudeVersion
   $script:MenuState = $st
   Start-MenuLoader $st
 }

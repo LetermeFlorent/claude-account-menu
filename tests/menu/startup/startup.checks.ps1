@@ -45,7 +45,7 @@ try {
   Assert-Equal (Get-ClmText "menu.startup.preparing") $script:Su.Steps[2].Text "Drive : en cours pendant Claude Code"
   $null = Invoke-StartupTicks
   Assert-Equal ((Get-ClmText "update.claude.upToDateVersion" @("2.1.292")) -replace "^Claude Code ", "") $script:Su.Steps[1].Text "Claude Code a jour : annonce"
-  Assert-Equal ("  a, b, c : " + (Get-ClmText "update.claude.upToDateVersion" @("2.1.292"))) $script:St.Msg[0] "Claude Code a jour : resultat sous les comptes"
+  Assert-Equal "|2.1.292" ($script:St.Msg[0] + "|" + $script:St.ClaudeVersion) "Claude Code a jour : pas de ligne, version en bas"
   $script:DriveJob.Ctl.Progress = "3/10"
   Assert-True (Invoke-StartupTicks) "Drive : avancement redessine"
   Assert-Equal ("30 " + (Get-ClmText "menu.startup.files" @("3/10"))) ("" + $script:Su.Steps[2].Pct + " " + $script:Su.Steps[2].Text) "Drive : fichiers faits sur le total"
@@ -82,7 +82,7 @@ try {
   Assert-Equal ("failed " + (Get-ClmText "update.startup.installFailed" @("disque plein"))) ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "installation de clm ratee : barre en erreur"
   Assert-Equal ("  " + (Get-ClmText "menu.startup.clmUpdateFailed" @("disque plein"))) $script:St.Msg[0] "installation de clm ratee : annoncee tout de suite"
   $null = Invoke-StartupTicks 4
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.clmUpdateFailed" @("disque plein")) + "   a, b, c : " + (Get-ClmText "update.claude.upToDateVersion" @("2.1.292"))) $script:St.Msg[0] "installation de clm ratee : erreur puis resultat de Claude Code"
+  Assert-Equal ("  " + (Get-ClmText "menu.startup.clmUpdateFailed" @("disque plein"))) $script:St.Msg[0] "installation de clm ratee : erreur gardee, Claude Code a jour sans ligne"
   Assert-Equal $script:Ink.Alert $script:St.Msg[1] "installation de clm ratee : couleur d'alerte"
   Assert-True (-not $script:ClmUpdated -and $null -eq $script:Su.Exit) "installation de clm ratee : pas de redemarrage"
   $script:FakeInstallError = $null

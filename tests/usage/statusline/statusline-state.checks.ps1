@@ -35,7 +35,6 @@ function Start-BarHolder {
 }
 
 Reset-BarState "theme dark`nq_at@claude 3`n"
-Assert-True ((Read-StatusLines $barState) -is [hashtable]) "barre de clm apres chargement du crochet : lecture de l'etat en table de cles"
 Update-StatusState $barAcc
 $barLines = Read-BarLines $barState
 Assert-True ($barLines -contains "theme dark" -and $barLines -contains "q5_pct@claude 42") "etat de la barre : ecrit sous son verrou"

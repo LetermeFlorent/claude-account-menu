@@ -3,7 +3,7 @@
 function New-MenuEntry {
   param($Acc, $Cache, [double]$Now)
   $u = New-UsageRow $Acc
-  $e = @{ Acc = $Acc; U = $u; Pending = $true; Seen = $false; View = $null; In = $null; NextAt = $null; Slot = 0; Timer = $null; Force = $false }
+  $e = @{ Acc = $Acc; U = $u; Pending = $true; Seen = $false; View = $null; In = $null; NextAt = $null; Timer = $null; Force = $false }
   $c = Get-KnownUsage $Acc $Cache
   if ($null -ne $c -and (Get-CacheAge $c) -lt $script:UsageCacheTtl) {
     Copy-CacheEntry $c $u
@@ -21,11 +21,9 @@ function New-MenuEntry {
 function New-MenuState {
   param($Accs, [double]$Now, [bool]$Open = $true, [int]$Sel = -1)
   $cache = Read-UsageCache
-  $pollMs = 1000 * (Read-UsagePollSeconds)
   $entries = New-Object 'System.Collections.Generic.List[object]'
   foreach ($a in $Accs) {
     $e = New-MenuEntry $a $cache $Now
-    $e.Slot = $pollMs * $entries.Count / [math]::Max(1, @($Accs).Count)
     if ($Open) { $e.In = New-Tween 0 1 220 ($Now + 45 * $entries.Count) }
     $entries.Add($e)
   }
@@ -54,7 +52,7 @@ function Set-UsageResult {
   elseif ([long]$Res[1].At -ge [long]$e.U.At) { $e.U = $Res[1] }
   else { $e.U.LimitedUntil = $Res[1].LimitedUntil }
   $e.Pending = $false
-  $e.NextAt = Get-NextReadAt $e $Now 0 $State.Jitter $State.PollSec
+  $e.NextAt = Get-NextReadAt $e $Now 0 $State.PollSec
   Complete-ForcedRead $State $e
   Show-EntryUsage $e $Now
   $State.Dirty = $true
@@ -77,7 +75,6 @@ function Start-MenuLoader {
   }
   $State.LoaderIdx = @($Indices)
   $State.PollSec = Read-UsagePollSeconds
-  $State.Jitter = Get-ReadJitter $State.PollSec
   $State.Loader = Start-UsageLoader $accs.ToArray() -Reader $reader -Runspace (Get-UsageRunspace)
 }
 
@@ -122,7 +119,7 @@ function Step-MenuLoader {
     if (-not $e.Pending) { continue }
     if ($null -ne $ld.Ctl.Error) { $e.U.Error = Get-ClmText "menu.state.readFailed" @($ld.Ctl.Error) }
     $e.Pending = $false
-    $e.NextAt = Get-NextReadAt $e $Now 0 $State.Jitter $State.PollSec
+    $e.NextAt = Get-NextReadAt $e $Now 0 $State.PollSec
     Complete-ForcedRead $State $e
     Update-EntryView $e
     $State.Dirty = $true

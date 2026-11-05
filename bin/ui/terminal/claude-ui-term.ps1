@@ -41,7 +41,7 @@ function Enter-UiScreen {
   try { $script:UiCtrlC = [Console]::TreatControlCAsInput; [Console]::TreatControlCAsInput = $true } catch { Write-Verbose $_.Exception.Message }
   Set-UiSize (Get-UiSize)
   $e = $script:Esc
-  Write-Ui ($e + "[?1049h" + $e + "[?25l" + $e + "[0m" + $e + "[2J")
+  Write-Ui ($e + "[?1049h" + $e + "[?1007l" + $e + "[?25l" + $e + "[0m" + $e + "[2J")
   Reset-Frame
   $script:LastRows = $null
   $script:FadeArmed = $true
@@ -58,7 +58,7 @@ function Exit-UiScreen {
   $script:UiOn = $false
   Disable-UiConIn
   $e = $script:Esc
-  Write-Ui ($e + "[0m" + $e + "[?2026l" + $e + "[?1004l" + $e + "[?25h" + $e + "[?1049l")
+  Write-Ui ($e + "[0m" + $e + "[?2026l" + $e + "[?1004l" + $e + "[?25h" + $e + "[?1007h" + $e + "[?1049l")
   try { [Console]::TreatControlCAsInput = $script:UiCtrlC } catch { Write-Verbose $_.Exception.Message }
 }
 

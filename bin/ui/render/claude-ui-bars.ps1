@@ -1,7 +1,7 @@
 $script:BarFull = [string][char]0x25A0
 $script:BarEmpty = [string][char]0x25A1
 $script:BarHalf = [string][char]0x25AA
-$script:Mark = [string][char]0x258C
+$script:Mark = [string][char]0x25BA
 $script:BarGradients = @{}
 $script:BarGradientLimit = 256
 

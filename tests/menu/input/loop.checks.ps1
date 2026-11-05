@@ -120,7 +120,7 @@ try {
   Assert-Equal "  phrase de synchro enregistree sur ce PC" $script:MenuState.Msg[0] "y avec Drive sans phrase : phrase annoncee"
   Assert-Equal " 1" ("" + (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter, [ConsoleKey]::Escape) $true).Label + " " + $script:ClaudeStarts) "pendant la mise a jour : Entree puis Echap, aucun compte lance"
   Assert-Null (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Escape) $true) "Echap pendant la mise a jour : menu quitte a la fin"
-  Assert-Equal "2   a, b, c : Claude Code a jour (2.1.292)" ("" + $script:ClaudeStarts + " " + $script:MenuState.Msg[0]) "Echap pendant la mise a jour : mise a jour menee au bout"
+  Assert-Equal "2  2.1.292" ("" + $script:ClaudeStarts + " " + $script:MenuState.Msg[0] + " " + $script:MenuState.ClaudeVersion) "Echap pendant la mise a jour : mise a jour menee au bout"
   Assert-Null $script:Startup "menu ferme : bloc de lancement oublie"
   Assert-Null (Invoke-WithKeys @([ConsoleKey]::Escape) $true) "Echap avant la mise a jour : menu quitte"
   Assert-Equal 2 $script:ClaudeStarts "Echap avant la mise a jour : rien lance"

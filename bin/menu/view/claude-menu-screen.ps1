@@ -59,11 +59,8 @@ function Add-MenuCards {
   if ($h.Last -le $h.Top) { return }
   $p = Get-TweenValue $State.SelTween $Now
   for ($i = $h.Top; $i -lt $h.Last; $i++) { Add-CardRows @{ Rows = $Rows; Fades = $Fades; Entry = $State.Entries[$i]; Index = $i; Layout = $L; Position = $p; Now = $Now } }
-  $m = [int][math]::Round(($p - $h.Top) * $L.Per)
-  for ($j = 0; $j -lt $L.Per - 1; $j++) {
-    $at = $h.Start + $m + $j
-    if ($at -ge $h.Start -and $at -lt $Rows.Count) { Add-MarkSeg $Rows[$at] }
-  }
+  $at = $h.Start + ($State.Sel - $h.Top) * $L.Per
+  if ($State.Sel -ge $h.Top -and $State.Sel -lt $h.Last) { Add-MarkSeg $Rows[$at] }
 }
 
 function Get-MenuRows {
@@ -92,7 +89,16 @@ function Get-MenuRows {
   $tip = ""
   if ($last -lt $n -and $last -gt $top) { $tip = $script:DownArrow }
   Add-PlainRow $rows $fades (Get-RuleRow $L.W $tip)
-  foreach ($r in (Get-FooterRows (Get-MenuFooter) $L.W $script:MenuFooterAccent)) { Add-PlainRow $rows $fades $r }
+  $foot = Get-FooterRows (Get-MenuFooter) $L.W $script:MenuFooterAccent
+  for ($i = 0; $i -lt $foot.Count; $i++) {
+    $r = $foot[$i]
+    if ($i -eq $foot.Count - 1 -and $State.ClaudeVersion) {
+      $r = New-Row
+      foreach ($s in $foot[$i]) { $r.Add($s) }
+      Add-RightSegs $r ($L.W - 2) @(, @(("Claude Code " + $State.ClaudeVersion), $script:Ink.Dim, $false))
+    }
+    Add-PlainRow $rows $fades $r
+  }
   Add-PlainRow $rows $fades (Get-MsgRow $State $L.W $Now)
   return @{ Rows = $rows; Fades = $fades }
 }

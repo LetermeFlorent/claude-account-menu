@@ -40,7 +40,7 @@ try {
   $null = Invoke-StartupTicks
   Assert-Equal 0 $script:ClaudeStarts "Claude Code verifie a l'instant par un autre clm : pas de mise a jour"
   Assert-Equal ("done ok " + ((Get-ClmText "update.claude.upToDateVersion" @("2.1.300")) -replace "^Claude Code ", "")) ($script:Su.Steps[0].State + " " + $script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text) "Claude Code verifie a l'instant par un autre clm : a jour"
-  Assert-Equal ("  a, b, c : " + (Get-ClmText "update.claude.upToDateVersion" @("2.1.300"))) $script:St.Msg[0] "Claude Code verifie a l'instant par un autre clm : resultat sous les comptes"
+  Assert-Equal "|2.1.300" ($script:St.Msg[0] + "|" + $script:St.ClaudeVersion) "Claude Code verifie a l'instant par un autre clm : version en bas"
   Remove-ClaudeStamp
 
   $script:ClaudeUpdateWaitMs = 1000

@@ -1,7 +1,5 @@
 . Import-ClmModule claude-text
 $script:RereadMs = 180000
-$script:RereadJitterMs = 25000
-$script:JitterMsPerPollSec = 100
 $script:MinReadGapMs = 5000
 
 function Format-Countdown {
@@ -10,23 +8,16 @@ function Format-Countdown {
   return "" + [math]::Floor($Seconds / 60) + "m" + ("{0:D2}" -f ($Seconds % 60)) + "s"
 }
 
-function Get-ReadJitter {
-  param([int]$PollSec)
-  return Get-Random -Maximum ([math]::Max(1, [math]::Min([int]$script:RereadJitterMs, [int]($PollSec * $script:JitterMsPerPollSec))))
-}
-
 function Get-NextReadAt {
-  param($E, [double]$Now, [long]$UnixNow = 0, [double]$Jitter = -1, [int]$PollSec = 0)
+  param($E, [double]$Now, [long]$UnixNow = 0, [int]$PollSec = 0)
   if ($UnixNow -le 0) { $UnixNow = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
   $pause = [long]$E.U.LimitedUntil - $UnixNow
   if ($pause -gt 0) { return $Now + ($pause + 1) * 1000 }
   if ($PollSec -le 0) { $PollSec = Read-UsagePollSeconds }
-  if ($Jitter -lt 0) { $Jitter = Get-ReadJitter $PollSec }
-  $wait = $script:RereadMs
-  if ($null -eq $E.U.Error) { $wait = [math]::Max([double]$script:MinReadGapMs, ($PollSec - [double]$E.U.Age) * 1000) }
-  $at = $Now + $wait + [double]$E.Slot + $Jitter
-  $E.Slot = 0
-  return $at
+  if ($null -ne $E.U.Error) { return $Now + $script:RereadMs }
+  $age = [double]$E.U.Age
+  if ([long]$E.U.At -gt 0) { $age = $UnixNow - [long]$E.U.At }
+  return $Now + [math]::Max([double]$script:MinReadGapMs, ($PollSec - $age) * 1000)
 }
 
 function Get-EntryTimer {

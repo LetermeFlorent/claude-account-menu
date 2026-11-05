@@ -86,6 +86,7 @@ try {
   Enter-UiScreen
   Assert-True (-not ($script:FocusOut -join "").Contains("[?1004h")) "focus : terminal simple, pas de suivi du focus"
   Exit-UiScreen
+  Assert-True (($script:FocusOut -join "") -match "\[\?1007l.*\[\?1007h") "molette : plus de fleches envoyees pendant le menu, rendue a la sortie"
   $restores = @(Get-ChildItem -LiteralPath $bin -Filter "*.ps1" -Recurse | Where-Object { (Get-Content -Raw -LiteralPath $_.FullName).Contains('"[?1049l"') })
   Assert-Equal "claude-ui-term.ps1" (($restores | ForEach-Object { $_.Name }) -join ",") "focus : un seul endroit rend le terminal"
 } finally {

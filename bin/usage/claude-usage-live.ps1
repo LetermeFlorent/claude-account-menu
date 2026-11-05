@@ -36,7 +36,7 @@ function Set-LiveUsage {
   $E.U = $u
   Show-EntryUsage $E $Now
   $paused = [long]$E.U.LimitedUntil -gt [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-  if (-not $E.Pending -and -not $E.Force -and -not $paused) { $E.NextAt = Get-NextReadAt $E $Now 0 $State.Jitter $State.PollSec }
+  if (-not $E.Pending -and -not $E.Force -and -not $paused) { $E.NextAt = Get-NextReadAt $E $Now 0 $State.PollSec }
   return $true
 }
 
@@ -44,13 +44,12 @@ function Update-LiveUsage {
   param($State, [double]$Now)
   if ($null -ne $State.LiveAt -and $Now -lt $State.LiveAt) { return $false }
   $State.LiveAt = $Now + $script:LiveCheckMs
-  $path = Get-StatusStatePath
-  $stamp = Get-StatusStamp $path
+  $stamp = Get-StatusStamp $script:UsageCachePath
   if ($stamp -ceq $State.LiveStamp) { return $false }
   $State.LiveStamp = $stamp
-  $map = Read-StatusLines $path
+  $cache = Read-UsageCache
   $changed = $false
-  foreach ($e in $State.Entries) { if (Set-LiveUsage $State $e (Read-StatusUsage $e.Acc $map) $Now) { $changed = $true } }
+  foreach ($e in $State.Entries) { if (Set-LiveUsage $State $e (Get-KnownUsage $e.Acc $cache) $Now) { $changed = $true } }
   if ($changed) { $State.Dirty = $true }
   return $changed
 }
