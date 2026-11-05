@@ -2,11 +2,6 @@
 
 const navNames = ["accounts", "drive", "backups", "settings"];
 const navOld = { display: "settings" };
-const navNarrow = window.matchMedia("(max-width: 719px)");
-
-function navOrient() {
-  byId("tabs").setAttribute("aria-orientation", navNarrow.matches ? "horizontal" : "vertical");
-}
 
 function navShow(name, focus) {
   if (byId("part-" + name).hidden) window.scrollTo(0, 0);
@@ -47,8 +42,6 @@ function navInit() {
     e.preventDefault();
     navShow(next, true);
   });
-  navOrient();
-  navNarrow.addEventListener("change", navOrient);
   navShow(navAsked(), false);
 }
 

@@ -12,34 +12,37 @@ button {
   gap: var(--space-2);
   min-height: var(--target);
   padding: 0 var(--space-4);
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: var(--button);
   cursor: pointer;
 }
 
-button:not(:disabled):hover { border-color: var(--border); }
-button:not(:disabled):active { background: var(--button-press); }
-button.accent { background: var(--accent); color: var(--on-accent); }
+button:not(:disabled):hover { background: var(--button-press); }
+button:not(:disabled):active { background: var(--edge); }
+button.accent { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+button.accent:not(:disabled):hover { background: var(--accent); border-color: var(--text); }
 button.accent:not(:disabled):active,
-#ask-yes.danger:not(:disabled):active { filter: brightness(0.8); }
+#ask-yes.danger:not(:disabled):active { filter: brightness(0.85); }
 button.danger { border-color: var(--alert); background: transparent; color: var(--alert); }
-button.danger:not(:disabled):active { background: var(--alert-soft); }
-button.icon { width: var(--target); padding: 0; background: transparent; color: var(--muted); }
+button.danger:not(:disabled):hover { background: var(--alert-soft); }
+button.small { min-height: 30px; padding: 0 var(--space-3); }
+button.icon { width: var(--target); padding: 0; border-radius: var(--radius-full); background: transparent; color: var(--muted); }
+button.icon:not(:disabled):hover { background: var(--hover); color: var(--text); }
 button.more[aria-expanded="true"] { background: var(--selected); color: var(--text); }
-button.cross { width: var(--target-min); min-height: var(--target-min); padding: 0; border-color: transparent; }
-.glyph { display: block; font-size: var(--text-subtitle); line-height: 1; pointer-events: none; }
+button.cross { width: var(--target-min); min-height: var(--target-min); padding: 0; border-color: transparent; border-radius: var(--radius-full); }
+.glyph { display: block; font-size: 20px; line-height: 1; pointer-events: none; }
 
 :is(input[type="text"], input[type="search"], input[type="number"], select) {
   min-height: var(--target);
-  padding: 0 var(--space-2);
-  border: 2px solid var(--border);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
 }
 
-:is(input[type="text"], input[type="search"], input[type="number"], select):not(:disabled):hover { border-color: var(--muted); }
-:is(input[type="text"], input[type="search"], input[type="number"], select):focus { border-color: var(--accent); outline: none; }
+:is(input[type="text"], input[type="search"], input[type="number"], select):not(:disabled):hover { border-color: var(--text); }
+:is(input[type="text"], input[type="search"], input[type="number"], select):focus-visible { outline-offset: 0; }
 
 select { cursor: pointer; }
 ::placeholder { color: var(--muted); opacity: 1; }
@@ -54,8 +57,8 @@ input[type="checkbox"] {
   width: 20px;
   height: 20px;
   margin: 0;
-  border: 2px solid var(--text);
-  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  border-radius: 6px;
   background: transparent;
   cursor: pointer;
 }
@@ -98,7 +101,3 @@ fieldset:disabled label { opacity: 0.7; cursor: default; }
   input[type="checkbox"]:checked::after { border-color: HighlightText; }
   input[type="checkbox"]:indeterminate::after { background: HighlightText; }
 }
-
-:is(.tabs [role="tab"], .pref, details.off > summary, .pill, .bar, .fill, .menu button) { border-radius: var(--radius); }
-:is(.menu, #ask, .notice) { border-radius: var(--radius-box); }
-.tabs [role="tab"]::before { border-radius: var(--radius-full); }

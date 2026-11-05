@@ -21,7 +21,6 @@
 }
 
 html {
-  scroll-padding-top: calc(var(--appbar-height) + var(--space-4));
   background: var(--bg);
 }
 
@@ -36,8 +35,16 @@ body {
 }
 
 body > p.gone {
-  padding: var(--space-6) var(--gutter);
+  max-width: 440px;
+  margin: 20vh auto 0;
+  padding: var(--space-6) var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-box);
+  background: var(--surface);
   color: var(--muted);
+  font-size: var(--text-md);
+  line-height: var(--line-md);
+  text-align: center;
 }
 
 h1,
@@ -51,12 +58,12 @@ p {
 h2 {
   font-size: var(--text-title);
   line-height: var(--line-title);
-  font-weight: 300;
+  font-weight: 600;
 }
 
 h3 {
-  font-size: var(--text-subtitle);
-  line-height: var(--line-subtitle);
+  font-size: var(--text-md);
+  line-height: var(--line-md);
   font-weight: 600;
 }
 
@@ -103,5 +110,11 @@ ul {
   *::after {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+@media (max-width: 479px) {
+  body > p.gone {
+    margin: var(--space-6) var(--space-4) 0;
   }
 }

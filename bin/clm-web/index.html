@@ -38,12 +38,12 @@
 </head>
 <body>
 <div id="shell" class="shell" hidden>
-  <header class="appbar">
+  <header class="top">
     <div class="brand">
       <h1 id="version" class="brand-name">clm</h1>
-      <span class="brand-sub" data-text="header.subtitle"></span>
+      <p class="brand-sub" data-text="header.subtitle"></p>
     </div>
-    <div class="appbar-tools">
+    <div class="tools">
       <button id="update" type="button" class="accent" hidden></button>
       <label class="pick" for="lang-pick"><span data-text="header.language"></span>
         <select id="lang-pick">
@@ -61,8 +61,8 @@
       </label>
     </div>
   </header>
-  <nav class="sidenav">
-    <div id="tabs" class="tabs" role="tablist" aria-orientation="vertical" data-label="nav.label">
+  <nav class="nav">
+    <div id="tabs" class="tabs" role="tablist" aria-orientation="horizontal" data-label="nav.label">
       <button id="tab-accounts" type="button" role="tab" aria-controls="part-accounts"><span data-text="nav.accounts"></span></button>
       <button id="tab-drive" type="button" role="tab" aria-controls="part-drive"><span data-text="nav.drive"></span></button>
       <button id="tab-backups" type="button" role="tab" aria-controls="part-backups"><span data-text="nav.backups"></span></button>
@@ -71,66 +71,66 @@
     <p id="drive-tag" class="nav-foot muted"></p>
   </nav>
   <main class="main">
-    <div class="main-inner">
-      <p id="busy" class="notice quiet" role="status"></p>
-      <p id="status" class="status" role="status" aria-live="polite"></p>
-      <fieldset id="controls" class="plain">
-        <section id="part-accounts" class="part" role="tabpanel" aria-labelledby="tab-accounts">
-          <div class="part-head">
-            <h2 data-text="accounts.title"></h2>
-            <button id="add-btn" type="button" class="accent" data-text="accounts.add"></button>
-          </div>
-          <p class="muted" data-text="accounts.intro"></p>
-          <ul id="account-list" class="account-list"></ul>
-          <p id="account-empty" class="card empty muted" data-text="accounts.none" hidden></p>
-        </section>
-        <section id="part-drive" class="part" role="tabpanel" aria-labelledby="tab-drive" hidden>
-          <div class="part-head"><h2 data-text="drive.title"></h2></div>
-          <div id="drive" class="card"></div>
-          <div id="prefs"></div>
-        </section>
-        <section id="part-backups" class="part" role="tabpanel" aria-labelledby="tab-backups" hidden>
-          <div class="part-head"><h2 data-text="backups.title"></h2></div>
-          <div class="card">
-            <fieldset class="group">
-              <legend data-text="backups.pick"></legend>
-              <p class="muted" data-text="backups.intro"></p>
-              <div id="save-list" class="checks"></div>
-            </fieldset>
-            <div class="actions"><button id="save-btn" type="button" class="accent" data-text="backups.save"></button></div>
-          </div>
+    <p id="busy" class="notice quiet" role="status"></p>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <fieldset id="controls" class="plain">
+      <section id="part-accounts" class="part" role="tabpanel" aria-labelledby="tab-accounts">
+        <div class="part-head">
+          <h2 data-text="accounts.title"></h2>
+          <button id="add-btn" type="button" class="accent" data-text="accounts.add"></button>
+        </div>
+        <p class="muted" data-text="accounts.intro"></p>
+        <ul id="account-list" class="account-list"></ul>
+        <p id="account-empty" class="card empty muted" data-text="accounts.none" hidden></p>
+      </section>
+      <section id="part-drive" class="part" role="tabpanel" aria-labelledby="tab-drive" hidden>
+        <div class="part-head"><h2 data-text="drive.title"></h2></div>
+        <div id="drive" class="card"></div>
+        <div id="prefs"></div>
+      </section>
+      <section id="part-backups" class="part" role="tabpanel" aria-labelledby="tab-backups" hidden>
+        <div class="part-head"><h2 data-text="backups.title"></h2></div>
+        <div class="card">
+          <fieldset class="group">
+            <legend data-text="backups.pick"></legend>
+            <p class="muted" data-text="backups.intro"></p>
+            <div id="save-list" class="checks"></div>
+          </fieldset>
+          <div class="actions"><button id="save-btn" type="button" class="accent" data-text="backups.save"></button></div>
+        </div>
+        <div class="card">
           <h3 data-text="backups.list"></h3>
           <p id="backup-dir" class="muted"></p>
           <ul id="backup-list" class="backup-list"></ul>
-        </section>
-        <section id="part-settings" class="part" role="tabpanel" aria-labelledby="tab-settings" hidden>
-          <div class="part-head"><h2 data-text="settings.title"></h2></div>
-          <div class="card">
-            <h3 data-text="settings.terminal"></h3>
-            <p class="muted" data-text="settings.intro"></p>
-            <div class="setting">
-              <label for="palette" data-text="settings.palette"></label>
-              <select id="palette"></select>
-            </div>
-            <p id="palette-env" class="muted" data-text="settings.paletteEnv" hidden></p>
-            <div class="setting">
-              <label for="anim" data-text="settings.anim"></label>
-              <select id="anim"></select>
-            </div>
-            <p id="anim-env" class="muted" data-text="settings.animEnv" hidden></p>
+        </div>
+      </section>
+      <section id="part-settings" class="part" role="tabpanel" aria-labelledby="tab-settings" hidden>
+        <div class="part-head"><h2 data-text="settings.title"></h2></div>
+        <div class="card">
+          <h3 data-text="settings.terminal"></h3>
+          <p class="muted" data-text="settings.intro"></p>
+          <div class="setting">
+            <label for="palette" data-text="settings.palette"></label>
+            <select id="palette"></select>
           </div>
-          <div class="card">
-            <h3 data-text="settings.usage"></h3>
-            <div class="setting">
-              <label for="usage-poll" data-text="settings.usagePoll"></label>
-              <input id="usage-poll" type="number" inputmode="numeric" step="1">
-              <button id="usage-poll-save" type="button" data-text="settings.usagePollSave"></button>
-            </div>
-            <p id="usage-poll-hint" class="muted"></p>
+          <p id="palette-env" class="muted" data-text="settings.paletteEnv" hidden></p>
+          <div class="setting">
+            <label for="anim" data-text="settings.anim"></label>
+            <select id="anim"></select>
           </div>
-        </section>
-      </fieldset>
-    </div>
+          <p id="anim-env" class="muted" data-text="settings.animEnv" hidden></p>
+        </div>
+        <div class="card">
+          <h3 data-text="settings.usage"></h3>
+          <div class="setting">
+            <label for="usage-poll" data-text="settings.usagePoll"></label>
+            <input id="usage-poll" type="number" inputmode="numeric" step="1">
+            <button id="usage-poll-save" type="button" data-text="settings.usagePollSave"></button>
+          </div>
+          <p id="usage-poll-hint" class="muted"></p>
+        </div>
+      </section>
+    </fieldset>
   </main>
 </div>
 <dialog id="ask" aria-labelledby="ask-title">
