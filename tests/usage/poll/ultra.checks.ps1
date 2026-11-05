@@ -40,6 +40,8 @@ try {
   Assert-True (-not ((Format-Row $ulRow) -match "\| 5h ")) "ultra : la ligne texte n'a pas de 5h"
   $ulSegs = Get-CompactUsageSegs @{ Usage = $ulRow; Cells = 8; Now = 0 }
   Assert-True (-not (@(foreach ($s in $ulSegs) { $s[0] }) -contains "5h ")) "ultra : la carte compacte n'a pas de 5h"
+  Assert-Equal "faible" (Get-UsageView $ulRow).Pace7.Code "ultra : rythme 7d calcule sans fenetre 5h"
+  Assert-True ((@(foreach ($s in $ulSegs) { $s[0] }) -join "").Contains((Get-ClmText "ui.pace.faible"))) "ultra : rythme 7d affiche dans la carte"
 
   $script:UlPlan = "Max"
   $script:ApiPlanCache = @{}

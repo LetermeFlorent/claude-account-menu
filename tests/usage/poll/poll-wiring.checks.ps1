@@ -11,7 +11,6 @@ $pwFiles = @{}
 foreach ($p in @($pwBar, (Get-DisplayPath), $script:UsageCachePath)) { $pwFiles[$p] = $null; if ([IO.File]::Exists($p)) { $pwFiles[$p] = [IO.File]::ReadAllBytes($p) } }
 $pwUnix = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $pwAccs = @([PSCustomObject]@{ Label = "fil"; Dir = ".claude-fil" }, [PSCustomObject]@{ Label = "fil2"; Dir = ".claude-fil2" })
-$pwUtf8 = New-Object Text.UTF8Encoding($false)
 $pwMaj = [regex]::Escape((Get-ClmText "menu.timer.update" ""))
 $script:PwClock = 0.0
 $script:PwViews = $null
