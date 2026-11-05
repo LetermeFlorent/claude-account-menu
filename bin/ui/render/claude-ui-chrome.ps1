@@ -58,7 +58,7 @@ function Split-FooterPairs {
 }
 
 function Get-FooterLimit {
-  param([string[]]$Pairs, [int]$W)
+  param([string[]]$Pairs, [int]$W, [int]$Room = 0)
   $count = (Split-FooterPairs $Pairs ($W - 2)).Count
   if ($count -lt 2) { return $W - 2 }
   $total = 0
@@ -69,13 +69,16 @@ function Get-FooterLimit {
     $mid = [int][math]::Floor(($lo + $hi) / 2)
     if ((Split-FooterPairs $Pairs $mid).Count -le $count) { $hi = $mid } else { $lo = $mid + 1 }
   }
+  $last = 0
+  foreach ($s in (Split-FooterPairs $Pairs $hi)[$count - 1]) { $last += $s[0].Length }
+  if ($Room -gt 0 -and $last + $Room -gt $W - 2) { return $W - 2 }
   return $hi
 }
 
 function Get-FooterRows {
-  param([string[]]$Pairs, [int]$W, [string[]]$Accent = @())
-  $key = "" + $W + "|" + ($Pairs -join "|")
-  if (-not $script:FooterLimits.ContainsKey($key)) { $script:FooterLimits[$key] = Get-FooterLimit $Pairs $W }
+  param([string[]]$Pairs, [int]$W, [string[]]$Accent = @(), [int]$Room = 0)
+  $key = "" + $W + "|" + $Room + "|" + ($Pairs -join "|")
+  if (-not $script:FooterLimits.ContainsKey($key)) { $script:FooterLimits[$key] = Get-FooterLimit $Pairs $W $Room }
   $sign = $key + [char]1 + ($Accent -join "|") + [char]1 + ($script:Ink.Text -join ";") + [char]1 + ($script:Ink.Dim -join ";") + [char]1 + ($script:Levels["5h"][0] -join ";")
   $rows = $script:FooterCache[$sign]
   if ($null -eq $rows) {

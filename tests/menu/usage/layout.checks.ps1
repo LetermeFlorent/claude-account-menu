@@ -18,6 +18,10 @@ $footerSplit = @{ fr = "64 63"; en = "52 59" }[(Get-ClmLang)]
 Assert-Equal $footerSplit (Get-FooterLengths 105) "pied equilibre entre ses deux lignes"
 Assert-Equal $footerSplit (Get-FooterLengths 105) "pied relu depuis le cache, meme decoupe"
 Assert-Equal (@{ fr = "127"; en = "111" }[(Get-ClmLang)]) (Get-FooterLengths 200) "pied sur une ligne quand tout tient"
+$footRoom = @(foreach ($w in 70, 77, 90, 105) { (Get-FooterRows (Get-MenuFooter) $w @() 21).Count - (Get-FooterRows (Get-MenuFooter) $w).Count })
+Assert-Equal "0 0 0 0" ($footRoom -join " ") "pied : la place de la version de Claude Code n'ajoute jamais de ligne"
+$footLast = (Get-FooterRows (Get-MenuFooter) 90 @() 21)[-1]
+Assert-True ((Get-SegsLength $footLast) + 21 -le 88) "pied a 90 colonnes : version de Claude Code sur la derniere ligne"
 Assert-Equal "full 3" ((Get-MenuLayout 120 40 3 4).Mode + " " + (Get-MenuLayout 120 40 3 4).Visible) "barres du lancement, cartes completes gardees"
 $l = Get-MenuLayout 80 20 3 4
 Assert-Equal "compact 2" ($l.Mode + " " + $l.Visible) "barres du lancement, un compte de moins en vue compacte"

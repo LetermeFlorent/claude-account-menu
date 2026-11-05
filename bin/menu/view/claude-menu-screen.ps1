@@ -89,13 +89,17 @@ function Get-MenuRows {
   $tip = ""
   if ($last -lt $n -and $last -gt $top) { $tip = $script:DownArrow }
   Add-PlainRow $rows $fades (Get-RuleRow $L.W $tip)
-  $foot = Get-FooterRows (Get-MenuFooter) $L.W $script:MenuFooterAccent
+  $ver = ""
+  if ($State.ClaudeVersion) { $ver = "Claude Code " + $State.ClaudeVersion }
+  $room = 0
+  if ($ver) { $room = $ver.Length + 2 }
+  $foot = Get-FooterRows (Get-MenuFooter) $L.W $script:MenuFooterAccent $room
   for ($i = 0; $i -lt $foot.Count; $i++) {
     $r = $foot[$i]
-    if ($i -eq $foot.Count - 1 -and $State.ClaudeVersion) {
+    if ($i -eq $foot.Count - 1 -and $ver) {
       $r = New-Row
       foreach ($s in $foot[$i]) { $r.Add($s) }
-      Add-RightSegs $r ($L.W - 2) @(, @(("Claude Code " + $State.ClaudeVersion), $script:Ink.Dim, $false))
+      Add-RightSegs $r ($L.W - 2) @(, @($ver, $script:Ink.Dim, $false))
     }
     Add-PlainRow $rows $fades $r
   }
