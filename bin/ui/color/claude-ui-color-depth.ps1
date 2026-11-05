@@ -1,6 +1,6 @@
 . Import-ClmModule claude-platform, claude-ui-palette, claude-ui-contrast
 $script:TrueColorPrograms = @("iTerm.app", "WezTerm", "vscode", "ghostty")
-$script:Ansi16Roles = @{ Text = "39"; Dim = "2"; Empty = "90"; Cell = "90"; Alert = "31" }
+$script:Ansi16Roles = @{ Text = "39"; Dim = "2"; Empty = "90"; Cell = "90"; Alert = "31"; Brand = "33" }
 $script:Ansi16Levels = @{ "5h" = @("34", "35", "31"); "7d" = @("32", "33", "31") }
 $script:Ansi16Hues = @(@(205, 0, 0, "31"), @(0, 205, 0, "32"), @(205, 205, 0, "33"), @(0, 0, 238, "34"), @(205, 0, 205, "35"), @(0, 205, 205, "36"))
 $script:Ansi16Map = $null

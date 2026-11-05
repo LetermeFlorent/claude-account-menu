@@ -15,7 +15,7 @@ Assert-Equal "" (Get-BackgroundTheme $null) "theme d'un fond absent"
 
 $themeNames = @{ light = "clair"; dark = "sombre" }
 $roles = @(
-  @{ Key = "Text"; Min = 4.5 }, @{ Key = "Dim"; Min = 4.5 }, @{ Key = "Alert"; Min = 4.5 },
+  @{ Key = "Text"; Min = 4.5 }, @{ Key = "Dim"; Min = 4.5 }, @{ Key = "Alert"; Min = 4.5 }, @{ Key = "Brand"; Min = 4.5 },
   @{ Key = "Empty"; Min = 3 }, @{ Key = "Cell"; Min = 1.5 }
 )
 foreach ($theme in @("light", "dark")) {
