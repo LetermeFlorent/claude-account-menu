@@ -99,7 +99,7 @@ function Get-MenuRows {
     }
     Add-PlainRow $rows $fades $r
   }
-  Add-PlainRow $rows $fades (Get-MsgRow $State $L.W $Now)
+  if ($null -ne $script:UiProgress -or ("" + $State.Msg[0]) -ne "") { Add-PlainRow $rows $fades (Get-MsgRow $State $L.W $Now) }
   return @{ Rows = $rows; Fades = $fades }
 }
 
