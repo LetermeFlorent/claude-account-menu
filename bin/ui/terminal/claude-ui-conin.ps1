@@ -28,7 +28,7 @@ public static class ClmConIn {
   public static long Enable() {
     uint m;
     if (!GetConsoleMode(In, out m)) { return -1; }
-    if (!SetConsoleMode(In, (m | 0x90u) & ~0x40u)) { return -1; }
+    if (!SetConsoleMode(In, m & ~0x10u)) { return -1; }
     return m;
   }
 
