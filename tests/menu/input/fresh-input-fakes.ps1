@@ -36,7 +36,6 @@ function Get-TimelineAccounts {
 function Show-TimelineMenu {
   param($State, [double]$Now)
   $script:TimelineLog.Add("draw")
-  $State.Hit = @{ Start = 4; Per = 5; Top = 0; Last = $State.Entries.Count }
   $State.Dirty = $false
 }
 function New-TimelineKey {
@@ -47,7 +46,6 @@ function New-TimelineKey {
 }
 function ConvertTo-TimelineEvent {
   param([string]$Name)
-  if ($Name -eq "click" -or $Name -eq "double") { return @{ Mouse = $Name; X = 5; Y = 4 } }
   if ($Name.StartsWith("up:")) { return @{ KeyUp = [int]$Name.Substring(3) } }
   return New-TimelineKey $Name
 }

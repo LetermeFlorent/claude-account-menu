@@ -37,6 +37,12 @@ function Assert-Throws {
   $script:Failed += ($Name + " : attendu une erreur contenant [" + $Contains + "], obtenu [" + $msg + "]")
 }
 
+function New-KeyInfo {
+  param([string]$Name)
+  $c = $Name[0]
+  return New-Object System.ConsoleKeyInfo $c, ([ConsoleKey][int][char]::ToUpperInvariant($c)), $false, $false, $false
+}
+
 function New-SandboxFile {
   param([string]$Rel, [string]$Text)
   $p = [IO.Path]::Combine($script:Sandbox, $Rel)

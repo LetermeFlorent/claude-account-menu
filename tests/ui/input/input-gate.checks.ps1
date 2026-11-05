@@ -24,7 +24,6 @@ try {
   Reset-TestGate
   Assert-True (-not (Test-FreshInput $enter 1100)) "porte d'entree : Entree juste apres l'affichage ignoree"
   Assert-True (-not (Test-FreshInput $enter 1500)) "porte d'entree : repetition de cette Entree ignoree"
-  Assert-True (-not (Test-FreshInput @{ Mouse = "double"; X = 1; Y = 4 } 1120)) "porte d'entree : double clic juste apres l'affichage ignore"
   Assert-True (Test-FreshInput (New-GateKey ([ConsoleKey]::C) 3) 1010) "porte d'entree : Ctrl+C toujours lu"
   Reset-TestGate @($enter)
   Assert-True (-not (Test-FreshInput $enter 1300)) "porte d'entree : Entree tenue au lancement, repetition ignoree"
@@ -44,10 +43,9 @@ try {
   Reset-TestGate @($one)
   Assert-True (-not (Test-FreshInput $one 1200)) "porte d'entree : chiffre tenu au lancement ignore"
   Assert-True (Test-FreshInput $enter 1200) "porte d'entree : autre touche lue"
-  Assert-True (Test-FreshInput @{ Mouse = "click"; X = 1; Y = 4 } 1200) "porte d'entree : clic apres l'affichage lu"
   $down = New-GateKey ([ConsoleKey]::DownArrow)
   Reset-TestGate @($down)
-  Assert-True ((Test-FreshInput $down 1200) -and (Test-FreshInput $down 1230)) "porte d'entree : molette et fleches jamais retenues"
+  Assert-True ((Test-FreshInput $down 1200) -and (Test-FreshInput $down 1230)) "porte d'entree : fleches jamais retenues"
   Reset-TestGate
   Assert-True (Test-FreshInput $enter 1200) "porte d'entree : rien en attente, Entree lue"
 } finally {

@@ -1,5 +1,5 @@
 . (Join-Path $bin "menu/loop/claude-menu-select.ps1")
-foreach ($zeroName in @("up", "down", "select", "launch", "pick", "refresh")) {
+foreach ($zeroName in @("up", "down", "launch", "pick", "refresh")) {
   Assert-Equal "none" (Limit-MenuAction @{ Name = $zeroName; Index = 0 } 0).Name ("menu sans compte : action " + $zeroName + " ignoree")
   Assert-Equal $zeroName (Limit-MenuAction @{ Name = $zeroName; Index = 0 } 2).Name ("menu avec comptes : action " + $zeroName + " gardee")
 }

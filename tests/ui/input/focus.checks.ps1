@@ -1,11 +1,11 @@
 $focusKept = @{}
-foreach ($n in @("Read-ConInEvent", "Write-Ui", "Enable-UiMouse", "Disable-UiMouse", "Get-UiSize", "Reset-Frame", "New-ThemeWatch")) {
+foreach ($n in @("Read-ConInEvent", "Write-Ui", "Enable-UiConIn", "Disable-UiConIn", "Get-UiSize", "Reset-Frame", "New-ThemeWatch")) {
   $f = Get-Item ("function:" + $n) -ErrorAction SilentlyContinue
   $focusKept[$n] = $null
   if ($f) { $focusKept[$n] = $f.ScriptBlock }
 }
 $focusVars = @{}
-foreach ($n in @("MouseMode", "UiOn", "UiFocused", "UiRefocus", "UiMinute", "UiCols", "UiRows", "UiClip", "LastRows", "FadeArmed", "ThemeWatch", "MotionRead", "MotionOn", "UiCtrlC")) {
+foreach ($n in @("ConInMode", "UiOn", "UiFocused", "UiRefocus", "UiMinute", "UiCols", "UiRows", "UiClip", "LastRows", "FadeArmed", "ThemeWatch", "MotionRead", "MotionOn", "UiCtrlC")) {
   $focusVars[$n] = (Get-Variable -Name $n -Scope Script -ErrorAction SilentlyContinue).Value
 }
 $script:FocusEvents = New-Object 'System.Collections.Generic.Queue[object]'
@@ -39,23 +39,21 @@ if ($script:OsName -eq "Windows") {
   Assert-Equal "0 -1" (Get-FocusScan @((New-FocusRec 1 1 27 27))) "focus : Echap seule reste une touche"
   Assert-Equal "0 -1" (Get-FocusScan @((New-FocusRec 1 1 27), (New-FocusRec 1 1 91), (New-FocusRec 1 1 65))) "focus : autre sequence laissee aux touches"
   Assert-Equal "0 -1" (Get-FocusScan @((New-FocusRec 1 1 97 65))) "focus : lettre laissee aux touches"
-  Assert-Equal "0 -1" (Get-FocusScan @((New-FocusRec 2 0))) "focus : souris laissee a la souris"
 }
 
 try {
   function script:Get-UiSize { return ,@(80, 24) }
   function script:Read-ConInEvent { if ($script:FocusEvents.Count -eq 0) { return $null }; return ,$script:FocusEvents.Dequeue() }
-  $script:MouseMode = 0
-  $script:LastRows = $null
+  $script:ConInMode = 0
   $script:UiFocused = $true
   $script:UiRefocus = $false
   $script:FocusEvents.Enqueue(@(4, 0))
   Assert-Null (Read-UiInput) "focus : focus perdu, aucune touche pour le menu"
   Assert-True (-not $script:UiFocused) "focus : focus perdu retenu"
   $script:FocusEvents.Enqueue(@(4, 1))
-  $script:FocusEvents.Enqueue(@(2, 5, 0, 1, 0))
+  $script:FocusEvents.Enqueue(@(3, 13, 13))
   $m = Read-UiInput
-  Assert-Equal "click" $m.Mouse "focus : focus revenu, la souris passe ensuite"
+  Assert-Equal 13 $m.KeyUp "focus : focus revenu, la touche relachee passe ensuite"
   Assert-True $script:UiFocused "focus : focus revenu retenu"
   $script:UiMinute = [DateTime]::Now.Minute
   $s = Get-UiSize
@@ -65,30 +63,26 @@ try {
   Assert-True (-not (Update-UiTick 0 $true)) "focus : un seul dessin pour un retour"
   Set-UiFocus $true
   Assert-True (-not (Update-UiTick 0 $true)) "focus : deja la, rien a redessiner"
-  Set-UiFocus $false
-  $script:FocusEvents.Enqueue(@(2, 5, 0, 1, 0))
-  $null = Read-UiInput
-  Assert-True $script:UiFocused "focus : un clic prouve le focus"
 
   function script:Write-Ui { param([string]$Text) $script:FocusOut.Add($Text) }
-  function script:Enable-UiMouse { $script:MouseMode = $script:FocusMouse }
-  function script:Disable-UiMouse { $script:MouseMode = -1 }
+  function script:Enable-UiConIn { $script:ConInMode = $script:FocusConIn }
+  function script:Disable-UiConIn { $script:ConInMode = -1 }
   function script:Get-UiSize { return ,@(80, 24) }
   function script:Reset-Frame { }
   function script:New-ThemeWatch { return @{} }
   $script:MotionRead = $true
   $script:ThemeWatch = $null
   $e = $script:Esc
-  $script:FocusMouse = 0
+  $script:FocusConIn = 0
   $script:UiFocused = $false
   Enter-UiScreen
-  Assert-True (($script:FocusOut -join "").Contains($e + "[?1004h")) "focus : suivi du focus active avec la souris"
+  Assert-True (($script:FocusOut -join "").Contains($e + "[?1004h")) "focus : suivi du focus active avec le lecteur de console"
   Assert-True $script:UiFocused "focus : le menu demarre avec le focus"
   $script:FocusOut.Clear()
   Exit-UiScreen
   Assert-True (($script:FocusOut -join "").Contains($e + "[?1004l")) "focus : suivi du focus coupe en rendant le terminal"
   $script:FocusOut.Clear()
-  $script:FocusMouse = -1
+  $script:FocusConIn = -1
   Enter-UiScreen
   Assert-True (-not ($script:FocusOut -join "").Contains("[?1004h")) "focus : terminal simple, pas de suivi du focus"
   Exit-UiScreen

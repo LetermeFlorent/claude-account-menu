@@ -16,7 +16,7 @@ function Reset-Frame {
 function Get-RowSign {
   param($Row)
   $k = ""
-  foreach ($s in $Row) { $k += [string]$s[0] + [char]1 + ($s[1] -join ";") + [char]1 + [int][bool]$s[2] + [char]1 + $s[3] + [char]2 }
+  foreach ($s in $Row) { $k += [string]$s[0] + [char]1 + ($s[1] -join ";") + [char]1 + [int][bool]$s[2] + [char]2 }
   return $k
 }
 

@@ -70,6 +70,12 @@ function Get-ItestKey {
   return ""
 }
 
+function New-KeyInfo {
+  param([string]$Name)
+  $c = $Name[0]
+  return New-Object System.ConsoleKeyInfo $c, ([ConsoleKey][int][char]::ToUpperInvariant($c)), $false, $false, $false
+}
+
 function Read-ItestKey {
   if ($itestClock.ElapsedMilliseconds -gt $itestStuckMs) { [Console]::Out.WriteLine("`n" + "stuck " + $itestId + " " + (Get-ItestWhy)); exit 1 }
   if (-not (Test-ItestSettled)) { return $null }
@@ -85,10 +91,10 @@ function Read-ItestKey {
   return New-KeyInfo $key
 }
 
-function Enable-ItestMouse {}
+function Enable-ItestConIn {}
 function Test-ItestRich { return $true }
 
-$itestHooks = @{ "Start-UsageLoader" = "Start-ItestLoader"; "Restart-Clm" = "Restart-ItestClm"; "Invoke-ClmReload" = "Invoke-ItestReload"; "Read-UiKey" = "Read-ItestKey"; "Enable-UiMouse" = "Enable-ItestMouse"; "Test-RichTerminal" = "Test-ItestRich" }
+$itestHooks = @{ "Start-UsageLoader" = "Start-ItestLoader"; "Restart-Clm" = "Restart-ItestClm"; "Invoke-ClmReload" = "Invoke-ItestReload"; "Read-UiKey" = "Read-ItestKey"; "Enable-UiConIn" = "Enable-ItestConIn"; "Test-RichTerminal" = "Test-ItestRich" }
 foreach ($itestName in $itestHooks.Keys) { Set-Alias -Name $itestName -Value $itestHooks[$itestName] -Scope Global -Force }
 if ($itestStarts -eq 1) {
   . (Join-Path (Split-Path -Parent $PSScriptRoot) "race-helpers.ps1")

@@ -90,17 +90,14 @@ try {
   $su.Steps[0].State = "run"
   $f = Get-MenuRows $st (Get-MenuLayout 120 40 3 (Get-StartupRowCount $su)) 0
   Assert-Equal "8 0 0" ("" + $st.Hit.Start + " " + $st.Hit.Top + " " + $st.Hit.Last) "verification de clm : aucun compte affiche"
-  Assert-Equal -1 (Get-EntryAt $st 8) "verification de clm : clic sans compte"
   $su.Steps[0].State = "done"
   $f = Get-MenuRows $st (Get-MenuLayout 120 40 3 (Get-StartupRowCount $su)) 0
   $texts = @(foreach ($r in $f.Rows) { Get-ViewText $r })
   Assert-True ($texts[4].StartsWith("  clm  ")) "menu : barres sous le titre"
   Assert-Equal 8 $st.Hit.Start "menu : comptes decales sous les barres"
   Assert-True ($texts[8].StartsWith("  " + $script:Mark + " 1  a")) "menu : premier compte sous les barres"
-  Assert-Equal 0 (Get-EntryAt $st 8) "souris : clic sur le premier compte"
-  Assert-Equal -1 (Get-EntryAt $st 5) "souris : clic sur une barre ignore"
   $boxed = @(foreach ($r in (Get-FramedRows $f.Rows $f.Fades 105)) { Get-ViewText $r })
-  Assert-True ($boxed[8].StartsWith([string][char]0x2502 + "  " + $script:Mark + " 1  a")) "cadre : premier compte sur la meme ligne, souris juste"
+  Assert-True ($boxed[8].StartsWith([string][char]0x2502 + "  " + $script:Mark + " 1  a")) "cadre : premier compte sur la meme ligne"
   Assert-True ($boxed[$boxed.Count - 2].StartsWith([string][char]0x2502 + "  pret")) "cadre : message dans le cadre"
   $f = Get-MenuRows $st (Get-MenuLayout 30 12 3 (Get-StartupRowCount $su)) 0
   $texts = @(foreach ($r in $f.Rows) { Get-ViewText $r })

@@ -43,8 +43,6 @@ Letters work in upper case too. Esc and Ctrl+C quit as well, and the footer of t
 | `w` | Open the web page |
 | `q` | Quit |
 
-On Windows the mouse works too: a click selects an account, a double click on the selected one launches it, the wheel moves the cursor and a click on a footer key presses it. While the menu is open, quick edit mode is switched off on the console, so selecting text needs Shift.
-
 ### Launching an account
 
 Claude Code starts in the same terminal with `CLAUDE_CONFIG_DIR` set to the account's folder (the variable is removed for `.claude`). Just before, clm writes the account's quotas to the status line state file. The program is `~/.local/bin/claude` (`claude.exe` on Windows) if it exists, otherwise the first `claude` on the PATH. Arguments clm does not recognise go to Claude Code, and its exit code becomes clm's.

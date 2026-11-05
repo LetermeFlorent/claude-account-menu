@@ -49,8 +49,8 @@ function Split-FooterPairs {
     if ($len -gt 0 -and $len + $piece -gt $Max) { $rows.Add($r); $r = New-Row; $len = 0 }
     $key = $script:Ink.Text; $text = $script:Ink.Dim
     if ($Accent -contains $Pairs[$i]) { $key = $script:Levels["5h"][0]; $text = $key }
-    $r.Add(@(("  " + $Pairs[$i]), $key, $false, $Pairs[$i]))
-    $r.Add(@((" " + $Pairs[$i + 1]), $text, $false, $Pairs[$i]))
+    $r.Add(@(("  " + $Pairs[$i]), $key, $false))
+    $r.Add(@((" " + $Pairs[$i + 1]), $text, $false))
     $len += $piece
   }
   $rows.Add($r)

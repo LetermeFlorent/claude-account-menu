@@ -38,14 +38,8 @@ try {
   Assert-Equal "a" $r.Label "entree fraiche : chiffre 1 relache puis presse de nouveau, compte ouvert"
   Assert-Equal "dans les bornes" (Get-BoundText $r.End -Min 1500) "entree fraiche : chiffre 1 relache, ouverture pas avant la nouvelle pression"
 
-  $r = Invoke-TimelineMenu 1 @(@(900, "click"), @(910, "double"), @(1300, "double"), @(3000, "Escape"))
-  Assert-Null $r.Label "entree fraiche : double clic seul apres des clics avant l'affichage, aucun compte ouvert"
-
-  $r = Invoke-TimelineMenu 1 @(@(900, "click"), @(910, "double"), @(1300, "click"), @(1350, "double"), @(5000, "Escape"))
-  Assert-Equal "a" $r.Label "entree fraiche : clic puis double clic apres l'affichage, compte ouvert"
-
   $r = Invoke-TimelineMenu 1 @(@(1300, "Down"), @(1400, "Up"), @(3000, "Escape"))
-  Assert-Null $r.Label "entree fraiche : molette (fleches bas puis haut) n'ouvre aucun compte"
+  Assert-Null $r.Label "entree fraiche : fleches bas puis haut n'ouvre aucun compte"
 
   $r = Invoke-TimelineMenu 1 @(@(1050, "CtrlC"), @(5000, "Escape"))
   Assert-Null $r.Label "entree fraiche : Ctrl+C dans la fenetre d'attente, aucun compte"

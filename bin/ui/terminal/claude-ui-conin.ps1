@@ -9,10 +9,6 @@ public static class ClmConIn {
     [FieldOffset(4)] public int KeyDown;
     [FieldOffset(10)] public ushort Vk;
     [FieldOffset(14)] public ushort Ch;
-    [FieldOffset(4)] public short X;
-    [FieldOffset(6)] public short Y;
-    [FieldOffset(8)] public uint Buttons;
-    [FieldOffset(16)] public uint Flags;
   }
 
   [DllImport("kernel32.dll")] static extern IntPtr GetStdHandle(int n);
@@ -46,7 +42,7 @@ public static class ClmConIn {
 
   static bool Counts(Rec e) {
     if (e.Type == 1) { return e.KeyDown != 0 && !IsModifier(e.Vk); }
-    return e.Type == 16 || e.Type == 2 && e.Flags != 1;
+    return e.Type == 16;
   }
 
   public static int FocusLength(Rec[] r, int n, out int focus) {
@@ -88,10 +84,6 @@ public static class ClmConIn {
       if (r[0].Type == 1 && r[0].KeyDown != 0 && !IsModifier(r[0].Vk)) { return new int[] { 1 }; }
       if (!ReadConsoleInput(In, r, 1, out n) || n == 0) { return null; }
       if (r[0].Type == 1 && !IsModifier(r[0].Vk)) { return new int[] { 3, r[0].Vk, r[0].Ch }; }
-      if (r[0].Type != 2) { continue; }
-      if (r[0].Flags == 4) { return new int[] { 2, r[0].X, r[0].Y, 3, (short)(r[0].Buttons >> 16) }; }
-      if (r[0].Flags == 2 && (r[0].Buttons & 1) != 0) { return new int[] { 2, r[0].X, r[0].Y, 2, 0 }; }
-      if (r[0].Flags == 0 && (r[0].Buttons & 1) != 0) { return new int[] { 2, r[0].X, r[0].Y, 1, 0 }; }
     }
     return null;
   }
@@ -116,13 +108,13 @@ function Initialize-ConIn {
 }
 
 function Get-HeldKeys {
-  if ($script:MouseMode -lt 0 -or $env:SSH_CONNECTION -or $env:SSH_CLIENT) { return @(13) }
+  if ($script:ConInMode -lt 0 -or $env:SSH_CONNECTION -or $env:SSH_CLIENT) { return @(13) }
   try { return @($script:EnterKeyCodes | Where-Object { [ClmConIn]::IsDown($_) }) } catch { return @(13) }
 }
 
 function Test-ConsoleInputPending {
   try {
-    if ($script:MouseMode -ge 0) { return [ClmConIn]::Pending() }
+    if ($script:ConInMode -ge 0) { return [ClmConIn]::Pending() }
     return [Console]::KeyAvailable
   } catch { return $false }
 }

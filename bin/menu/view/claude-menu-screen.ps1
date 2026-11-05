@@ -16,9 +16,9 @@ function Get-MenuHeaderRow {
   if (-not $State.Version) { $tag[0] = "" }
   $drive = @()
   $dt = Get-DriveTag $script:DriveJob
-  if ($dt[0]) { $drive = @(@("  ", $script:Ink.Dim, $false), @($dt[0], $dt[1], $false, "y")) }
+  if ($dt[0]) { $drive = @(@("  ", $script:Ink.Dim, $false), @($dt[0], $dt[1], $false)) }
   $button = @()
-  if (Test-ClmUpdateReady) { $button = @(@("  ", $script:Ink.Dim, $false), @(("[" + (Get-ClmText "menu.screen.updateAvailable") + "]"), $script:Levels["7d"][1], $true, "u")) }
+  if (Test-ClmUpdateReady) { $button = @(@("  ", $script:Ink.Dim, $false), @(("[" + (Get-ClmText "menu.screen.updateAvailable") + "]"), $script:Levels["7d"][1], $true)) }
   $len = Get-SegsLength $button
   $tagWidth = Get-DisplayWidth $tag[0]
   $tlen = 0
@@ -96,24 +96,6 @@ function Get-MenuRows {
   foreach ($r in (Get-FooterRows (Get-MenuFooter) $L.W $script:MenuFooterAccent)) { Add-PlainRow $rows $fades $r }
   Add-PlainRow $rows $fades (Get-MsgRow $State $L.W $Now)
   return @{ Rows = $rows; Fades = $fades }
-}
-
-function Get-EntryAt {
-  param($State, [int]$Y)
-  $h = $State.Hit
-  if ($null -eq $h -or $Y -lt $h.Start) { return -1 }
-  $i = $h.Top + [math]::Floor(($Y - $h.Start) / $h.Per)
-  if ($i -ge $h.Last) { return -1 }
-  return [int]$i
-}
-
-function Get-MenuMouseAction {
-  param($State, $Ev)
-  $i = Get-EntryAt $State $Ev.Y
-  if ($i -lt 0) { return @{ Name = "none" } }
-  if ($Ev.Mouse -eq "click") { $State.Armed = $i }
-  elseif ($i -eq $State.Sel -and $State.Armed -eq $i) { return @{ Name = "pick"; Index = $i } }
-  return @{ Name = "select"; Index = $i }
 }
 
 function Show-Menu {

@@ -101,8 +101,7 @@ function Read-MenuAction {
   $script:WebOpen = $true
   try { $k = Read-UiKey } finally { $script:WebOpen = $false }
   $act = @{ Name = "none" }
-  if ($k -is [hashtable]) { $act = Get-MenuMouseAction $State $k }
-  elseif ($null -ne $k) { $act = Get-MenuAction $k $State.Entries.Count }
+  if ($null -ne $k) { $act = Get-MenuAction $k $State.Entries.Count }
   elseif ((Test-ClmGroupLoaded web) -and $null -ne ($web = Get-WebAction)) { $act = Invoke-WebAction $web }
   if ($script:UiQuit) { $act = @{ Name = "quit" } }
   return Limit-MenuAction (Get-ClmRestartAction $act) $State.Entries.Count
@@ -131,7 +130,6 @@ function Invoke-MenuLoop {
     $now = Get-NowMs
     if ($act.Name -eq "up") { Move-MenuSel $st (($st.Sel + $n - 1) % $n) $now $true }
     elseif ($act.Name -eq "down") { Move-MenuSel $st (($st.Sel + 1) % $n) $now $true }
-    elseif ($act.Name -eq "select") { Move-MenuSel $st $act.Index $now $true }
     elseif ($act.Name -eq "launch") { return Close-AccountMenu $st.Sel }
     elseif ($act.Name -eq "pick") { return Close-AccountMenu $act.Index }
     elseif ($act.Name -eq "quit" -or $act.Name -eq "restart") { return Close-AccountMenu $null }

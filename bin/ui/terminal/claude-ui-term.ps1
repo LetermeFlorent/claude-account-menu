@@ -48,15 +48,15 @@ function Enter-UiScreen {
   $script:UiOn = $true
   $script:UiFocused = $true
   $script:UiRefocus = $false
-  Enable-UiMouse
-  if ($script:MouseMode -ge 0) { Write-Ui ($e + "[?1004h") }
+  Enable-UiConIn
+  if ($script:ConInMode -ge 0) { Write-Ui ($e + "[?1004h") }
   if ($null -eq $script:ThemeWatch) { $script:ThemeWatch = New-ThemeWatch $script:OsName $null (Get-NowMs) }
 }
 
 function Exit-UiScreen {
   if (-not $script:UiOn) { return }
   $script:UiOn = $false
-  Disable-UiMouse
+  Disable-UiConIn
   $e = $script:Esc
   Write-Ui ($e + "[0m" + $e + "[?2026l" + $e + "[?1004l" + $e + "[?25h" + $e + "[?1049l")
   try { [Console]::TreatControlCAsInput = $script:UiCtrlC } catch { Write-Verbose $_.Exception.Message }

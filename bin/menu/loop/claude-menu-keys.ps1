@@ -1,6 +1,6 @@
 $script:MenuKeys = @{ "s" = "save"; "r" = "restore"; "a" = "add"; "x" = "remove"; "n" = "rename"; "m" = "refresh"; "u" = "selfupdate"; "y" = "drivesync"; "p" = "prefs"; "w" = "web"; "q" = "quit" }
 
-$script:EntryActions = @("up", "down", "select", "launch", "pick", "refresh")
+$script:EntryActions = @("up", "down", "launch", "pick", "refresh")
 
 function Limit-MenuAction {
   param($Action, [int]$Count)

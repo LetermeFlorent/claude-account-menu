@@ -5,7 +5,7 @@ $script:DriveChecked = $false
 $script:Startup = $null
 $script:StartupLabelKeys = @{ clm = "menu.startup.label.clm"; claude = "menu.startup.label.claude"; drive = "menu.startup.label.drive" }
 $script:StartupFree = @("none", "refresh")
-$script:StartupOpen = @("up", "down", "select", "drivesync", "web")
+$script:StartupOpen = @("up", "down", "drivesync", "web")
 $script:StartupHiding = @("clm")
 $script:StartupQuitWaits = @("clm", "claude")
 

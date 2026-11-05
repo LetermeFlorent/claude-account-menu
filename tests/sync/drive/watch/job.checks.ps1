@@ -112,8 +112,6 @@ $script:DriveJob = New-DriveJob $true $at
 $hst = @{ Version = "clm abcdef1" }
 $row = Get-MenuHeaderRow $hst 80
 Assert-True ((Get-JobSegsText $row) -match ([regex]::Escape((Get-ClmText "menu.screen.title")) + "  clm abcdef1  sync " + $hm + " +\d\d:\d\d$")) "en-tete : version puis synchro"
-$seg = @($row | Where-Object { $_[0] -eq ("sync " + $hm) })[0]
-Assert-Equal "y" $seg[3] "en-tete : clic sur la synchro rend y"
 Assert-True ((Get-JobSegsText (Get-MenuHeaderRow $hst 52)) -match "clm abcdef1 +\d\d:\d\d$") "fenetre etroite : synchro retiree avant la version"
 foreach ($w in 30, 52, 80) { Assert-True ((Get-JobSegsText (Get-MenuHeaderRow $hst $w)).Length -le $w - 2) ("en-tete avec synchro dans la largeur " + $w) }
 
@@ -123,6 +121,6 @@ Assert-True ((Get-JobSegsText (Get-CardHead $awayE 1 @{ Mode = "full"; W = 80 } 
 Assert-True ((Get-JobSegsText (Get-CardHead $awayE 1 @{ Mode = "compact"; W = 80 } 1.0)[0]) -match ((Get-ClmText "drive.away" @("MAC  Pro")) + '$')) "carte compacte : compte ouvert ailleurs"
 $awayE.U.Acc = [PSCustomObject]@{ Label = "c1"; Dir = ".claude" }
 Assert-True ((Get-JobSegsText (Get-CardHead $awayE 0 @{ Mode = "full"; W = 80 } 1.0)[0]) -notmatch "ouvert") "carte : compte libre, rien"
-Assert-True (@(foreach ($fr in (Get-FooterRows (Get-MenuFooter) 105)) { $fr | Where-Object { $_[3] -eq "y" } }).Count -gt 0) "pied de page : touche y"
+Assert-True (@(foreach ($fr in (Get-FooterRows (Get-MenuFooter) 105)) { $fr | Where-Object { $_[0] -eq "  y" } }).Count -gt 0) "pied de page : touche y"
 
 $script:DriveJob = $keptJob

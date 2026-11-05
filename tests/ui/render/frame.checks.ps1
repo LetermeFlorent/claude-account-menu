@@ -30,8 +30,6 @@ Assert-Equal ((Get-FadedRgb @(200, 200, 200) 0.5 @(0, 0, 0)) -join " ") "100 100
 Assert-Equal ((Get-FadedRgb @(200, 200, 200) 0.5 $script:Ink.Bg) -join " ") ($framed[1][1][1] -join " ") "cadre : fondu de la rangee sur son texte"
 Assert-Equal ($script:Ink.Empty -join " ") ($framed[1][0][1] -join " ") "cadre : bord jamais estompe"
 Assert-Equal "200 200 200" ($content[1][0][1] -join " ") "cadre : rangee d'origine intacte"
-Assert-Equal "Entree" (Get-FooterKeyAt $framed 3 2) "cadre : touche du pied cliquable apres le bord"
-Assert-Null (Get-FooterKeyAt $framed 0 2) "cadre : clic sur le bord sans effet"
 
 $script:UiColorDepth = "none"
 Assert-Equal ($e + "[0mab" + $e + "[0;1mcd" + $e + "[0m") (ConvertTo-LineText $segs 80) "NO_COLOR : ligne sans couleur, gras garde"
@@ -95,9 +93,6 @@ try {
   $script:FrameBuilds = 0
   $null = Get-FramedRows $cache $null 14
   Assert-Equal 3 $script:FrameBuilds "cadre en cache : largeur changee, tout refait"
-  $script:FrameBuilds = 0
-  $cache[2] = [System.Collections.Generic.List[object]]@(@("  ", @(1, 1, 1), $false), @("Entree", @(1, 1, 1), $false, "q"))
-  Assert-Equal "q" (Get-FooterKeyAt (Get-FramedRows $cache $null 14) 3 2) "cadre en cache : touche cliquable a jour"
   $script:Ink = $script:Palettes["light"]
   $script:FrameBuilds = 0
   $light = Get-FramedRows $cache $null 14

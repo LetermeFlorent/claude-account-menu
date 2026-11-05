@@ -34,7 +34,6 @@ function Read-PageKey {
     $pkTick = Update-UiTick $pkNow
     Show-PageRows (& $Build) $pkNow $pkTick
     $pkKey = Read-UiKey
-    if ($pkKey -is [hashtable]) { $pkKey = $null }
     if ($null -ne $pkKey -and [int]$pkKey.KeyChar -ne 3) { return $pkKey }
     if ($null -ne $pkKey -or $script:UiQuit) {
       $script:UiQuit = $true

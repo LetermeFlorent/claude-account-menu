@@ -40,7 +40,7 @@ try {
   $null = Invoke-StartupTicks
   Assert-Equal "none" (Send-StartupAct "save").Name "pendant les mises a jour : commandes plus tard"
   Assert-Equal ("  " + (Get-ClmText "menu.startup.availableAfterUpdates")) $script:St.Msg[0] "pendant les mises a jour : raison affichee"
-  Assert-Equal "up select drivesync" ((Send-StartupAct "up").Name + " " + (Send-StartupAct "select" 2).Name + " " + (Send-StartupAct "drivesync").Name) "pendant les mises a jour : comptes accessibles"
+  Assert-Equal "up drivesync" ((Send-StartupAct "up").Name + " " + (Send-StartupAct "drivesync").Name) "pendant les mises a jour : comptes accessibles"
   Assert-Equal "none" (Send-StartupAct "launch").Name "Entree pendant les mises a jour : lancement differe"
   Assert-Equal ("  " + (Get-ClmText "menu.startup.launchAfterUpdates" @("a"))) $script:St.Msg[0] "Entree pendant les mises a jour : attente annoncee"
   $null = Send-StartupAct "pick" 1

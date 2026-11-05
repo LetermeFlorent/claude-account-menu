@@ -21,4 +21,4 @@ Restore-ConsoleEncoding $null
 Assert-Equal $utf8Out ([Console]::OutputEncoding.CodePage) "console utf-8 : rien a remettre, rien ne change"
 
 $utf8ConIn = Get-Content -LiteralPath (Join-Path $bin "ui/terminal/claude-ui-conin.ps1") -Raw
-Assert-True ($utf8ConIn.Contains("ReadConsoleInputW") -and $utf8ConIn.Contains("PeekConsoleInputW")) "console utf-8 : touches et souris lues en unicode, hors page de code"
+Assert-True ($utf8ConIn.Contains("ReadConsoleInputW") -and $utf8ConIn.Contains("PeekConsoleInputW")) "console utf-8 : touches lues en unicode, hors page de code"
