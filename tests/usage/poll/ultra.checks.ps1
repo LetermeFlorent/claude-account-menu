@@ -4,6 +4,7 @@ $ulKept = @{}
 foreach ($n in @("Invoke-UsageApi", "Invoke-ProfileApi", "Get-UsageToken")) { $ulKept[$n] = (Get-Item ("function:" + $n)).ScriptBlock }
 $script:UlProfileCalls = 0
 $script:UlFive = $null
+$script:UlPlan = "Ultra"
 
 function Get-UsageToken {
   param($Acc, $Cred, [switch]$NoRefresh)
@@ -18,7 +19,7 @@ function Invoke-UsageApi {
 function Invoke-ProfileApi {
   param([string]$Token)
   $script:UlProfileCalls++
-  return [PSCustomObject]@{ organization = [PSCustomObject]@{ plan_display_name = "Ultra" } }
+  return [PSCustomObject]@{ organization = [PSCustomObject]@{ plan_display_name = $script:UlPlan } }
 }
 
 try {
@@ -47,6 +48,18 @@ try {
   $ulSegs = Get-CompactUsageSegs @{ Usage = $ulRow; Cells = 8; Now = 0 }
   Assert-True (-not (@(foreach ($s in $ulSegs) { $s[0] }) -contains "5h ")) "ultra : la carte compacte n'a pas de 5h"
 
+  $script:UlPlan = "Max"
+  $script:ApiPlanCache = @{}
+  $ulIdle = New-UsageRow $ulAcc "u@exemple.fr"
+  Request-AccountUsage $ulIdle $ulAcc $null $null
+  Assert-True (-not $ulIdle.No5) "max : sans fenetre 5h envoyee, la ligne 5h reste pour un compte non Ultra"
+  $ulMaxCached = (Read-UsageCache)["ultra"]
+  $ulMaxCopy = New-UsageRow $ulAcc "u@exemple.fr"
+  Copy-CacheEntry ([PSCustomObject]@{ At = $ulMaxCached.At; Pct7 = 40; Reset7 = $ulFuture; No5 = $true; Plan = "Max" }) $ulMaxCopy
+  Assert-True (-not $ulMaxCopy.No5) "max : un ancien cache sans 5h ne cache plus le 5h d'un compte non Ultra"
+  $ulMaxBar = [PSCustomObject]@{ At = [long]$ulMaxCached.At + 10; Pct5 = $null; Reset5 = $null; Pct7 = 41; Reset7 = $ulFuture; No5 = $true; Plan = $null; Fails = 0; Until = 0 }
+  Assert-True (-not (Select-NewestUsage $ulMaxCached $ulMaxBar).No5) "max : la barre d'etat ne cache plus le 5h d'un compte non Ultra"
+  $script:UlPlan = "Ultra"
   $script:UlFive = [PSCustomObject]@{ utilization = 12; resets_at = $ulFuture }
   $ulMax = New-UsageRow $ulAcc "u@exemple.fr"
   Request-AccountUsage $ulMax $ulAcc $null $null

@@ -94,12 +94,17 @@ function Get-CacheAge {
   return [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [long]$Entry.At
 }
 
+function Test-NoFive {
+  param([bool]$Missing, [string]$Plan)
+  return $Missing -and ($Plan -eq "" -or $Plan -match "Ultra")
+}
+
 function Copy-CacheEntry {
   param($Entry, $Out)
   $Out.Pct5 = $Entry.Pct5; $Out.Reset5 = $Entry.Reset5
   $Out.Pct7 = $Entry.Pct7; $Out.Reset7 = $Entry.Reset7
-  if ($null -ne $Entry.No5) { $Out.No5 = [bool]$Entry.No5 }
   if ($Entry.Plan) { $Out.Plan = [string]$Entry.Plan }
+  if ($null -ne $Entry.No5) { $Out.No5 = Test-NoFive ([bool]$Entry.No5) $Out.Plan }
   $Out.Age = Get-CacheAge $Entry
   Add-Member -InputObject $Out -NotePropertyName At -NotePropertyValue ([long]$Entry.At) -Force
   $now = [DateTimeOffset]::UtcNow

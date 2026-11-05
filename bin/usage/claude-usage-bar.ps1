@@ -45,7 +45,7 @@ function Read-StatusUsage {
 function Select-NewestUsage {
   param($Cached, $Bar)
   if ($null -eq $Bar -or ($null -ne $Cached -and [long]$Cached.At -ge $Bar.At)) { return $Cached }
-  if ($null -ne $Cached) { $Bar.Fails = [int]$Cached.Fails; $Bar.Until = [long]$Cached.Until; if ($null -eq $Bar.No5) { $Bar.No5 = $Cached.No5 }; $Bar.Plan = $Cached.Plan }
+  if ($null -ne $Cached) { $Bar.Fails = [int]$Cached.Fails; $Bar.Until = [long]$Cached.Until; if ($null -eq $Bar.No5) { $Bar.No5 = $Cached.No5 }; $Bar.Plan = $Cached.Plan; $Bar.No5 = Test-NoFive ([bool]$Bar.No5) ([string]$Bar.Plan) }
   return $Bar
 }
 
