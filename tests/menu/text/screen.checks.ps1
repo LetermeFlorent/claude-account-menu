@@ -129,8 +129,8 @@ Assert-True (-not (Test-TweenRunning $st.Entries[1].T7 3100)) "autre barre incha
 Assert-True ($st.Entries[1].NextAt -gt 3000) "compte relu, prochaine lecture planifiee"
 
 $st.Version = "clm abcdef1"
-Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 60)) -match ([regex]::Escape((Get-ClmText "menu.screen.title")) + "  clm abcdef1 +\d\d:\d\d$")) "version dans l'en-tete"
-Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 40)) -notmatch "clm") "fenetre etroite, version retiree"
+Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 60)) -match ([regex]::Escape((Get-ClmText "menu.screen.title")) + " +clm abcdef1$")) "version a droite de l'en-tete"
+Assert-True ((Get-SegsText (Get-MenuHeaderRow $st 30)) -notmatch "clm") "fenetre etroite, version retiree"
 foreach ($w in 30, 40, 60) { Assert-True ((Get-SegsText (Get-MenuHeaderRow $st $w)).Length -le $w - 2) ("en-tete dans la largeur " + $w) }
 
 $headE = @{ U = [PSCustomObject]@{ Label = "c1"; Email = "a@b"; Plan = "Pro" }; View = @{ Badge = ""; Note = "" } }

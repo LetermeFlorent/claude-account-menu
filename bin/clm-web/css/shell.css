@@ -5,7 +5,6 @@
 .brand-name { font-size: var(--text-md); line-height: var(--line-md); font-weight: 600; }
 .brand-sub { color: var(--muted); }
 .tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
-.pick { display: flex; align-items: center; gap: var(--space-2); color: var(--muted); }
 
 .nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); }
 .tabs { display: flex; flex-wrap: wrap; gap: var(--space-1); padding: var(--space-1); border: 1px solid transparent; border-radius: var(--radius-full); background: var(--surface); }

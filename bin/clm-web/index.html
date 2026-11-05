@@ -45,20 +45,6 @@
     </div>
     <div class="tools">
       <button id="update" type="button" class="accent" hidden></button>
-      <label class="pick" for="lang-pick"><span data-text="header.language"></span>
-        <select id="lang-pick">
-          <option value="auto" data-text="lang.auto"></option>
-          <option value="en" data-text="lang.en"></option>
-          <option value="fr" data-text="lang.fr"></option>
-        </select>
-      </label>
-      <label class="pick" for="theme-pick"><span data-text="header.theme"></span>
-        <select id="theme-pick">
-          <option value="system" data-text="theme.system"></option>
-          <option value="light" data-text="theme.light"></option>
-          <option value="dark" data-text="theme.dark"></option>
-        </select>
-      </label>
     </div>
   </header>
   <nav class="nav">
@@ -106,6 +92,25 @@
       </section>
       <section id="part-settings" class="part" role="tabpanel" aria-labelledby="tab-settings" hidden>
         <div class="part-head"><h2 data-text="settings.title"></h2></div>
+        <div class="card">
+          <h3 data-text="settings.page"></h3>
+          <div class="setting">
+            <label for="lang-pick" data-text="header.language"></label>
+            <select id="lang-pick">
+              <option value="auto" data-text="lang.auto"></option>
+              <option value="en" data-text="lang.en"></option>
+              <option value="fr" data-text="lang.fr"></option>
+            </select>
+          </div>
+          <div class="setting">
+            <label for="theme-pick" data-text="header.theme"></label>
+            <select id="theme-pick">
+              <option value="system" data-text="theme.system"></option>
+              <option value="light" data-text="theme.light"></option>
+              <option value="dark" data-text="theme.dark"></option>
+            </select>
+          </div>
+        </div>
         <div class="card">
           <h3 data-text="settings.terminal"></h3>
           <p class="muted" data-text="settings.intro"></p>

@@ -10,10 +10,9 @@ function Get-MsgRow {
 function Get-MenuHeaderRow {
   param($State, [int]$W)
   $r = Get-HeaderRow (Get-ClmText "menu.screen.title") $W
-  $clock = @(("  " + (Get-Date -Format "HH:mm")), $script:Ink.Dim, $false)
-  $room = $W - 4 - (Get-DisplayWidth $clock[0]) - (Get-SegsLength $r)
   $tag = @(("  " + $State.Version), $script:Ink.Dim, $false)
   if (-not $State.Version) { $tag[0] = "" }
+  $room = $W - 4 - (Get-SegsLength $r)
   $drive = @()
   $dt = Get-DriveTag $script:DriveJob
   if ($dt[0]) { $drive = @(@("  ", $script:Ink.Dim, $false), @($dt[0], $dt[1], $false)) }
@@ -22,11 +21,11 @@ function Get-MenuHeaderRow {
   $len = Get-SegsLength $button
   $tagWidth = Get-DisplayWidth $tag[0]
   $tlen = 0
-  if ($tag[0] -and $room -ge $tagWidth + $len) { $r.Add($tag); $tlen = $tagWidth }
+  if ($tag[0] -and $room -ge $tagWidth + $len) { $tlen = $tagWidth }
   $dlen = Get-SegsLength $drive
   if ($dlen -gt 0 -and ($tlen -gt 0 -or -not $tag[0]) -and $room -ge $tlen + $dlen + $len) { foreach ($s in $drive) { $r.Add($s) } }
   if ($len -gt 0 -and $room -ge $len) { foreach ($s in $button) { $r.Add($s) } }
-  Add-RightSegs $r ($W - 2) @(, $clock)
+  if ($tlen -gt 0) { Add-RightSegs $r ($W - 2) @(, $tag) }
   return ,$r
 }
 

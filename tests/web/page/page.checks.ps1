@@ -47,7 +47,7 @@ Assert-Equal $pgNav.Count ([regex]::Matches($pgHtml, '<section ').Count) "page w
 $pgIds = @([regex]::Matches($pgCode, 'byId\("([a-z-]+)"\)') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
 Assert-Equal "" (@($pgIds | Where-Object { $pgHtml -notmatch ('id="' + $_ + '"') }) -join " ") "page web : elements cherches presents dans la page"
 Assert-True ($pgHtml -match '<p id="busy" class="notice quiet" role="status"') "page web : annonce d'occupation lue par les lecteurs d'ecran"
-Assert-True ($pgHtml -match 'id="lang-pick"' -and $pgHtml -match 'id="theme-pick"') "page web : choix de la langue et du theme dans l'en-tete"
+Assert-True ($pgHtml -match 'id="lang-pick"' -and $pgHtml -match 'id="theme-pick"') "page web : choix de la langue et du theme dans les reglages"
 foreach ($v in @("auto", "en", "fr")) { Assert-True ($pgHtml -match ('<option value="' + $v + '" data-text="lang\.' + $v + '">')) ("page web : langue " + $v + " proposee") }
 foreach ($v in @("system", "light", "dark")) { Assert-True ($pgHtml -match ('<option value="' + $v + '" data-text="theme\.' + $v + '">')) ("page web : theme " + $v + " propose") }
 

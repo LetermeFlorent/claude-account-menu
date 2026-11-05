@@ -111,8 +111,8 @@ Assert-Equal "drivesync" (Get-MenuAction ([ConsoleKeyInfo]::new("y", [ConsoleKey
 $script:DriveJob = New-DriveJob $true $at
 $hst = @{ Version = "clm abcdef1" }
 $row = Get-MenuHeaderRow $hst 80
-Assert-True ((Get-JobSegsText $row) -match ([regex]::Escape((Get-ClmText "menu.screen.title")) + "  clm abcdef1  sync " + $hm + " +\d\d:\d\d$")) "en-tete : version puis synchro"
-Assert-True ((Get-JobSegsText (Get-MenuHeaderRow $hst 52)) -match "clm abcdef1 +\d\d:\d\d$") "fenetre etroite : synchro retiree avant la version"
+Assert-True ((Get-JobSegsText $row) -match ([regex]::Escape((Get-ClmText "menu.screen.title")) + "  sync " + $hm + " +clm abcdef1$")) "en-tete : synchro puis version a droite"
+Assert-True ((Get-JobSegsText (Get-MenuHeaderRow $hst 45)) -match "^[^y]*  clm abcdef1$") "fenetre etroite : synchro retiree avant la version"
 foreach ($w in 30, 52, 80) { Assert-True ((Get-JobSegsText (Get-MenuHeaderRow $hst $w)).Length -le $w - 2) ("en-tete avec synchro dans la largeur " + $w) }
 
 $script:DriveJob.Away = @{ ".claude-compte2" = "MAC" }

@@ -51,8 +51,6 @@ function Update-MenuTimers {
     if ($null -eq $e.Timer -or $t[0] -cne $e.Timer[0]) { $e.Timer = $t; $changed = $true }
   }
   $changed = $changed -and $script:UiFocused -ne $false
-  $clock = Get-Date -Format "HH:mm"
-  if ($clock -cne $State.Clock) { $State.Clock = $clock; $changed = $true }
   return $changed
 }
 

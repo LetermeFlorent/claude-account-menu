@@ -34,7 +34,7 @@ function New-MenuState {
   $Sel = [math]::Max(0, [math]::Min($Sel, $entries.Count - 1))
   return @{
     Entries = $entries; Sel = $Sel; SelTween = (New-Tween $Sel $Sel 0 $Now); Moved = $moved; Top = 0; Opened = $false
-    Msg = @("", $script:Ink.Dim); Busy = $false; Dirty = $true; Loader = $null; LoaderIdx = @(); Clock = $null; Version = (Get-ClmTag)
+    Msg = @("", $script:Ink.Dim); Busy = $false; Dirty = $true; Loader = $null; LoaderIdx = @(); Version = (Get-ClmTag)
   }
 }
 
