@@ -1,5 +1,5 @@
 $importEntries = @("claude-menu.ps1", "claude-statusline-seed.ps1", "claude-drive-watcher.ps1")
-$importStarters = $importEntries + @("claude-usage.ps1", "claude-self-update.ps1", "claude-drive-sync.ps1", "claude-drive-actions.ps1")
+$importStarters = $importEntries + @("claude-usage.ps1", "claude-self-latest.ps1", "claude-self-update.ps1", "claude-drive-sync.ps1", "claude-drive-actions.ps1")
 
 function Get-ImportedNames {
   param($Command)

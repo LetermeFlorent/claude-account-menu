@@ -23,7 +23,7 @@ try {
 
   New-StartupCase @("clm", "claude", "drive")
   Assert-True (Invoke-StartupTicks) "clm : barre redessinee au demarrage"
-  Assert-Equal "Find-ClmUpdate" ($script:Loads -join "|") "clm : recherche lancee a part"
+  Assert-Equal "Get-LatestClm" ($script:Loads -join "|") "clm : recherche lancee a part"
   Assert-True $script:ClmChecked "clm : pas de nouvelle recherche en mode texte"
   Assert-Equal ((Get-ClmText "update.startup.searching") + "|" + (Get-ClmText "menu.startup.after" @("clm")) + "|" + (Get-ClmText "menu.startup.after" @("clm"))) (Get-StepList "Text") "clm : recherche affichee"
   Assert-True (-not (Invoke-StartupTicks)) "clm : rien a redessiner pendant la recherche"
@@ -63,7 +63,7 @@ try {
   $script:FakeLatest = $script:FakeV62
   $null = Invoke-StartupTicks; $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks
-  Assert-Equal "Find-ClmUpdate|Install-ClmVersion 62" (($script:Loads -join "|") + " " + $script:InstallItem.Number) "nouvelle version de clm : celle trouvee, installee"
+  Assert-Equal "Get-LatestClm|Install-ClmVersion 62" (($script:Loads -join "|") + " " + $script:InstallItem.Number) "nouvelle version de clm : celle trouvee, installee"
   Assert-True ($script:Su.Steps[0].Text -like ((Get-ClmText "update.startup.installing" @((Get-ClmText "update.self.versionAt" @("v62", "")))) + "*")) "nouvelle version de clm : affichee"
   $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks 3
@@ -101,6 +101,12 @@ try {
   Assert-True (-not $script:Su.Hidden -and (Get-StepList "Gone") -eq "False|True") "fin avec un echec : ligne en erreur gardee a l'ecran"
   $script:FakeFindError = $null
   $script:FakeLatest = $null
+
+  New-StartupCase @("clm", "claude")
+  $script:FakeKnown = $false
+  $null = Invoke-StartupTicks 2
+  Assert-Equal ("failed " + (Get-ClmText "update.startup.searchFailed") + " 0") ($script:Su.Steps[0].Kind + " " + $script:Su.Steps[0].Text + " " + $script:Loads.Count) "version de clm inconnue : barre en erreur sans aller sur GitHub"
+  $script:FakeKnown = $true
 
   New-StartupCase @("claude")
   $script:FakeClaudeFail = "echec de la mise a jour : EBUSY"

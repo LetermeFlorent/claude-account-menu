@@ -62,7 +62,7 @@ function Start-UsageLoader {
   param($Accounts, [string]$Source, [string]$Reader)
   $script:Loads += $Reader
   $res = @(0, $script:FakeLatest, $script:FakeFindError)
-  if ($Reader -ne "Find-ClmUpdate") { $script:InstallItem = @($Accounts)[0]; $res = @(0, $null, $script:FakeInstallError) }
+  if ($Reader -ne "Get-LatestClm") { $script:InstallItem = @($Accounts)[0]; $res = @(0, $null, $script:FakeInstallError) }
   $script:Work = New-FakeWork $res
   return $script:Work
 }
@@ -84,6 +84,8 @@ function New-ClmCheck { return @{ Loader = $null; NextAt = $null; Installed = $n
 function Start-MenuLoader { param($State) $script:MenuLoads++ }
 function Test-Network { return $script:FakeOnline }
 $script:FakeOnline = $true
+function Test-ClmVersionKnown { param($Version) return $script:FakeKnown }
+$script:FakeKnown = $true
 
 $script:FakeLatest = $null
 $script:FakeFindError = $null

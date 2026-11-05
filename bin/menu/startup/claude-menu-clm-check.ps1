@@ -19,7 +19,7 @@ function Step-ClmCheck {
   if ($null -eq $Check -or $null -eq $Check.NextAt) { return $false }
   $ld = $Check.Loader
   if ($null -eq $ld) {
-    if ($Now -ge $Check.NextAt) { $Check.Loader = Start-UsageLoader @(0) (Get-ClmModulePath "claude-self-update") "Get-LatestClm" }
+    if ($Now -ge $Check.NextAt) { $Check.Loader = Start-UsageLoader @(0) (Get-ClmModulePath "claude-self-latest") "Get-LatestClm" }
     return $false
   }
   if (-not $ld.Ctl.Done) { return $false }

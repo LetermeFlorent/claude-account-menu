@@ -8,7 +8,7 @@ try {
   Assert-Equal ("  " + (Get-ClmText "menu.startup.stopRequested")) $script:St.Msg[0] "Echap pendant la mise a jour : attente annoncee"
   $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks 2
-  Assert-Equal ("Find-ClmUpdate " + (Get-ClmText "update.startup.availableNotInstalled" @("v62"))) (($script:Loads -join "|") + " " + $script:Su.Steps[0].Text) "Echap pendant la recherche : version annoncee, rien installe"
+  Assert-Equal ("Get-LatestClm " + (Get-ClmText "update.startup.availableNotInstalled" @("v62"))) (($script:Loads -join "|") + " " + $script:Su.Steps[0].Text) "Echap pendant la recherche : version annoncee, rien installe"
   Assert-Equal "quit" (Send-StartupAct "none").Name "Echap pendant la recherche : sortie a la fin de clm"
   Assert-Equal 0 ($script:ClaudeStarts + $script:DriveStarts) "Echap pendant la recherche : ni Claude Code ni Drive"
 

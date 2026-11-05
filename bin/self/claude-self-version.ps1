@@ -1,6 +1,5 @@
-. Import-ClmModule claude-file-io, claude-text
+. Import-ClmModule claude-file-io, claude-text, claude-self-latest
 $script:ClmVersionFile = "clm.version"
-$script:ClmRepo = "LetermeFlorent/claude-account-menu"
 function Get-ClmReleasesUrl {
   return "https://github.com/" + $script:ClmRepo + "/releases"
 }
