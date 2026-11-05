@@ -284,7 +284,7 @@
   "menu.state.readFailed": "read failed: {0}",
   "menu.state.readInProgress": "read already in progress",
   "menu.state.rereadRequested": "re-read requested",
-  "menu.timer.apiPause": "api {0}",
+  "menu.timer.apiPause": "{0}",
   "menu.timer.forced.apiRefused": "the API refuses the re-read, retry in {0}",
   "menu.timer.forced.failed": "re-read failed, {0}",
   "menu.timer.forced.percent7": "7d {0}%",
