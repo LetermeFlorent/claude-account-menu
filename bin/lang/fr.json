@@ -127,6 +127,8 @@
   "drive.auth.reconnect": "reconnecter le Drive : clm --drive-login",
   "drive.auth.token.refused": "jeton Google refusé : {0}",
   "drive.away": "ouvert sur {0}",
+  "drive.blocked.peer": "synchro bloquée : clm plus récent sur {0}, mettre clm à jour avec clm --update",
+  "drive.blocked.release": "synchro bloquée : clm v{0} est sorti, mettre clm à jour avec clm --update",
   "drive.changes.noEnd": "fin des changements du Drive sans jeton",
   "drive.changes.noToken": "jeton des changements du Drive absent",
   "drive.cli.auto.expects": "--sync-auto attend on ou off",

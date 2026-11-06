@@ -5,7 +5,7 @@ $script:DriveLockWaitMs = 5000
 $script:DriveExitBudgetMs = 30000
 
 function New-SyncResult {
-  return @{ Ok = $false; Error = ""; Busy = $false; Shared = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Failure = ""; Total = 0; Away = @{}; Again = $false; Refused = (New-Object 'System.Collections.Generic.List[string]'); Late = @() }
+  return @{ Ok = $false; Error = ""; Busy = $false; Shared = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Blocked = $false; Failure = ""; Total = 0; Away = @{}; Again = $false; Refused = (New-Object 'System.Collections.Generic.List[string]'); Late = @() }
 }
 
 function Set-DriveLastSync {
@@ -31,6 +31,7 @@ function Invoke-DriveSyncPass {
   $accs = @(Get-Accounts)
   $Res.Failed += [int](Sync-DriveCredentials $folders $accs $keys)
   $presence = Get-DriveListing $folders.Presence
+  Assert-ClmCurrent $presence
   Set-PresenceFormat $folders $presence $pc
   $Res.Late = Get-WaitingPcs $presence
   $Res.Away = Get-AwayMap $presence $pc ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())

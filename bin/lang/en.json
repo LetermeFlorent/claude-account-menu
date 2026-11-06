@@ -127,6 +127,8 @@
   "drive.auth.reconnect": "reconnect Drive: clm --drive-login",
   "drive.auth.token.refused": "Google token refused: {0}",
   "drive.away": "open on {0}",
+  "drive.blocked.peer": "sync blocked: newer clm on {0}, update clm with clm --update",
+  "drive.blocked.release": "sync blocked: clm v{0} is out, update clm with clm --update",
   "drive.changes.noEnd": "Drive changes ended without a token",
   "drive.changes.noToken": "Drive changes token missing",
   "drive.cli.auto.expects": "--sync-auto expects on or off",

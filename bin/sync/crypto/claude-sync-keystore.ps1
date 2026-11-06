@@ -65,7 +65,7 @@ function Save-SyncKeys {
 
 function Get-SyncKeys {
   $text = Read-SyncKeyText
-  if (-not $text) { throw (Get-ClmText "sync.key.missing") }
+  if (-not $text) { $e = New-Object Exception (Get-ClmText "sync.key.missing"); $e.Data["Blocked"] = $true; throw $e }
   return ConvertFrom-SyncKeyRecord $text
 }
 

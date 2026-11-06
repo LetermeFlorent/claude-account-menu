@@ -1,3 +1,4 @@
+. Import-ClmModule claude-self-version, claude-text
 $script:AwaySeconds = 12 * 3600
 $script:SyncFormatKey = "fmt"
 $script:SyncFormat = 6
@@ -44,6 +45,26 @@ function Get-WaitingPcs {
   $names = [string[]]@($Presence.Keys | Where-Object { (Get-PresenceFormat $Presence[$_]) -lt $Format } | ForEach-Object { $_ -replace "\.json$", "" })
   [Array]::Sort($names, [StringComparer]::OrdinalIgnoreCase)
   return ,$names
+}
+
+function Get-NewerPcs {
+  param($Presence)
+  $names = [string[]]@($Presence.Keys | Where-Object { (Get-PresenceFormat $Presence[$_]) -gt $script:SyncFormat } | ForEach-Object { $_ -replace "\.json$", "" })
+  [Array]::Sort($names, [StringComparer]::OrdinalIgnoreCase)
+  return ,$names
+}
+
+function Assert-ClmCurrent {
+  param($Presence)
+  $text = ""
+  $release = Get-NewerClmRelease
+  $newer = Get-NewerPcs $Presence
+  if ($release -gt 0) { $text = Get-ClmText "drive.blocked.release" @($release) }
+  elseif ($newer.Count -gt 0) { $text = Get-ClmText "drive.blocked.peer" @(($newer -join ", ")) }
+  if (-not $text) { return }
+  $e = New-Object Exception $text
+  $e.Data["Blocked"] = $true
+  throw $e
 }
 
 function Test-AllPcsCurrent {

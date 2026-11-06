@@ -94,6 +94,27 @@ $pres["PC.json"].Props["fmt"] = "" + $script:SyncFormat
 Assert-True (Test-AllPcsCurrent $pres) "version de synchro : tous les PC a jour"
 $pres["PC.json"].Props["fmt"] = "x"
 Assert-Equal 0 (Get-PresenceFormat $pres["PC.json"]) "version de synchro illisible : 0"
+Assert-Equal 0 (Get-NewerPcs $pres).Count "aucun clm plus recent ailleurs"
+$pres["neuf.json"] = @{ Props = @{ "fmt" = ("" + ($script:SyncFormat + 1)) } }
+$pres["Autre.json"] = @{ Props = @{ "fmt" = ("" + ($script:SyncFormat + 2)) } }
+Assert-Equal "Autre,neuf" ((Get-NewerPcs $pres) -join ",") "clm plus recent ailleurs : PC nommes, tries"
+Assert-Throws { Assert-ClmCurrent $pres } (Get-ClmText "drive.blocked.peer" @("Autre, neuf")) "clm plus recent ailleurs : synchro bloquee"
+$blockErr = $null
+try { Assert-ClmCurrent $pres } catch { $blockErr = $_ }
+Assert-True ($blockErr.Exception.Data["Blocked"] -eq $true) "synchro bloquee : marquee pour le veilleur"
+$pres.Remove("neuf.json")
+$pres.Remove("Autre.json")
+$verFn = ${function:Read-ClmVersion}
+function Read-ClmVersion { param([string]$Dir = "") return [PSCustomObject]@{ Sha = "abcdef1"; Time = 1; Number = 135 } }
+Assert-Equal 0 (Get-NewerClmRelease) "derniere version inconnue : rien bloque"
+Write-MachineStamp $script:ClmLatestStamp "136"
+Assert-Equal 136 (Get-NewerClmRelease) "nouvelle version de clm publiee"
+Assert-Throws { Assert-ClmCurrent $pres } (Get-ClmText "drive.blocked.release" @(136)) "nouvelle version publiee : synchro bloquee"
+Write-MachineStamp $script:ClmLatestStamp "135"
+Assert-Equal 0 (Get-NewerClmRelease) "clm a jour : rien bloque"
+Assert-ClmCurrent $pres
+Set-Item Function:\Read-ClmVersion $verFn
+[IO.File]::Delete((Get-StatePath ($script:ClmLatestStamp + $script:MachineStampExt)))
 
 $script:Props = $null
 function Get-DriveFolders { return @{ Root = "R"; Files = "F"; Credentials = "C"; Presence = "P" } }

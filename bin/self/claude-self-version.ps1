@@ -1,5 +1,6 @@
 . Import-ClmModule claude-file-io, claude-text, claude-self-latest
 $script:ClmVersionFile = "clm.version"
+$script:ClmLatestKeepMs = [long]30 * 24 * 3600 * 1000
 function Get-ClmReleasesUrl {
   return "https://github.com/" + $script:ClmRepo + "/releases"
 }
@@ -37,6 +38,13 @@ function Test-ClmOutdated {
   param($Installed, $Latest)
   if ($null -eq $Latest -or -not (Test-ClmVersionKnown $Installed)) { return $false }
   return [int]$Latest.Number -gt [int]$Installed.Number
+}
+
+function Get-NewerClmRelease {
+  $n = 0
+  if (-not [int]::TryParse([string](Read-MachineStamp $script:ClmLatestStamp $script:ClmLatestKeepMs), [ref]$n)) { return 0 }
+  if (-not (Test-ClmOutdated (Read-ClmVersion) ([PSCustomObject]@{ Number = $n }))) { return 0 }
+  return $n
 }
 
 function Get-BackupVersion {

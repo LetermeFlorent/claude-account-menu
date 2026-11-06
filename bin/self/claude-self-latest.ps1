@@ -1,5 +1,7 @@
 if (-not (Test-Path Function:\Import-ClmModule)) { . (Join-Path $PSScriptRoot "../claude-import.ps1") }
+. Import-ClmModule claude-machine-lock
 $script:ClmRepo = "LetermeFlorent/claude-account-menu"
+$script:ClmLatestStamp = "clm-latest"
 
 function ConvertFrom-ReleaseJson {
   param([string]$Json)
@@ -22,5 +24,7 @@ function Invoke-GitHubGet {
 
 function Get-LatestClm {
   $r = Invoke-GitHubGet ("https://api.github.com/repos/" + $script:ClmRepo + "/releases/latest") 4
-  return ConvertFrom-ReleaseJson ("" + $r.Content)
+  $latest = ConvertFrom-ReleaseJson ("" + $r.Content)
+  if ($null -ne $latest) { try { $null = Write-MachineStamp $script:ClmLatestStamp ("" + $latest.Number) } catch { Write-Verbose $_.Exception.Message } }
+  return $latest
 }

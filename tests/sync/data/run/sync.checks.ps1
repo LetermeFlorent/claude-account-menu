@@ -144,6 +144,15 @@ if ($script:OsName -eq "Windows") {
   Assert-True (Test-FakeFile ".claude/settings.json") "fichier verrouille : garde sur le Drive"
 }
 
+Use-Pc "PCA"
+$null = Send-FakePresence "FUTUR.json" ([Text.Encoding]::UTF8.GetBytes("{}")) @{ fmt = ("" + ($script:SyncFormat + 1)) }
+Set-PcFile ".claude/bloque.md" "x"
+$r = Invoke-DriveSync
+Assert-True ($r.Blocked -and -not $r.Ok) "clm plus recent sur un autre PC : synchro bloquee"
+Assert-True $r.Error.Contains("FUTUR") "synchro bloquee : PC plus recent nomme"
+Assert-True (-not (Test-FakeFile ".claude/bloque.md")) "synchro bloquee : rien envoye"
+$script:FakePresence.Remove("FUTUR.json")
+
 Assert-Equal (Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.done" @(2, 1, 0, 1)))) (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 2; Down = 1; Deleted = 0; Conflicts = 1; Left = 0 }) "message de fin"
 Assert-Equal ((Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.done" @(0, 0, 0, 0)))) + ", " + (Get-ClmText "drive.msg.left" @(4))) (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Left = 4 }) "message avec reste"
 Assert-Equal (Get-ClmText "drive.msg.line" @("panne")) (Get-DriveSyncMsg @{ Ok = $false; Error = "panne" }) "message d'erreur"

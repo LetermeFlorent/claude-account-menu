@@ -37,6 +37,13 @@ $null = Complete-WatchPass $st $fail $false $now
 Assert-True $st.Due "panne : synchro a refaire"
 Assert-Equal "" (Get-DriveWatchAction $st ($now + 59000)) "panne : attente"
 Assert-Equal "pass" (Get-DriveWatchAction $st ($now + 60000)) "panne : nouvel essai a 60 s"
+$blocked = New-SyncResult
+$blocked.Error = "bloque"
+$blocked.Blocked = $true
+$st.EndedSince = $now
+Assert-True (Complete-WatchPass $st $blocked $true $now) "synchro bloquee : sessions fermees sans attendre"
+Assert-Equal ($now + $script:DriveWatchGiveUpMs) $st.RetryAt "synchro bloquee : nouvel essai dans 10 min"
+$st.EndedSince = 0
 $left = New-SyncResult
 $left.Left = 3
 $null = Complete-WatchPass $st $left $false $now

@@ -21,6 +21,7 @@ function Set-DriveSyncError {
   if (Test-LeftToOtherClm $ErrorRecord) { $Res.Ok = $true; $Res.Error = ""; $Res.Busy = $true; return }
   $Res.Ok = $false
   $Res.Error = $ErrorRecord.Exception.Message
+  $Res.Blocked = $ErrorRecord.Exception.Data["Blocked"] -eq $true
   try { Reset-DriveFoldersCheck } catch { Write-Verbose $_.Exception.Message }
 }
 

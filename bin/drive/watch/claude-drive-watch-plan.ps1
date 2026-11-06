@@ -98,11 +98,12 @@ function Complete-WatchPass {
   $St.Due = -not $clean
   $St.RetryAt = 0
   if (-not $clean) { $St.RetryAt = $Now + $script:DriveWatchFailRetryMs }
+  if ($Result.Blocked) { $St.RetryAt = $Now + $script:DriveWatchGiveUpMs }
   $St.LocalFirst = 0
   $St.LocalAt = 0
   $St.PassAt = $Now
   $St.RemoteAt = $Now
-  return $Final -and ($clean -or $Now - $St.EndedSince -ge $script:DriveWatchGiveUpMs)
+  return $Final -and ($clean -or $Result.Blocked -or $Now - $St.EndedSince -ge $script:DriveWatchGiveUpMs)
 }
 
 function Get-WatchClosedDirs {
