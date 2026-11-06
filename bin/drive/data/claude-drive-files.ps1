@@ -1,6 +1,7 @@
 . Import-ClmModule claude-accounts, claude-menu-save, claude-json, claude-machine-settings, claude-drive-patterns
-$script:SyncLocalOnly = @("*/chrome-bidi/profils", "node_modules", "file-history") + @(foreach ($p in $script:SkipConversations) { "*/" + $p })
+$script:SyncLocalOnly = @("*/chrome-bidi/profils", "*/claude-skills/.ia", "node_modules", "file-history") + @(foreach ($p in $script:SkipConversations) { "*/" + $p })
 $script:SyncExtraExcludes = @("*.bak-sync", "*.conflit-*", ".credentials.json", "*.tmp") + $script:SyncLocalOnly
+$script:SyncAccountLocal = @("sessions", "daemon", "jobs", "backups", "ponytail-modes", "history.jsonl", ".last-cleanup", ".last-update-result.json", ".ponytail-active", "daemon.status.json", "daemon.log", "stats-cache.json")
 $script:RegistryName = ".claude-accounts.json"
 
 function Get-SyncRootPath {
@@ -11,7 +12,8 @@ function Get-SyncRootPath {
 
 function Get-SyncPatterns {
   param($Accs)
-  return @(Get-SaveExcludes $Accs) + $script:SyncExtraExcludes
+  $own = @(foreach ($a in @(Select-ValidAccounts $Accs)) { foreach ($n in $script:SyncAccountLocal) { $a.Dir + "/" + $n } })
+  return @(Get-SaveExcludes $Accs) + $script:SyncExtraExcludes + $own
 }
 
 function Get-SyncRoots {

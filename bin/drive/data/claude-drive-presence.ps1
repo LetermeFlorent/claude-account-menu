@@ -1,6 +1,6 @@
 $script:AwaySeconds = 12 * 3600
 $script:SyncFormatKey = "fmt"
-$script:SyncFormat = 5
+$script:SyncFormat = 6
 $script:McpFormat = 3
 
 function Get-PresenceProps {

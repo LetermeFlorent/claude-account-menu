@@ -66,10 +66,16 @@ $sp = Get-SyncPatterns @()
 foreach ($c in @(".claude-compte3/projects/C--Users-x/1f2e.jsonl", ".claude/projects/C--Users-x/1f2e/subagents/agent-a.jsonl", ".claude/projects/C--x/1f2e/tool-results/r.txt", ".claude/outils/omni/node_modules/a/index.js", ".claude/file-history/1f2e/f@v1")) {
   Assert-True (Test-ExcludedByPatterns $c $sp) ("jamais synchronise : " + $c)
 }
-foreach ($c in @(".claude/projects/C--Users-x/memory/MEMORY.md", ".claude/history.jsonl", ".claude/outils/omni/package.json")) {
+foreach ($c in @(".claude/projects/C--Users-x/memory/MEMORY.md", ".claude/outils/omni/package.json")) {
   Assert-True (-not (Test-ExcludedByPatterns $c $sp)) ("synchronise : " + $c)
 }
 $hp = Get-SyncPatterns @([PSCustomObject]@{ Dir = ".claude" }, [PSCustomObject]@{ Dir = ".claude-compte2" })
+foreach ($c in @(".claude/history.jsonl", ".claude-compte2/sessions/a.json", ".claude/daemon/roster.json", ".claude/jobs/j/state.json", ".claude/backups/x.json", ".claude/stats-cache.json", ".claude/.last-cleanup")) {
+  Assert-True (Test-ExcludedByPatterns $c $hp) ("propre au PC, jamais synchronise : " + $c)
+}
+foreach ($c in @(".claude/skills/sessions/SKILL.md", ".claude/skills/x/history.jsonl", ".claude/settings.json")) {
+  Assert-True (-not (Test-ExcludedByPatterns $c $hp)) ("synchronise hors racine du compte : " + $c)
+}
 foreach ($c in @(".claude/skills/.trash/vieux/SKILL.md", ".claude/skills/.brouillon", ".CLAUDE/Skills/.Trash/a.md")) {
   Assert-True (Test-ExcludedByPatterns $c $hp) ("dossier masque des skills jamais synchronise : " + $c)
 }
