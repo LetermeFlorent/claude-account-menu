@@ -85,6 +85,13 @@ function Get-RemoteIds {
   return ,$ids
 }
 
+function Test-EntryNewer {
+  param($A, $B)
+  if ($A.M -ne $B.M) { return $A.M -gt $B.M }
+  if ($A.Exp -ne $B.Exp) { return $A.Exp -gt $B.Exp }
+  return [string]::CompareOrdinal([string]$A.Id, [string]$B.Id) -gt 0
+}
+
 function Get-DriveFileEntry {
   param([string]$Id)
   $uri = $script:DriveApi + "/" + $Id + "?fields=" + [Uri]::EscapeDataString("id,name,md5Checksum,appProperties,trashed")
@@ -110,7 +117,7 @@ function Get-DriveListing {
       $e = ConvertTo-RemoteEntry $f
       $old = $map[$e.Name]
       if ($null -eq $old) { $map[$e.Name] = $e }
-      elseif ($e.M -gt $old.M -or $e.Exp -gt $old.Exp) { $map[$e.Name] = $e; $dups.Add($old.Id) }
+      elseif (Test-EntryNewer $e $old) { $map[$e.Name] = $e; $dups.Add($old.Id) }
       else { $dups.Add($e.Id) }
     }
     $token = [string]$r.nextPageToken

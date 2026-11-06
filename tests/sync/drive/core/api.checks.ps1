@@ -33,6 +33,9 @@ Assert-True ($script:Calls[0].Uri.Contains([Uri]::EscapeDataString("'fold\'er' i
 $trash = @($script:Calls | Where-Object { $_.Method -eq "PATCH" })
 Assert-Equal 1 $trash.Count "un doublon mis a la corbeille"
 Assert-True ($trash[0].Uri.EndsWith("/files/i1") -and [Text.Encoding]::UTF8.GetString($trash[0].Body).Contains('"trashed": true')) "le doublon le plus ancien part a la corbeille"
+Assert-True (Test-EntryNewer @{ Id = "b"; M = 5; Exp = 0 } @{ Id = "a"; M = 5; Exp = 0 }) "doublon a egalite : meme gagnant sur tous les PC"
+Assert-True (-not (Test-EntryNewer @{ Id = "a"; M = 5; Exp = 0 } @{ Id = "b"; M = 5; Exp = 0 })) "doublon a egalite : ordre inverse, meme gagnant"
+Assert-True (Test-EntryNewer @{ Id = "a"; M = 5; Exp = 2 } @{ Id = "b"; M = 5; Exp = 1 }) "doublon a egalite de date : expiration la plus lointaine"
 
 $f = [Text.Encoding]::UTF8.GetBytes("bonjour")
 $script:Calls.Clear()
