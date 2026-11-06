@@ -3,7 +3,7 @@ $script:RemoteCachePath = Join-Path $script:Sandbox "remote-cache-test.json"
 $script:ChangeCalls = New-Object 'System.Collections.Generic.List[string]'
 $script:ChangePages = @{}
 $script:ChangeFail = $false
-$folders = @{ Files = "F1" }
+$folders = @{ Files = "F1"; Credentials = "C1" }
 
 function New-ChangeResponse {
   param([string]$Json)
@@ -52,20 +52,35 @@ function Set-NextChanges {
 
 Set-NextChanges "" "t3"
 $stamp = Get-RemoteCacheStamp
-Assert-True (-not (Test-DriveFilesChanged $folders "PCL")) "veille : rien de neuf"
+Assert-True (-not (Get-DriveNews $folders "PCL").Files) "veille : rien de neuf"
 Assert-Equal "t2" (Read-RemoteCache).Token "veille : rien de neuf, cache pas reecrit"
 Assert-Equal $stamp (Get-RemoteCacheStamp) "veille : rien de neuf, fichier intact"
 Set-NextChanges '{"fileId":"d1","file":{"id":"d1","name":"d","md5Checksum":"md","parents":["F1"],"appProperties":{"m":"3","pc":"PCL"}}}' "t4"
-Assert-True (-not (Test-DriveFilesChanged $folders "PCL")) "veille : envoi de ce PC seulement"
+Assert-True (-not (Get-DriveNews $folders "PCL").Files) "veille : envoi de ce PC seulement"
 Set-NextChanges '{"fileId":"c1","file":{"id":"c1","name":"c","md5Checksum":"mc","parents":["F1"],"appProperties":{"m":"8","pc":"MAC"}}}' "t5"
-Assert-True (-not (Test-DriveFilesChanged $folders "PCL")) "veille : fichier inchange"
+Assert-True (-not (Get-DriveNews $folders "PCL").Files) "veille : fichier inchange"
 Set-NextChanges '{"fileId":"d1","removed":true}' "t6"
-Assert-True (Test-DriveFilesChanged $folders "PCL") "veille : fichier retire ailleurs"
+Assert-True (Get-DriveNews $folders "PCL").Files "veille : fichier retire ailleurs"
 Set-NextChanges '{"fileId":"e1","file":{"id":"e1","name":"e","md5Checksum":"me","parents":["F1"],"appProperties":{"m":"4","pc":"MAC"}}}' "t7"
-Assert-True (Test-DriveFilesChanged $folders "PCL") "veille : envoi d'un autre PC"
+Assert-True (Get-DriveNews $folders "PCL").Files "veille : envoi d'un autre PC"
 $script:RemoteCacheMemo = $null
 $c = Read-RemoteCache
 Assert-Equal "t7|me|MAC|4|3" ($c.Token + "|" + $c.Files["e"].Md5 + "|" + $c.Files["e"].Pc + "|" + $c.Files["e"].M + "|" + $c.Files.Count) "veille : cache relu depuis le disque"
+
+Set-NextChanges '{"fileId":"o1","file":{"id":"o1","name":"autre","parents":["P9"]}}' "t7b"
+$stamp = Get-RemoteCacheStamp
+$n = Get-DriveNews $folders "PCL"
+Assert-True (-not $n.Files -and -not $n.Creds) "veille : autre dossier du Drive ignore"
+Assert-Equal $stamp (Get-RemoteCacheStamp) "veille : autre dossier, cache pas reecrit"
+Assert-Equal "t7b" (Read-RemoteCache).Token "veille : autre dossier, jeton garde en memoire"
+Set-NextChanges '{"fileId":"k1","file":{"id":"k1","name":"cred.json","parents":["C1"]}}' "t7c"
+$n = Get-DriveNews $folders "PCL"
+Assert-True ($n.Creds -and -not $n.Files) "veille : identifiant change ailleurs"
+[IO.File]::SetLastWriteTimeUtc($script:RemoteCachePath, [DateTime]::UtcNow.AddMinutes(-11))
+Set-NextChanges '{"fileId":"o2","file":{"id":"o2","name":"autre2","parents":["P9"]}}' "t7d"
+$null = Get-DriveNews $folders "PCL"
+$script:RemoteCacheMemo = $null
+Assert-Equal "t7d" (Read-RemoteCache).Token "veille : cache vieux de 10 min reecrit"
 
 Set-NextChanges '{"fileId":"x9","file":{"id":"x9","name":"c","md5Checksum":"mx","parents":["F1"]}}' "t8"
 $script:ChangeCalls.Clear()
@@ -86,7 +101,7 @@ Assert-True (-not (Test-RemoteCacheUsable (Read-RemoteCache) "F1")) "cache d'un 
 Assert-True (-not (Test-RemoteCacheUsable $c "F2")) "autre dossier : liste complete"
 [IO.File]::WriteAllText($script:RemoteCachePath, "{pas du json")
 Assert-Null (Read-RemoteCache) "cache illisible ignore"
-Assert-True (Test-DriveFilesChanged $folders "PCL") "veille sans cache : synchro"
+Assert-True (Get-DriveNews $folders "PCL").Files "veille sans cache : synchro"
 
 Remove-Item -LiteralPath $script:RemoteCachePath -Force -ErrorAction SilentlyContinue
 $script:RemoteCachePath = $changesSavedCache

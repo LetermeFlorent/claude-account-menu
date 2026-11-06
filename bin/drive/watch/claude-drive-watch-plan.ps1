@@ -7,6 +7,7 @@ $script:DriveWatchBusyRetryMs = 5000
 $script:DriveWatchFailRetryMs = 60000
 $script:DriveWatchGiveUpMs = 600000
 $script:DriveWatchSessionPollMs = 5000
+$script:DriveWatchCredsMs = 600000
 $script:DriveWatchGone = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
 
 function Get-WatchNow {
@@ -15,7 +16,7 @@ function Get-WatchNow {
 
 function New-WatchState {
   param([long]$Now)
-  return @{ Live = 0; LiveDirs = @{}; Ended = @{}; EndedSince = [long]0; LocalFirst = [long]0; LocalAt = [long]0; PassAt = [long]0; RemoteAt = $Now; RetryAt = [long]0; Due = $false; Fs = $null; SessionsAt = [long]0 }
+  return @{ Live = 0; LiveDirs = @{}; Ended = @{}; EndedSince = [long]0; LocalFirst = [long]0; LocalAt = [long]0; PassAt = [long]0; RemoteAt = $Now; RetryAt = [long]0; CredsAt = [long]0; Due = $false; Fs = $null; SessionsAt = [long]0 }
 }
 
 function Add-WatchLocalChange {

@@ -2,6 +2,7 @@
 $script:RemoteCachePath = Get-StatePath "drive-remote.json"
 $script:RemoteFullSeconds = 24 * 3600
 $script:RemoteCacheMemo = $null
+$script:RemoteSaveGapMs = 600000
 
 function New-RemoteCache {
   param([string]$Folder, [string]$Token, [long]$Full, $Files)
@@ -27,6 +28,11 @@ function Get-RemoteCacheStamp {
   $info = New-Object IO.FileInfo $script:RemoteCachePath
   if (-not $info.Exists) { return "" }
   return "" + $info.LastWriteTimeUtc.Ticks + "|" + $info.Length
+}
+
+function Test-RemoteCacheOld {
+  $info = New-Object IO.FileInfo $script:RemoteCachePath
+  return -not $info.Exists -or ([DateTime]::UtcNow - $info.LastWriteTimeUtc).TotalMilliseconds -ge $script:RemoteSaveGapMs
 }
 
 function Save-RemoteCache {

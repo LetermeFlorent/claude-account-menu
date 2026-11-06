@@ -58,14 +58,20 @@ function Invoke-WatchPass {
 
 function Invoke-WatchCheck {
   param($St)
-  $St.RemoteAt = Get-WatchNow
+  $now = Get-WatchNow
+  $St.RemoteAt = $now
   Update-WatchFs $St
   $folders = Get-DriveFolders
-  $failed = [int](Sync-DriveCredentials $folders @(Get-Accounts))
-  if ($failed -gt 0) { Write-WatchLog ("" + $failed + " identifiant(s) en echec") }
-  if (-not (Test-DriveAuto)) { return }
-  try { Invoke-WithMachineLock $script:DriveSyncLock $script:DriveLockWaitMs { if (Test-DriveFilesChanged $folders (Get-DrivePcName)) { $St.Due = $true } } }
-  catch { if (-not (Test-LeftToOtherClm $_)) { throw } }
+  $feed = @{ Files = $false; Creds = $true; Error = $null }
+  try { Invoke-WithMachineLock $script:DriveSyncLock $script:DriveLockWaitMs { $n = Get-DriveNews $folders (Get-DrivePcName); $feed.Files = $n.Files; $feed.Creds = $n.Creds } }
+  catch { if (-not (Test-LeftToOtherClm $_)) { $feed.Error = $_ } }
+  if ($feed.Creds -or $now - $St.CredsAt -ge $script:DriveWatchCredsMs) {
+    $St.CredsAt = $now
+    $failed = [int](Sync-DriveCredentials $folders @(Get-Accounts))
+    if ($failed -gt 0) { Write-WatchLog ("" + $failed + " identifiant(s) en echec") }
+  }
+  if ($null -ne $feed.Error) { throw $feed.Error }
+  if ($feed.Files -and (Test-DriveAuto)) { $St.Due = $true }
 }
 
 function Step-DriveWatch {

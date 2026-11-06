@@ -40,12 +40,13 @@ function Test-ChangeGone {
 }
 
 function Update-RemoteCache {
-  param($Cache, $Changes, [string]$Pc)
-  $res = @{ Relevant = 0; Anomaly = $false }
+  param($Cache, $Changes, [string]$Pc, [string]$CredsId = "")
+  $res = @{ Relevant = 0; Anomaly = $false; Touched = 0; Creds = 0 }
   foreach ($c in $Changes) {
     $id = [string]$c.fileId
+    if ($CredsId -and ($null -eq $c.file -or @($c.file.parents) -ccontains $CredsId)) { $res.Creds++ }
     if (Test-ChangeGone $c $Cache.Folder) {
-      if (Remove-CachedId $Cache $id) { $res.Relevant++ }
+      if (Remove-CachedId $Cache $id) { $res.Relevant++; $res.Touched++ }
       continue
     }
     $e = ConvertTo-RemoteEntry $c.file
@@ -54,6 +55,7 @@ function Update-RemoteCache {
     $null = Remove-CachedId $Cache $e.Id
     $Cache.Files[$e.Name] = $e
     $Cache.Ids[$e.Id] = $e.Name
+    $res.Touched++
     $same = $null -ne $old -and $old.Md5 -eq $e.Md5 -and $old.M -eq $e.M
     if (-not $same -and $e.Pc -ne $Pc) { $res.Relevant++ }
   }
@@ -65,13 +67,14 @@ function Update-RemoteFromChanges {
   $cache = Read-RemoteCache
   if (-not (Test-RemoteCacheUsable $cache $Folders.Files)) { return $null }
   $r = Read-DriveChanges $cache.Token
-  if ($r.Changes.Count -eq 0) { return @{ Files = $cache.Files; Relevant = 0 } }
+  if ($r.Changes.Count -eq 0) { return @{ Files = $cache.Files; Relevant = 0; Creds = 0 } }
   $script:RemoteCacheMemo = $null
-  $u = Update-RemoteCache $cache $r.Changes $Pc
+  $u = Update-RemoteCache $cache $r.Changes $Pc $Folders.Credentials
   if ($u.Anomaly) { return $null }
   $cache.Token = $r.Token
-  Save-RemoteCache $cache
-  return @{ Files = $cache.Files; Relevant = $u.Relevant }
+  if ($u.Touched -gt 0 -or (Test-RemoteCacheOld)) { Save-RemoteCache $cache }
+  else { $script:RemoteCacheMemo = @{ Stamp = (Get-RemoteCacheStamp); Cache = $cache } }
+  return @{ Files = $cache.Files; Relevant = $u.Relevant; Creds = $u.Creds }
 }
 
 function Get-FullRemoteListing {
@@ -89,8 +92,9 @@ function Get-DriveFilesListing {
   return Get-FullRemoteListing $Folders.Files
 }
 
-function Test-DriveFilesChanged {
+function Get-DriveNews {
   param($Folders, [string]$Pc)
   $u = Update-RemoteFromChanges $Folders $Pc
-  return $null -eq $u -or $u.Relevant -gt 0
+  if ($null -eq $u) { return @{ Files = $true; Creds = $true } }
+  return @{ Files = $u.Relevant -gt 0; Creds = $u.Creds -gt 0 }
 }

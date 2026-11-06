@@ -1,5 +1,5 @@
 . (Join-Path (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "fakes") "fake-drive.ps1")
-$watchFaked = @("Invoke-DriveSync", "Sync-DriveCredentials", "Test-DriveFilesChanged", "Set-DrivePresence")
+$watchFaked = @("Invoke-DriveSync", "Sync-DriveCredentials", "Get-DriveNews", "Set-DrivePresence")
 $watchSaved = @{}
 foreach ($n in $watchFaked) { $watchSaved[$n] = (Get-Item ("function:" + $n)).ScriptBlock }
 $watchSavedTick = $script:DriveWatchTickMs
@@ -12,7 +12,7 @@ $script:WatchRemote = $false
 
 function Invoke-DriveSync { param($Ctl, [long]$DeadlineMs, [switch]$Force) $script:WatchCalls.Add("sync"); return $script:WatchResult }
 function Sync-DriveCredentials { param($Folders, $Accs) $script:WatchCalls.Add("creds"); return 0 }
-function Test-DriveFilesChanged { param($Folders, [string]$Pc) $script:WatchCalls.Add("changes"); return $script:WatchRemote }
+function Get-DriveNews { param($Folders, [string]$Pc) $script:WatchCalls.Add("changes"); return @{ Files = $script:WatchRemote; Creds = $script:WatchRemote } }
 function Set-DrivePresence { param($Acc, [bool]$Open) $script:WatchCalls.Add("presence " + $Acc.Dir + " " + $Open) }
 
 function Set-WatchResult {
@@ -48,12 +48,21 @@ $script:ClmLoadedSha = Get-ClmSha
 $st.RemoteAt = 0
 $script:WatchRemote = $true
 Assert-True (Step-DriveWatch $st) "regard sur le Drive"
-Assert-Equal "creds,changes" (Get-WatchCalls) "regard : identifiants puis nouveautes du Drive"
+Assert-Equal "changes,creds" (Get-WatchCalls) "regard : nouveautes du Drive puis identifiants"
 Assert-True $st.Due "nouveaute sur le Drive : synchro prevue"
 Assert-True ($null -ne $st.Fs) "surveillance des fichiers lancee"
 $null = Step-DriveWatch $st
 Assert-Equal "sync" (Get-WatchCalls) "nouveaute : synchro"
 Assert-True (-not $st.Due) "synchro faite"
+$st.RemoteAt = 0
+$script:WatchRemote = $false
+$null = Step-DriveWatch $st
+Assert-Equal "changes" (Get-WatchCalls) "regard sans nouveaute : identifiants pas relus"
+Assert-True (-not $st.Due) "regard sans nouveaute : pas de synchro"
+$st.RemoteAt = 0
+$st.CredsAt = 1
+$null = Step-DriveWatch $st
+Assert-Equal "changes,creds" (Get-WatchCalls) "identifiants relus au moins toutes les 10 min"
 
 $null = Close-DriveSession $session
 $null = Step-DriveWatch $st
