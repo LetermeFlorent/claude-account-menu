@@ -36,6 +36,7 @@ function Get-DriveListing {
   return $m
 }
 function Get-DriveFilesListing { param($Folders, [string]$Pc) return Get-DriveListing $Folders.Files }
+function Get-DriveFileEntry { param([string]$Id) $n = Find-FakeName $Id; if ($null -eq $n) { return $null }; return $script:Fake[$n] }
 function Send-DriveContent {
   param([string]$FolderId, [string]$Name, [byte[]]$Bytes, $Props, [string]$Id)
   if ($FolderId -eq "P") { return Send-FakePresence $Name $Bytes $Props }

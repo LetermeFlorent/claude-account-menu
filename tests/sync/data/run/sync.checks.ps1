@@ -153,6 +153,24 @@ Assert-True $r.Error.Contains("FUTUR") "synchro bloquee : PC plus recent nomme"
 Assert-True (-not (Test-FakeFile ".claude/bloque.md")) "synchro bloquee : rien envoye"
 $script:FakePresence.Remove("FUTUR.json")
 
+Use-Pc "PCR"
+Save-Registry @([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
+$null = Invoke-DriveSync
+Set-PcFile ".claude/course.md" "v1" 1700000500
+$null = Invoke-DriveSync
+Set-PcFile ".claude/course.md" "v2" 1700000600
+$script:CourseSnap = Get-DriveListing "F"
+$courseName = $script:SealedPrefix + ".claude/course.md"
+$courseOld = $script:Fake[$courseName]
+$script:Fake[$courseName] = @{ Id = $courseOld.Id; Name = $courseName; Md5 = "autre"; M = 1700000700; Pc = "PCB"; Exp = 0; Props = $courseOld.Props; Bytes = $courseOld.Bytes }
+$courseList = ${function:Get-DriveFilesListing}
+function Get-DriveFilesListing { param($Folders, [string]$Pc) return $script:CourseSnap }
+$r = Invoke-DriveSync
+Set-Item Function:\Get-DriveFilesListing $courseList
+Assert-Equal "0|1" ("" + $r.Up + "|" + $r.Left) "Drive change pendant la synchro : envoi reporte"
+Assert-Equal "autre" $script:Fake[$courseName].Md5 "Drive change pendant la synchro : version de l'autre PC gardee"
+$script:Fake.Remove($courseName)
+
 Assert-Equal (Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.done" @(2, 1, 0, 1)))) (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 2; Down = 1; Deleted = 0; Conflicts = 1; Left = 0 }) "message de fin"
 Assert-Equal ((Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.done" @(0, 0, 0, 0)))) + ", " + (Get-ClmText "drive.msg.left" @(4))) (Get-DriveSyncMsg @{ Ok = $true; Error = ""; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Left = 4 }) "message avec reste"
 Assert-Equal (Get-ClmText "drive.msg.line" @("panne")) (Get-DriveSyncMsg @{ Ok = $false; Error = "panne" }) "message d'erreur"

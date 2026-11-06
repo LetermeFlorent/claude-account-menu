@@ -38,7 +38,7 @@ function Send-SealedFile {
 
 function New-MergedEntry {
   param($Entry, [string]$Rel, [string]$Md5, [bool]$Plain)
-  return @{ Id = $Entry.Id; Name = $Rel; Md5 = $Md5; M = $Entry.M; Pc = $Entry.Pc; Exp = $Entry.Exp; Props = $Entry.Props; Plain = $Plain; SealedId = ""; PlainId = "" }
+  return @{ Id = $Entry.Id; Name = $Rel; Md5 = $Md5; M = $Entry.M; Pc = $Entry.Pc; Exp = $Entry.Exp; Props = $Entry.Props; Raw = [string]$Entry.Md5; Plain = $Plain; SealedId = ""; PlainId = "" }
 }
 
 function ConvertFrom-SealedListing {

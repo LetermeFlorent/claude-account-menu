@@ -32,14 +32,28 @@ function New-BaseEntry {
   return @{ Md5 = $Md5; M = (ConvertTo-UnixSeconds $info.LastWriteTimeUtc); Size = $info.Length; Id = $Id }
 }
 
+function Test-RemoteMoved {
+  param([string]$Id, $Seen)
+  if (-not $Id -or $null -eq $Seen) { return $false }
+  try { $now = Get-DriveFileEntry $Id }
+  catch { if ($_.Exception.Data["HttpStatus"] -eq 404) { return $true }; throw }
+  return $null -eq $now -or $now.Md5 -cne [string]$Seen.Raw -or $now.M -ne $Seen.M -or $now.Pc -cne $Seen.Pc
+}
+
 function Send-SyncFile {
   param($Ctx, [string]$Rel)
   $L = $Ctx.Local[$Rel]
   $r = Get-PrefetchedUpload $Ctx.Prefetch $Rel
-  if ($null -eq $r) { $r = Send-LocalFile @{ FolderId = $Ctx.Folder; Rel = $Rel; Path = $L.Full; Props = (Get-UploadProps $Ctx $Rel); Id = (Get-RemoteId $Ctx $Rel); Keys = $Ctx.Keys } }
+  if ($null -eq $r) {
+    $id = Get-RemoteId $Ctx $Rel
+    if (Test-RemoteMoved $id $Ctx.Remote[$Rel]) { return $false }
+    $r = Send-LocalFile @{ FolderId = $Ctx.Folder; Rel = $Rel; Path = $L.Full; Props = (Get-UploadProps $Ctx $Rel); Id = $id; Keys = $Ctx.Keys }
+  }
+  if ($r.Moved) { return $false }
   $md5 = $r.Md5
   if (-not $md5) { $md5 = $L.Md5 }
   $Ctx.State.Files[$Rel] = @{ Md5 = $md5; M = $L.M; Size = $L.Size; Id = $r.Id }
+  return $true
 }
 
 function Test-LocalAsScanned {
@@ -78,7 +92,7 @@ function Invoke-SyncAction {
   if ($script:LocalActionKinds -contains $Action.Kind -and -not (Test-SafeSyncPath $p)) { throw (Get-ClmText "drive.action.unsafePath" @($p)) }
   $res = $Ctx.Res
   switch ($Action.Kind) {
-    "upload" { Send-SyncFile $Ctx $p; $res.Up++ }
+    "upload" { if (-not (Send-SyncFile $Ctx $p)) { return $false }; $res.Up++ }
     "download" { if (-not (Receive-SyncFile $Ctx $p)) { return $false }; $res.Down++ }
     "delete-local" {
       if (-not (Test-LocalAsScanned $Ctx $p)) { return $false }
@@ -92,7 +106,7 @@ function Invoke-SyncAction {
       $L = $Ctx.Local[$p]
       $Ctx.State.Files[$p] = @{ Md5 = $L.Md5; M = $L.M; Size = $L.Size; Id = $Ctx.Remote[$p].Id }
     }
-    "keep-local" { Save-RemoteConflict $Ctx $p; Send-SyncFile $Ctx $p; $res.Conflicts++ }
+    "keep-local" { Save-RemoteConflict $Ctx $p; if (-not (Send-SyncFile $Ctx $p)) { return $false }; $res.Conflicts++ }
     "keep-remote" {
       if (-not (Test-LocalAsScanned $Ctx $p)) { return $false }
       Save-LocalConflict $Ctx $p

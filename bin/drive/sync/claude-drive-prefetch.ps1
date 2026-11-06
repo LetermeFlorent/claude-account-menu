@@ -17,7 +17,8 @@ while (-not $Ctl.Stop -and $Work.TryDequeue([ref]$item)) {
       Save-SealedMedia $item.Id $item.Tmp $item.Seal $Ctl.Keys
       $out = @{ Ok = $true }
     } else {
-      $out = @{ Ok = $true; Sent = (Send-SealedFile @{ FolderId = $item.Folder; Rel = $item.Rel; Bytes = (Get-SyncBytes $item.Rel $item.Full); Props = $item.Props; Id = $item.Id; Keys = $Ctl.Keys }) }
+      if (Test-RemoteMoved $item.Id $item.Seen) { $out = @{ Ok = $true; Sent = @{ Moved = $true } } }
+      else { $out = @{ Ok = $true; Sent = (Send-SealedFile @{ FolderId = $item.Folder; Rel = $item.Rel; Bytes = (Get-SyncBytes $item.Rel $item.Full); Props = $item.Props; Id = $item.Id; Keys = $Ctl.Keys }) } }
     }
   } catch {
     if ($item.Kind -eq "download") { Remove-DriveTemp $item.Tmp }
@@ -51,7 +52,7 @@ function New-PrefetchItem {
   if ($Action.Kind -eq "download") {
     return @{ Kind = "download"; Rel = $rel; Id = [string]$Ctx.Remote[$rel].Id; Seal = ($script:SealedFilesArea + $rel); Tmp = (Get-SyncLocalPath $rel) + "." + [guid]::NewGuid().ToString("N") + ".tmp" }
   }
-  return @{ Kind = "upload"; Rel = $rel; Full = $Ctx.Local[$rel].Full; Folder = $Ctx.Folder; Props = (Get-UploadProps $Ctx $rel); Id = (Get-RemoteId $Ctx $rel) }
+  return @{ Kind = "upload"; Rel = $rel; Full = $Ctx.Local[$rel].Full; Folder = $Ctx.Folder; Props = (Get-UploadProps $Ctx $rel); Id = (Get-RemoteId $Ctx $rel); Seen = $Ctx.Remote[$rel] }
 }
 
 function Set-DriveConnectionLimit {

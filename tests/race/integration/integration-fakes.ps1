@@ -78,6 +78,13 @@ function Get-ItestDriveListing {
 
 function Get-ItestDriveFilesListing { param($Folders, [string]$Pc) return Get-ItestDriveListing $Folders.Files }
 
+function Get-ItestDriveFileEntry {
+  param([string]$Id)
+  $path = Find-DriveRaceFile $env:CLM_ITEST_DRIVE $Id
+  if (-not $path) { return $null }
+  return Read-DriveRaceEntry $path
+}
+
 function Send-ItestDriveContent {
   param([string]$FolderId, [string]$Name, [byte[]]$Bytes, $Props, [string]$Id)
   $all = @{}
@@ -121,6 +128,7 @@ $itestFakes = @{
   "Get-DriveFolders" = "Get-ItestDriveFolders"; "Sync-DriveCredentials" = "Sync-ItestDriveCredentials"; "Get-DriveListing" = "Get-ItestDriveListing"
   "Get-DriveFilesListing" = "Get-ItestDriveFilesListing"; "Send-DriveContent" = "Send-ItestDriveContent"; "Get-DriveBytes" = "Get-ItestDriveBytes"
   "Remove-DriveFiles" = "Remove-ItestDriveFiles"; "Remove-DriveFile" = "Remove-ItestDriveFiles"; "Set-DriveProps" = "Set-ItestDriveProps"
+  "Get-DriveFileEntry" = "Get-ItestDriveFileEntry"
   "Invoke-FreshDriveSync" = "Invoke-ItestFreshSync"; "Read-SyncKeyText" = "Read-ItestSyncKey"; "Write-SyncKeyText" = "Stop-ItestKeyStore"
 }
 foreach ($itestName in $itestFakes.Keys) { Set-Alias -Name $itestName -Value $itestFakes[$itestName] -Scope Global -Force }

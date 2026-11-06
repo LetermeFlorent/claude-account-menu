@@ -85,6 +85,14 @@ function Get-RemoteIds {
   return ,$ids
 }
 
+function Get-DriveFileEntry {
+  param([string]$Id)
+  $uri = $script:DriveApi + "/" + $Id + "?fields=" + [Uri]::EscapeDataString("id,name,md5Checksum,appProperties,trashed")
+  $f = ConvertFrom-DriveJson (Invoke-DriveRequest @{ Method = "GET"; Uri = $uri; Timeout = $script:DriveMetaTimeout })
+  if ($null -eq $f -or $f.trashed -eq $true) { return $null }
+  return ConvertTo-RemoteEntry $f
+}
+
 function Get-DriveListing {
   param([string]$FolderId)
   $map = New-PathMap

@@ -30,6 +30,24 @@ Assert-Equal $seqBefore $script:FakeSeq "parallele : pas de second envoi"
 Assert-Equal "bbbb" (Get-PcText ".claude/envoi/b.md") "parallele : fichier envoye intact"
 Assert-Equal 0 (Get-TempCount) "parallele : aucun fichier temporaire laisse"
 
+$script:Fake["n.md"] = @{ Id = "n1"; Name = "n.md"; Md5 = "h1"; M = 5; Pc = "MAC" }
+$seen = @{ Raw = "h1"; M = 5; Pc = "MAC" }
+Assert-True (-not (Test-RemoteMoved "n1" $seen)) "avant envoi : Drive inchange"
+Assert-True (-not (Test-RemoteMoved "" $seen)) "avant envoi : nouveau fichier, rien a verifier"
+$script:Fake["n.md"].Md5 = "h2"
+Assert-True (Test-RemoteMoved "n1" $seen) "avant envoi : contenu change ailleurs"
+$script:Fake["n.md"].Md5 = "h1"
+$script:Fake["n.md"].Pc = "PCB"
+Assert-True (Test-RemoteMoved "n1" $seen) "avant envoi : renvoye par un autre PC"
+Assert-True (Test-RemoteMoved "zz" $seen) "avant envoi : fichier retire du Drive"
+$script:Fake.Remove("n.md")
+$entryFn = ${function:Get-DriveFileEntry}
+function Get-DriveFileEntry { param([string]$Id) $e = New-Object Exception "absent"; $e.Data["HttpStatus"] = 404; throw $e }
+Assert-True (Test-RemoteMoved "n1" $seen) "avant envoi : 404, fichier retire du Drive"
+function Get-DriveFileEntry { param([string]$Id) throw "panne reseau" }
+Assert-Throws { Test-RemoteMoved "n1" $seen } "panne reseau" "avant envoi : panne remontee"
+Set-Item Function:\Get-DriveFileEntry $entryFn
+
 $ctx = @{ Folder = "F"; Pc = "PCP"; Local = (New-PathMap); Remote = (New-PathMap) }
 $ctx.Remote[".claude/x/1.md"] = @{ Id = "x1" }
 $ctx.Remote[".claude/x/2.md"] = @{ Id = "x2" }
@@ -46,6 +64,12 @@ Assert-Equal "" (Get-PrefetchedTemp $pre ".claude/x/z.md") "en avance : action h
 $tmp2 = $pre.Planned[".claude/x/2.md"].Tmp
 Stop-TransferPrefetch $pre
 Assert-True (-not [IO.File]::Exists($tmp1) -and -not [IO.File]::Exists($tmp2)) "arret : temporaires non consommes retires"
+
+$ctx.Remote[".claude/x/petit.md"] = @{ SealedId = "p1"; Moved = $true }
+$pre = Start-TransferPrefetch $ctx $plan 0
+Assert-True (Get-PrefetchedUpload $pre ".claude/x/petit.md").Moved "en avance : fichier change sur le Drive, pas envoye"
+Stop-TransferPrefetch $pre
+$ctx.Remote.Remove(".claude/x/petit.md")
 
 $pre = Start-TransferPrefetch $ctx $plan 1
 Assert-Equal "" (Get-PrefetchedTemp $pre ".claude/x/1.md") "echeance passee : rien en avance"

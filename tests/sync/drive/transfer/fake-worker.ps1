@@ -12,6 +12,11 @@ function Send-SealedFile {
   return @{ Id = "up-" + $Item.Rel + "-" + $Item.Bytes.Length + "-" + $Item.Props["pc"]; Md5 = "" }
 }
 
+function Test-RemoteMoved {
+  param([string]$Id, $Seen)
+  return $null -ne $Seen -and $Seen.Moved -eq $true
+}
+
 function Get-SyncBytes {
   param([string]$Rel, [string]$Path)
   return ,[IO.File]::ReadAllBytes($Path)

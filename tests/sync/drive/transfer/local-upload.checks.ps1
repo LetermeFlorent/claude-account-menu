@@ -24,7 +24,7 @@ try {
   $script:RouteCalls.Clear()
   $routeCtx = @{ Folder = "F"; Pc = "PC"; Keys = $null; Prefetch = $null; Remote = @{}; State = @{ Files = @{} } }
   $routeCtx.Local = @{ ".claude/big.bin" = @{ Full = $routeBig; M = 5; Size = 11; Md5 = "lm" } }
-  Send-SyncFile $routeCtx ".claude/big.bin"
+  Assert-True (Send-SyncFile $routeCtx ".claude/big.bin") "synchro : envoi fait"
   Assert-Equal "flux .claude/big.bin" ($script:RouteCalls -join ",") "synchro : gros fichier envoye en flux"
   Assert-Equal "id-flux|md5-flux" ($routeCtx.State.Files[".claude/big.bin"].Id + "|" + $routeCtx.State.Files[".claude/big.bin"].Md5) "synchro : id et empreinte du fichier envoye en flux"
 } finally {

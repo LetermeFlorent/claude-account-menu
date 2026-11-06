@@ -12,6 +12,13 @@ function Get-DriveListing {
 
 function Get-DriveFilesListing { param($Folders, [string]$Pc) return Get-DriveListing $Folders.Files }
 
+function Get-DriveFileEntry {
+  param([string]$Id)
+  $path = Find-DriveRaceFile $script:DriveRaceStore $Id
+  if (-not $path) { return $null }
+  return Read-DriveRaceEntry $path
+}
+
 function Send-DriveContent {
   param([string]$FolderId, [string]$Name, [byte[]]$Bytes, $Props, [string]$Id)
   $all = @{}
