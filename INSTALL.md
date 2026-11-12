@@ -64,7 +64,7 @@ Nothing updates when `clm.version` is missing, which happens when you installed 
 
 There is no uninstall command. Delete the clm files from `~/.local/bin` (`clm`, `clm.cmd`, `claude-menu.cmd`, `claude-*.ps1`, `clm.version`, `clm.files` and the `clm-web` and `lang` folders) but keep `claude` or `claude.exe`, which is Claude Code. On Windows, remove `%USERPROFILE%\.local\bin` from your user PATH only if nothing else needs it.
 
-Then remove the hook entry that runs `claude-statusline-seed.ps1` from each account's `settings.json` (the `.bak-seed` copy is the file as it was before). The state folder and the cache folder (`%LOCALAPPDATA%\claude-menu`, `~/Library/Caches/claude-menu` or `~/.cache/claude-menu`) can go too. If you used Drive sync, run `clm --sync-key-forget` first. Your account folders and backups are never deleted by the installers.
+Then remove the hook entry that runs `claude-statusline-seed.ps1` from each account's `settings.json` (the `.bak-seed` copy is the file as it was before). The state folder and the cache folder (`%LOCALAPPDATA%\claude-menu`, `~/Library/Caches/claude-menu` or `~/.cache/claude-menu`) can go too. If you used Drive sync, forget the sync phrase on the web page (`clm`, key `w`) first. Your account folders and backups are never deleted by the installers.
 
 ## Troubleshooting
 

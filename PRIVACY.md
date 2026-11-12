@@ -8,7 +8,7 @@ To read an account's quota, clm calls the Anthropic usage API (`api.anthropic.co
 
 To update itself, clm asks the GitHub API for the latest release of `LetermeFlorent/claude-account-menu`, then downloads the release zip and its `.sha256` file from `github.com`. The only header it sends is `User-Agent: clm`. The zip is refused unless its SHA-256 matches. The update of Claude Code is done by `claude update`, which does its own networking. clm only reads a release `manifest.json` from `storage.googleapis.com` to size the progress bar.
 
-Google Drive is used only if you connect it with the `y` key or `clm --drive-login`. Sign-in goes through your browser to `accounts.google.com`, with the `drive.file` scope, PKCE and a loopback redirect on `127.0.0.1`. That scope lets clm see only the files it created itself, inside a `clm-sync` folder. Calls go to `oauth2.googleapis.com` and `www.googleapis.com`.
+Google Drive is used only if you connect it with the `y` key or from the web page (`clm`, key `w`). Sign-in goes through your browser to `accounts.google.com`, with the `drive.file` scope, PKCE and a loopback redirect on `127.0.0.1`. That scope lets clm see only the files it created itself, inside a `clm-sync` folder. Calls go to `oauth2.googleapis.com` and `www.googleapis.com`.
 
 Before opening the menu or launching an account, clm also opens a plain TCP connection to `api.anthropic.com:443` and `github.com:443` to check that you are online. No data is sent on it, and one host answering is enough. The local web page loads nothing from the internet: its Content-Security-Policy allows only its own origin and inline images, and it fetches only clm's own `/api` and `/lang` addresses.
 
@@ -36,7 +36,7 @@ The web page started by `w` or `clm --web` listens on `127.0.0.1` only, on a por
 
 ## Turning Drive off
 
-Run `clm --sync-auto=off` to stop automatic sync (login files are still exchanged when you launch or close an account). To cut the link completely, run `clm --sync-key-forget` and delete `drive.json` from the state folder on each PC, then remove clm's access at https://myaccount.google.com/permissions. The `clm-sync` folder in your Drive can then be deleted by hand.
+Turn off automatic sync on the web page (`clm`, key `w`) to stop automatic sync (login files are still exchanged when you launch or close an account). To cut the link completely, forget the sync phrase on the web page and delete `drive.json` from the state folder on each PC, then remove clm's access at https://myaccount.google.com/permissions. The `clm-sync` folder in your Drive can then be deleted by hand.
 
 ## Contact
 

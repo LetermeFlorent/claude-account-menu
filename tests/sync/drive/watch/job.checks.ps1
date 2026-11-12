@@ -45,7 +45,7 @@ $job.Loader = New-FakeDriveLoader @{ Ok = $true; Error = ""; At = $at; Up = 1; D
 $null = Step-DriveJob $job
 Assert-Equal (Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.done" @(1, 2, 0, 0)))) $job.Notice "synchro demandee : resultat affiche"
 $job.Notice = $null
-$blockedText = "synchro bloquee : 30 suppressions prevues, verifier puis lancer clm --sync --force"
+$blockedText = "synchro bloquee : 30 suppressions prevues, verifier puis forcer la synchro depuis la page web"
 $job.Loader = New-FakeDriveLoader @{ Ok = $false; Error = $blockedText; At = 0 }
 $null = Step-DriveJob $job
 Assert-True $job.Failed "garde-fou : erreur"
