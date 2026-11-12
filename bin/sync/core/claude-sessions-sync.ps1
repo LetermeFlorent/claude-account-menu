@@ -42,7 +42,7 @@ function Copy-SessionFile {
   $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($Dst))
   $tmp = $Dst + $script:SessionTmpExt
   [IO.File]::WriteAllBytes($tmp, $data)
-  if ($have) { [IO.File]::Replace($tmp, $Dst, $null) } else { [IO.File]::Move($tmp, $Dst) }
+  if ($have) { [IO.File]::Replace($tmp, $Dst, [NullString]::Value) } else { [IO.File]::Move($tmp, $Dst) }
   return $true
 }
 
