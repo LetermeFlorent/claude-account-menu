@@ -1,4 +1,4 @@
-. Import-ClmModule claude-text
+. Import-ClmModule claude-text, claude-sessions-sync
 $script:WebPrefMoves = @{ on = "server.prefOn"; off = "server.prefOff"; erase = "server.prefErase" }
 
 function Assert-WebDrive {
@@ -18,6 +18,14 @@ function Invoke-WebDriveAuto {
   Set-DriveAuto $on
   if ($on) { return New-WebDone (Get-ClmText "server.autoOn") }
   return New-WebDone (Get-ClmText "server.autoOff")
+}
+
+function Invoke-WebSessions {
+  param($Data)
+  $on = $Data["on"] -eq $true
+  Set-SessionSync $on
+  if ($on) { return New-WebDone (Get-ClmText "server.sessionsOn") }
+  return New-WebDone (Get-ClmText "server.sessionsOff")
 }
 
 function Invoke-WebDriveLogin {

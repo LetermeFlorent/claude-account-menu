@@ -80,6 +80,7 @@ try {
   Assert-True (-not (Get-WebState $true).startup) "web etat : demarrage bloque trop longtemps, page libre"
   $script:Startup = $null
 
+  Assert-True (-not (Get-WebState $true).sessions) "web etat : conversations non partagees par defaut"
   $v = (Get-WebState $true).display
   Assert-Equal "auto auto False False" ($v.palette + " " + $v.anim + " " + $v.paletteEnv + " " + $v.animEnv) "web etat : affichage par defaut"
   $lk = (Get-WebState $true).look

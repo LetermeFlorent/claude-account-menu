@@ -108,7 +108,7 @@ Key `p` (or `--prefs`) lists synced skills and MCP servers with check boxes for 
 
 ## Web page
 
-Key `w` or `clm --web` opens a page at `http://127.0.0.1:<port>/` in your browser, served by clm while the menu is open and closed with it; outside an interactive terminal `--web` exits with 1. The page has four sections: Accounts (quotas, add, rename, move, remove), Drive (connect, automatic sync, sync now, synced skills and MCP servers), Backups (save, list, restore) and Settings (page language and theme, terminal colours and animations, the usage poll delay). A header holds the clm version and an update button.
+Key `w` or `clm --web` opens a page at `http://127.0.0.1:<port>/` in your browser, served by clm while the menu is open and closed with it; outside an interactive terminal `--web` exits with 1. The page has four sections: Accounts (quotas, add, rename, move, remove), Drive (connect, automatic sync, sync now, synced skills and MCP servers), Backups (save, list, restore) and Settings (page language and theme, terminal colours and animations, the usage poll delay, shared conversations). A header holds the clm version and an update button.
 
 The first address carries a code that works once and expires after 60 seconds. The page then keeps a session cookie (`HttpOnly`, `SameSite=Strict`, gone when the browser closes), and only requests addressed to `127.0.0.1:<port>` are answered. The Content-Security-Policy is strict (`default-src 'none'`, with scripts, styles and requests allowed from the page's own origin only, and images from it or inline), so nothing is loaded from outside. Actions run inside clm: while the menu is busy in the terminal, the page greys its controls and says so. Adding an account, connecting Drive and installing a clm update finish in the terminal.
 
@@ -126,6 +126,10 @@ The web page follows the system theme live and is light by default. Its theme se
 
 The quotas are read again every 30 seconds by default. `clm --usage-poll <seconds>`, or the usage field in the Settings section of the web page, changes it from 15 to 600 and saves it as `usagePoll` in `display.json`. The console has no screen for it.
 
+## Shared conversations
+
+Off by default. The Conversations switch in the Settings section of the web page makes every launch copy the `projects` folder of each account (session files and Claude memory) into the other accounts, so `/resume` lists the same conversations in all of them. The copy only adds: a file missing in an account is copied, a copy that is the start of a longer one is extended, and a file that differs in any other way is left as it is. Nothing is deleted or overwritten. The choice is saved in `sessions-sync.json`.
+
 ## Files
 
 The state folder is `%LOCALAPPDATA%\clm` on Windows, `~/Library/Application Support/clm` on macOS and `$XDG_STATE_HOME/clm` (default `~/.local/state/clm`) on Linux.
@@ -134,6 +138,7 @@ The state folder is `%LOCALAPPDATA%\clm` on Windows, `~/Library/Application Supp
 |---|---|
 | `accounts.json` | The account list, `[{Label, Dir}]` in menu order |
 | `display.json` | Palette, animation, language, web theme and usage poll delay |
+| `sessions-sync.json` | Whether conversations are shared between the accounts |
 | `drive.json` | Google tokens and the PC name; secret |
 | `sync-key` | The sync key; absent on macOS, which uses the Keychain |
 | `sync-choice.json`, `sync-catalog.json` | Per-PC sync choices |

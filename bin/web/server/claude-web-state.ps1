@@ -1,4 +1,4 @@
-. Import-ClmModule claude-web-look
+. Import-ClmModule claude-web-look, claude-sessions-sync
 
 function Get-WebQuota {
   param($Pct, $Pace, [string]$Left)
@@ -68,6 +68,6 @@ function Get-WebState {
   }
   return [ordered]@{
     ok = $true; open = $Open; startup = (Test-StartupHolding $script:Startup); version = $version
-    update = (Get-WebUpdate); msg = $msg; accounts = $accs.ToArray(); drive = (Get-WebDrive); display = (Get-WebDisplay); look = (Get-WebLook)
+    update = (Get-WebUpdate); msg = $msg; accounts = $accs.ToArray(); drive = (Get-WebDrive); display = (Get-WebDisplay); look = (Get-WebLook); sessions = (Test-SessionSyncOn)
   }
 }

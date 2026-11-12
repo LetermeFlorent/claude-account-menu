@@ -73,6 +73,10 @@ try {
   Assert-Equal ((Get-ClmText "server.autoOff") + " False") ($r.Msg + " " + $script:ActAuto) "web action : synchro automatique coupee"
   $r = Invoke-ActTest @{ do = "driveauto"; on = $true }
   Assert-Equal ((Get-ClmText "server.autoOn") + " True") ($r.Msg + " " + $script:ActAuto) "web action : synchro automatique activee"
+  $r = Invoke-ActTest @{ do = "sessions"; on = $true }
+  Assert-Equal ((Get-ClmText "server.sessionsOn") + " True") ($r.Msg + " " + (Test-SessionSyncOn)) "web action : conversations partagees"
+  $r = Invoke-ActTest @{ do = "sessions"; on = $false }
+  Assert-Equal ((Get-ClmText "server.sessionsOff") + " False") ($r.Msg + " " + (Test-SessionSyncOn)) "web action : conversations plus partagees"
 
   $r = Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "erase" }
   Assert-Equal ("True " + (Get-ClmText "server.prefErase" @("dessin"))) ("" + $r.Ok + " " + $r.Msg) "web action : effacer un skill partout"

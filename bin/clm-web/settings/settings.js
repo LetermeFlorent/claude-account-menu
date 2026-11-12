@@ -13,6 +13,13 @@ function settingsView(s) {
   }
   byId("palette-env").hidden = !d.paletteEnv;
   byId("anim-env").hidden = !d.animEnv;
+  const box = byId("sessions-sync");
+  if (document.activeElement !== box) box.checked = !!s.sessions;
+}
+
+async function sessionsChoose(box) {
+  const r = await clmAct({ do: "sessions", on: box.checked });
+  if ((!r || !r.ok) && clm.state) box.checked = !!clm.state.sessions;
 }
 
 async function settingsChoose(name, sel) {
@@ -27,6 +34,8 @@ function settingsInit() {
     clmApplyTexts(sel);
     sel.addEventListener("change", () => settingsChoose(name, sel));
   }
+  const box = byId("sessions-sync");
+  box.addEventListener("change", () => sessionsChoose(box));
 }
 
 clm.views.push(settingsView);

@@ -2,7 +2,7 @@
 $script:WebFree = @("backups-of", "look", "usagepoll")
 $script:WebHandlers = @{
   refresh = "Invoke-WebRefresh"; rename = "Invoke-WebRename"; move = "Invoke-WebMove"; remove = "Invoke-WebRemove"; add = "Invoke-WebAdd"
-  drivesync = "Invoke-WebDriveSync"; driveauto = "Invoke-WebDriveAuto"; drivelogin = "Invoke-WebDriveLogin"; pref = "Invoke-WebPref"
+  drivesync = "Invoke-WebDriveSync"; driveauto = "Invoke-WebDriveAuto"; sessions = "Invoke-WebSessions"; drivelogin = "Invoke-WebDriveLogin"; pref = "Invoke-WebPref"
   display = "Invoke-WebDisplay"; look = "Invoke-WebLook"; usagepoll = "Invoke-WebUsagePoll"; save = "Invoke-WebSave"; "backups-of" = "Invoke-WebBackupsOf"; restore = "Invoke-WebRestore"; selfupdate = "Invoke-WebSelfUpdate"
 }
 

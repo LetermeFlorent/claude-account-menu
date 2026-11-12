@@ -1,4 +1,4 @@
-. Import-ClmModule claude-json, claude-state, claude-drive-lock, claude-text
+. Import-ClmModule claude-json, claude-state, claude-drive-lock, claude-text, claude-sessions-sync
 $script:AccountKeys = @("model", "modelSettings", "theme")
 $script:SyncStatePath = Get-StatePath "sync-state.json"
 $script:SyncLockWaitMs = 5000
@@ -61,6 +61,7 @@ function Sync-Accounts {
       $configs = @($accs | ForEach-Object { Get-AccountConfigFile $_ })
       Sync-Domain "settings" $settings ${function:Get-SharedSettings} ${function:Merge-Settings} $state
       Sync-Domain "mcpServers" $configs ${function:Get-McpServers} ${function:Merge-Mcp} $state
+      if (Test-SessionSyncOn) { $null = Sync-AccountSessions $accs }
       Write-TextFileAtomic $script:SyncStatePath (ConvertTo-JsonText $state)
       $true
     } catch {
