@@ -58,7 +58,7 @@ function Repair-SharedLinks {
     $src = Join-Path $main $d; $dst = Join-Path $dir $d
     if (-not (Test-Path -LiteralPath $src)) { continue }
     if ((Test-Path -LiteralPath $dst) -and -not (Get-Item -LiteralPath $dst -Force).LinkType) {
-      try { Rename-Item -LiteralPath $dst -NewName ($d + ".bak-sync") -ErrorAction Stop } catch { continue }
+      try { Merge-SharedDir $dst $src $Acc.Label; Move-Item -LiteralPath $dst -Destination (Get-FreeBackupPath ($dst + ".bak-sync") $Acc.Label) -ErrorAction Stop } catch { continue }
     }
     if (-not (Test-Path -LiteralPath $dst)) { New-Item -ItemType (Get-DirLinkType) -Path $dst -Target $src | Out-Null }
   }
@@ -66,12 +66,41 @@ function Repair-SharedLinks {
     $src = Join-Path $main $f; $dst = Join-Path $dir $f
     if (-not (Test-Path -LiteralPath $src)) { continue }
     if ((Test-Path -LiteralPath $dst) -and ($Force -or -not (Test-SameFile $src $dst))) {
-      if (-not $Force -and [IO.File]::GetLastWriteTimeUtc($dst) -gt [IO.File]::GetLastWriteTimeUtc($src)) {
-        [IO.File]::WriteAllBytes($src, [IO.File]::ReadAllBytes($dst))
-      }
+      if (-not $Force) { Save-DivergedCopy $src $dst $Acc.Label }
       Remove-Item -LiteralPath $dst -Force
     }
     if (-not (Test-Path -LiteralPath $dst)) { New-Item -ItemType HardLink -Path $dst -Target $src | Out-Null }
+  }
+}
+
+function Get-FreeBackupPath {
+  param([string]$Path, [string]$Label)
+  if (-not (Test-Path -LiteralPath $Path)) { return $Path }
+  $base = $Path -replace "\.bak-sync$", ""
+  return $base + ".conflit-" + ($Label -replace "[^A-Za-z0-9_-]", "_") + "-" + [DateTime]::UtcNow.ToString("yyyyMMddHHmmssfff")
+}
+
+function Save-DivergedCopy {
+  param([string]$Main, [string]$Copy, [string]$Label)
+  $a = [IO.File]::ReadAllBytes($Main); $b = [IO.File]::ReadAllBytes($Copy)
+  if ([Linq.Enumerable]::SequenceEqual($a, $b)) { return }
+  $copyNewer = [IO.File]::GetLastWriteTimeUtc($Copy) -gt [IO.File]::GetLastWriteTimeUtc($Main)
+  $lost = $b
+  if ($copyNewer) { $lost = $a }
+  [IO.File]::WriteAllBytes((Get-FreeBackupPath ($Main + ".bak-sync") $Label), $lost)
+  if ($copyNewer) { [IO.File]::WriteAllBytes($Main, $b) }
+}
+
+function Merge-SharedDir {
+  param([string]$From, [string]$Into, [string]$Label)
+  foreach ($f in [IO.Directory]::GetFiles($From, "*", "AllDirectories")) {
+    $target = Join-Path $Into $f.Substring($From.Length).TrimStart("\", "/")
+    if ([IO.File]::Exists($target)) {
+      if ([Linq.Enumerable]::SequenceEqual([IO.File]::ReadAllBytes($f), [IO.File]::ReadAllBytes($target))) { continue }
+      $target = Get-FreeBackupPath ($target + ".bak-sync") $Label
+    }
+    $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target))
+    [IO.File]::Copy($f, $target)
   }
 }
 

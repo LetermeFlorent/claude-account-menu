@@ -41,13 +41,31 @@ function Sync-Domain {
   $items = @($items)
   $base = $null
   if ($State.Keys -contains $Name) { $base = $State[$Name] }
-  $changed = @($items | Where-Object { $_.Text -ne $base })
-  if ($changed.Count -eq 0) { return }
-  $winner = @($changed | Sort-Object Time -Descending)[0]
+  if (@($items | Where-Object { $_.Text -ne $base }).Count -eq 0) { return }
+  $union = Get-UnionShared $items $base
+  $text = ConvertTo-JsonText $union
   foreach ($it in $items) {
-    if ($it.Text -ne $winner.Text) { Write-JsonFile $it.Path (& $Merge $it.Data $winner.Shared) }
+    if ($it.Text -ne $text) { Write-JsonFile $it.Path (& $Merge $it.Data $union) }
   }
-  $State[$Name] = $winner.Text
+  $State[$Name] = $text
+}
+
+function Get-UnionShared {
+  param($Items, [string]$BaseText)
+  $base = $null
+  if ($BaseText) { try { $base = ConvertFrom-JsonText $BaseText } catch { $base = $null } }
+  $newest = @($Items | Sort-Object Time -Descending)
+  $out = [ordered]@{}
+  foreach ($it in $newest) {
+    foreach ($k in @($it.Shared.Keys)) {
+      if ($out.Contains($k)) { continue }
+      $was = $null
+      if ($null -ne $base -and @($base.Keys) -contains $k) { $was = ConvertTo-JsonText $base[$k] }
+      $pick = @($newest | Where-Object { @($_.Shared.Keys) -contains $k -and (ConvertTo-JsonText $_.Shared[$k]) -ne $was })
+      if ($pick.Count -gt 0) { $out[$k] = $pick[0].Shared[$k] } else { $out[$k] = $it.Shared[$k] }
+    }
+  }
+  return $out
 }
 
 function Sync-Accounts {
