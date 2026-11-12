@@ -18,7 +18,7 @@ function Set-DrivePresence { param($Acc, [bool]$Open) $script:CliCalls.Add("pres
 function Send-DriveCredential { param($Acc) $script:CliCalls.Add("jeton") }
 function Invoke-DriveSync { param($Ctl = $null, [long]$DeadlineMs = 0, [switch]$Force) $script:CliCalls.Add("sync " + $DeadlineMs + " " + $Force.IsPresent + " " + [bool]$Ctl.Echo); return @{ Ok = $true; Error = ""; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Left = 2 } }
 $acc = [PSCustomObject]@{ Label = "c"; Dir = ".claude" }
-Remove-Item -LiteralPath $script:DriveConfigPath -Force
+Remove-Item -LiteralPath $script:DriveConfigPath -Force -ErrorAction SilentlyContinue
 Sync-DriveAfterExit $acc 5
 Assert-Equal 0 $script:CliCalls.Count "fermeture sans Drive : rien"
 Save-DriveConfig @{ refreshToken = "r"; auto = $false }

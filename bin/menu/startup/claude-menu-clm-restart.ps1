@@ -2,7 +2,7 @@
 $script:ClmReplacedPollMs = 1000
 $script:ClmRestartDue = $false
 $script:ClmRestartAt = 0.0
-$script:ClmRestartDropped = @("--usage", "--yes", "--force", "--erase", "--updated", "--no-update")
+$script:ClmRestartDropped = @("--usage", "--yes", "--force", "--erase", "--updated", "--no-update", "--drive-login")
 $script:ClmRestartDroppedPattern = "^(-[1-9]|--save(=.*)?|--restore=.*|--only=.*|--sync.*)$"
 
 function Test-ClmRestartHeld {
