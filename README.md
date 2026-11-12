@@ -47,6 +47,8 @@ Claude Code starts in the same terminal with `CLAUDE_CONFIG_DIR` set to the acco
 
 The web page asks for a name for a new account (it defaults to `compteN`) and creates the folder `.claude-compteN`, with N the first free number from the account count plus one. The new folder gets links to the shared items of `.claude` (the folders `agents`, `commands`, `hooks`, `plugins`, `rules`, `skills` and the files `ANTI-EMPREINTE.md`, `CLAUDE.md`, `settings.local.json`, `statusline.json`), a copy of its `settings.json`, and a `.claude.json` that skips Claude Code's welcome. Then `claude auth login` opens your browser. If claude.ai is already signed in there under another account, use a private window. An abandoned login leaves the account in the menu as "cree, mais non connecte": launch it and type `/login`.
 
+Two accounts never share one email. A new account that signs in to an email another account already uses is removed again. An account that signs in to such an email from inside a session loses that sign-in when the session ends. Once an account is signed in, clm starts its sessions with `DISABLE_LOGIN_COMMAND=1`, so `/login` is hidden there. Set `CLM_ALLOW_LOGIN=1` to keep it.
+
 Removing an account takes it out of the menu and keeps its folder, or also erases the folder after clm puts a safety archive in Downloads. Only folders named `.claude-<name>` can be erased, never `.claude`, and the last account cannot be removed. A renamed account cannot have an empty name, hold a comma or match another account. Names are cut at 40 characters. The order of the menu is the order of `accounts.json`, and the web page changes it.
 
 ### Updates

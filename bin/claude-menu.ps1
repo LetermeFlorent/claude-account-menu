@@ -32,6 +32,10 @@ function Start-Account {
   $session = Open-DriveSession $Acc
   try { Invoke-AsAccount $Acc $Extra }
   finally { Stop-DriveSession $Acc $session }
+  if (Test-DuplicateAccountEmail $Acc) {
+    Clear-AccountLogin $Acc
+    Write-Host ("  " + (Get-ClmText "accounts.login.duplicate" @($Acc.Label))) -ForegroundColor Yellow
+  }
 }
 
 function Assert-Online {

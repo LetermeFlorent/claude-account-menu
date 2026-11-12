@@ -27,15 +27,46 @@ function Get-AccountEmail {
   return Read-AccountEmail (Get-AccountConfigFile $Acc)
 }
 
+function Test-DuplicateAccountEmail {
+  param($Acc)
+  $mail = Get-AccountEmail $Acc
+  if ($mail -eq "") { return $false }
+  foreach ($o in @(Get-Accounts)) { if ($o.Dir -ne $Acc.Dir -and (Get-AccountEmail $o) -eq $mail) { return $true } }
+  return $false
+}
+
+function Clear-AccountLogin {
+  param($Acc)
+  $dir = Get-AccountPath $Acc
+  if ($script:OsName -eq "MacOS") {
+    $kd = $null
+    if ($Acc.Dir -ne ".claude") { $kd = $dir }
+    Remove-KeychainCredential $kd
+  }
+  Remove-Item -LiteralPath (Join-Path $dir ".credentials.json") -Force -ErrorAction SilentlyContinue
+  $file = Get-AccountConfigFile $Acc
+  $cfg = Read-JsonFile $file
+  if ($null -ne $cfg -and @($cfg.Keys) -contains "oauthAccount") { $null = $cfg.Remove("oauthAccount"); Write-JsonFile $file $cfg }
+}
+
+function Test-LoginLocked {
+  param($Acc)
+  if ($env:CLM_ALLOW_LOGIN -eq "1" -or (Get-AccountEmail $Acc) -eq "") { return $false }
+  return $null -ne (Read-AccountCredential $Acc)
+}
+
 function Invoke-InAccountEnv {
   param($Acc, [scriptblock]$Action)
   $prev = $env:CLAUDE_CONFIG_DIR
+  $prevLogin = $env:DISABLE_LOGIN_COMMAND
   try {
     if ($Acc.Dir -eq ".claude") { Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue }
     else { $env:CLAUDE_CONFIG_DIR = Get-AccountPath $Acc }
+    if (Test-LoginLocked $Acc) { $env:DISABLE_LOGIN_COMMAND = "1" }
     & $Action
   } finally {
     if ($null -eq $prev) { Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue } else { $env:CLAUDE_CONFIG_DIR = $prev }
+    if ($null -eq $prevLogin) { Remove-Item Env:DISABLE_LOGIN_COMMAND -ErrorAction SilentlyContinue } else { $env:DISABLE_LOGIN_COMMAND = $prevLogin }
   }
 }
 

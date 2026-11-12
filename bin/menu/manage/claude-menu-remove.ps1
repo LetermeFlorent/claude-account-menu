@@ -1,21 +1,4 @@
-. Import-ClmModule claude-text
-function Remove-LinkOrTree {
-  param([string]$Path)
-  $item = Get-Item -LiteralPath $Path -Force
-  if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-    if ($script:OsName -eq "Windows" -and $item.PSIsContainer) { [IO.Directory]::Delete($item.FullName, $false) }
-    else { [IO.File]::Delete($item.FullName) }
-    return
-  }
-  if ($item.PSIsContainer) {
-    foreach ($c in @(Get-ChildItem -LiteralPath $item.FullName -Force)) { Remove-LinkOrTree $c.FullName }
-    [IO.Directory]::Delete($item.FullName, $false)
-    return
-  }
-  try { [IO.File]::Delete($item.FullName); return } catch [UnauthorizedAccessException] { Write-Verbose $_.Exception.Message }
-  $item.Attributes = [IO.FileAttributes]::Normal
-  [IO.File]::Delete($item.FullName)
-}
+. Import-ClmModule claude-text, claude-account-add
 
 function Test-ErasableDir {
   param([string]$Dir)

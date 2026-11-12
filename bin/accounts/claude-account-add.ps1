@@ -41,5 +41,30 @@ function Connect-NewAccount {
   Invoke-AsAccount $acc @("auth", "login") | Out-Host
   $mail = Get-AccountEmail $acc
   if ($mail -eq "") { return Get-ClmText "accounts.add.notSignedIn" @($acc.Label) }
+  if (Test-DuplicateAccountEmail $acc) {
+    Clear-AccountLogin $acc
+    Save-Registry @(Get-Accounts | Where-Object { $_.Dir -ne $acc.Dir })
+    $dir = Get-AccountPath $acc
+    if (Test-Path -LiteralPath $dir) { Remove-LinkOrTree $dir }
+    throw (Get-ClmText "accounts.add.duplicate" @($mail))
+  }
   return Get-ClmText "accounts.add.done" @($acc.Label, $mail)
+}
+
+function Remove-LinkOrTree {
+  param([string]$Path)
+  $item = Get-Item -LiteralPath $Path -Force
+  if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+    if ($script:OsName -eq "Windows" -and $item.PSIsContainer) { [IO.Directory]::Delete($item.FullName, $false) }
+    else { [IO.File]::Delete($item.FullName) }
+    return
+  }
+  if ($item.PSIsContainer) {
+    foreach ($c in @(Get-ChildItem -LiteralPath $item.FullName -Force)) { Remove-LinkOrTree $c.FullName }
+    [IO.Directory]::Delete($item.FullName, $false)
+    return
+  }
+  try { [IO.File]::Delete($item.FullName); return } catch [UnauthorizedAccessException] { Write-Verbose $_.Exception.Message }
+  $item.Attributes = [IO.FileAttributes]::Normal
+  [IO.File]::Delete($item.FullName)
 }

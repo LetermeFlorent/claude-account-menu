@@ -118,8 +118,7 @@ function Step-Startup {
 
 function Set-StartupExit {
   param($Su)
-  if ($null -ne $Su.Exit) { return }
-  if ($Su.Quit -and ($Su.Released -or -not (Test-QuitWaits $Su))) { $Su.Exit = @{ Name = "quit" } }
+  if ($null -eq $Su.Exit -and $Su.Quit -and ($Su.Released -or -not (Test-QuitWaits $Su))) { $Su.Exit = @{ Name = "quit" } }
 }
 
 function Get-HeldAction {
