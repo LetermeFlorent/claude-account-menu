@@ -20,7 +20,7 @@ The menu opens full screen with one block per account: its number, name and plan
 
 The pace word comes from projecting the current percentage to the end of the window: `debut` (under 10 % of the window elapsed), `faible` (projected under 70 %), `normal` (70 to 100 %), `fort` (100 to 130 %), `excessif` (over 130 %) and `epuise` (quota used up).
 
-The menu, the command line messages and the web page speak English or French (see Language). In a terminal that cannot draw it (input or output redirected, or no VT support) clm prints the account list with the quotas and asks for a number instead. Under 41 columns, or in a very short terminal, the menu shows one line per account. While the startup updates run, the cursor keys, `y`, `w` and `m` work and the others wait until they finish; Enter or a number is kept and the account starts when they end.
+The menu, the command line messages and the web page speak English or French (see Language). In a terminal that cannot draw it (input or output redirected, or no VT support) clm prints the account list with the quotas and asks for a number instead. Under 41 columns, or in a very short terminal, the menu shows one line per account. While the startup updates of clm, Claude Code and Drive run, only their bars show and only `w` and `m` work. The accounts appear when all three are done, when one fails, or after 60 seconds at most, and from then on Enter or a number starts the account at once.
 
 ### Keys
 

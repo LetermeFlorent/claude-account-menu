@@ -104,7 +104,7 @@ function Invoke-WebSelfUpdate {
 function Invoke-WebAction {
   param($Item)
   $name = Get-WebText $Item.Args "do"
-  if ($null -ne $script:Startup -and (Test-StepsLeft $script:Startup @()) -and $script:WebFree -notcontains $name) {
+  if ((Test-StartupHolding $script:Startup) -and $script:WebFree -notcontains $name) {
     Send-WebJson $Item.Conn 409 @{ ok = $false; msg = (Get-ClmText "server.starting") }
     return @{ Name = "none" }
   }

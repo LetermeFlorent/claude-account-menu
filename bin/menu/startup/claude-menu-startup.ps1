@@ -71,6 +71,11 @@ function Test-StepsLeft {
   return $false
 }
 
+function Test-StartupHolding {
+  param($Su)
+  return $null -ne $Su -and -not $Su.Released -and (Test-StepsLeft $Su @())
+}
+
 function Test-StartupBlocking {
   param($Su)
   if ($null -eq $Su -or $Su.Released) { return $false }
@@ -128,7 +133,7 @@ function Get-StartupGate {
   param($Su, $Act, $State)
   if ($null -eq $Su) { return $Act }
   if ($null -ne $Su.Exit) { return $Su.Exit }
-  if ($Su.Released -or -not (Test-StepsLeft $Su @()) -or $script:StartupFree -contains $Act.Name) { return $Act }
+  if (-not (Test-StartupHolding $Su) -or $script:StartupFree -contains $Act.Name) { return $Act }
   if ($Act.Name -eq "quit") {
     if (-not (Test-QuitWaits $Su)) { return $Act }
     $Su.Quit = $true

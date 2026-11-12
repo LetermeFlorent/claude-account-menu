@@ -76,6 +76,8 @@ try {
   Assert-Equal "True v12" ("" + $u.ready + " " + $u.latest) "web etat : mise a jour prete"
   $script:Startup = @{ Steps = @(@{ Name = "claude"; State = "run" }) }
   Assert-True (Get-WebState $true).startup "web etat : demarrage en cours"
+  $script:Startup.Released = $true
+  Assert-True (-not (Get-WebState $true).startup) "web etat : demarrage bloque trop longtemps, page libre"
   $script:Startup = $null
 
   $v = (Get-WebState $true).display

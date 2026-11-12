@@ -67,7 +67,7 @@ function Get-WebState {
     $version = [string]$st.Version
   }
   return [ordered]@{
-    ok = $true; open = $Open; startup = ($null -ne $script:Startup -and (Test-StepsLeft $script:Startup @())); version = $version
+    ok = $true; open = $Open; startup = (Test-StartupHolding $script:Startup); version = $version
     update = (Get-WebUpdate); msg = $msg; accounts = $accs.ToArray(); drive = (Get-WebDrive); display = (Get-WebDisplay); look = (Get-WebLook)
   }
 }

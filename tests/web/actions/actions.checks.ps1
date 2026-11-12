@@ -14,6 +14,9 @@ try {
   Assert-Equal "409 Pro" ("" + $r.Code + " " + @(Get-Accounts)[1].Label) "web action : refusee pendant le demarrage"
   $r = Invoke-ActTest @{ do = "backups-of"; name = "claude-comptes-20261003-100000.zip" }
   Assert-Equal "200 True" ("" + $r.Code + " " + $r.Ok) "web action : lecture d'une sauvegarde pendant le demarrage"
+  $script:Startup.Released = $true
+  $r = Invoke-ActTest @{ do = "backups-of"; name = "claude-comptes-20261003-100000.zip" }
+  Assert-True ($r.Code -ne 409) "web action : demarrage bloque trop longtemps, page libre"
   $script:Startup = $null
 
   $script:ActStops = 0
