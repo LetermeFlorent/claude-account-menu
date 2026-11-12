@@ -44,11 +44,11 @@ Before it changes a file, the hook step copies it to `settings.json.bak-seed`. I
 
 ## First launch
 
-Run `clm`. With no `accounts.json` yet, clm lists `.claude` as `compte1` plus any `~/.claude-compte2` to `~/.claude-compte9` folders that exist, then saves that list in its state folder (`%LOCALAPPDATA%\clm`, `~/Library/Application Support/clm` or `~/.local/state/clm`). Press `a` to add an account, or run `clm --usage` to print the quotas without opening the menu. Files from older versions that sat in your home folder are moved into the state folder automatically.
+Run `clm`. With no `accounts.json` yet, clm lists `.claude` as `compte1` plus any `~/.claude-compte2` to `~/.claude-compte9` folders that exist, then saves that list in its state folder (`%LOCALAPPDATA%\clm`, `~/Library/Application Support/clm` or `~/.local/state/clm`). Add an account from the web page (key `w`), or run `clm --usage` to print the quotas without opening the menu. Files from older versions that sat in your home folder are moved into the state folder automatically.
 
 ## Moving to another computer
 
-Run `clm` and press `s` to save accounts to an archive in your Downloads folder, copy the archive over, install clm there, and press `r`. A backup made by a newer clm than the installed one is refused: let clm update first. Backups hold the saved settings but not the login of macOS accounts, which live in the Keychain. Those accounts sign in again after a restore. The README has the details, including Drive sync as an alternative.
+Run `clm`, open the web page with `w` and save accounts to an archive in your Downloads folder, copy the archive over, install clm there, and restore it from its web page. A backup made by a newer clm than the installed one is refused: let clm update first. Backups hold the saved settings but not the login of macOS accounts, which live in the Keychain. Those accounts sign in again after a restore. The README has the details, including Drive sync as an alternative.
 
 ## Updating
 

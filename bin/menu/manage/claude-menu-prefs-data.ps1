@@ -1,6 +1,18 @@
 . Import-ClmModule claude-text
 $script:PrefsAllKey = "*"
 
+function Get-PrefsEraseWarn {
+  param([string]$Kind)
+  return "  " + (Get-ClmText ("sync.prefs.erase." + $Kind))
+}
+
+function Get-PrefsSub {
+  param($Catalog)
+  if (@($Catalog.Waiting).Count -gt 0) { return Get-ClmText "sync.prefs.sub.waiting" @((@($Catalog.Waiting) -join ", ")) }
+  if (-not $Catalog.PerPc) { return Get-ClmText "sync.prefs.sub.perPc" }
+  return Get-ClmText "sync.prefs.sub.checked"
+}
+
 function Get-PrefsThisPc {
   return Get-ClmText "sync.prefs.thisPc"
 }

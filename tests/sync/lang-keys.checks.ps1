@@ -34,7 +34,6 @@ foreach ($k in $langOwn) {
 }
 Assert-True ($langFr["sync.pass.created"].Contains([string][char]0xE9 + [string][char]0xE9)) "textes de synchro : creee prend ses deux accents"
 Assert-True ($langFr["sync.prefs.title"].Contains("R" + [char]0xE9 + "glages")) "textes de synchro : Reglages prend son accent"
-Assert-True ($langFr["sync.prefs.key.escape"].StartsWith([string][char]0xC9)) "textes de synchro : Echap prend sa majuscule accentuee"
 
 $langKept = [Environment]::GetEnvironmentVariable("CLM_LANG")
 try {

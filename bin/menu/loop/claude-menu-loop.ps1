@@ -53,13 +53,8 @@ function Close-AccountMenu {
 }
 
 function Invoke-MenuPage {
-  param([string]$Name, [int]$Sel, $Arg = $null)
-  if ($Name -eq "save") { return Show-SaveMenu }
-  if ($Name -eq "restore") { return Show-RestoreMenu }
-  if ($Name -eq "remove") { return Show-RemoveMenu $Sel }
-  if ($Name -eq "rename") { return Show-RenameMenu $Sel }
+  param([string]$Name, $Arg = $null)
   if ($Name -eq "drivelogin") { if (Import-ClmGroup drive) { return Connect-MenuDrive }; return "" }
-  if ($Name -eq "prefs") { if (Import-ClmGroup drive, sync, mcp) { return Show-PrefsMenu }; return "" }
   Exit-UiScreen
   try { return Add-Account $Arg } finally { Enter-UiScreen }
 }
@@ -89,7 +84,7 @@ function Invoke-MenuCommand {
   Stop-MenuLoader 30000
   $sel = $script:MenuState.Sel
   Hide-Screen
-  try { $msg = @(("  " + (Invoke-MenuPage $Name $sel $Arg)), $script:Levels["7d"][0]) }
+  try { $msg = @(("  " + (Invoke-MenuPage $Name $Arg)), $script:Levels["7d"][0]) }
   catch { $msg = @((Get-MenuFailText $Name $_.Exception.Message), $script:Ink.Alert) }
   if (-not $script:UiQuit) { Hide-Screen }
   Reset-MenuState $msg $sel
@@ -136,7 +131,9 @@ function Invoke-MenuLoop {
     elseif ($act.Name -eq "quit" -or $act.Name -eq "restart") { return Close-AccountMenu $null }
     elseif ($act.Name -eq "offline") { $script:MenuOffline = $true; return Close-AccountMenu $null }
     elseif ($act.Name -eq "refresh") { Request-EntryRead $st $now }
-    elseif ($act.Name -eq "drivesync" -and (-not $script:DriveJob.Connected -or -not (Import-ClmGroup drive) -or -not (Test-SyncKeyStored))) { Invoke-MenuCommand "drivelogin" }
+    elseif ($act.Name -eq "drivesync" -and (-not $script:DriveJob.Connected -or -not (Import-ClmGroup drive) -or -not (Test-SyncKeyStored))) {
+      $st.Msg = @(("  " + (Get-ClmText "menu.loop.drive.fromWeb")), $script:Ink.Dim); $st.Dirty = $true
+    }
     elseif ($act.Name -eq "drivesync") { $st.Msg = Request-DriveSync $script:DriveJob; $st.Dirty = $true }
     elseif ($act.Name -eq "selfupdate") {
       if (Test-ClmUpdateReady) { $script:MenuRestart = $true; return Close-AccountMenu $null }

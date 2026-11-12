@@ -1,4 +1,5 @@
-. (Join-Path $bin "menu/manage/claude-menu-prefs.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-prefs-data.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-prefs-pc.ps1")
 
 $asksSaved = @($script:SyncChoicePath, $script:SyncChoiceLockPath, $script:SyncChoiceWaitMs)
 $script:SyncChoicePath = Join-Path $script:Sandbox "asks-choice.json"

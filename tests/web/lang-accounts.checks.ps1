@@ -1,9 +1,9 @@
 $langWebEn = ConvertFrom-JsonText ([IO.File]::ReadAllText((Join-Path (Join-Path $bin "lang") "en.json"), [Text.Encoding]::UTF8))
 $langWebKeys = @(
   "accounts.registry.badCopyFailed", "accounts.registry.badDir", "accounts.registry.busy", "accounts.registry.unreadable",
-  "accounts.rename.cancelled", "accounts.rename.comma", "accounts.rename.done", "accounts.rename.empty", "accounts.rename.taken", "accounts.rename.unchanged",
+  "accounts.rename.comma", "accounts.rename.done", "accounts.rename.empty", "accounts.rename.taken", "accounts.rename.unchanged",
   "accounts.move.alreadyAt", "accounts.move.done", "accounts.move.outOfRange", "accounts.move.unknown",
-  "accounts.remove.cancelled", "accounts.remove.eraseIncomplete", "accounts.remove.erased", "accounts.remove.impossible", "accounts.remove.last", "accounts.remove.neverErased", "accounts.remove.neverErasedHere", "accounts.remove.removed", "accounts.remove.working",
+  "accounts.remove.eraseIncomplete", "accounts.remove.erased", "accounts.remove.last", "accounts.remove.neverErased", "accounts.remove.removed",
   "accounts.add.cancelled", "accounts.add.done", "accounts.add.notSignedIn", "accounts.guard.configError", "accounts.link.skipped"
 )
 $langWebAccents = [regex]("[" + [char]0xC0 + "-" + [char]0xFF + "]")

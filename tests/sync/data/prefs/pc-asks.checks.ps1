@@ -1,4 +1,5 @@
-. (Join-Path $bin "menu/manage/claude-menu-prefs.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-prefs-data.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-prefs-pc.ps1")
 . (Join-Path $bin "cli/claude-cli.ps1")
 . (Join-Path (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "fakes") "fake-drive.ps1")
 

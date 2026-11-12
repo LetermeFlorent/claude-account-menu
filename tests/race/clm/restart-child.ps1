@@ -10,8 +10,8 @@ $raceArgs = @($args) -join " "
 $script:ClmOnce = New-Object 'System.Collections.Generic.HashSet[string]'
 . (Join-Path $raceBin "claude-import.ps1")
 . Import-ClmModule claude-state-migrate, claude-boot-bar
-. Import-ClmModule claude-usage, claude-menu-view, claude-menu-save, claude-menu-restore, claude-menu-select,
-  claude-menu-remove, claude-menu-rename, claude-menu-prefs, claude-statusline-seed, claude-update, claude-self-update,
+. Import-ClmModule claude-usage, claude-menu-view, claude-menu-save, claude-menu-select,
+  claude-menu-remove, claude-menu-rename, claude-menu-prefs-data, claude-menu-prefs-pc, claude-statusline-seed, claude-update, claude-self-update,
   claude-sync, claude-menu-loop, claude-menu-startup, claude-drive-cli, claude-account-guard, claude-cli
 . (Join-Path (Split-Path -Parent $PSScriptRoot) "race-helpers.ps1")
 

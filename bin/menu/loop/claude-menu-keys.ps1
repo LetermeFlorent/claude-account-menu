@@ -1,4 +1,4 @@
-$script:MenuKeys = @{ "s" = "save"; "r" = "restore"; "a" = "add"; "x" = "remove"; "n" = "rename"; "m" = "refresh"; "u" = "selfupdate"; "y" = "drivesync"; "p" = "prefs"; "w" = "web"; "q" = "quit" }
+$script:MenuKeys = @{ "m" = "refresh"; "u" = "selfupdate"; "y" = "drivesync"; "w" = "web"; "q" = "quit" }
 
 $script:EntryActions = @("up", "down", "launch", "pick", "refresh")
 

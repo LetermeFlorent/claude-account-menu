@@ -1,6 +1,5 @@
 . (Join-Path $bin "menu/manage/claude-menu-archive.ps1")
 . (Join-Path $bin "menu/manage/claude-menu-save.ps1")
-. (Join-Path $bin "menu/manage/claude-menu-restore.ps1")
 . (Join-Path $bin "cli/claude-cli.ps1")
 $trHome = $script:HomeDir
 $trRegistry = $script:RegistryPath
@@ -43,9 +42,6 @@ Assert-True ([IO.File]::ReadAllText((Join-Path $script:HomeDir ".claude/settings
 $null = Restore-Accounts $trZip -Yes
 Assert-True ([IO.File]::ReadAllText((Join-Path $script:HomeDir ".claude/settings.json")).Contains("echo a")) "restauration confirmee : reglages remis"
 Assert-Equal "" ((Get-RestoreChanges $trZip $trAccs) -join "|") "reglages identiques : rien a confirmer"
-$trRows = @(Get-RestoreWarn @(".claude/settings.json : hooks"))
-Assert-True (@($trRows | Where-Object { (@($_ | ForEach-Object { [string]$_[0] }) -join "").Contains(".claude/settings.json : hooks") }).Count -ge 1) "menu : changements montres avant confirmation"
-Assert-True ((Get-CliHelpLines) -join "`n").Contains("--yes]") "aide : --yes cite pour la restauration"
 
 $trBytes = [IO.File]::ReadAllBytes($trZip)
 $trBytes[$trBytes.Length - 1] = $trBytes[$trBytes.Length - 1] -bxor 1

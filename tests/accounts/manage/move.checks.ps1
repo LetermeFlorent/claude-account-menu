@@ -1,6 +1,6 @@
 . (Join-Path $bin "menu/manage/claude-menu-rename.ps1")
 . (Join-Path $bin "menu/manage/claude-menu-remove.ps1")
-. (Join-Path $bin "cli/claude-cli.ps1")
+. (Join-Path $bin "accounts/claude-account-move.ps1")
 
 $moveSaved = $null
 if (Test-Path -LiteralPath $script:RegistryPath) { $moveSaved = [IO.File]::ReadAllBytes($script:RegistryPath) }
@@ -31,12 +31,6 @@ try {
   Assert-Equal (Get-ClmText "accounts.move.unknown" @("fantome")) $err "ordre : compte absent refuse"
   Assert-Equal "compte1|Pro|perso" (Get-MoveOrder) "ordre : refus sans effet sur le registre"
 
-  Assert-Equal 0 (Invoke-CliCommand (Get-CliCommand @("--move", "perso", "2")) @() 6>$null) "--move : reussi"
-  Assert-Equal "compte1|perso|Pro" (Get-MoveOrder) "--move : rang ecrit"
-  Assert-Equal 1 (Invoke-CliCommand (Get-CliCommand @("--move", "perso")) @() 6>$null) "--move sans rang : echec"
-  Assert-Equal 1 (Invoke-CliCommand (Get-CliCommand @("--move", "perso", "haut")) @() 6>$null) "--move rang non numerique : echec"
-  Assert-Equal 1 (Invoke-CliCommand (Get-CliCommand @("--move", "inconnu", "1")) @() 6>$null) "--move compte inconnu : echec"
-  Assert-Equal "compte1|perso|Pro" (Get-MoveOrder) "--move refuse : ordre garde"
 } finally {
   if ($null -ne $moveSaved) { [IO.File]::WriteAllBytes($script:RegistryPath, $moveSaved) } else { Remove-Item -LiteralPath $script:RegistryPath -Force -ErrorAction SilentlyContinue }
 }

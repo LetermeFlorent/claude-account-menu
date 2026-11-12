@@ -1,5 +1,5 @@
 . Import-ClmModule claude-text
-$script:CliHelpSections = @("cli.help.intro", "cli.help.launch", "cli.help.accounts", "cli.help.updates", "cli.help.drive", "cli.help.prefs", "cli.help.display", "cli.help.variables", "cli.help.files", "cli.help.homeFiles")
+$script:CliHelpSections = @("cli.help.intro", "cli.help.launch", "cli.help.accounts", "cli.help.updates", "cli.help.drive", "cli.help.prefs", "cli.help.variables", "cli.help.files", "cli.help.homeFiles")
 
 function Get-CliKeyLines {
   $lines = New-Object 'System.Collections.Generic.List[string]'

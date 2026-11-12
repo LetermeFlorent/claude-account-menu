@@ -28,7 +28,7 @@ function Read-UiInput {
 function Update-UiTick { param([double]$Now, [bool]$Busy) return $false }
 $script:FakeLatest = $null
 function New-ClmCheck { return @{ Loader = $null; NextAt = $null; Installed = $null; Latest = $script:FakeLatest } }
-$softMocked = @("Invoke-DriveLogin", "Test-DriveConnected", "Test-DriveAuto", "Get-DriveLastSync", "Start-DriveJob", "Start-ClaudeUpdate", "Step-ClaudeUpdate", "Set-SyncPassphrase", "Test-SyncKeyStored", "Clear-ConsoleInput")
+$softMocked = @("Invoke-DriveLogin", "Test-DriveConnected", "Test-DriveAuto", "Get-DriveLastSync", "Start-DriveJob", "Start-ClaudeUpdate", "Step-ClaudeUpdate", "Set-SyncPassphrase", "Test-SyncKeyStored", "Clear-ConsoleInput", "Test-ClmGroupLoaded", "Get-WebAction", "Invoke-WebAction")
 $softKept = @{}
 foreach ($n in $softMocked) { $f = Get-Item ("function:" + $n) -ErrorAction SilentlyContinue; if ($f) { $softKept[$n] = $f.ScriptBlock } }
 $script:ClaudeStarts = 0
@@ -98,26 +98,37 @@ try {
   $script:FakeLatest = $null
   $script:DriveJob = New-DriveJob $false 0
   $script:LoginCalls = 0
-  $script:LoginFails = $true
   $script:DriveOn = $false
+  $fromWeb = "  " + (Get-ClmText "menu.loop.drive.fromWeb")
   Assert-Null (Invoke-WithKeys @("y", [ConsoleKey]::Escape)) "y sans Drive : menu garde"
-  Assert-Equal ("  " + (Get-ClmText "menu.loop.fail.drive.login" @("refus"))) $script:MenuState.Msg[0] "y sans Drive : echec affiche"
-  Assert-True (-not $script:DriveJob.Connected) "y sans Drive : echec, toujours deconnecte"
-  $script:LoginFails = $false
-  $null = Invoke-WithKeys @("y", [ConsoleKey]::Escape)
-  Assert-Equal 2 $script:LoginCalls "y sans Drive : connexion lancee"
-  Assert-True (-not $script:UiAtLogin) "y sans Drive : connexion hors de l'ecran du menu"
-  Assert-Equal "  Drive connecte sur pc" $script:MenuState.Msg[0] "y sans Drive : connexion annoncee"
-  Assert-True $script:DriveJob.Connected "y sans Drive : tache reconnectee"
-  Assert-Equal 1 $script:SyncStarts "y sans Drive : synchro lancee apres connexion"
-  Assert-True $script:DriveJob.Notify "y sans Drive : resultat de la synchro annonce"
-  $null = Invoke-WithKeys @("y", [ConsoleKey]::Escape)
-  Assert-Equal 2 $script:LoginCalls "y avec Drive : pas de nouvelle connexion"
-  Assert-Equal 0 $script:PassCalls "y avec Drive et phrase : phrase jamais redemandee"
+  Assert-Equal $fromWeb $script:MenuState.Msg[0] "y sans Drive : connexion renvoyee a la page web"
+  Assert-Equal "0 0 0" ("" + $script:LoginCalls + " " + $script:PassCalls + " " + $script:SyncStarts) "y sans Drive : aucune connexion ni synchro depuis le terminal"
+  $script:DriveOn = $true
+  $script:DriveJob = New-DriveJob $true 0
   $script:KeyStored = $false
   $null = Invoke-WithKeys @("y", [ConsoleKey]::Escape)
-  Assert-Equal "2 1" ("" + $script:LoginCalls + " " + $script:PassCalls) "y avec Drive sans phrase : phrase demandee, pas de nouvelle connexion"
-  Assert-Equal "  phrase de synchro enregistree sur ce PC" $script:MenuState.Msg[0] "y avec Drive sans phrase : phrase annoncee"
+  Assert-Equal $fromWeb $script:MenuState.Msg[0] "y avec Drive sans phrase : phrase renvoyee a la page web"
+  Assert-Equal "0 0 0" ("" + $script:LoginCalls + " " + $script:PassCalls + " " + $script:SyncStarts) "y avec Drive sans phrase : rien demande dans le terminal"
+  $script:KeyStored = $true
+  $script:DriveOn = $false
+  $script:DriveJob = $null
+  $script:UiOn = $true
+  $script:LoginFails = $true
+  $loginErr = ""
+  try { $null = Invoke-MenuPage "drivelogin" } catch { $loginErr = $_.Exception.Message }
+  Assert-Equal "refus" $loginErr "connexion Drive demandee par la page : echec remonte"
+  Assert-Equal ("  " + (Get-ClmText "menu.loop.fail.drive.login" @("refus"))) (Get-MenuFailText "drivelogin" $loginErr) "connexion Drive demandee par la page : echec affiche"
+  $script:LoginFails = $false
+  Assert-Equal "Drive connecte sur pc" (Invoke-MenuPage "drivelogin") "connexion Drive demandee par la page : annoncee"
+  Assert-Equal 2 $script:LoginCalls "connexion Drive demandee par la page : connexion lancee"
+  Assert-True (-not $script:UiAtLogin) "connexion Drive demandee par la page : hors de l'ecran du menu"
+  Assert-True $script:DriveJob.Connected "connexion Drive demandee par la page : tache reconnectee"
+  Assert-Equal 1 $script:SyncStarts "connexion Drive demandee par la page : synchro lancee apres connexion"
+  Assert-True $script:DriveJob.Notify "connexion Drive demandee par la page : resultat de la synchro annonce"
+  $script:DriveJob = New-DriveJob $true 0
+  $null = Invoke-WithKeys @("y", [ConsoleKey]::Escape)
+  Assert-Equal "2 0" ("" + $script:LoginCalls + " " + $script:PassCalls) "y avec Drive et phrase : ni connexion ni phrase demandees"
+  Assert-Equal 2 $script:SyncStarts "y avec Drive et phrase : synchro lancee"
   Assert-Equal " 1" ("" + (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter, [ConsoleKey]::Escape) $true).Label + " " + $script:ClaudeStarts) "pendant la mise a jour : Entree puis Echap, aucun compte lance"
   Assert-Null (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Escape) $true) "Echap pendant la mise a jour : menu quitte a la fin"
   Assert-Equal "2  2.1.292" ("" + $script:ClaudeStarts + " " + $script:MenuState.Msg[0] + " " + $script:MenuState.ClaudeVersion) "Echap pendant la mise a jour : mise a jour menee au bout"
@@ -140,7 +151,19 @@ try {
   $script:DriveJob = New-DriveJob $false 0
   $script:DriveOn = $false
   $script:LoginLeavesEnter = $true
-  Assert-Null (Invoke-WithKeys @("y", [ConsoleKey]::Escape)) "Entree laissee par la connexion Drive : retour au menu sans ouvrir de compte"
+  $script:LoopWebActs = New-Object 'System.Collections.Generic.Queue[object]'
+  $script:LoopWebActs.Enqueue(@{ Name = "drivelogin" })
+  function Test-ClmGroupLoaded { param([string]$Name) return $true }
+  function Get-WebAction { if ($script:LoopWebActs.Count -gt 0) { return $script:LoopWebActs.Dequeue() }; return $null }
+  function Invoke-WebAction { param($Web) return $Web }
+  $script:ClmCheck = $null
+  $script:InputLog.Clear()
+  $script:InputGate.Held.Clear()
+  $script:StaleInput.Clear()
+  $script:FreshInput.Clear()
+  $script:FreshInput.Enqueue($null)
+  $script:FreshInput.Enqueue((New-TestKey ([ConsoleKey]::Escape)))
+  Assert-Null (Invoke-AccountMenu $false) "Entree laissee par la connexion Drive demandee par la page : retour au menu sans ouvrir de compte"
 } finally {
   $script:OneAccount = $false
   $script:LoginLeavesEnter = $false

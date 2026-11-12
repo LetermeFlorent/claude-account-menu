@@ -14,9 +14,8 @@ function Get-MenuFooter {
   $hit = $script:MenuFooterOf
   if ($null -ne $hit -and $hit.Lang -ceq $lang -and [object]::ReferenceEquals($hit.Tables, $script:TextTables)) { return $hit.Pairs }
   $pairs = @(
-    "Entree", (Get-ClmText "ui.footer.launch"), "a", (Get-ClmText "ui.footer.add"), "x", (Get-ClmText "ui.footer.remove"), "n", (Get-ClmText "ui.footer.rename")
-    "m", (Get-ClmText "ui.footer.update"), "y", (Get-ClmText "ui.footer.sync"), "p", (Get-ClmText "ui.footer.settings"), "s", (Get-ClmText "ui.footer.save")
-    "r", (Get-ClmText "ui.footer.restore"), "w", (Get-ClmText "ui.footer.web"), "q", (Get-ClmText "ui.footer.quit")
+    "Entree", (Get-ClmText "ui.footer.launch")
+    "m", (Get-ClmText "ui.footer.update"), "y", (Get-ClmText "ui.footer.sync"), "w", (Get-ClmText "ui.footer.web"), "q", (Get-ClmText "ui.footer.quit")
   )
   $script:MenuFooterOf = @{ Lang = $lang; Tables = $script:TextTables; Pairs = $pairs }
   return $pairs

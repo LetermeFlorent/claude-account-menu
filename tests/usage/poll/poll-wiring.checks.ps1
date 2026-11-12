@@ -1,7 +1,6 @@
 $pwSaved = @{ Menu = $script:MenuState; Web = $script:Web; Poll = $script:UiPoll; Open = $script:WebOpen; Reopen = $script:WebReopen; Drive = $script:DriveJob; Startup = $script:Startup; Check = $script:ClmCheck }
 . (Join-Path $bin "menu/loop/claude-menu-loop.ps1")
-. (Join-Path $bin "menu/manage/claude-menu-remove.ps1")
-. (Join-Path $bin "cli/claude-cli.ps1")
+. (Join-Path $bin "usage/claude-usage-poll.ps1")
 
 $pwFaked = @("Get-NowMs", "Start-UsageLoader", "Start-WebServer", "Open-Browser")
 $pwKept = @{}
@@ -109,8 +108,7 @@ try {
   Assert-True ($pwDef[0] -ge 30000 -and $pwDef[0] -lt 33000) ("usage-poll absent : API relue apres 30 s, " + $pwDef[0])
   Assert-True ($pwDef[2] -match ('^' + $pwMaj + '3[0-3]s$')) ("usage-poll absent : compteur " + $pwDef[2])
 
-  $pwCode = Invoke-CliCommand (Get-CliCommand @("--usage-poll", "90")) @("--usage-poll", "90") 6>$null
-  Assert-Equal 0 $pwCode "usage-poll 90 : commande reussie"
+  Assert-Equal 90 (Set-DisplayUsagePoll 90) "usage-poll 90 : delai ecrit"
   $pwSet = Get-PwApiTimer
   Assert-Equal 90 $pwSet[3] "usage-poll 90 : lot lu avec 90 s"
   Assert-True ($pwSet[0] -ge 90000 -and $pwSet[0] -lt 99000) ("usage-poll 90 : API relue apres 90 s, " + $pwSet[0])

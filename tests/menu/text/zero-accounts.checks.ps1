@@ -26,9 +26,5 @@ $zeroPick = "x"
 try { $zeroPick = Select-OneRow "Titre" @() 0 @("a", "b") } catch { $zeroErr = $_.Exception.Message }
 Assert-Equal "" $zeroErr "liste vide : choix d'un compte sans erreur"
 Assert-Null $zeroPick "liste vide : choix d'un compte annule"
-$zeroPick = "x"
-try { $zeroPick = Select-Items "Titre" @() } catch { $zeroErr = $_.Exception.Message }
-Assert-Equal "" $zeroErr "liste vide : choix de plusieurs comptes sans erreur"
-Assert-Null $zeroPick "liste vide : choix de plusieurs comptes annule"
 Set-Item Function:\Start-UsageLoader $zeroReal.u
 Set-Item Function:\Read-PageKey $zeroReal.k

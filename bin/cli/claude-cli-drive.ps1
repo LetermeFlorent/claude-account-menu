@@ -91,18 +91,3 @@ function Set-CliPrefsItem {
   if ($Item.All) { foreach ($one in $Item.Items) { Set-PrefsState $Choice $one ($Move -eq "on") }; return }
   Set-PrefsState $Choice $Item ($Move -eq "on")
 }
-
-function Invoke-CliPrefsChange {
-  param([string]$Move, [string[]]$Refs, [bool]$Yes)
-  $prefsPicked = @(Resolve-PrefsItems (Read-CliPrefs).Lines $Refs)
-  if ($Move -eq "erase" -and @($prefsPicked | Where-Object { $_.All }).Count -gt 0) { throw (Get-ClmText "drive.prefs.group.erase") }
-  if ($Move -eq "erase" -and -not $Yes) {
-    foreach ($i in $prefsPicked) { Write-Host (Get-ClmText "drive.prefs.erase.line" @((Get-PrefsId $i), (Get-PrefsEraseWarn $i.Kind).Trim())) }
-    throw (Get-ClmText "drive.prefs.yes")
-  }
-  $prefsMove = $Move
-  $null = Update-SyncChoice { param($c) foreach ($i in $prefsPicked) { Set-CliPrefsItem $c $i $prefsMove } }
-  foreach ($l in (Read-CliPrefs).Lines) { if (@($prefsPicked | Where-Object { $_.Kind -eq $l.Kind -and $_.Key -ceq $l.Key }).Count -gt 0) { Write-Host (Format-PrefsItem $l) } }
-  Write-Host (Get-ClmText "drive.prefs.saved")
-  return Invoke-DriveCliSync $false
-}

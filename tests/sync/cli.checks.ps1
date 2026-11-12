@@ -1,20 +1,17 @@
 Assert-Null (Get-DriveCliAction @("-2", "--resume")) "options de Claude : pas une action Drive"
 Assert-Null (Get-DriveCliAction @()) "sans option : pas une action Drive"
-Assert-Equal "login" (Get-DriveCliAction @("--drive-login")).Name "connexion au Drive"
 $a = Get-DriveCliAction @("--sync")
 Assert-True ($a.Name -eq "sync" -and -not $a.Force) "synchro manuelle"
 Assert-True (Get-DriveCliAction @("--force", "--sync")).Force "synchro forcee, ordre libre"
-$a = Get-DriveCliAction @("--sync-auto=off")
-Assert-True ($a.Name -eq "auto" -and -not $a.On) "synchro auto coupee"
-Assert-True (Get-DriveCliAction @("--sync-auto=on")).On "synchro auto activee"
-Assert-Equal "error" (Get-DriveCliAction @("--sync-auto=oui")).Name "valeur inconnue refusee"
+Assert-Equal "key" (Get-DriveCliAction @("--sync-key")).Name "phrase de synchro"
+Assert-Equal "key-reset" (Get-DriveCliAction @("--sync-key-reset")).Name "nouvelle phrase"
+Assert-Equal "key-forget" (Get-DriveCliAction @("--sync-key-forget")).Name "phrase oubliee"
+Assert-Null (Get-DriveCliAction @("--drive-login")) "connexion au Drive : plus en ligne de commande"
+Assert-Null (Get-DriveCliAction @("--sync-auto=on")) "synchro auto : plus en ligne de commande"
 
 $cliCfg = $script:DriveConfigPath
 $script:DriveConfigPath = Join-Path $script:Sandbox "cli-drive.json"
 Assert-Equal 1 (Invoke-DriveCli @{ Name = "sync"; Force = $false }) "--sync sans Drive : echec"
-Assert-Equal 1 (Invoke-DriveCli @{ Name = "error"; Msg = "x" }) "option invalide : echec"
-Assert-Equal 0 (Invoke-DriveCli @{ Name = "auto"; On = $false }) "--sync-auto=off : reussi"
-Assert-Equal $false (Read-DriveConfig)["auto"] "--sync-auto=off : reglage ecrit"
 
 $script:CliCalls = New-Object 'System.Collections.Generic.List[string]'
 function Set-DrivePresence { param($Acc, [bool]$Open) $script:CliCalls.Add("presence " + $Open) }

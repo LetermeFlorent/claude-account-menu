@@ -1,5 +1,6 @@
 . (Join-Path $bin "menu/manage/claude-menu-remove.ps1")
-. (Join-Path $bin "menu/manage/claude-menu-prefs.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-prefs-data.ps1")
+. (Join-Path $bin "menu/manage/claude-menu-prefs-pc.ps1")
 . (Join-Path $bin "menu/manage/claude-menu-save.ps1")
 . (Join-Path $bin "menu/startup/claude-menu-startup.ps1")
 . (Join-Path $bin "cli/claude-cli.ps1")

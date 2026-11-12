@@ -1,4 +1,4 @@
-$script:CliCommands = @("--help", "-h", "--version", "--list", "--add", "--rename", "--move", "--remove", "--backups", "--update", "--drive-status", "--prefs", "--prefs-on", "--prefs-off", "--prefs-erase", "--palette", "--anim", "--usage-poll")
+$script:CliCommands = @("--help", "-h", "--version", "--list", "--backups", "--update", "--drive-status", "--prefs")
 $script:CliQuick = @("help", "version", "list")
 
 function Get-CliCommand {
@@ -10,7 +10,7 @@ function Get-CliCommand {
     $rest = @($list | Select-Object -Skip ($i + 1))
     $name = $list[$i].TrimStart("-")
     if ($name -eq "h") { $name = "help" }
-    return @{ Name = $name; Values = [string[]]@($rest | Where-Object { -not $_.StartsWith("--") }); Yes = $list -contains "--yes"; Erase = $list -contains "--erase" }
+    return @{ Name = $name; Values = [string[]]@($rest | Where-Object { -not $_.StartsWith("--") }) }
   }
   return $null
 }

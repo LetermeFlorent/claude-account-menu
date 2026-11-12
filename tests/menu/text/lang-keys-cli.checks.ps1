@@ -5,11 +5,11 @@ $langKeys = @(foreach ($f in $langFiles) {
 }) | Sort-Object -Unique
 $langEn = Read-ClmTextTable (Join-Path $bin "lang\en.json")
 $langFr = Read-ClmTextTable (Join-Path $bin "lang\fr.json")
-Assert-True ($langKeys.Count -ge 14) "menu : les cles du menu sont relevees dans les sources"
+Assert-True ($langKeys.Count -ge 10) "menu : les cles du menu sont relevees dans les sources"
 foreach ($k in $langKeys) {
   Assert-True ($null -ne $langEn[$k] -and $null -ne $langFr[$k]) ("menu : cle " + $k + " dans les deux langues")
 }
-$langAccents = @{ "menu.cli.clm.updated.restarting" = @(233, 224); "menu.loop.fail.prefs" = @(233); "menu.loop.no.clm.update" = @(224) }
+$langAccents = @{ "menu.cli.clm.updated.restarting" = @(233, 224); "menu.loop.no.clm.update" = @(224) }
 foreach ($k in $langAccents.Keys) {
   foreach ($code in $langAccents[$k]) {
     Assert-True ($langFr[$k].Contains([string][char]$code)) ("menu : " + $k + " garde ses accents en francais")

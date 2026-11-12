@@ -9,8 +9,8 @@ try {
   $script:BootBar = Start-BootBar $args $PSScriptRoot $script:ClmOnce
   if (Test-CliQuick $args) { . Import-ClmModule claude-cli, claude-accounts, claude-self-update, claude-ui-chrome }
   else {
-    . Import-ClmModule claude-usage, claude-menu-view, claude-menu-save, claude-menu-restore, claude-menu-select,
-      claude-menu-remove, claude-menu-rename, claude-menu-prefs, claude-statusline-seed, claude-update, claude-self-update,
+    . Import-ClmModule claude-usage, claude-menu-view, claude-menu-save, claude-menu-select,
+      claude-menu-remove, claude-menu-rename, claude-menu-prefs-data, claude-menu-prefs-pc, claude-statusline-seed, claude-update, claude-self-update,
       claude-menu-loop, claude-menu-startup, claude-drive-cli, claude-account-guard, claude-cli, claude-lazy-load
   }
 } catch { if (-not (Test-ClmReloadNeeded $script:ClmEntryStamp)) { throw } }
@@ -57,8 +57,6 @@ if ($null -ne $cli) {
 }
 
 $direct = $null
-$only = $null
-$restoreZip = $null
 $update = $true
 $selfUpdate = $true
 $openWeb = $false
@@ -72,33 +70,18 @@ foreach ($a in $args) {
     foreach ($u in Get-AllUsages) { Write-Output (Format-Row $u) }
     exit 0
   }
-  elseif ($a -match "^--save(=(.+))?$") {
-    try { $sel = Select-ByLabel @(Get-Accounts) $Matches[2] } catch { Write-Output $_.Exception.Message; exit 1 }
-    Write-Output (Get-ClmText "menu.cli.backup.done" @((Save-Accounts "" $sel)))
-    exit 0
-  }
-  elseif ($a -match "^--only=(.+)$") { $only = $Matches[1] }
-  elseif ($a -match "^--restore=(.+)$") { $restoreZip = $Matches[1] }
   else { $rest = $rest + $a }
 }
 
 $driveCli = Get-DriveCliAction $args
-$menuMode = $null -eq $driveCli -and -not $restoreZip -and $null -eq $direct -and (Test-RichTerminal)
+$menuMode = $null -eq $driveCli -and $null -eq $direct -and (Test-RichTerminal)
 if ($openWeb -and -not $menuMode) {
   Write-Output ("  " + (Get-ClmText "menu.cli.web.needs.terminal"))
   exit 1
 }
-if ($null -eq $driveCli -and -not $restoreZip) { Assert-Online }
+if ($null -eq $driveCli) { Assert-Online }
 if ($selfUpdate -and -not $menuMode -and (Update-Clm)) { Restart-Clm $PSCommandPath $args }
 if ($null -ne $driveCli) { Import-ClmGroupOrReload @("drive") $PSCommandPath $args; exit (Invoke-DriveCli $driveCli) }
-
-if ($restoreZip) {
-  try {
-    $sel = Select-ByLabel @(Get-ZipAccounts $restoreZip) $only
-    Write-Output (Restore-Accounts $restoreZip $sel -AllowForeign -Yes:($args -contains "--yes"))
-  } catch { Write-Output $_.Exception.Message; exit 1 }
-  exit 0
-}
 
 if ($null -ne $direct) {
   $accs = @(Get-Accounts)

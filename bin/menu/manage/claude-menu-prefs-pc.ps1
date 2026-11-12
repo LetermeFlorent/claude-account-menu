@@ -1,14 +1,4 @@
 . Import-ClmModule claude-text
-$script:PrefsSideKeys = [string][char]0x2190 + [string][char]0x2192
-
-function Get-PrefsPairs {
-  return @((Get-ClmText "sync.prefs.key.space"), (Get-ClmText "sync.prefs.key.check"), (Get-ClmText "sync.prefs.key.delete"), (Get-ClmText "sync.prefs.key.eraseEverywhere"), (Get-ClmText "sync.prefs.key.escape"), (Get-ClmText "sync.prefs.key.back"))
-}
-
-function Get-PrefsPcPairs {
-  return @((Get-ClmText "sync.prefs.key.space"), (Get-ClmText "sync.prefs.key.check"), (Get-ClmText "sync.prefs.key.escape"), (Get-ClmText "sync.prefs.key.back"))
-}
-
 function Get-PrefsPcs {
   param($Catalog, [string]$Me)
   if ($null -eq $Catalog.Pcs) { return ,[string[]]@($Me) }
@@ -80,44 +70,4 @@ function Get-PcPrefsSub {
   param($Catalog, [string]$Pc)
   if (-not (Test-PcReachable $Catalog $Pc)) { return Get-ClmText "sync.prefs.pc.old" }
   return Get-ClmText "sync.prefs.pc.sub"
-}
-
-function Get-PrefsView {
-  param($Ctx)
-  $pc = $Ctx.Pcs[$Ctx.At]
-  if ($Ctx.At -eq 0) {
-    $v = @{ Title = (Get-ClmText "sync.prefs.title"); Sub = (Get-PrefsSub $Ctx.Catalog); Pairs = (Get-PrefsPairs); Empty = (Get-ClmText "sync.prefs.pc.none"); Lines = (Get-PrefsLines $Ctx.Choice $Ctx.Catalog $Ctx.Globals) }
-  } else {
-    $v = @{ Title = (Get-ClmText "sync.prefs.pc.title" @($pc)); Sub = (Get-PcPrefsSub $Ctx.Catalog $pc); Pairs = (Get-PrefsPcPairs); Empty = ""; Lines = (Get-PcPrefsLines $Ctx.Choice $Ctx.Catalog $Ctx.Me $pc) }
-    if (Test-PcReachable $Ctx.Catalog $pc) { $v.Empty = Get-ClmText "sync.prefs.pc.none" }
-  }
-  if ($Ctx.Pcs.Count -gt 1) { $v.Pairs = @($v.Pairs[0..1]) + @($script:PrefsSideKeys, (Get-ClmText "sync.prefs.key.otherPc")) + @($v.Pairs[2..($v.Pairs.Count - 1)]) }
-  return $v
-}
-
-function Get-PrefsPcRow {
-  param($Ctx)
-  $r = New-Row
-  $r.Add(@("  ", $script:Ink.Dim, $false))
-  for ($i = 0; $i -lt $Ctx.Pcs.Count; $i++) {
-    $label = $Ctx.Pcs[$i]
-    if ($i -eq 0) { $label += " (" + (Get-PrefsThisPc) + ")" }
-    $ink = $script:Ink.Dim
-    if ($i -eq $Ctx.At) { $ink = $script:Ink.Text }
-    $r.Add(@($label, $ink, ($i -eq $Ctx.At)))
-    $r.Add(@("   ", $script:Ink.Dim, $false))
-  }
-  return ,$r
-}
-
-function Get-PrefsBody {
-  param($Ctx, $View, [int]$Sel)
-  $rows = New-Object 'System.Collections.Generic.List[object]'
-  if ($Ctx.Pcs.Count -gt 1) {
-    $rows.Add((Get-PrefsPcRow $Ctx))
-    $rows.Add((New-Row))
-  }
-  if ($View.Lines.Count -gt 0) { foreach ($r in (Get-PrefsRows $View.Lines $Sel ($rows.Count))) { $rows.Add($r) } }
-  elseif ($View.Empty) { $rows.Add((New-TextRow ("  " + $View.Empty) $script:Ink.Dim)) }
-  return ,$rows
 }

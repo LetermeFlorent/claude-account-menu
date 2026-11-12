@@ -18,24 +18,3 @@ function Rename-Account {
   Rename-UsageEntry $old $name
   return Get-ClmText "accounts.rename.done" @($old, $name)
 }
-
-function Read-AccountName {
-  param($Acc)
-  Clear-ConsoleScreen
-  Write-Host ""
-  Write-Host ("  " + (Get-ClmText "accounts.rename.header" @($Acc.Label)) + "  " + (Get-AccountEmail $Acc))
-  Write-Host ("  " + (Get-ClmText "accounts.rename.note")) -ForegroundColor DarkGray
-  Write-Host ""
-  return Read-Host ("  " + (Get-ClmText "accounts.rename.prompt"))
-}
-
-function Show-RenameMenu {
-  param([int]$Pos)
-  $accs = @(Get-Accounts)
-  $p = Select-OneAccount $accs $Pos (Get-ClmText "accounts.rename.menuTitle")
-  if ($null -eq $p) { return Get-ClmText "accounts.rename.cancelled" }
-  Exit-UiScreen
-  try { $name = Read-AccountName $accs[$p] } finally { Enter-UiScreen }
-  if ([string]::IsNullOrWhiteSpace($name)) { return Get-ClmText "accounts.rename.cancelled" }
-  return Rename-Account $accs[$p] $name
-}

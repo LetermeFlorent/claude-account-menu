@@ -44,43 +44,6 @@ try {
   Set-PrefsCheck $group (Get-PrefsLines $group $cat @("roblox"))[1]
   Assert-True ($group.skills["alpha"] -eq $false -and $group.skills["beta"] -eq $false) "tous les skills coches : tout decoche"
   Assert-Equal 0 @((Get-PrefsLines (New-SyncChoice) (New-SyncCatalog) @()) | Where-Object { $_.All -and $_.Kind -eq "mcp" }).Count "aucun MCP : pas de case pour le groupe"
-  $script:UiRows = 40
-  $l = Get-PrefsLines $group $cat @("roblox")
-  $shown = @(foreach ($r in (Get-PrefsRows $l 5)) { (@($r) | ForEach-Object { $_[0] }) -join "" })
-  Assert-True ($shown[5].Contains((Get-ClmText "sync.prefs.all.mcp")) -and $shown[5].Contains((Get-ClmText "sync.prefs.checkedCount" @(0, 5)))) "case du groupe : nom et compte"
-  Assert-True ($shown[9].Contains("outil") -and $shown[9].EndsWith("p, " + $script:OsName)) "MCP : origine a droite"
-
-  Assert-Equal 1 (Move-PrefsSel $lines -1 1) "premiere case : titre saute"
-  Assert-Equal 5 (Move-PrefsSel $lines 3 1) "case suivante : titre de groupe saute"
-  Assert-Equal 11 (Move-PrefsSel $lines 1 -1) "case precedente : tour par la fin"
-  Assert-Equal 0 (Move-PrefsSel @((New-PrefsHead "a")) 0 1) "que des titres : selection gardee"
-  Assert-Equal 9 (Find-PrefsLine $lines $lines[9]) "case retrouvee apres reconstruction"
-  Assert-Equal 1 (Find-PrefsLine $lines (New-PrefsItem @{ Kind = "mcp"; Key = "|absent"; Label = "absent"; Tag = ""; On = $false; Erasing = $false })) "case disparue : premiere case"
-
-  $script:UiRows = 30
-  Assert-Equal "0 10" ((Get-PrefsWindow 10 3) -join " ") "liste courte : tout visible"
-  Assert-Equal "0 16" ((Get-PrefsWindow 40 0) -join " ") "liste longue : debut"
-  Assert-Equal "12 28" ((Get-PrefsWindow 40 20) -join " ") "liste longue : selection centree"
-  Assert-Equal "24 40" ((Get-PrefsWindow 40 39) -join " ") "liste longue : fin"
-  $script:UiRows = 5
-  Assert-Equal "0 4" ((Get-PrefsWindow 40 0) -join " ") "fenetre minuscule : quatre lignes"
-  $many = @(1..30 | ForEach-Object { New-PrefsItem @{ Kind = "skills"; Key = ("s" + $_); Label = ("s" + $_); Tag = ""; On = $true; Erasing = $false } })
-  $script:UiRows = 30
-  $rows = Get-PrefsRows $many 20
-  Assert-Equal 18 $rows.Count "liste longue : fleches en plus des lignes"
-  Assert-Equal ("    " + $script:UpArrow) $rows[0][0][0] "liste longue : fleche du haut"
-  $inkKept = $script:Ink
-  $script:Ink = $script:Palettes["dark"]
-  $script:PrefsInks = @()
-  function Show-UiRows {
-    param($Rows, [double]$Now, $RowFades = $null)
-    foreach ($r in $Rows) { foreach ($s in $r) { if ([string]$s[0] -ceq "  ligne") { $script:PrefsInks += ($s[1] -join " ") } } }
-    if ($script:PrefsInks.Count -eq 1) { $script:Ink = $script:Palettes["light"] } else { $script:UiKeys.Enqueue((New-Object System.ConsoleKeyInfo "o", ([ConsoleKey]::O), $false, $false, $false)) }
-  }
-  $script:UiKeys.Clear()
-  Assert-True (Confirm-PrefsPage "Question" @("  ligne")) "confirmation : touche o acceptee"
-  Assert-Equal (($script:Palettes["light"].Dim) -join " ") $script:PrefsInks[-1] "confirmation : couleurs relues apres un changement de theme"
-  $script:Ink = $inkKept
 } finally {
   Restore-PrefsFakes
 }

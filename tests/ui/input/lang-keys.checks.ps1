@@ -21,7 +21,7 @@ foreach ($k in $keyUsed) {
 }
 
 $accented = [ordered]@{
-  "ui.footer.settings" = 'r\u00e9glages'; "ui.pace.epuise" = '\u00e9puis\u00e9'; "ui.pace.debut" = 'd\u00e9but'
+  "ui.pace.epuise" = '\u00e9puis\u00e9'; "ui.pace.debut" = 'd\u00e9but'
   "ui.reset.past" = 'pass\u00e9'; "ui.stale.expired" = 'fen\u00eatre pass\u00e9e'; "ui.usage.signedOut" = 'd\u00e9connect\u00e9'
   "ui.usage.tokenExpired" = 'expir\u00e9'; "ui.usage.tokenRefused" = 'refus\u00e9'; "ui.usage.notSignedIn" = 'connect\u00e9'
   "ui.usage.busy" = 'occup\u00e9e'; "ui.usage.limited" = 'r\u00e9essai'; "ui.display.badKey" = 'r\u00e9glage'
