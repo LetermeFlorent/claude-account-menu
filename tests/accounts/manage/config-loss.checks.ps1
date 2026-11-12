@@ -4,7 +4,7 @@ $lossSavedRegistry = $null
 if (Test-Path -LiteralPath $script:RegistryPath) { $lossSavedRegistry = [IO.File]::ReadAllBytes($script:RegistryPath) }
 $lossSavedState = $null
 if (Test-Path -LiteralPath $script:SyncStatePath) { $lossSavedState = [IO.File]::ReadAllBytes($script:SyncStatePath) }
-$lossMain = Join-Path $script:Sandbox ".claude"
+$lossMain = Join-Path $script:HomeDir ".claude"
 $lossMainFiles = @("CLAUDE.md", "settings.local.json", "statusline.json", "settings.json")
 $lossSavedMain = @{}
 foreach ($n in $lossMainFiles) {
@@ -12,7 +12,7 @@ foreach ($n in $lossMainFiles) {
   if (Test-Path -LiteralPath $p) { $lossSavedMain[$n] = [IO.File]::ReadAllBytes($p); Remove-Item -LiteralPath $p -Force }
 }
 $lossSavedCfg = $null
-$lossCfgPath = Join-Path $script:Sandbox ".claude.json"
+$lossCfgPath = Join-Path $script:HomeDir ".claude.json"
 if (Test-Path -LiteralPath $lossCfgPath) { $lossSavedCfg = [IO.File]::ReadAllBytes($lossCfgPath); Remove-Item -LiteralPath $lossCfgPath -Force }
 
 function Set-LossFile {
@@ -35,7 +35,7 @@ function Test-LossMarker {
 
 function Remove-LossAccount {
   param([string]$Dir)
-  $p = Join-Path $script:Sandbox $Dir
+  $p = Join-Path $script:HomeDir $Dir
   if (-not (Test-Path -LiteralPath $p)) { return }
   foreach ($d in $script:SharedDirs) {
     $l = Join-Path $p $d
@@ -46,7 +46,7 @@ function Remove-LossAccount {
 
 $lossA = [PSCustomObject]@{ Label = "loss2"; Dir = ".claude-loss2" }
 $lossB = [PSCustomObject]@{ Label = "loss3"; Dir = ".claude-loss3" }
-$lossAPath = Join-Path $script:Sandbox $lossA.Dir
+$lossAPath = Join-Path $script:HomeDir $lossA.Dir
 
 foreach ($n in @("CLAUDE.md", "settings.local.json", "statusline.json")) {
   Remove-LossAccount $lossA.Dir
