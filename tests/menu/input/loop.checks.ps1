@@ -124,7 +124,9 @@ try {
   Assert-Null $script:Startup "menu ferme : bloc de lancement oublie"
   Assert-Null (Invoke-WithKeys @([ConsoleKey]::Escape) $true) "Echap avant la mise a jour : menu quitte"
   Assert-Equal 2 $script:ClaudeStarts "Echap avant la mise a jour : rien lance"
-  Assert-Equal "b 3" ("" + (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter) $true).Label + " " + $script:ClaudeStarts) "Entree pendant la mise a jour : compte lance a la fin"
+  $script:FreshAfterStartup = $true
+  Assert-Equal "b 3" ("" + (Invoke-WithKeys @([ConsoleKey]::DownArrow, [ConsoleKey]::Enter) $true).Label + " " + $script:ClaudeStarts) "Entree apres les mises a jour : compte lance"
+  $script:FreshAfterStartup = $false
   $script:OneAccount = $true
   Assert-Null (Invoke-WithKeys @([ConsoleKey]::Escape) $false @([ConsoleKey]::Enter)) "un seul compte : Entree restee dans la console au lancement, aucun compte ouvert"
   Assert-Equal "draw flush" (@($script:InputLog | Select-Object -First 2) -join " ") "un seul compte : menu affiche puis console videe avant toute lecture"

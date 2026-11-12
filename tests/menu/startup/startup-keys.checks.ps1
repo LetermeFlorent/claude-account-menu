@@ -38,19 +38,38 @@ try {
 
   New-StartupCase @("claude", "drive")
   $null = Invoke-StartupTicks
+  $held = "  " + (Get-ClmText "menu.startup.accountsAfterClmCheck")
   Assert-Equal "none" (Send-StartupAct "save").Name "pendant les mises a jour : commandes plus tard"
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.availableAfterUpdates")) $script:St.Msg[0] "pendant les mises a jour : raison affichee"
-  Assert-Equal "up drivesync" ((Send-StartupAct "up").Name + " " + (Send-StartupAct "drivesync").Name) "pendant les mises a jour : comptes accessibles"
+  Assert-Equal $held $script:St.Msg[0] "pendant les mises a jour : raison affichee"
+  Assert-Equal "none none" ((Send-StartupAct "up").Name + " " + (Send-StartupAct "drivesync").Name) "pendant les mises a jour : comptes caches"
   Assert-Equal "none" (Send-StartupAct "launch").Name "Entree pendant les mises a jour : lancement differe"
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.launchAfterUpdates" @("a"))) $script:St.Msg[0] "Entree pendant les mises a jour : attente annoncee"
-  $null = Send-StartupAct "pick" 1
-  Assert-Equal ("  " + (Get-ClmText "menu.startup.launchAfterUpdates" @("b"))) $script:St.Msg[0] "autre compte choisi : remplace le premier"
+  Assert-Equal $held $script:St.Msg[0] "Entree pendant les mises a jour : comptes encore caches"
+  $script:FakeClaudeFail = "echec"
   $null = Invoke-StartupTicks 3
-  Assert-Null $script:Su.Exit "Claude Code fini, Drive en cours : lancement encore differe"
-  $script:DriveJob.Loader = $null
+  Assert-True (-not (Test-StartupBlocking $script:Su)) "une etape en echec : comptes affiches"
+  Assert-Equal "up drivesync" ((Send-StartupAct "up").Name + " " + (Send-StartupAct "drivesync").Name) "etape en echec : comptes accessibles"
+  Assert-Equal "launch" (Send-StartupAct "launch").Name "etape en echec : compte lance tout de suite"
+  $p = Send-StartupAct "pick" 1
+  Assert-Equal "pick 1" ($p.Name + " " + $p.Index) "etape en echec : compte choisi lance tout de suite"
+  Assert-Equal "none" (Send-StartupAct "save").Name "etape en echec : commandes apres les mises a jour"
+
+  New-StartupCase @("clm", "claude", "drive")
+  $script:FakeLatest = $script:FakeV62
+  $null = Invoke-StartupTicks 3
+  Assert-True (Test-StartupBlocking $script:Su) "etape bloquee : comptes caches au debut"
+  Assert-Equal "none" (Send-StartupAct "launch").Name "etape bloquee : touche retenue au debut"
+  $script:T += $script:StartupHoldMaxMs
   $null = Invoke-StartupTicks
-  Assert-Equal "pick 1" ($script:Su.Exit.Name + " " + $script:Su.Exit.Index) "mises a jour finies : compte lance"
-  Assert-Equal "pick" (Send-StartupAct "save").Name "sortie decidee : rendue a chaque touche"
+  Assert-True (-not (Test-StartupBlocking $script:Su)) "etape bloquee trop longtemps : comptes affiches"
+  Assert-Equal "launch save" ((Send-StartupAct "launch").Name + " " + (Send-StartupAct "save").Name) "etape bloquee trop longtemps : touches libres"
+  Assert-True $script:St.Dirty "etape bloquee trop longtemps : ecran redessine"
+  New-StartupCase @("clm", "claude")
+  $null = Invoke-StartupTicks
+  $null = Send-StartupAct "quit"
+  $script:T += $script:StartupHoldMaxMs
+  $null = Invoke-StartupTicks
+  Assert-Equal "quit" $script:Su.Exit.Name "Echap pendant une etape bloquee : sortie au bout du delai"
+  $script:FakeLatest = $null
 
   New-StartupCase @("claude", "drive")
   $null = Invoke-StartupTicks 4
@@ -73,6 +92,7 @@ try {
   $script:FakeOnline = $false
   $null = Invoke-StartupTicks
   Assert-Equal "offline" $script:Su.Exit.Name "echec sans internet : clm se ferme"
+  Assert-Equal "offline" (Send-StartupAct "save").Name "sortie decidee : rendue a chaque touche"
   $script:FakeOnline = $true
 
   New-StartupCase @("drive")

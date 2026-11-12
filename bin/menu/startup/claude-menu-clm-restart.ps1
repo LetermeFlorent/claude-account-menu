@@ -7,7 +7,7 @@ $script:ClmRestartDroppedPattern = "^(-[1-9]|--save(=.*)?|--restore=.*|--only=.*
 
 function Test-ClmRestartHeld {
   $su = $script:Startup
-  if ($null -ne $su -and ($null -ne $su.Exit -or $null -ne $su.Pending)) { return $true }
+  if ($null -ne $su -and $null -ne $su.Exit) { return $true }
   return (Test-StepsLeft $su @()) -or (Test-DriveJobRunning $script:DriveJob)
 }
 

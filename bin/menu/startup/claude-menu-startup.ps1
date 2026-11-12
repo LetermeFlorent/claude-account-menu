@@ -4,10 +4,10 @@ $script:ClmChecked = $false
 $script:DriveChecked = $false
 $script:Startup = $null
 $script:StartupLabelKeys = @{ clm = "menu.startup.label.clm"; claude = "menu.startup.label.claude"; drive = "menu.startup.label.drive" }
-$script:StartupFree = @("none", "refresh")
-$script:StartupOpen = @("up", "down", "drivesync", "web")
-$script:StartupHiding = @("clm")
+$script:StartupFree = @("none", "refresh", "web")
+$script:StartupOpen = @("up", "down", "drivesync", "launch", "pick")
 $script:StartupQuitWaits = @("clm", "claude")
+$script:StartupHoldMaxMs = 60000
 
 function Get-StartupLabel {
   param([string]$Name)
@@ -40,7 +40,7 @@ function New-Startup {
     if ($n -ne "clm" -and @($Names) -contains "clm") { $after = "clm" }
     $steps.Add((New-StartupStep $n $after))
   }
-  return @{ Steps = $steps; Quit = $false; Exit = $null; Pending = $null; Hidden = ($steps.Count -eq 0); ClmError = "" }
+  return @{ Steps = $steps; Quit = $false; Exit = $null; Hidden = ($steps.Count -eq 0); ClmError = ""; HoldEnd = $null; Released = $false }
 }
 
 function Get-StartupNames {
@@ -73,7 +73,9 @@ function Test-StepsLeft {
 
 function Test-StartupBlocking {
   param($Su)
-  return Test-StepsLeft $Su $script:StartupHiding
+  if ($null -eq $Su -or $Su.Released) { return $false }
+  foreach ($s in $Su.Steps) { if ($s.Kind -eq "failed") { return $false } }
+  return Test-StepsLeft $Su @()
 }
 
 function Test-QuitWaits {
@@ -93,6 +95,8 @@ function Test-StepReady {
 function Step-Startup {
   param($Su, $State, [double]$Now)
   if ($null -eq $Su -or $Su.Hidden -or $null -ne $Su.Exit) { return $false }
+  if ($null -eq $Su.HoldEnd) { $Su.HoldEnd = $Now + $script:StartupHoldMaxMs }
+  if ($Now -ge $Su.HoldEnd -and -not $Su.Released) { $Su.Released = $true; if ($null -ne $State) { $State.Dirty = $true } }
   if (-not (Test-StepsLeft $Su @())) { return Step-StartupEnd $Su $Now }
   $changed = $false
   foreach ($step in $Su.Steps) {
@@ -110,8 +114,7 @@ function Step-Startup {
 function Set-StartupExit {
   param($Su)
   if ($null -ne $Su.Exit) { return }
-  if ($Su.Quit) { if (-not (Test-QuitWaits $Su)) { $Su.Exit = @{ Name = "quit" } }; return }
-  if ($null -ne $Su.Pending -and -not (Test-StepsLeft $Su @())) { $Su.Exit = $Su.Pending }
+  if ($Su.Quit -and ($Su.Released -or -not (Test-QuitWaits $Su))) { $Su.Exit = @{ Name = "quit" } }
 }
 
 function Get-HeldAction {
@@ -125,19 +128,15 @@ function Get-StartupGate {
   param($Su, $Act, $State)
   if ($null -eq $Su) { return $Act }
   if ($null -ne $Su.Exit) { return $Su.Exit }
-  if (-not (Test-StepsLeft $Su @()) -or $script:StartupFree -contains $Act.Name) { return $Act }
+  if ($Su.Released -or -not (Test-StepsLeft $Su @()) -or $script:StartupFree -contains $Act.Name) { return $Act }
   if ($Act.Name -eq "quit") {
     if (-not (Test-QuitWaits $Su)) { return $Act }
     $Su.Quit = $true
-    $Su.Pending = $null
     return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.stopRequested"))
   }
   if (Test-StartupBlocking $Su) { return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.accountsAfterClmCheck")) }
   if ($script:StartupOpen -contains $Act.Name) { return $Act }
-  if ($Act.Name -eq "launch") { $Act = @{ Name = "pick"; Index = $State.Sel } }
-  if ($Act.Name -ne "pick") { return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.availableAfterUpdates")) }
-  $Su.Pending = $Act
-  return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.launchAfterUpdates" @($State.Entries[$Act.Index].Acc.Label)))
+  return Get-HeldAction $State ("  " + (Get-ClmText "menu.startup.availableAfterUpdates"))
 }
 
 function Add-ClmFailure {

@@ -31,7 +31,7 @@ try {
   $script:Work.Ctl.Done = $true
   $null = Invoke-StartupTicks
   Assert-Equal "done|run|run" (Get-StepList "State") "clm a jour : Claude Code et Drive lances ensemble"
-  Assert-True (-not (Test-StartupBlocking $script:Su)) "clm a jour : comptes affiches tout de suite"
+  Assert-True (Test-StartupBlocking $script:Su) "clm a jour : comptes encore caches pendant Claude Code et Drive"
   Assert-Equal ((Get-ClmText "update.startup.upToDate") + " 100") ($script:Su.Steps[0].Text + " " + $script:Su.Steps[0].Bar.To) "clm a jour : barre pleine"
   Assert-Equal 1 $script:DriveStarts "Drive : lance des que clm est a jour"
   $null = Invoke-StartupTicks
@@ -52,6 +52,7 @@ try {
   $script:DriveJob.Loader = $null
   $null = Invoke-StartupTicks 2
   Assert-Equal (Get-ClmText "menu.startup.upToDate") $script:Su.Steps[2].Text "Drive : synchro finie"
+  Assert-True (-not (Test-StartupBlocking $script:Su)) "trois etapes finies : comptes affiches"
   Assert-Equal "True|False|False" (Get-StepList "Gone") "clm a jour : ligne effacee, Claude Code et Drive gardes un instant"
   Assert-Equal 3 (Get-StartupRowCount $script:Su) "clm a jour : une rangee de moins"
   Assert-True (-not $script:Su.Hidden) "fin : barres gardees un instant"

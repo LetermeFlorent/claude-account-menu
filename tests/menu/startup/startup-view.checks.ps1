@@ -84,13 +84,31 @@ $v = Get-StartupViewRows $su $narrow
 Assert-Equal ($narrow.W - 2) $v.Texts[1].Length "fenetre etroite : detail raccourci a la largeur"
 Assert-True ($v.Texts[1].EndsWith("telecharg...")) "fenetre etroite : detail coupe"
 
+$hid = New-Startup @("clm", "claude", "drive")
+foreach ($i in 0..2) {
+  foreach ($j in 0..2) { $hid.Steps[$j].State = "done" }
+  $hid.Steps[$i].State = "run"
+  Assert-True (Test-AccountsWaiting $hid) ("comptes caches tant que " + $hid.Steps[$i].Name + " n'est pas fini")
+}
+$hid.Steps[2].State = "wait"
+Assert-True (Test-AccountsWaiting $hid) "comptes caches tant que Drive attend"
+foreach ($s in $hid.Steps) { $s.State = "done"; $s.Kind = "ok" }
+Assert-True (-not (Test-AccountsWaiting $hid)) "tout est fini : comptes affiches"
+foreach ($i in 0..2) {
+  foreach ($j in 0..2) { $hid.Steps[$j].State = "run"; $hid.Steps[$j].Kind = "" }
+  $hid.Steps[$i].State = "done"; $hid.Steps[$i].Kind = "failed"
+  Assert-True (-not (Test-AccountsWaiting $hid)) ("echec de " + $hid.Steps[$i].Name + " : comptes affiches aussitot")
+}
+Assert-True (-not (Test-AccountsWaiting (New-Startup @()))) "sans mise a jour : comptes affiches aussitot"
+Assert-True (-not (Test-AccountsWaiting $null)) "sans lancement : comptes affiches"
+
 $st = @{ Entries = @((New-ViewEntry "a"), (New-ViewEntry "b"), (New-ViewEntry "c")); Sel = 0; SelTween = (New-Tween 0 0 0 0); Top = 0; Msg = @("  pret", $script:Ink.Dim); Moved = $false }
 $script:Startup = $su
 try {
   $su.Steps[0].State = "run"
   $f = Get-MenuRows $st (Get-MenuLayout 120 40 3 (Get-StartupRowCount $su)) 0
   Assert-Equal "8 0 0" ("" + $st.Hit.Start + " " + $st.Hit.Top + " " + $st.Hit.Last) "verification de clm : aucun compte affiche"
-  $su.Steps[0].State = "done"
+  $su.Steps[0].State = "done"; $su.Steps[0].Kind = "failed"
   $f = Get-MenuRows $st (Get-MenuLayout 120 40 3 (Get-StartupRowCount $su)) 0
   $texts = @(foreach ($r in $f.Rows) { Get-ViewText $r })
   Assert-True ($texts[4].StartsWith("  clm  ")) "menu : barres sous le titre"

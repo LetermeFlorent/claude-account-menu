@@ -68,11 +68,6 @@ try {
   $script:DriveJob.Loader = @{ Ctl = @{ Done = $false } }
   Assert-Equal "none" (Get-ClmRestartAction @{ Name = "none" }).Name "synchro Drive lancee apres la nouvelle version : redemarrage attendu"
   $script:DriveJob = $null
-  $script:Startup = New-Startup @()
-  $script:Startup.Pending = @{ Name = "pick"; Index = 1 }
-  Assert-Equal "none" (Get-ClmRestartAction @{ Name = "none" }).Name "compte choisi pendant le lancement : ouvert avant tout redemarrage"
-  Assert-True (-not $script:ClmUpdated) "compte choisi pendant le lancement : pas de redemarrage demande"
-  $script:Startup = $null
 
   Reset-ClmRestart ("a" * 40)
   $restartState = @{ Entries = @(@{ Acc = [PSCustomObject]@{ Label = "a" } }) }
