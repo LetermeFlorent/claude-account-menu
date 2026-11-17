@@ -26,4 +26,20 @@ $r = Invoke-DriveSync
 Assert-True $r.Ok ("reprise : synchro complete " + $r.Error)
 Assert-True ((Read-DriveState).At -gt 0) "reprise : synchro marquee complete"
 
+$timingLog = Join-Path $script:DriveSessionDir $script:DriveWatchLogName
+if ([IO.File]::Exists($timingLog)) { [IO.File]::Delete($timingLog) }
+$saveRegistryMd5 = ${function:Get-RegistryMd5}
+$script:TimingMd5 = 0
+function Get-RegistryMd5 { param($Files) $script:TimingMd5++; return "" + $script:TimingMd5 }
+$r = Invoke-DriveSync
+${function:Get-RegistryMd5} = $saveRegistryMd5
+$timing = ""
+if ([IO.File]::Exists($timingLog)) { $timing = [IO.File]::ReadAllText($timingLog) }
+foreach ($pass in 1, 2) {
+  foreach ($step in "dossiers", "identifiants", "presence", "preferences", "base", "scan", "liste Drive", "preferences fin", "plan", "transferts", "sauvegarde", "nettoyage") {
+    Assert-True ($timing -match ("synchro passe " + $pass + " " + $step + " \d+ ms")) ("duree d'etape dans le journal : passe " + $pass + " " + $step)
+  }
+}
+Assert-True ($timing -match "synchro total \d+ ms, 2 passes") ("duree totale dans le journal " + $timing)
+
 Restore-FakeDrive

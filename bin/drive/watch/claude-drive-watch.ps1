@@ -1,16 +1,4 @@
 . Import-ClmModule claude-drive-sync, claude-drive-watch-launch, claude-drive-watch-fs, claude-drive-watch-plan
-$script:DriveWatchLogName = "watch.log"
-$script:DriveWatchLogMaxBytes = 262144
-
-function Write-WatchLog {
-  param([string]$Text)
-  try {
-    $null = [IO.Directory]::CreateDirectory($script:DriveSessionDir)
-    $path = Join-Path $script:DriveSessionDir $script:DriveWatchLogName
-    if ([IO.File]::Exists($path) -and (New-Object IO.FileInfo $path).Length -gt $script:DriveWatchLogMaxBytes) { [IO.File]::Delete($path) }
-    [IO.File]::AppendAllText($path, ([DateTime]::Now.ToString("yyyy-MM-dd HH:mm:ss") + " " + $Text + "`n"))
-  } catch { Write-Verbose $_.Exception.Message }
-}
 
 function Update-WatchFs {
   param($St)

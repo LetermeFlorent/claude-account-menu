@@ -5,7 +5,7 @@ $script:DriveLockWaitMs = 5000
 $script:DriveExitBudgetMs = 30000
 
 function New-SyncResult {
-  return @{ Ok = $false; Error = ""; Busy = $false; Shared = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Blocked = $false; Failure = ""; Total = 0; Away = @{}; Again = $false; Refused = (New-Object 'System.Collections.Generic.List[string]'); Late = @() }
+  return @{ Ok = $false; Error = ""; Busy = $false; Shared = $false; Stopped = $false; At = [long]0; Left = 0; Up = 0; Down = 0; Deleted = 0; Conflicts = 0; Failed = 0; Blocked = $false; Failure = ""; Total = 0; Away = @{}; Again = $false; Pass = 0; Refused = (New-Object 'System.Collections.Generic.List[string]'); Late = @() }
 }
 
 function Set-DriveLastSync {
@@ -24,38 +24,51 @@ function Get-FailureSuffix {
 
 function Invoke-DriveSyncPass {
   param($Res, $Ctl, [long]$DeadlineMs, [bool]$Force)
+  $watch = [Diagnostics.Stopwatch]::StartNew()
+  $Res.Pass++
   $keys = Get-SyncKeys
   $folders = Get-DriveFolders
   Assert-SyncKeysMatch $folders $keys
+  Add-SyncStep $Res $watch "dossiers"
   $pc = Get-DrivePcName
   $accs = @(Get-Accounts)
   $Res.Failed += [int](Sync-DriveCredentials $folders $accs $keys)
+  Add-SyncStep $Res $watch "identifiants"
   $presence = Get-DriveListing $folders.Presence
   Assert-ClmCurrent $presence
   Set-PresenceFormat $folders $presence $pc
   $Res.Late = Get-WaitingPcs $presence
   $Res.Away = Get-AwayMap $presence $pc ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
+  Add-SyncStep $Res $watch "presence"
   $prefs = Start-SyncPrefs @{ Folders = $folders; Presence = $presence; Pc = $pc; Accs = $accs; Res = $Res; Keys = $keys }
+  Add-SyncStep $Res $watch "preferences"
   $roots = Get-SyncRoots $accs
   $state = Read-SyncBase $folders.Root $roots
+  Add-SyncStep $Res $watch "base"
   $patterns = @(Get-SyncPatterns $accs) + @($prefs.Excludes)
   $local = Get-LocalFiles @{ Root = $script:HomeDir; Roots = $roots; Patterns = $patterns; Base = $state.Files; Ctl = $Ctl; DeadlineMs = $DeadlineMs }
+  Add-SyncStep $Res $watch "scan"
   if ($local.Stopped) { $Res.Ok = $true; $Res.Stopped = $true; return }
   $local.Skipped.AddRange([string[]]@(Get-HeldPaths))
   $sealed = ConvertFrom-SealedListing (Get-DriveFilesListing $folders $pc) $keys
   $listing = $sealed.Files
+  Add-SyncStep $Res $watch "liste Drive"
   Complete-SyncPrefs $prefs $listing $Ctl $DeadlineMs
+  Add-SyncStep $Res $watch "preferences fin"
   $remote = Select-RemoteFiles $listing $patterns $roots
   $plan = Get-SyncPlan @{ Local = $local.Files; Base = $state.Files; Remote = $remote; Skipped = $local.Skipped; Joining = ($state.At -eq 0); CaseFold = ($script:OsName -ne "Linux") }
   Assert-DeleteLimit $plan $state.Files.Count $Force $prefs.Erased
   $Res.Total = $plan.Count
   $registry = Get-RegistryMd5 $local.Files
+  Add-SyncStep $Res $watch "plan"
   $ctx = @{ Folder = $folders.Files; Pc = $pc; State = $state; Local = $local.Files; Remote = $remote; Res = $Res; Keys = $keys }
   $completed = $false
   try { Invoke-SyncPlan $ctx $plan $Ctl $DeadlineMs; $completed = $true }
   finally {
+    Add-SyncStep $Res $watch "transferts"
     if ($completed -and $Res.Left -eq 0 -and $Res.Failed -eq 0) { $state.At = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }
     Save-DriveState $state
+    Add-SyncStep $Res $watch "sauvegarde"
   }
   Remove-SyncedOffSkills $prefs.Choice $patterns $state.Files
   if ($Res.Failed -gt 0) { $Res.Error = (Get-ClmText "drive.sync.failedFiles" @($Res.Failed, (Get-FailureSuffix $Res))); return }
@@ -66,6 +79,7 @@ function Invoke-DriveSyncPass {
   $Res.Ok = $true
   $Res.Again = (Get-RegistryMd5 $state.Files) -ne $registry
   if ($Res.Left -eq 0) { $Res.At = $state.At; Set-DriveLastSync $state.At }
+  Add-SyncStep $Res $watch "nettoyage"
 }
 
 $script:FreshSyncSource = Get-ClmModulePath "claude-drive-sync"
@@ -90,6 +104,7 @@ function Invoke-DriveSync {
   param($Ctl = $null, [long]$DeadlineMs = 0, [switch]$Force)
   if (Test-ClmReplaced) { return Invoke-FreshDriveSync $Ctl $DeadlineMs $Force.IsPresent }
   $res = New-SyncResult
+  $watch = [Diagnostics.Stopwatch]::StartNew()
   try {
     $run = Invoke-MachineOnce $script:DriveSyncLock $script:DriveLockWaitMs -Always:$Force {
       Invoke-WithFolderRetry { Invoke-DriveSyncPass $res $Ctl $DeadlineMs $Force.IsPresent }
@@ -98,27 +113,8 @@ function Invoke-DriveSync {
     }
     Set-DriveSyncOutcome $res $run
   } catch { Set-DriveSyncError $res $_ }
+  Write-SyncTotal $res $watch
   return $res
-}
-
-function Get-SyncNotice {
-  param($Result)
-  $t = ""
-  $refused = @($Result.Refused | Where-Object { $_ })
-  $late = @($Result.Late | Where-Object { $_ })
-  if ($refused.Count -gt 0) { $t += " ; " + (Get-ClmText "drive.notice.refused" @((@($refused | Select-Object -First 3) -join ", "))) }
-  if ($late.Count -gt 0) { $t += " ; " + (Get-ClmText "drive.notice.late" @(($late -join ", "))) }
-  return $t
-}
-
-function Get-DriveSyncMsg {
-  param($Result)
-  if ($Result.Error) { return (Get-ClmText "drive.msg.line" @($Result.Error)) + (Get-SyncNotice $Result) }
-  if ($Result.Busy -or $Result.Shared) { return (Get-ClmText "drive.msg.line" @((Get-DriveSyncElsewhereText $Result))) }
-  if ($Result.Stopped) { return (Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.stopped"))) }
-  $t = (Get-ClmText "drive.msg.line" @((Get-ClmText "drive.msg.done" @($Result.Up, $Result.Down, $Result.Deleted, $Result.Conflicts))))
-  if ($Result.Left -gt 0) { $t += ", " + (Get-ClmText "drive.msg.left" @($Result.Left)) }
-  return $t + (Get-SyncNotice $Result)
 }
 
 function Sync-DriveBeforeLaunch {
