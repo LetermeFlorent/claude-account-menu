@@ -141,9 +141,3 @@ function Protect-ContentMd5 {
   param($Keys, [string]$Md5)
   return $Keys.Id + (ConvertTo-SyncHex (Invoke-TagCipher $Keys (ConvertFrom-SyncHex $Md5) $true))
 }
-
-function Unprotect-ContentMd5 {
-  param($Keys, [string]$Tag)
-  if ($Tag -notmatch '^[0-9a-f]{48}$' -or -not $Tag.StartsWith($Keys.Id, [StringComparison]::Ordinal)) { return "" }
-  return ConvertTo-SyncHex (Invoke-TagCipher $Keys (ConvertFrom-SyncHex $Tag.Substring(16)) $false)
-}

@@ -27,14 +27,13 @@ Assert-True (-not (Test-SealRefusal $otherErr)) "chiffrement : panne ordinaire d
 $md5 = "0123456789abcdef0123456789abcdef"
 $tag = Protect-ContentMd5 $sealKeys $md5
 Assert-True ($tag.StartsWith($sealKeys.Id) -and -not $tag.Contains($md5)) "empreinte : marquee par la cle, sans le md5 en clair"
-Assert-Equal $md5 (Unprotect-ContentMd5 $sealKeys $tag) "empreinte : relue avec la meme cle"
-Assert-Equal "" (Unprotect-ContentMd5 $otherKeys $tag) "empreinte : autre cle ignoree"
-Assert-Equal "" (Unprotect-ContentMd5 $sealKeys "abc") "empreinte : valeur abimee ignoree"
+Assert-Equal $md5 (Unprotect-ListingMd5s $sealKeys ([string[]]@($tag)))[0] "empreinte : relue avec la meme cle"
+Assert-Equal "" (Unprotect-ListingMd5s $otherKeys ([string[]]@($tag)))[0] "empreinte : autre cle ignoree"
+Assert-Equal "" (Unprotect-ListingMd5s $sealKeys ([string[]]@("abc")))[0] "empreinte : valeur abimee ignoree"
 $md5b = "fedcba9876543210fedcba9876543210"
 $batchTags = [string[]]@($tag, "abc", (Protect-ContentMd5 $otherKeys $md5), "", ($sealKeys.Id + (Protect-ContentMd5 $sealKeys $md5b).Substring($sealKeys.Id.Length).ToUpperInvariant()))
 $batch = Unprotect-ListingMd5s $sealKeys $batchTags
 Assert-Equal (@($md5, "", "", "", $md5b) -join "|") ($batch -join "|") "empreintes en lot : valeurs attendues"
-Assert-Equal (@(foreach ($t in $batchTags) { Unprotect-ContentMd5 $sealKeys $t }) -join "|") ($batch -join "|") "empreintes en lot : memes valeurs qu'une a une"
 Assert-Equal 0 (Unprotect-ListingMd5s $sealKeys ([string[]]@())).Count "empreintes en lot : liste vide"
 Assert-Equal $tag (Protect-ContentMd5 $sealKeys $md5) "empreinte : stable pour un meme contenu"
 Assert-True ($sealKeys.Enc.Length -eq 32 -and $sealKeys.Mac.Length -eq 32 -and [Convert]::ToBase64String($sealKeys.Enc) -ne [Convert]::ToBase64String($sealKeys.Mac)) "cles : chiffrement et signature distinctes"

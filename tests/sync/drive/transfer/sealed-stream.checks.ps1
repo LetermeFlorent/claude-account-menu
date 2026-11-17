@@ -124,7 +124,7 @@ Assert-Equal ("" + $sealBigLen) $script:SealStartLen "envoi en flux : longueur a
 Assert-True (Test-SameBytes $sealPlain (Unprotect-SyncBytes $sealKeys "files/.claude/big.bin" $script:SealUp.ToArray())) "envoi en flux : octets recus rechiffres a l'identique"
 Assert-Equal $sealMd5 $sealSent.Md5 "envoi en flux : empreinte du fichier en clair"
 Assert-Equal "S1" $sealSent.Id "envoi en flux : identifiant rendu"
-Assert-Equal $sealMd5 (Unprotect-ContentMd5 $sealKeys $sealDoc.appProperties.h) "envoi en flux : empreinte chiffree dans les proprietes"
+Assert-Equal $sealMd5 (Unprotect-ListingMd5s $sealKeys ([string[]]@($sealDoc.appProperties.h)))[0] "envoi en flux : empreinte chiffree dans les proprietes"
 Assert-Equal $sealKeys.Id $sealDoc.appProperties.k "envoi en flux : identifiant de cle dans les proprietes"
 Assert-True ($script:SealMaxBody -le 256KB -and $script:SealMaxBody -gt 0) "envoi en flux : morceaux de 256 Ko au plus"
 Assert-True (Test-Deletable $sealPath) "envoi en flux : fichier libere apres l'envoi"
