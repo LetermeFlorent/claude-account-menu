@@ -14,7 +14,9 @@ function Get-SkillOfPath {
 function Get-DriveSkillNames {
   param($Listing)
   $set = New-Object 'System.Collections.Generic.SortedSet[string]' ([StringComparer]::Ordinal)
+  $head = $script:SkillsRoot + "/"
   foreach ($k in $Listing.Keys) {
+    if (-not $k.StartsWith($head, [StringComparison]::Ordinal)) { continue }
     $n = Get-SkillOfPath $k
     if ($n -and (Test-SkillName $n)) { [void]$set.Add($n) }
   }

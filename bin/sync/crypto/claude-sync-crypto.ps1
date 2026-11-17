@@ -126,7 +126,7 @@ function Invoke-TagCipher {
   $aes.Padding = [Security.Cryptography.PaddingMode]::None
   try {
     if ($Encrypt) { $t = $aes.CreateEncryptor() } else { $t = $aes.CreateDecryptor() }
-    return ,$t.TransformFinalBlock($Block, 0, 16)
+    return ,$t.TransformFinalBlock($Block, 0, $Block.Length)
   } finally { $aes.Dispose() }
 }
 

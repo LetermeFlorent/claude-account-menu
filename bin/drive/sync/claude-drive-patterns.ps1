@@ -2,8 +2,11 @@
 $script:ExcludeRegexMemo = New-PathMap
 $script:RootsRegexMemo = New-PathMap
 $script:ExcludeRegexOptions = [Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant, Singleline"
-$script:SafeSyncRoot = New-Object regex '^\.(?:claude(?:-[A-Za-z0-9_-]+)?(?:/|\z)|(?:claude|mcp|claude-accounts)\.json\z)', ([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant")
-$script:UnsafeSyncPath = New-Object regex '[\\:]|(?:^|/)(?:/|\z)|[. ](?:/|\z)|(?:^|/)(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.[^/]*)?(?:/|\z)', ([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant")
+$script:SafeSyncRootText = '^\.(?:claude(?:-[A-Za-z0-9_-]+)?(?:/|\z)|(?:claude|mcp|claude-accounts)\.json\z)'
+$script:ReservedSyncNameText = '(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.[^/]*)?(?:/|\z)'
+$script:UnsafeSyncPath = New-Object regex ('[\\:]|(?:^|/)(?:/|\z)|[. ](?:/|\z)|(?:^|/)' + $script:ReservedSyncNameText), ([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant")
+$script:SafeSyncSegmentText = '(?!' + $script:ReservedSyncNameText + ')[^/\\:]*[^/\\:. ]'
+$script:SafeSyncPath = New-Object regex ('\A(?=' + $script:SafeSyncRootText + ')' + $script:SafeSyncSegmentText + '(?:/' + $script:SafeSyncSegmentText + ')*\z'), ([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant, Singleline")
 
 function ConvertTo-WildcardRegex {
   param([string]$Pattern, [string]$Star, [string]$One)
@@ -32,10 +35,10 @@ function Get-ExcludeRegex {
     else { $segments.Add((ConvertTo-WildcardRegex $p "[^/]*" "[^/]")) }
   }
   $parts = @()
-  if ($segments.Count -gt 0) { $parts += "(?:^|/)(?:" + ($segments -join "|") + ")(?:/|$)" }
-  if ($paths.Count -gt 0) { $parts += "^(?:" + ($paths -join "|") + ")(?:/.*)?$" }
+  if ($segments.Count -gt 0) { $parts += "(?:[^/]*/)*?(?:" + ($segments -join "|") + ")(?:/|$)" }
+  if ($paths.Count -gt 0) { $parts += "(?:" + ($paths -join "|") + ")(?:/.*)?$" }
   if ($parts.Count -eq 0) { $parts = @("(?!)") }
-  $rx = New-Object regex ($parts -join "|"), $script:ExcludeRegexOptions
+  $rx = New-Object regex ("^(?:" + ($parts -join "|") + ")"), $script:ExcludeRegexOptions
   $script:ExcludeRegexMemo[$key] = $rx
   return $rx
 }
@@ -54,5 +57,5 @@ function Get-RootsRegex {
 
 function Test-SafeSyncPath {
   param([string]$Rel)
-  return $script:SafeSyncRoot.IsMatch($Rel) -and -not $script:UnsafeSyncPath.IsMatch($Rel)
+  return $script:SafeSyncPath.IsMatch($Rel)
 }

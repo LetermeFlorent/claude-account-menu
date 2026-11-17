@@ -38,10 +38,10 @@ function Get-PathAction {
   return "keep-remote"
 }
 
-function Test-UnderSkipped {
-  param([string]$Path, $Skipped)
-  foreach ($s in $Skipped) { if ($Path -eq $s -or $Path.StartsWith($s + "/", [StringComparison]::Ordinal)) { return $true } }
-  return $false
+function Get-SkippedRegex {
+  param($Skipped)
+  $alts = @(foreach ($s in $Skipped) { [regex]::Escape($s) }) -join "|"
+  return New-Object regex ("^(?:(?i:" + $alts + ")\z|(?:" + $alts + ")/)"), ([Text.RegularExpressions.RegexOptions]::CultureInvariant)
 }
 
 function Get-SyncPlan {
@@ -58,8 +58,9 @@ function Get-SyncPlan {
   $first = New-Object 'System.Collections.Generic.List[object]'
   $later = New-Object 'System.Collections.Generic.List[object]'
   $anySkipped = $skip.Count -gt 0
+  if ($anySkipped) { $skipRx = Get-SkippedRegex $skip }
   foreach ($p in $paths) {
-    if ($anySkipped -and (Test-UnderSkipped $p $skip)) { continue }
+    if ($anySkipped -and $skipRx.IsMatch($p)) { continue }
     $l = $Local[$p]; $b = $Base[$p]; $r = $Remote[$p]
     if ($null -ne $l -and $null -ne $b -and $null -ne $r -and $l.Md5 -eq $b.Md5 -and $r.Md5 -eq $b.Md5 -and $r.Id -eq $b.Id -and -not $r.Plain) { continue }
     $kind = Get-PathAction $l $b $r -Joining:$Joining

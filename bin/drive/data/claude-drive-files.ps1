@@ -44,11 +44,19 @@ function Get-SyncBytes {
   return ,$bytes
 }
 
+$script:MachineMd5Memo = New-PathMap
+
 function Get-SyncMd5 {
   param([string]$Rel, [string]$Path)
   if (-not (Test-MachineSettingsPath $Rel)) { return Get-FileMd5 $Path }
+  $info = New-Object IO.FileInfo $Path
+  $stamp = $Path + "|" + $info.Length + "|" + $info.LastWriteTimeUtc.Ticks + "|" + $script:McpPerPc
+  $known = $script:MachineMd5Memo[$Rel]
+  if ($null -ne $known -and $known.Stamp -ceq $stamp) { return $known.Md5 }
   $md5 = [Security.Cryptography.MD5]::Create()
-  try { return ConvertTo-HexText ($md5.ComputeHash((Get-SyncBytes $Rel $Path))) } finally { $md5.Dispose() }
+  try { $hash = ConvertTo-HexText ($md5.ComputeHash((Get-SyncBytes $Rel $Path))) } finally { $md5.Dispose() }
+  $script:MachineMd5Memo[$Rel] = @{ Stamp = $stamp; Md5 = $hash }
+  return $hash
 }
 
 function ConvertTo-UnixSeconds {
@@ -96,7 +104,7 @@ function Get-LocalFiles {
     foreach ($i in $items) {
       $rel = $d[0] + "/" + $i.Name
       if ($rx.IsMatch($rel)) { continue }
-      if (-not (Test-SafeSyncPath $rel)) { $res.Skipped.Add($rel); continue }
+      if (-not $script:SafeSyncPath.IsMatch($rel)) { $res.Skipped.Add($rel); continue }
       if ($i.Attributes -band [IO.FileAttributes]::ReparsePoint) { $res.Skipped.Add($rel); continue }
       if ($i -is [IO.DirectoryInfo]) { $stack.Push(@($rel, $i.FullName)); continue }
       $b = $Base[$rel]

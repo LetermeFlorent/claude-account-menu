@@ -36,6 +36,8 @@ $base[".claude/busy.json"] = New-B "a"; $remote[".claude/busy.json"] = New-R "a"
 $plan = Get-SyncPlan @{ Local = $local; Base = $base; Remote = $remote; Skipped = @(".claude/locked", ".claude/busy.json") }
 Assert-True (@($plan | Where-Object { $_.Path -like ".claude/locked*" -or $_.Path -eq ".claude/busy.json" }).Count -eq 0) "dossier ou fichier illisible : aucune action"
 Assert-Equal 3 $plan.Count "le reste du plan garde"
+$plan = Get-SyncPlan @{ Local = $local; Base = $base; Remote = $remote; Skipped = @(".claude/LOCKED", ".claude/BUSY.json") }
+Assert-Equal ".claude/locked/a.md" (@($plan | Where-Object { $_.Path -like ".claude/locked*" -or $_.Path -eq ".claude/busy.json" } | ForEach-Object { $_.Path }) -join "|") "illisible : nom exact sans casse, dossier parent avec casse"
 
 $local = New-PathMap; $base = New-PathMap; $remote = New-PathMap
 $local[".claude/a.md"] = New-L "n"

@@ -31,6 +31,10 @@ $base[".claude/settings.json"] = @{ Md5 = "cafe"; M = $e.M; Size = $e.Size; Id =
 $res2 = Get-LocalFiles @{ Root = $fh; Roots = $roots; Patterns = $patterns; Base = $base }
 Assert-Equal "cafe" $res2.Files[".claude-compte2/notes.md"].Md5 "taille et date inchangees, MD5 repris de la base"
 Assert-Equal $e.Md5 $res2.Files[".claude/settings.json"].Md5 "reglages d'un compte : MD5 toujours recalcule"
+$null = New-SandboxFile "pc-files/.claude/settings.json" "contenu change .claude/settings.json"
+$changed = Get-FileMd5 (Join-Path $fh ".claude/settings.json")
+Assert-Equal $changed (Get-LocalFiles @{ Root = $fh; Roots = $roots; Patterns = $patterns; Base = $base }).Files[".claude/settings.json"].Md5 "reglages d'un compte modifies : MD5 recalcule malgre la memoire"
+$null = New-SandboxFile "pc-files/.claude/settings.json" "contenu .claude/settings.json"
 $base[".claude-compte2/notes.md"].M = $n.M - 5
 Assert-Equal $n.Md5 (Get-LocalFiles @{ Root = $fh; Roots = $roots; Patterns = $patterns; Base = $base }).Files[".claude-compte2/notes.md"].Md5 "date changee, MD5 recalcule"
 

@@ -1,6 +1,11 @@
 . Import-ClmModule claude-sync-keyfile
 $script:SealedPrefix = "clm-enc/"
 $script:SealedFilesArea = "files/"
+$script:SealedTagShape = New-Object regex '^[0-9a-f]{48}$', ([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant")
+$script:SealedTagIdHex = 16
+$script:SealedTagHalfHex = 16
+$script:SealedTagHalfBytes = 8
+$script:SealedTagBytes = 16
 
 function Get-BytesMd5 {
   param([byte[]]$Bytes)
@@ -36,9 +41,29 @@ function Send-SealedFile {
   return @{ Id = $r.Id; Md5 = $md5 }
 }
 
-function New-MergedEntry {
-  param($Entry, [string]$Rel, [string]$Md5, [bool]$Plain)
-  return @{ Id = $Entry.Id; Name = $Rel; Md5 = $Md5; M = $Entry.M; Pc = $Entry.Pc; Exp = $Entry.Exp; Props = $Entry.Props; Raw = [string]$Entry.Md5; Plain = $Plain; SealedId = ""; PlainId = "" }
+function Unprotect-ListingMd5s {
+  param($Keys, [string[]]$Tags)
+  $out = New-Object string[] $Tags.Length
+  $at = New-Object 'System.Collections.Generic.List[int]'
+  for ($i = 0; $i -lt $Tags.Length; $i++) {
+    $out[$i] = ""
+    if ($script:SealedTagShape.IsMatch($Tags[$i]) -and $Tags[$i].StartsWith($Keys.Id, [StringComparison]::Ordinal)) { $at.Add($i) }
+  }
+  if ($at.Count -eq 0) { return ,$out }
+  $block = New-Object byte[] ($at.Count * $script:SealedTagBytes)
+  $o = 0
+  foreach ($i in $at) {
+    foreach ($start in $script:SealedTagIdHex, ($script:SealedTagIdHex + $script:SealedTagHalfHex)) {
+      $half = [BitConverter]::GetBytes([Convert]::ToUInt64($Tags[$i].Substring($start, $script:SealedTagHalfHex), 16))
+      if ([BitConverter]::IsLittleEndian) { [Array]::Reverse($half) }
+      [Array]::Copy($half, 0, $block, $o, $script:SealedTagHalfBytes)
+      $o += $script:SealedTagHalfBytes
+    }
+  }
+  $hex = ConvertTo-SyncHex (Invoke-TagCipher $Keys $block $false)
+  $width = 2 * $script:SealedTagBytes
+  for ($j = 0; $j -lt $at.Count; $j++) { $out[$at[$j]] = $hex.Substring($j * $width, $width) }
+  return ,$out
 }
 
 function ConvertFrom-SealedListing {
@@ -49,18 +74,18 @@ function ConvertFrom-SealedListing {
   foreach ($k in $Listing.Keys) {
     if ($k.StartsWith($script:SealedPrefix, [StringComparison]::Ordinal)) { $sealed.Add($k); continue }
     $e = $Listing[$k]
-    $files[$k] = New-MergedEntry $e $k ([string]$e.Md5) $true
-    $files[$k].PlainId = [string]$e.Id
+    $files[$k] = @{ Id = $e.Id; Name = $k; Md5 = [string]$e.Md5; M = $e.M; Pc = $e.Pc; Exp = $e.Exp; Props = $e.Props; Raw = [string]$e.Md5; Plain = $true; SealedId = ""; PlainId = [string]$e.Id }
   }
-  foreach ($k in $sealed) {
+  $md5s = Unprotect-ListingMd5s $Keys ([string[]]@(foreach ($k in $sealed) { [string]$Listing[$k].Md5 }))
+  for ($j = 0; $j -lt $sealed.Count; $j++) {
+    $k = $sealed[$j]
     $e = $Listing[$k]
     $rel = $k.Substring($script:SealedPrefix.Length)
-    $md5 = Unprotect-ContentMd5 $Keys ([string]$e.Md5)
+    $md5 = $md5s[$j]
     $plain = -not $md5
     if ($plain) { $md5 = [string]$e.Md5 }
     $old = $files[$rel]
-    $m = New-MergedEntry $e $rel $md5 $plain
-    $m.SealedId = [string]$e.Id
+    $m = @{ Id = $e.Id; Name = $rel; Md5 = $md5; M = $e.M; Pc = $e.Pc; Exp = $e.Exp; Props = $e.Props; Raw = [string]$e.Md5; Plain = $plain; SealedId = [string]$e.Id; PlainId = "" }
     if ($null -ne $old) { $m.PlainId = $old.PlainId }
     if ($null -ne $old -and -not $plain) { $twins.Add($old.PlainId) }
     $files[$rel] = $m

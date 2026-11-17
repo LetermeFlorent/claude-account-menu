@@ -9,7 +9,7 @@ function Select-RemoteFiles {
   $rx = Get-ExcludeRegex $Patterns
   $inRoots = Get-RootsRegex $Roots
   foreach ($k in $Listing.Keys) {
-    if ($inRoots.IsMatch($k) -and -not $rx.IsMatch($k) -and (Test-SafeSyncPath $k)) { $out[$k] = $Listing[$k] }
+    if ($inRoots.IsMatch($k) -and -not $rx.IsMatch($k) -and $script:SafeSyncPath.IsMatch($k)) { $out[$k] = $Listing[$k] }
   }
   return $out
 }
