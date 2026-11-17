@@ -1,3 +1,4 @@
+param([string]$Only = "*.checks.ps1")
 $ErrorActionPreference = "Stop"
 $bin = Join-Path (Split-Path -Parent $PSScriptRoot) "bin"
 $envNames = @("USERPROFILE", "HOME", "LOCALAPPDATA", "XDG_CACHE_HOME", "XDG_STATE_HOME", "XDG_CONFIG_HOME", "STATUSLINE_BG", "CLAUDE_CONFIG_DIR")
@@ -73,7 +74,7 @@ try {
   . (Join-Path $bin "accounts/claude-account-guard.ps1")
   Remove-Item Env:STATUSLINE_BG
   $script:SyncKeyStoreOs = "Linux"
-  foreach ($checkFile in Get-ChildItem -LiteralPath $PSScriptRoot -Filter "*.checks.ps1" -Recurse | Sort-Object Name) {
+  foreach ($checkFile in Get-ChildItem -LiteralPath $PSScriptRoot -Filter $Only -Recurse | Sort-Object Name) {
     try { . $checkFile.FullName } catch { $script:Failed += ($checkFile.Name + " : exception " + $_.Exception.Message + " ligne " + $_.InvocationInfo.ScriptLineNumber) }
   }
 } finally {
