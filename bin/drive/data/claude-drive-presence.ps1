@@ -1,5 +1,8 @@
 . Import-ClmModule claude-self-version, claude-text, claude-sync-catalog, claude-sync-choice
-$script:AwaySeconds = 12 * 3600
+$script:AwayHours = 12
+$script:AwaySeconds = $script:AwayHours * 3600
+$script:PresenceExt = ".json"
+$script:PresenceExtTail = [regex]::Escape($script:PresenceExt) + "$"
 $script:SyncFormatKey = "fmt"
 $script:SyncFormat = 6
 $script:McpFormat = 3
@@ -14,7 +17,7 @@ function Get-PresenceProps {
 function Set-DrivePresence {
   param($Acc, [bool]$Open)
   $f = Get-DriveFolders
-  $name = (Get-DrivePcName) + ".json"
+  $name = (Get-DrivePcName) + $script:PresenceExt
   $props = Get-PresenceProps $Acc $Open
   $own = (Get-DriveListing $f.Presence)[$name]
   if ($null -ne $own) { Set-DriveProps $own.Id $props; return }
@@ -31,7 +34,7 @@ function Get-PresenceFormat {
 
 function Set-PresenceFormat {
   param($Folders, $Presence, [string]$Pc)
-  $name = $Pc + ".json"
+  $name = $Pc + $script:PresenceExt
   $own = $Presence[$name]
   if ((Get-PresenceFormat $own) -ge $script:SyncFormat) { return }
   $props = @{ $script:SyncFormatKey = ("" + $script:SyncFormat) }
@@ -42,14 +45,14 @@ function Set-PresenceFormat {
 
 function Get-WaitingPcs {
   param($Presence, [int]$Format = $script:SyncFormat)
-  $names = [string[]]@($Presence.Keys | Where-Object { (Get-PresenceFormat $Presence[$_]) -lt $Format } | ForEach-Object { $_ -replace "\.json$", "" })
+  $names = [string[]]@($Presence.Keys | Where-Object { (Get-PresenceFormat $Presence[$_]) -lt $Format } | ForEach-Object { $_ -replace $script:PresenceExtTail, "" })
   [Array]::Sort($names, [StringComparer]::OrdinalIgnoreCase)
   return ,$names
 }
 
 function Get-NewerPcs {
   param($Presence)
-  $names = [string[]]@($Presence.Keys | Where-Object { (Get-PresenceFormat $Presence[$_]) -gt $script:SyncFormat } | ForEach-Object { $_ -replace "\.json$", "" })
+  $names = [string[]]@($Presence.Keys | Where-Object { (Get-PresenceFormat $Presence[$_]) -gt $script:SyncFormat } | ForEach-Object { $_ -replace $script:PresenceExtTail, "" })
   [Array]::Sort($names, [StringComparer]::OrdinalIgnoreCase)
   return ,$names
 }
@@ -76,7 +79,7 @@ function Get-AwayMap {
   param($Listing, [string]$Pc, [long]$NowSec)
   $map = @{}
   foreach ($name in $Listing.Keys) {
-    $other = $name -replace "\.json$", ""
+    $other = $name -replace $script:PresenceExtTail, ""
     if ($other -eq $Pc) { continue }
     $props = $Listing[$name].Props
     foreach ($dir in $props.Keys) {
@@ -101,7 +104,7 @@ function Test-AccountAway {
 function Remove-DrivePc {
   param([string]$Pc)
   if ($Pc -eq (Get-DrivePcName) -or -not $script:PcNamePattern.IsMatch($Pc)) { throw (Get-ClmText "drive.pc.removeSelf" @($Pc)) }
-  $name = $Pc + ".json"
+  $name = $Pc + $script:PresenceExt
   $entry = (Get-DriveListing (Get-DriveFolders).Presence)[$name]
   $recent = $false
   if ($null -ne $entry) {
