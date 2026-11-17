@@ -4,7 +4,6 @@ $script:RootsRegexMemo = New-PathMap
 $script:ExcludeRegexOptions = [Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant, Singleline"
 $script:SafeSyncRootText = '^\.(?:claude(?:-[A-Za-z0-9_-]+)?(?:/|\z)|(?:claude|mcp|claude-accounts)\.json\z)'
 $script:ReservedSyncNameText = '(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.[^/]*)?(?:/|\z)'
-$script:UnsafeSyncPath = New-Object regex ('[\\:]|(?:^|/)(?:/|\z)|[. ](?:/|\z)|(?:^|/)' + $script:ReservedSyncNameText), ([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant")
 $script:SafeSyncSegmentText = '(?!' + $script:ReservedSyncNameText + ')[^/\\:]*[^/\\:. ]'
 $script:SafeSyncPath = New-Object regex ('\A(?=' + $script:SafeSyncRootText + ')' + $script:SafeSyncSegmentText + '(?:/' + $script:SafeSyncSegmentText + ')*\z'), ([Text.RegularExpressions.RegexOptions]"IgnoreCase, CultureInvariant, Singleline")
 
