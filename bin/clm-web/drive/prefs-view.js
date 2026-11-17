@@ -23,10 +23,23 @@ function prefsEmpty(cur) {
   return el("p", { class: "muted", text: cur.self ? clmText("prefs.nothing") : clmText("prefs.nothingPc") });
 }
 
+async function prefsRemove(pc) {
+  const lines = [clmText("prefs.pcRemoveText"), pc.recent].filter((line) => line);
+  if (await clmAsk(clmText("prefs.pcRemoveTitle", pc.name), lines, clmText("prefs.pcRemoveYes"), [], true)) {
+    clmAct({ do: "pcremove", pc: pc.name }, prefsView);
+  }
+}
+
+function prefsRemoveButton(cur) {
+  if (cur.self) return null;
+  const button = el("button", { type: "button", class: "small danger", text: clmText("prefs.pcRemove"), onclick: () => prefsRemove(cur) });
+  return el("div", { "data-key": "pcremove" }, [button]);
+}
+
 function prefsDraw(p) {
   const pcs = prefsPcs(p);
   const cur = pcs.find((pc) => pc.name === clm.prefsPc) || pcs[0];
-  const out = [el("h3", { text: clmText("prefs.title") }), prefsPcRow(pcs, cur), el("p", { class: "muted", text: cur.sub })];
+  const out = [el("h3", { text: clmText("prefs.title") }), prefsPcRow(pcs, cur), el("p", { class: "muted", text: cur.sub }), prefsRemoveButton(cur)];
   for (const part of prefsSections(cur.lines)) out.push(prefsPart(part, p.warn, cur));
   out.push(prefsEmpty(cur));
   clmMorph(byId("prefs"), out);

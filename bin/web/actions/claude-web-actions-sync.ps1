@@ -64,6 +64,17 @@ function Invoke-WebPref {
   return New-WebDone (Get-ClmText $script:WebPrefMoves[$webMove] $webItem.Label) (Get-WebPrefs)
 }
 
+function Invoke-WebPcRemove {
+  param($Data)
+  Assert-WebDrive
+  $webPc = Get-WebText $Data "pc"
+  $webGone = Remove-DrivePc $webPc
+  $null = Request-DriveSync $script:DriveJob
+  $key = "server.pcRemoved"
+  if ($webGone.Recent) { $key = "server.pcRemovedBack" }
+  return New-WebDone (Get-ClmText $key @($webPc)) (Get-WebPrefs)
+}
+
 function Invoke-WebSave {
   param($Data)
   $webAccs = Find-WebAccounts @(Get-Accounts) (Get-WebList $Data "accs")

@@ -14,7 +14,8 @@ function Get-WebPrefLine {
 
 function Get-WebPcPrefs {
   param($Prefs, [string]$Me, [string]$Pc)
-  $out = [ordered]@{ name = $Pc; ready = [bool](Test-PcReachable $Prefs.Catalog $Pc); sub = (Get-PcPrefsSub $Prefs.Catalog $Pc); lines = @() }
+  $out = [ordered]@{ name = $Pc; ready = [bool](Test-PcReachable $Prefs.Catalog $Pc); sub = (Get-PcPrefsSub $Prefs.Catalog $Pc); recent = ""; lines = @() }
+  if ($null -ne $script:DriveJob -and $null -ne $script:DriveJob.Away -and @($script:DriveJob.Away.Values) -ccontains $Pc) { $out.recent = Get-ClmText "server.pcRecent" @($Pc, [int]($script:AwaySeconds / 3600)) }
   $out.lines = @(foreach ($l in (Get-PcPrefsLines $Prefs.Choice $Prefs.Catalog $Me $Pc)) { Get-WebPrefLine $l $Pc })
   return $out
 }

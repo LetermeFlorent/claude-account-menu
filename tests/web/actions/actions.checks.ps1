@@ -102,6 +102,18 @@ try {
   Assert-Equal (Get-ClmText "server.unknownPc" @("nulle part")) (Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "on"; pc = "nulle part" }).Msg "web action : PC inconnu"
   $r = Invoke-ActTest @{ do = "pref"; id = "skill:dessin"; move = "off"; pc = "ICI" }
   Assert-True ($r.Ok -and (Read-SyncChoice).skills["dessin"] -eq $false) "web action : ce PC par son nom, reglage local"
+  $script:DriveJob.Away = @{ ".claude" = "loin" }
+  Assert-Equal ((Get-ClmText "server.pcRecent" @("loin", 12)) + "|") ((@((Get-WebPrefs).pcs) | ForEach-Object { $_.recent }) -join "|") "web action : PC vu il y a peu signale"
+  $actKeptRemove = (Get-Item "function:Remove-DrivePc").ScriptBlock
+  $script:ActRemoved = @()
+  function Remove-DrivePc { param([string]$Pc) $script:ActRemoved += $Pc; return @{ Removed = $true; Recent = $Pc -eq "loin" } }
+  $script:ActSyncs = 0
+  $r = Invoke-ActTest @{ do = "pcremove"; pc = "loin" }
+  Assert-Equal ("True " + (Get-ClmText "server.pcRemovedBack" @("loin")) + " loin 1") ("" + $r.Ok + " " + $r.Msg + " " + ($script:ActRemoved -join ",") + " " + $script:ActSyncs) "web action : PC vu il y a peu retire quand meme, synchro lancee"
+  Assert-True ($null -ne $r.Data.pcs) "web action : liste des PC renvoyee apres retrait"
+  Assert-Equal (Get-ClmText "server.pcRemoved" @("vieux")) (Invoke-ActTest @{ do = "pcremove"; pc = "vieux" }).Msg "web action : PC retire"
+  Set-Item "function:Remove-DrivePc" $actKeptRemove
+  Assert-Equal (Get-ClmText "drive.pc.removeSelf" @("ICI")) (Invoke-ActTest @{ do = "pcremove"; pc = "ICI" }).Msg "web action : ce PC jamais retire"
 
   $r = Invoke-ActTest @{ do = "display"; palette = "light" }
   $d = Read-DisplayConfig

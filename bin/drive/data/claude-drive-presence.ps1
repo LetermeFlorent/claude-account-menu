@@ -1,4 +1,4 @@
-. Import-ClmModule claude-self-version, claude-text
+. Import-ClmModule claude-self-version, claude-text, claude-sync-catalog, claude-sync-choice
 $script:AwaySeconds = 12 * 3600
 $script:SyncFormatKey = "fmt"
 $script:SyncFormat = 6
@@ -96,4 +96,22 @@ function Test-AccountAway {
     $away = Get-AwayMap (Get-DriveListing $f.Presence) (Get-DrivePcName) ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())
     return $away.ContainsKey([string]$Acc.Dir)
   } catch { return $false }
+}
+
+function Remove-DrivePc {
+  param([string]$Pc)
+  if ($Pc -eq (Get-DrivePcName) -or -not $script:PcNamePattern.IsMatch($Pc)) { throw (Get-ClmText "drive.pc.removeSelf" @($Pc)) }
+  $name = $Pc + ".json"
+  $entry = (Get-DriveListing (Get-DriveFolders).Presence)[$name]
+  $recent = $false
+  if ($null -ne $entry) {
+    $recent = (Get-AwayMap @{ $name = $entry } "" ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())).Count -gt 0
+    Remove-DriveFile $entry.Id
+  }
+  $cat = Read-SyncCatalog
+  $cat.Pcs.Remove($Pc)
+  foreach ($other in $cat.Pcs.Values) { $other.Took.Remove($Pc); $other.Asks.Remove($Pc) }
+  Save-SyncCatalog $cat
+  $null = Update-SyncChoice { param($c) $c.Asks.Remove($Pc) }
+  return @{ Removed = $null -ne $entry; Recent = $recent }
 }
