@@ -18,7 +18,7 @@ function Invoke-WatchSync {
     $res.Failed = [int](Sync-DriveCredentials (Get-DriveFolders) @(Get-Accounts))
     $res.Ok = $true
   } catch { if (Test-LeftToOtherClm $_) { $res.Ok = $true; $res.Busy = $true } else { $res.Error = $_.Exception.Message } }
-  if ($res.Failed -gt 0) { $res.Error = "" + $res.Failed + " identifiant(s) en echec" }
+  if ($res.Failed -gt 0) { $res.Error = Get-ClmText "drive.sync.failedCreds" @($res.Failed) }
   return $res
 }
 

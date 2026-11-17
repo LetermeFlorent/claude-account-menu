@@ -129,6 +129,7 @@
   "drive.status.mcp.perpc.later": "MCP settable per PC after the next sync",
   "drive.status.mcp.waiting": "MCP sent whole until these PCs have an up-to-date clm: {0}",
   "drive.status.pc": "PC: {0}",
+  "drive.sync.failedCreds": "{0} credential(s) failed",
   "drive.sync.failedFiles": "{0} file(s) failed{1}, will retry at the next sync",
   "drive.sync.freshFailed": "sync with the new clm version not possible",
   "drive.sync.interrupted": "sync interrupted",

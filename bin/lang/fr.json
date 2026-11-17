@@ -129,6 +129,7 @@
   "drive.status.mcp.perpc.later": "MCP réglables par PC après la prochaine synchro",
   "drive.status.mcp.waiting": "MCP envoyés en entier tant que ces PC n'ont pas clm à jour : {0}",
   "drive.status.pc": "PC : {0}",
+  "drive.sync.failedCreds": "{0} identifiant(s) en échec",
   "drive.sync.failedFiles": "{0} fichier(s) en échec{1}, nouvel essai à la prochaine synchro",
   "drive.sync.freshFailed": "synchro par la nouvelle version de clm impossible",
   "drive.sync.interrupted": "synchro interrompue",
