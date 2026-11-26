@@ -54,6 +54,12 @@ function Register-UsageRefusal {
   Set-UsageLimited $Out $Entry $wait
 }
 
+function Save-TokenRefused {
+  param($Acc)
+  $path = Get-TokenRefusedPath $Acc
+  try { $null = [IO.Directory]::CreateDirectory((Split-Path $path)); Invoke-FileRetry { [IO.File]::WriteAllText($path, "") } } catch { return }
+}
+
 function Invoke-UsageApi {
   param([string]$Token)
   $h = @{ "Authorization" = "Bearer " + $Token; "anthropic-beta" = "oauth-2025-04-20"; "Accept" = "application/json" }
@@ -87,17 +93,19 @@ function Request-AccountUsage {
     $tok = Get-UsageToken $Acc $Cred -NoRefresh:$NoRefresh
     if ($tok.Error) { $Out.Error = $tok.Error; return }
     $r = Invoke-UsageApi $tok.Token
-    if ($null -ne $r.five_hour) { $Out.Pct5 = [math]::Round([double]$r.five_hour.utilization); $Out.Reset5 = $r.five_hour.resets_at }
-    if ($null -ne $r.seven_day) { $Out.Pct7 = [math]::Round([double]$r.seven_day.utilization); $Out.Reset7 = $r.seven_day.resets_at }
+    if ($null -ne $r.five_hour) { $Out.Pct5 = [double]$r.five_hour.utilization; $Out.Reset5 = $r.five_hour.resets_at }
+    if ($null -ne $r.seven_day) { $Out.Pct7 = [double]$r.seven_day.utilization; $Out.Reset7 = $r.seven_day.resets_at }
     $name = Get-ApiPlanName $Acc $tok.Token
     if ($name) { $Out.Plan = $name }
     $Out.No5 = Test-NoFive ($null -eq $r.five_hour -and $null -ne $r.seven_day) $Out.Plan
     $Out.At = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     Save-UsageEntry $Acc.Label $Out $Out.At
+    Remove-Item -LiteralPath (Get-TokenRefusedPath $Acc) -Force -ErrorAction SilentlyContinue
   } catch {
     $resp = $_.Exception.Response
     if ($null -ne $resp -and [int]$resp.StatusCode -eq 429) { Register-UsageRefusal $Out $Known $resp; return }
     $Out.Error = Get-UsageErrorText $resp
+    if ($null -ne $resp -and [int]$resp.StatusCode -eq 401) { Save-TokenRefused $Acc }
   }
 }
 

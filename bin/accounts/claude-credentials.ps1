@@ -9,7 +9,7 @@ function Read-AccountCredential {
     $raw = Read-KeychainCredential $dir
   }
   if (-not $raw) {
-    try { $raw = Get-Content -LiteralPath (Join-Path (Get-AccountPath $Acc) ".credentials.json") -Raw -ErrorAction Stop } catch { return $null }
+    try { $raw = Read-SharedText (Join-Path (Get-AccountPath $Acc) ".credentials.json") } catch { return $null }
   }
   try { return $raw | ConvertFrom-Json } catch { return $null }
 }

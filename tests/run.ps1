@@ -74,7 +74,7 @@ try {
   . (Join-Path $bin "accounts/claude-account-guard.ps1")
   Remove-Item Env:STATUSLINE_BG
   $script:SyncKeyStoreOs = "Linux"
-  foreach ($checkFile in Get-ChildItem -LiteralPath $PSScriptRoot -Filter $Only -Recurse | Sort-Object Name) {
+  foreach ($checkFile in Get-ChildItem -LiteralPath $PSScriptRoot -Filter $Only -Recurse -File | Where-Object { $_.Name -like "*.checks.ps1" } | Sort-Object Name) {
     try { . $checkFile.FullName } catch { $script:Failed += ($checkFile.Name + " : exception " + $_.Exception.Message + " ligne " + $_.InvocationInfo.ScriptLineNumber) }
   }
 } finally {

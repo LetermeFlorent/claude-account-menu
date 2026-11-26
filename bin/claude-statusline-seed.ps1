@@ -37,9 +37,9 @@ function Get-StatusEntries {
   $r5 = Convert-ToEpoch $Usage.Reset5
   $r7 = Convert-ToEpoch $Usage.Reset7
   $values = @{ q_at = ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [long]$Usage.Age) }
-  if ($null -ne $r5) { $values["q5_at"] = $r5; $values["q5_pct"] = [int]$Usage.Pct5 }
+  if ($null -ne $r5) { $values["q5_at"] = $r5; $values["q5_pct"] = (Get-ShownPct $Usage.Pct5).ToString($script:Invariant) }
   if ($Usage.No5) { $values["q5_none"] = 1 }
-  if ($null -ne $r7) { $values["q7_at"] = $r7; $values["q7_pct"] = [int]$Usage.Pct7 }
+  if ($null -ne $r7) { $values["q7_at"] = $r7; $values["q7_pct"] = (Get-ShownPct $Usage.Pct7).ToString($script:Invariant) }
   return @(foreach ($k in "q5_at", "q5_pct", "q5_none", "q7_at", "q7_pct", "q_at") {
       if ($values.ContainsKey($k)) { $k + "@" + $Tag + " " + $values[$k] } else { $k + "@" + $Tag }
     })

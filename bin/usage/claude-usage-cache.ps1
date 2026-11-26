@@ -107,11 +107,18 @@ function Copy-CacheEntry {
   if ($null -ne $Entry.No5) { $Out.No5 = Test-NoFive ([bool]$Entry.No5) $Out.Plan }
   $Out.Age = Get-CacheAge $Entry
   Add-Member -InputObject $Out -NotePropertyName At -NotePropertyValue ([long]$Entry.At) -Force
+  $null = Clear-ExpiredUsage $Out
+}
+
+function Clear-ExpiredUsage {
+  param($Usage)
   $now = [DateTimeOffset]::UtcNow
+  $cleared = $false
   foreach ($k in @("5", "7")) {
-    $r = ConvertTo-DateOffset $Out.("Reset" + $k)
-    if ($null -ne $r -and $r -le $now) { $Out.("Pct" + $k) = 0; $Out.("Reset" + $k) = $null; $Out.Expired = $true }
+    $r = ConvertTo-DateOffset $Usage.("Reset" + $k)
+    if ($null -ne $r -and $r -le $now) { $Usage.("Pct" + $k) = 0; $Usage.("Reset" + $k) = $null; $Usage.Expired = $true; $cleared = $true }
   }
+  return $cleared
 }
 
 function Format-Age {

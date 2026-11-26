@@ -58,7 +58,7 @@ function Test-McpMapEqual {
 function Read-McpFile {
   param([string]$Path)
   if (-not [IO.File]::Exists($Path)) { return $null }
-  return Read-McpMap ([IO.File]::ReadAllText($Path))
+  return Read-McpMap (Read-SharedText $Path)
 }
 
 function Get-MemberValueStart {
@@ -73,7 +73,7 @@ function Set-MemberValue {
 
 function Read-JsonTextOrEmpty {
   param([string]$Path)
-  if ([IO.File]::Exists($Path)) { return [IO.File]::ReadAllText($Path) }
+  if ([IO.File]::Exists($Path)) { return Read-SharedText $Path }
   return "{}"
 }
 

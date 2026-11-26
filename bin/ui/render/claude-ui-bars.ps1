@@ -1,58 +1,22 @@
 . Import-ClmModule claude-ui-color-depth
-$script:BarFull = [string][char]0x25A0
-$script:BarEmpty = [string][char]0x25A0
-if ($script:UiColorDepth -eq "none") { $script:BarEmpty = [string][char]0x25A1 }
-$script:BarHalf = [string][char]0x25AA
+$script:BarFull = [string][char]0x2501
+$script:BarEmpty = [string][char]0x254C
+$script:BarCells = 16
 $script:Mark = [string][char]0x25BA
-$script:BarGradients = @{}
-$script:BarGradientLimit = 256
 
 function Get-BarCount {
   param([double]$P, [int]$C)
   if ($P -le 0) { return 0 }
-  $units = [math]::Round($P * 2 * $C / 100, [MidpointRounding]::AwayFromZero)
-  return [int][math]::Min($C, [math]::Max(1, [math]::Ceiling($units / 2)))
-}
-
-function Test-BarHalf {
-  param([double]$P, [int]$C)
-  if ($P -le 0) { return $false }
-  $units = [math]::Round($P * 2 * $C / 100, [MidpointRounding]::AwayFromZero)
-  if ($units -lt 1) { return $true }
-  return $units -lt 2 * $C -and $units % 2 -eq 1
+  $n = [math]::Round($P * $C / 100, [MidpointRounding]::AwayFromZero)
+  return [int][math]::Min($C, [math]::Max(1, $n))
 }
 
 function Get-BarHue {
-  param([string]$Kind, [int]$P)
+  param([string]$Kind, [double]$P)
+  $P = [math]::Round($P, 1, [MidpointRounding]::AwayFromZero)
   $lv = 0
   if ($P -ge 70) { $lv = 2 } elseif ($P -ge 30) { $lv = 1 }
   return ,$script:BarHues[$Kind][$lv]
-}
-
-function Test-InkLight {
-  $b = $script:Ink.Bg
-  return (0.2126 * $b[0] + 0.7152 * $b[1] + 0.0722 * $b[2]) -gt 128
-}
-
-function Get-LerpRgb {
-  param($From, $To, [double]$T)
-  $c = @(0, 0, 0)
-  for ($k = 0; $k -lt 3; $k++) { $c[$k] = [int][math]::Round($From[$k] + ($To[$k] - $From[$k]) * $T, [MidpointRounding]::AwayFromZero) }
-  return ,$c
-}
-
-function Get-BarEnd {
-  param($Base, [double]$G)
-  $light = Test-InkLight
-  $target = @(0, 0, 0)
-  for ($k = 0; $k -lt 3; $k++) {
-    $v = $Base[$k] + (255 - $Base[$k]) * 0.3
-    if ($light) { $v = $Base[$k] * 0.65 }
-    $target[$k] = [math]::Round($v, [MidpointRounding]::AwayFromZero)
-  }
-  $end = @(0, 0, 0)
-  for ($k = 0; $k -lt 3; $k++) { $end[$k] = $Base[$k] + ($target[$k] - $Base[$k]) * $G }
-  return ,$end
 }
 
 function Add-SpanSeg {
@@ -60,44 +24,18 @@ function Add-SpanSeg {
   if ($N -gt 0) { $Segs.Add(@(($Glyph * $N), $Rgb, $false)) }
 }
 
-function New-GradientCells {
-  param([int]$N, $From, $To, [bool]$Half)
-  $cells = New-Object 'System.Collections.Generic.List[object]'
-  for ($i = 0; $i -lt $N; $i++) {
-    $t = 0.0
-    if ($N -gt 1) { $t = $i / ($N - 1) }
-    $glyph = $script:BarFull
-    if ($Half -and $i -eq $N - 1) { $glyph = $script:BarHalf }
-    $cells.Add(@($glyph, (Get-LerpRgb $From $To $t), $false))
-  }
-  return ,$cells
-}
-
-function Add-FilledSegs {
-  param($Segs, [int]$N, $From, $To, [bool]$Half = $false)
-  if ($N -le 0) { return }
-  $key = "" + $N + "|" + ($From -join ",") + "|" + ($To -join ",") + "|" + $Half
-  $cells = $script:BarGradients[$key]
-  if ($null -eq $cells) {
-    if ($script:BarGradients.Count -ge $script:BarGradientLimit) { $script:BarGradients.Clear() }
-    $cells = New-GradientCells $N $From $To $Half
-    $script:BarGradients[$key] = $cells
-  }
-  $Segs.AddRange($cells)
-}
-
 function Add-BarSegs {
   param($Segs, [string]$Kind, [double]$P, $Base, [int]$C)
   $n = Get-BarCount $P $C
-  Add-FilledSegs $Segs $n $Base (Get-BarEnd $Base $script:Grad[$Kind]) (Test-BarHalf $P $C)
+  Add-SpanSeg $Segs $script:BarFull $n $Base
   Add-SpanSeg $Segs $script:BarEmpty ($C - $n) $script:Ink.Cell
 }
 
 function Get-BarBase {
   param([string]$Kind, $Tween, [double]$Now)
-  $to = Get-BarHue $Kind ([int]$Tween.To)
+  $to = Get-BarHue $Kind $Tween.To
   if (-not (Test-TweenRunning $Tween $Now)) { return ,$to }
-  $from = Get-BarHue $Kind ([int]$Tween.From)
+  $from = Get-BarHue $Kind $Tween.From
   return ,(Get-MixedRgb $from $to (Get-EaseOut (($Now - $Tween.Start) / $Tween.Ms)))
 }
 
@@ -118,7 +56,7 @@ function Add-ProgressSegs {
   $ink = $script:BarHues["7d"][0]
   if ($Pct -ge 0) {
     $n = Get-BarCount $Pct $C
-    Add-FilledSegs $Segs $n $ink $ink (Test-BarHalf $Pct $C)
+    Add-SpanSeg $Segs $script:BarFull $n $ink
     Add-SpanSeg $Segs $script:BarEmpty ($C - $n) $script:Ink.Cell
     return
   }

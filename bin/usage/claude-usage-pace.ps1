@@ -15,6 +15,16 @@ function ConvertTo-DateOffset {
   try { return [DateTimeOffset]::Parse($s, $script:Invariant) } catch { return $null }
 }
 
+function Get-ShownPct {
+  param($Pct)
+  return [math]::Round([double]$Pct, 1, [MidpointRounding]::AwayFromZero)
+}
+
+function Format-UsagePct {
+  param($Pct)
+  return (Get-ShownPct $Pct).ToString("0.#", $script:Invariant).Replace(".", (Get-ClmText "ui.number.decimalSep"))
+}
+
 function New-Pace {
   param([string]$Code, [string]$Tone)
   return [PSCustomObject]@{ Code = $Code; Text = (Get-ClmText ("ui.pace." + $Code)); Tone = $Tone }
@@ -28,7 +38,7 @@ function Get-UsagePace {
   $dur = $script:WindowSeconds[$Kind]
   $left = ($r - $Now).TotalSeconds
   if ($left -le 0) { return $null }
-  $p = [double]$Pct
+  $p = Get-ShownPct $Pct
   if ($p -ge 100) { return New-Pace "epuise" "alert" }
   $part = ($dur - $left) / $dur
   if ($part -lt 0.10) { return New-Pace "debut" "dim" }

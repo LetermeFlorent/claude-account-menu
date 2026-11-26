@@ -46,7 +46,7 @@ function Get-StartupRow {
   param($Step, $L, [double]$Now)
   $r = New-Row
   $r.Add(@(("  " + (Get-PaddedLabel $Step.Label $script:StartupLabelWidth)), $script:Ink.Text, $true))
-  Add-StartupBarSegs $r $Step ([math]::Min($script:StartupCellsMax, $L.Cells)) $Now
+  Add-StartupBarSegs $r $Step ([math]::Min($script:StartupCellsMax, [math]::Max(8, $L.W - 34))) $Now
   $pct = Get-StartupPct $Step $Now
   if ($pct) { $r.Add(@(("  " + $pct.PadLeft(4)), $script:Ink.Text, $true)) }
   $room = $L.W - 4 - (Get-SegsLength $r)

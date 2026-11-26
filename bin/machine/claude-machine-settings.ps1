@@ -79,20 +79,21 @@ function Convert-SettingsBytes {
 function Read-MachineSettings {
   param([string]$Path, [string]$Fallback = "", $Kind = $script:SettingsMachine)
   foreach ($p in @($Path, $Fallback)) {
-    if ($p -and [IO.File]::Exists($p)) { return ,(Get-MachineSettings (ConvertFrom-SettingsBytes ([IO.File]::ReadAllBytes($p))) $Kind) }
+    if ($p -and [IO.File]::Exists($p)) { return ,(Get-MachineSettings (ConvertFrom-SettingsBytes (Invoke-FileRetry { ,[IO.File]::ReadAllBytes($p) })) $Kind) }
   }
   return $null
 }
 
 function Update-MachineSettingsFile {
   param([string]$Path, [string[]]$Members, $Kind = $script:SettingsMachine, $Projects = $null)
-  [IO.File]::WriteAllBytes($Path, (Convert-SettingsBytes ([IO.File]::ReadAllBytes($Path)) $Members -Local -Kind $Kind -Projects $Projects))
+  $bytes = Convert-SettingsBytes (Invoke-FileRetry { ,[IO.File]::ReadAllBytes($Path) }) $Members -Local -Kind $Kind -Projects $Projects
+  Invoke-FileRetry { [IO.File]::WriteAllBytes($Path, $bytes) }
 }
 
 function Read-LocalProjectMcp {
   param([string]$Path, [string]$Fallback)
   foreach ($p in @($Path, $Fallback)) {
-    if ($p -and [IO.File]::Exists($p)) { Assert-ClmGroup mcp; return Read-ProjectMcp (ConvertFrom-SettingsBytes ([IO.File]::ReadAllBytes($p))) }
+    if ($p -and [IO.File]::Exists($p)) { Assert-ClmGroup mcp; return Read-ProjectMcp (ConvertFrom-SettingsBytes (Invoke-FileRetry { ,[IO.File]::ReadAllBytes($p) })) }
   }
   return $null
 }

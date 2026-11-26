@@ -19,11 +19,11 @@ function Get-MenuLayout {
     $l.Visible = [math]::Max(1, [math]::Min($n, $Rows - 2 - $Extra))
   } elseif ($fixed + 5 * $n -le $Rows) {
     $l.Mode = "full"; $l.Per = 5
-    $l.Cells = Get-Clamped ($w - 34) 8 48
+    $l.Cells = $script:BarCells
   } else {
     $l.Mode = "compact"; $l.Per = 3
     $l.Visible = [math]::Max(1, [math]::Min($n, [math]::Floor(($Rows - $fixed) / 3)))
-    $l.Cells = Get-Clamped ([math]::Floor(($w - 60) / 2)) 4 20
+    $l.Cells = $script:BarCells
   }
   return $l
 }
@@ -41,7 +41,7 @@ function Get-ReadyDefault {
     $e = $Entries[$i]
     if ($e.Pending -and $Wait) { return -1 }
     $u = $e.U
-    if ($null -eq $u.Error -and [int]$u.Pct5 -lt 100 -and [int]$u.Pct7 -lt 100) { return $i }
+    if ($null -eq $u.Error -and (Get-ShownPct $u.Pct5) -lt 100 -and (Get-ShownPct $u.Pct7) -lt 100) { return $i }
   }
   return 0
 }

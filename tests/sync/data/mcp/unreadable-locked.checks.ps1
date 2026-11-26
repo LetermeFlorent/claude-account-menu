@@ -6,8 +6,8 @@ function Invoke-LkLocked {
   try { & $Action } finally { $lkHandle.Dispose() }
 }
 
-$lkWaitSaved = $script:SharedWaitMs
-$script:SharedWaitMs = 0
+$lkWaitSaved = $script:FileRetryDelayMs
+$script:FileRetryDelayMs = 0
 try {
   Use-Pc "LK"
   Save-Registry @([PSCustomObject]@{ Label = "c1"; Dir = ".claude" })
@@ -58,7 +58,7 @@ try {
   Assert-Equal $lkText ([IO.File]::ReadAllText($script:RegistryPath)) "accounts.json verrouille : fichier intact"
   Assert-Equal "a" ((@(Get-Accounts) | ForEach-Object { $_.Label }) -join "|") "accounts.json deverrouille : liste relue"
 } finally {
-  $script:SharedWaitMs = $lkWaitSaved
+  $script:FileRetryDelayMs = $lkWaitSaved
   Restore-FakeDrive
   Remove-Item Function:\Invoke-LkLocked
 }

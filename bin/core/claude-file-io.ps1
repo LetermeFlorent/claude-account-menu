@@ -1,7 +1,7 @@
 . Import-ClmModule claude-platform
 $script:LockPollMs = 200
-$script:SharedWaitMs = 3000
-$script:SharedPollMs = 20
+$script:FileRetryAttempts = 3
+$script:FileRetryDelayMs = 250
 if ($PSVersionTable.PSVersion.Major -lt 6) { Add-Type -AssemblyName Microsoft.VisualBasic }
 
 function Set-PrivateMode {
@@ -15,15 +15,26 @@ function Set-PrivateMode {
   throw $key
 }
 
-function Test-SharedBusy {
-  param($Err, [datetime]$Deadline)
+function Test-FileBusy {
+  param($Err)
   $e = $Err.Exception
   while ($e -is [Management.Automation.MethodInvocationException] -and $null -ne $e.InnerException) { $e = $e.InnerException }
   if ($e -is [IO.FileNotFoundException] -or $e -is [IO.DirectoryNotFoundException]) { return $false }
-  if (-not ($e -is [IO.IOException] -or $e -is [UnauthorizedAccessException])) { return $false }
-  if ([DateTime]::UtcNow -ge $Deadline) { return $false }
-  Start-Sleep -Milliseconds $script:SharedPollMs
-  return $true
+  return $e -is [IO.IOException] -or $e -is [UnauthorizedAccessException]
+}
+
+function Invoke-FileRetry {
+  param([scriptblock]$Action)
+  for ($attempt = 1; $attempt -le $script:FileRetryAttempts; $attempt++) {
+    try {
+      $out = & $Action
+      if ($null -ne $out) { return ,$out }
+      return
+    } catch {
+      if ($attempt -ge $script:FileRetryAttempts -or -not (Test-FileBusy $_)) { throw }
+    }
+    Start-Sleep -Milliseconds $script:FileRetryDelayMs
+  }
 }
 
 function Move-FileReplacing {
@@ -34,19 +45,13 @@ function Move-FileReplacing {
 
 function Move-FileOver {
   param([string]$From, [string]$To)
-  $deadline = [DateTime]::UtcNow.AddMilliseconds($script:SharedWaitMs)
-  while ($true) {
-    try { Move-FileReplacing $From $To; return }
-    catch { if ([IO.Directory]::Exists($To) -or -not (Test-SharedBusy $_ $deadline)) { throw } }
-  }
+  if ([IO.Directory]::Exists($To)) { Move-FileReplacing $From $To; return }
+  Invoke-FileRetry { Move-FileReplacing $From $To }
 }
 
 function Read-SharedText {
   param([string]$Path)
-  $deadline = [DateTime]::UtcNow.AddMilliseconds($script:SharedWaitMs)
-  while ($true) {
-    try { return [IO.File]::ReadAllText($Path) } catch { if (-not (Test-SharedBusy $_ $deadline)) { throw } }
-  }
+  return Invoke-FileRetry { [IO.File]::ReadAllText($Path) }
 }
 
 function Write-TextFileAtomic {

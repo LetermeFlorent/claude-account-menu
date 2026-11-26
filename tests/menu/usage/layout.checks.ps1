@@ -1,7 +1,7 @@
 $l = Get-MenuLayout 120 40 3
-Assert-Equal "full 105 48 3 119" ($l.Mode + " " + $l.W + " " + $l.Cells + " " + $l.Visible + " " + $l.Clip) "grand terminal, cartes completes"
+Assert-Equal "full 105 16 3 119" ($l.Mode + " " + $l.W + " " + $l.Cells + " " + $l.Visible + " " + $l.Clip) "grand terminal, cartes completes"
 $l = Get-MenuLayout 80 20 3
-Assert-Equal "compact 77 8 3 1" ($l.Mode + " " + $l.W + " " + $l.Cells + " " + $l.Visible + " " + $l.FooterRows) "terminal moyen, vue compacte"
+Assert-Equal "compact 77 16 3 1" ($l.Mode + " " + $l.W + " " + $l.Cells + " " + $l.Visible + " " + $l.FooterRows) "terminal moyen, vue compacte"
 $l = Get-MenuLayout 80 12 3
 Assert-Equal "compact 1" ($l.Mode + " " + $l.Visible) "terminal bas, un compte visible"
 Assert-Equal "simple" (Get-MenuLayout 39 30 3).Mode "terminal etroit, vue simple"

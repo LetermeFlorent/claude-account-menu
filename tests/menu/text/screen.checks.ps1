@@ -18,13 +18,6 @@ $t = Get-SegsText $segs
 Assert-Equal (($script:BarFull * 10) + ($script:BarEmpty * 10)) $t "barre a moitie pleine, dix cases pleines"
 Assert-Equal 10 (Get-InkCount $segs $script:Ink.Cell) "cases vides a la couleur des cases"
 Assert-Equal "120 110 200" ($segs[0][1] -join " ") "premiere case a la couleur du niveau"
-Assert-Equal "143 134 209" ($segs[9][1] -join " ") "derniere case eclaircie sur fond sombre"
-$savedInk = $script:Ink
-$script:Ink = $script:Palettes["light"]
-$segs = New-Row
-Add-BarSegs $segs "5h" 50 @(120, 110, 200) 20
-Assert-Equal "97 89 162" ($segs[9][1] -join " ") "derniere case foncee sur fond clair"
-$script:Ink = $savedInk
 $segs = New-Row
 Add-BarSegs $segs "7d" 0 @(1, 1, 1) 20
 Assert-Equal ($script:BarEmpty * 20) (Get-SegsText $segs) "barre vide"
@@ -32,13 +25,13 @@ Assert-Equal 20 (Get-InkCount $segs $script:Ink.Cell) "barre vide, toutes les ca
 $segs = New-Row
 Add-BarSegs $segs "7d" 150 @(1, 1, 1) 20
 Assert-Equal ($script:BarFull * 20) (Get-SegsText $segs) "barre bornee"
-Assert-Equal 4 (Get-BarCount 51 8) "remplissage au demi-carre pres"
+Assert-Equal 4 (Get-BarCount 51 8) "remplissage a la case pres"
 Assert-Equal 1 (Get-BarCount 0.5 8) "valeur non nulle, une case au moins"
 Assert-Equal 0 (Get-BarCount 0 8) "valeur nulle, aucune case"
 $segs = New-Row
 Add-UsageSegs @{ Segs = $segs; Kind = "7d"; Tween = (New-Tween 100 100 0 0); Left = "3d07h"; Pace = $null; Cells = 8; Now = 0; Wide = $true }
 $pct = @($segs | Where-Object { $_[0] -match "100%" })[0]
-$lastCell = @($segs | Where-Object { $_[0] -ceq $script:BarFull })[-1]
+$lastCell = @($segs | Where-Object { $_[0].Contains($script:BarFull) })[-1]
 Assert-Equal ($lastCell[1] -join " ") ($pct[1] -join " ") "chiffre a la couleur de la barre a 100 %"
 $segs = New-Row
 Add-UsageSegs @{ Segs = $segs; Kind = "7d"; Tween = (New-Tween 40 40 0 0); Left = "3d07h"; Pace = $null; Cells = 8; Now = 0; Wide = $true }

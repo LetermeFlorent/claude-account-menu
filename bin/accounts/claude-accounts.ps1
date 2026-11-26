@@ -49,10 +49,17 @@ function Clear-AccountLogin {
   if ($null -ne $cfg -and @($cfg.Keys) -contains "oauthAccount") { $null = $cfg.Remove("oauthAccount"); Write-JsonFile $file $cfg }
 }
 
+function Get-TokenRefusedPath {
+  param($Acc)
+  return Join-Path (Split-Path (Get-UsageCachePath)) ("refused-" + (Get-StateTag (Get-AccountPath $Acc)))
+}
+
 function Test-LoginLocked {
   param($Acc)
   if ($env:CLM_ALLOW_LOGIN -eq "1" -or (Get-AccountEmail $Acc) -eq "") { return $false }
-  return $null -ne (Read-AccountCredential $Acc)
+  if (Test-Path -LiteralPath (Get-TokenRefusedPath $Acc)) { return $false }
+  $oauth = (Read-AccountCredential $Acc).claudeAiOauth; $expiresAt = [long]$oauth.expiresAt
+  return -not [string]::IsNullOrEmpty($oauth.accessToken) -and ($expiresAt -le 0 -or $expiresAt -gt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
 }
 
 function Invoke-InAccountEnv {

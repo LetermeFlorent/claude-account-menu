@@ -44,11 +44,13 @@ function Update-LiveUsage {
   param($State, [double]$Now)
   if ($null -ne $State.LiveAt -and $Now -lt $State.LiveAt) { return $false }
   $State.LiveAt = $Now + $script:LiveCheckMs
+  $changed = $false
+  foreach ($e in $State.Entries) { if (Clear-ExpiredUsage $e.U) { Show-EntryUsage $e $Now; $changed = $true } }
+  if ($changed) { $State.Dirty = $true }
   $stamp = Get-StatusStamp $script:UsageCachePath
-  if ($stamp -ceq $State.LiveStamp) { return $false }
+  if ($stamp -ceq $State.LiveStamp) { return $changed }
   $State.LiveStamp = $stamp
   $cache = Read-UsageCache
-  $changed = $false
   foreach ($e in $State.Entries) { if (Set-LiveUsage $State $e (Get-KnownUsage $e.Acc $cache) $Now) { $changed = $true } }
   if ($changed) { $State.Dirty = $true }
   return $changed

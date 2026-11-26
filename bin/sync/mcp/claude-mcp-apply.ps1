@@ -37,7 +37,7 @@ function Read-McpState {
     if ($File.Home) { $File.Map = New-PathMap }
     return
   }
-  try { $text = [IO.File]::ReadAllText($File.Path) } catch { Write-Verbose $_.Exception.Message; return }
+  try { $text = Read-SharedText $File.Path } catch { Write-Verbose $_.Exception.Message; return }
   if ($File.Home) { $File.Map = Add-McpKeyProject (Read-McpMap $text) }
   else { $File.Map = Read-ProjectMcp $text }
 }

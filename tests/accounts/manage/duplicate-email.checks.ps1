@@ -24,6 +24,31 @@ Assert-True (-not (Test-DuplicateAccountEmail $dupA)) "doublon : adresses differ
 $dupSeen = Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }
 Assert-Equal "1" $dupSeen "connexion : /login cache pour un compte connecte"
 Assert-Null $env:DISABLE_LOGIN_COMMAND "connexion : variable retiree apres la session"
+$dupCredFile = Join-Path (Get-AccountPath $dupA) ".credentials.json"
+$dupNowMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+[IO.File]::WriteAllText($dupCredFile, ('{"claudeAiOauth":{"accessToken":"x","expiresAt":' + ($dupNowMs + 3600000) + '}}'))
+Assert-Equal "1" (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login cache pour un jeton valable"
+[IO.File]::WriteAllText($dupCredFile, ('{"claudeAiOauth":{"accessToken":"x","expiresAt":' + ($dupNowMs - 1000) + '}}'))
+Assert-Null (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login laisse pour un jeton expire"
+[IO.File]::WriteAllText($dupCredFile, '{"claudeAiOauth":{"accessToken":"x"}}')
+$dupKept = @{}
+foreach ($n in @("Invoke-UsageApi", "Get-ApiPlanName")) { $dupKept[$n] = (Get-Item ("function:" + $n)).ScriptBlock }
+function Get-ApiPlanName { param($Acc, $Token) return "" }
+function Invoke-UsageApi {
+  param([string]$Token)
+  $e = [Exception]::new("refus")
+  Add-Member -InputObject $e -NotePropertyName Response -NotePropertyValue ([PSCustomObject]@{ StatusCode = 401 })
+  throw $e
+}
+Request-AccountUsage (New-UsageRow $dupA) $dupA (Read-AccountCredential $dupA) $null
+Assert-Null (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login laisse pour un jeton refuse (401)"
+function Invoke-UsageApi { param([string]$Token) return [PSCustomObject]@{ seven_day = [PSCustomObject]@{ utilization = 1 } } }
+Request-AccountUsage (New-UsageRow $dupA) $dupA (Read-AccountCredential $dupA) $null
+Assert-Equal "1" (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login cache de nouveau apres une lecture reussie"
+foreach ($n in $dupKept.Keys) { Set-Item ("function:" + $n) $dupKept[$n] }
+[IO.File]::WriteAllText($dupCredFile, '{"claudeAiOauth":{"refreshToken":"r"}}')
+Assert-Null (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login laisse pour un compte deconnecte"
+[IO.File]::WriteAllText($dupCredFile, '{"claudeAiOauth":{"accessToken":"x"}}')
 $env:CLM_ALLOW_LOGIN = "1"
 $dupSeen = Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }
 Remove-Item Env:CLM_ALLOW_LOGIN

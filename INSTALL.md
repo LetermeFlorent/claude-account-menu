@@ -72,6 +72,6 @@ If `clm` is not recognised on Windows, open a new terminal or run `%USERPROFILE%
 
 If Claude Code's update reports "verification impossible", "telechargement bloque" or "deja en cours ailleurs", it timed out (20 seconds without a recognised answer, 90 seconds without download progress) or another session is updating. clm tries up to 3 times, waits up to 60 seconds for the other session, and the menu stays usable. `clm --no-update` skips it.
 
-An account that shows "non connecte", "jeton expire" or "jeton refuse" needs one launch from the menu and a `/login`. After a "pause API" the bars keep their last values until the pause ends.
+An account that shows "non connecte", "jeton expire" or "jeton refuse" needs one launch from the menu and a `/login`: clm hides `/login` only while the account's sign-in is still valid, so it is there when the token is expired or missing. A token refused by the server (401) also shows it again, until the next good read. After a "pause API" the bars keep their last values until the pause ends, except a window whose reset time has passed, which shows 0 %. Files that another clm window holds open are retried 3 times at most before an error is reported.
 
 If the status line shows no quotas, check that the account folder is listed in `accounts.json` and that the `claude-statusline` state folder exists: the hook does nothing for a folder clm does not know, and writes nothing when that folder is absent. Run `clm --help` for every option, key, variable and file.

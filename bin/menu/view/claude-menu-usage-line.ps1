@@ -10,8 +10,8 @@ function Get-PaceInk {
 function Get-UsageView {
   param($U)
   $badge = ""
-  if ($null -eq $U.Error -and [int]$U.Pct7 -ge 100) { $badge = Get-ClmText "menu.usage.quota7dReached" }
-  elseif ($null -eq $U.Error -and [int]$U.Pct5 -ge 100) { $badge = Get-ClmText "menu.usage.quota5hReached" }
+  if ($null -eq $U.Error -and (Get-ShownPct $U.Pct7) -ge 100) { $badge = Get-ClmText "menu.usage.quota7dReached" }
+  elseif ($null -eq $U.Error -and (Get-ShownPct $U.Pct5) -ge 100) { $badge = Get-ClmText "menu.usage.quota5hReached" }
   $note = ""
   if ($null -ne $U.Age -and $U.Expired) { $note = Get-ClmText "menu.usage.windowPassed" @(Format-Age $U.Age) }
   elseif ($null -ne $U.Age -and $U.Age -ge 60) { $note = Get-ClmText "menu.usage.readAgo" @(Format-Age $U.Age) }
@@ -36,22 +36,25 @@ function Add-UsageSegs {
   $C = [int]$Request.Cells
   $Now = [double]$Request.Now
   $Wide = [bool]$Request.Wide
+  $Room = [int]$Request.Room
+  if ($Room -le 0) { $Room = [int]::MaxValue }
   $v = Get-TweenValue $Tween $Now
   $txt = $script:Ink.Text
-  $gap = " "
-  if ($Wide) { $gap = "  " }
-  $Segs.Add(@(($Kind + " "), $txt, $true))
+  $Segs.Add(@(($Kind + "  "), $txt, $true))
   Add-BarSegs $Segs $Kind $v (Get-BarBase $Kind $Tween $Now) $C
-  $pct = [int][math]::Round($v)
+  if (Test-TweenRunning $Tween $Now) { $v = [math]::Round($v) }
   $pctInk = $txt
-  if ($pct -ge 100) { $pctInk = $Segs[$Segs.Count - 1][1] }
-  $Segs.Add(@(($gap + ("" + $pct + "%").PadLeft(4)), $pctInk, $true))
-  $Segs.Add(@(($gap + $Left.PadRight(6)), $txt, $true))
+  if ((Get-ShownPct $v) -ge 100) { $pctInk = $Segs[$Segs.Count - 1][1] }
+  $Segs.Add(@(("  " + ((Format-UsagePct $v) + "%").PadLeft(5)), $pctInk, $true))
+  $used = $Kind.Length + $C + 9
+  $left = "  " + $Left.PadRight(6)
+  if ($used + $left.Length -gt $Room) { return }
+  $Segs.Add(@($left, $script:Ink.Dim, $false))
   $word = ""
   $ink = $script:Ink.Dim
   if ($null -ne $Pace) { $word = $Pace.Text; $ink = Get-PaceInk $Pace.Tone }
   if (-not $Wide) { $word = $word.PadRight(8) }
-  $Segs.Add(@(("  " + $word), $ink, $false))
+  if ($used + $left.Length + 2 + $word.Length -le $Room) { $Segs.Add(@(("  " + $word), $ink, $false)) }
 }
 
 function Get-CompactUsageSegs {
@@ -62,14 +65,16 @@ function Get-CompactUsageSegs {
   $T5 = $Request.Tween5
   $T7 = $Request.Tween7
   $Now = [double]$Request.Now
+  $Room = [int]$Request.Room
+  if (-not $U.No5) { $Room = [math]::Floor(($Room - 3) / 2) }
   if ($null -eq $View) { $View = Get-UsageView $U }
   if ($null -eq $T5) { $T5 = New-Tween ([double]$U.Pct5) ([double]$U.Pct5) 0 0 }
   if ($null -eq $T7) { $T7 = New-Tween ([double]$U.Pct7) ([double]$U.Pct7) 0 0 }
   $segs = New-Row
   if (-not $U.No5) {
-    Add-UsageSegs @{ Segs = $segs; Kind = "5h"; Tween = $T5; Left = $View.Left5; Pace = $View.Pace5; Cells = $Cells; Now = $Now; Wide = $false }
+    Add-UsageSegs @{ Segs = $segs; Kind = "5h"; Tween = $T5; Left = $View.Left5; Pace = $View.Pace5; Cells = $Cells; Now = $Now; Wide = $false; Room = $Room }
     $segs.Add(@(" | ", $script:Ink.Text, $true))
   }
-  Add-UsageSegs @{ Segs = $segs; Kind = "7d"; Tween = $T7; Left = $View.Left7; Pace = $View.Pace7; Cells = $Cells; Now = $Now; Wide = $false }
+  Add-UsageSegs @{ Segs = $segs; Kind = "7d"; Tween = $T7; Left = $View.Left7; Pace = $View.Pace7; Cells = $Cells; Now = $Now; Wide = $false; Room = $Room }
   return ,$segs
 }

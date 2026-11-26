@@ -7,7 +7,7 @@ function Get-ThemeSign {
   $ink = $script:Ink
   $levels = @($script:Levels["5h"]) + @($script:Levels["7d"])
   $inks = Get-RgbSign @($ink.Text, $ink.Dim, $ink.Empty, $ink.Cell, $ink.Alert, $ink.Bg)
-  return $inks + "|" + (Get-RgbSign $levels) + "|" + $script:Grad["5h"] + "," + $script:Grad["7d"] + "|" + $script:MotionOn
+  return $inks + "|" + (Get-RgbSign $levels) + "|" + $script:MotionOn
 }
 
 function Get-PaceSign {

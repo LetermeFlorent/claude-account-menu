@@ -29,7 +29,7 @@ function Update-EntryView {
 
 function Add-WaitSegs {
   param($Row, [string]$Kind, [int]$C, [double]$Now)
-  $Row.Add(@(($Kind + " "), $script:Ink.Text, $true))
+  $Row.Add(@(($Kind + "  "), $script:Ink.Text, $true))
   Add-ShimmerSegs $Row $C $Now
 }
 
@@ -40,6 +40,7 @@ function Get-CardBody {
   $rows = New-Object 'System.Collections.Generic.List[object]'
   $n = 2
   if ($L.Mode -eq "compact") { $n = 1 }
+  $room = $L.W - 9
   for ($i = 0; $i -lt $n; $i++) { $r = New-Row; $r.Add(@("       ", $script:Ink.Text, $false)); $rows.Add($r) }
   if ($null -ne $u.Error) {
     $rows[0].Add(@(("" + $u.Error), $script:Ink.Alert, $false))
@@ -49,12 +50,12 @@ function Get-CardBody {
     else { Add-WaitSegs $rows[1] "7d" $L.Cells $Now }
     $rows[0].Add(@(("  " + (Get-ClmText "menu.card.reading")), $script:Ink.Dim, $false))
   } elseif ($n -eq 1) {
-    $rows[0].AddRange((Get-CompactUsageSegs @{ Usage = $u; Cells = $L.Cells; View = $v; Tween5 = $E.T5; Tween7 = $E.T7; Now = $Now }))
+    $rows[0].AddRange((Get-CompactUsageSegs @{ Usage = $u; Cells = $L.Cells; View = $v; Tween5 = $E.T5; Tween7 = $E.T7; Now = $Now; Room = $room }))
   } elseif ($u.No5) {
-    Add-UsageSegs @{ Segs = $rows[0]; Kind = "7d"; Tween = $E.T7; Left = $v.Left7; Pace = $v.Pace7; Cells = $L.Cells; Now = $Now; Wide = $true }
+    Add-UsageSegs @{ Segs = $rows[0]; Kind = "7d"; Tween = $E.T7; Left = $v.Left7; Pace = $v.Pace7; Cells = $L.Cells; Now = $Now; Wide = $true; Room = $room }
   } else {
-    Add-UsageSegs @{ Segs = $rows[0]; Kind = "5h"; Tween = $E.T5; Left = $v.Left5; Pace = $v.Pace5; Cells = $L.Cells; Now = $Now; Wide = $true }
-    Add-UsageSegs @{ Segs = $rows[1]; Kind = "7d"; Tween = $E.T7; Left = $v.Left7; Pace = $v.Pace7; Cells = $L.Cells; Now = $Now; Wide = $true }
+    Add-UsageSegs @{ Segs = $rows[0]; Kind = "5h"; Tween = $E.T5; Left = $v.Left5; Pace = $v.Pace5; Cells = $L.Cells; Now = $Now; Wide = $true; Room = $room }
+    Add-UsageSegs @{ Segs = $rows[1]; Kind = "7d"; Tween = $E.T7; Left = $v.Left7; Pace = $v.Pace7; Cells = $L.Cells; Now = $Now; Wide = $true; Room = $room }
   }
   return ,$rows
 }

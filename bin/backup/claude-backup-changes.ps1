@@ -5,7 +5,7 @@ $script:RestoreProjectsKey = "projects.mcpServers"
 function Read-JsonObject {
   param([string]$Path)
   if (-not [IO.File]::Exists($Path)) { return $null }
-  try { return [IO.File]::ReadAllText($Path) | ConvertFrom-Json } catch { Write-Verbose ("reglages illisibles : " + $Path); return $null }
+  try { return Read-SharedText $Path | ConvertFrom-Json } catch { Write-Verbose ("reglages illisibles : " + $Path); return $null }
 }
 
 function Get-WatchedValues {

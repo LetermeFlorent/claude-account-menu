@@ -21,10 +21,7 @@ function Test-ClmSameFile {
 
 function Remove-ClmFile {
   param([string]$Path)
-  $deadline = [DateTime]::UtcNow.AddMilliseconds($script:SharedWaitMs)
-  while ([IO.File]::Exists($Path)) {
-    try { [IO.File]::Delete($Path) } catch { if (-not (Test-SharedBusy $_ $deadline)) { throw } }
-  }
+  if ([IO.File]::Exists($Path)) { Invoke-FileRetry { [IO.File]::Delete($Path) } }
 }
 
 function Copy-ClmFile {

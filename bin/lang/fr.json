@@ -319,6 +319,7 @@
   "ui.footer.sync": "sync",
   "ui.footer.update": "màj",
   "ui.footer.web": "page web",
+  "ui.number.decimalSep": ",",
   "ui.pace.debut": "début",
   "ui.pace.epuise": "épuisé",
   "ui.pace.excessif": "excessif",

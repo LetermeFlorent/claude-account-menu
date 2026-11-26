@@ -17,7 +17,7 @@ function Read-AccountEmail {
   $hit = $script:AccountEmailCache[$Path]
   if ($null -ne $hit -and $hit.Ticks -eq $stamp.Ticks -and $hit.Length -eq $stamp.Length) { return $hit.Email }
   $script:AccountEmailReads++
-  try { $raw = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop } catch { return "" }
+  try { $raw = Read-SharedText $Path } catch { return "" }
   $email = ""
   if ($raw -match '"oauthAccount"\s*:\s*\{[^}]*?"emailAddress"\s*:\s*"([^"]+)"') { $email = $Matches[1] }
   $settled = [DateTime]::UtcNow.Subtract([TimeSpan]::FromSeconds($script:AccountEmailSettleSeconds)).Ticks
