@@ -1,10 +1,12 @@
 $frPath = New-SandboxFile "file-retry/shared.json" '{"n":1}'
 
-function Start-Sleep {
+function Wait-FrFake {
   param([int]$Milliseconds)
   $script:FrSleeps++
   if ($script:FrSleeps -ge $script:FrLockedFor) { $script:FrHandle.Dispose() }
 }
+
+Set-Alias -Name Start-Sleep -Value Wait-FrFake
 
 function Invoke-FrLocked {
   param([int]$LockedFor, [scriptblock]$Action)
@@ -42,5 +44,5 @@ try {
   }
   Assert-Equal 0 @(Get-ChildItem -LiteralPath (Split-Path $frPath) -Filter "*.tmp").Count "ecriture bloquee : aucun temporaire laisse"
 } finally {
-  Remove-Item Function:\Start-Sleep, Function:\Invoke-FrLocked
+  Remove-Item Alias:\Start-Sleep, Function:\Wait-FrFake, Function:\Invoke-FrLocked
 }
