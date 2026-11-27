@@ -52,7 +52,7 @@ Run `clm`, open the web page with `w` and save accounts to an archive in your Do
 
 ## Updating
 
-clm updates itself when it was installed with the installer. At startup it asks GitHub for the latest release, unless another clm checked in the last 2 minutes, and while the menu is open it asks again every 10 minutes. When a newer one exists the menu shows `[maj dispo]` and the `u` key restarts clm onto it, which installs it after a last check. The download is checked against the release's SHA-256 file before anything runs.
+clm updates itself when it was installed with the installer. At startup it asks GitHub for the latest release, unless another clm checked in the last 2 minutes, and while the menu is open it asks again every 10 minutes. When a newer one exists the menu shows `[update available]` (`[màj dispo]` in French) and the `u` key restarts clm onto it, which installs it after a last check. The download is checked against the release's SHA-256 file before anything runs.
 
 Only one clm installs at a time, the others wait up to 3 minutes. Once the new version is installed, every other running clm restarts onto it as soon as its menu is idle, with `--no-update`. A clm never restarts while a Claude Code session it launched is running.
 
@@ -70,8 +70,8 @@ Then remove the hook entry that runs `claude-statusline-seed.ps1` from each acco
 
 If `clm` is not recognised on Windows, open a new terminal or run `%USERPROFILE%\.local\bin\clm.cmd`. On Linux and macOS, check that `~/.local/bin` is on the PATH and that `pwsh` runs.
 
-If Claude Code's update reports "verification impossible", "telechargement bloque" or "deja en cours ailleurs", it timed out (20 seconds without a recognised answer, 90 seconds without download progress) or another session is updating. clm tries up to 3 times, waits up to 60 seconds for the other session, and the menu stays usable. `clm --no-update` skips it.
+If Claude Code's update reports "vérification impossible", "téléchargement bloqué" or "déjà en cours ailleurs", it timed out (20 seconds without a recognised answer, 90 seconds without download progress) or another session is updating. clm tries up to 3 times, waits up to 60 seconds for the other session, and the menu stays usable. `clm --no-update` skips it.
 
-An account that shows "non connecte", "jeton expire" or "jeton refuse" needs one launch from the menu and a `/login`: clm hides `/login` only while the account's sign-in is still valid, so it is there when the token is expired or missing. A token refused by the server (401) also shows it again, until the next good read. After a "pause API" the bars keep their last values until the pause ends, except a window whose reset time has passed, which shows 0 %. Files that another clm window holds open are retried 3 times at most before an error is reported.
+An account that shows "non connecté", "jeton expiré" or "jeton refusé" needs one launch from the menu and a `/login`: clm hides `/login` only while the account's sign-in is still valid, so it is there when the token is expired or missing. A token refused by the server (401) also shows it again, until the next good read. After a "API en pause" the bars keep their last values until the pause ends, except a window whose reset time has passed, which shows 0 %. Files that another clm window holds open are retried 3 times at most before an error is reported.
 
 If the status line shows no quotas, check that the account folder is listed in `accounts.json` and that the `claude-statusline` state folder exists: the hook does nothing for a folder clm does not know, and writes nothing when that folder is absent. Run `clm --help` for every option, key, variable and file.
