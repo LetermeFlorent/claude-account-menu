@@ -56,12 +56,7 @@ function Get-TokenRefusedPath {
 
 function Test-LoginLocked {
   param($Acc)
-  if ($env:CLM_ALLOW_LOGIN -eq "1" -or (Get-AccountEmail $Acc) -eq "") { return $false }
-  if (Test-Path -LiteralPath (Get-TokenRefusedPath $Acc)) { return $false }
-  $cred = Read-AccountCredential $Acc
-  if ($null -eq $cred) { return $false }
-  $oauth = $cred.claudeAiOauth; $expiresAt = [long]$oauth.expiresAt
-  return -not [string]::IsNullOrEmpty($oauth.accessToken) -and ($expiresAt -le 0 -or $expiresAt -gt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
+  return $false
 }
 
 function Invoke-InAccountEnv {

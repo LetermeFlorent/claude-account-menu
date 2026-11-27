@@ -40,15 +40,20 @@ function Get-CredentialStamp {
   } catch { return "none" }
 }
 
-function Get-CachedPlan {
+function Get-CachedCredentialInfo {
   param($Acc)
   $key = Get-AccountPath $Acc
   $stamp = Get-CredentialStamp $Acc
   $hit = $script:PlanCache[$key]
-  if ($null -ne $hit -and $hit.Stamp -ceq $stamp) { return $hit.Plan }
+  if ($null -ne $hit -and $hit.Stamp -ceq $stamp) { return $hit }
   $cred = Read-AccountCredential $Acc
-  $plan = ""
-  if ($null -ne $cred) { $plan = Get-PlanName $cred.claudeAiOauth }
-  $script:PlanCache[$key] = @{ Stamp = $stamp; Plan = $plan }
-  return $plan
+  $plan = ""; $expires = [long]0; $token = $false
+  if ($null -ne $cred) { $plan = Get-PlanName $cred.claudeAiOauth; $expires = [long]$cred.claudeAiOauth.expiresAt; $token = -not [string]::IsNullOrEmpty($cred.claudeAiOauth.accessToken) }
+  $script:PlanCache[$key] = @{ Stamp = $stamp; Plan = $plan; Expires = $expires; Token = $token }
+  return $script:PlanCache[$key]
+}
+
+function Get-CachedPlan {
+  param($Acc)
+  return (Get-CachedCredentialInfo $Acc).Plan
 }

@@ -109,17 +109,25 @@ function Request-AccountUsage {
   }
 }
 
+function Set-LoginStateError {
+  param($Out, $Acc)
+  if (Test-Path -LiteralPath (Get-TokenRefusedPath $Acc)) { $Out.Error = Get-ClmText "ui.usage.tokenRefused"; return }
+  $info = Get-CachedCredentialInfo $Acc
+  if ($info.Token -and $info.Expires -gt 0 -and $info.Expires -lt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()) { $Out.Error = Get-ClmText "ui.usage.tokenExpired" }
+}
+
 function Get-AccountUsage {
   param($Acc, [int]$MaxAge = (Read-UsagePollSeconds), [switch]$NoRefresh)
   $out = New-UsageRow $Acc
   $out.Plan = Get-CachedPlan $Acc
   $known = Get-KnownUsage $Acc (Read-UsageCache)
-  if (Test-UsageSettled $out $known $MaxAge) { return $out }
+  if (Test-UsageSettled $out $known $MaxAge) { Set-LoginStateError $out $Acc; return $out }
   $lock = Open-MachineLock (Get-UsageLockName $Acc) $script:UsageLockWaitMs
   if ($null -eq $lock) { Set-UsageBusy $out $known; return $out }
   try {
     try { $known = Get-KnownUsage $Acc (Read-UsageCacheMap) } catch { Set-UsageBusy $out $known; return $out }
-    if (-not (Test-UsageSettled $out $known $MaxAge)) { Request-AccountUsage $out $Acc (Read-AccountCredential $Acc) $known -NoRefresh:$NoRefresh }
+    if (Test-UsageSettled $out $known $MaxAge) { Set-LoginStateError $out $Acc }
+    else { Request-AccountUsage $out $Acc (Read-AccountCredential $Acc) $known -NoRefresh:$NoRefresh }
   } finally { Close-MachineLock $lock }
   return $out
 }

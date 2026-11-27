@@ -21,15 +21,17 @@ Set-DupEmail $dupB "other@mail.fr"
 Assert-True (-not (Test-DuplicateAccountEmail $dupA)) "doublon : adresses differentes"
 
 [IO.File]::WriteAllText((Join-Path (Get-AccountPath $dupA) ".credentials.json"), '{"claudeAiOauth":{"accessToken":"x"}}')
-$dupSeen = Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }
-Assert-Equal "1" $dupSeen "connexion : /login cache pour un compte connecte"
-Assert-Null $env:DISABLE_LOGIN_COMMAND "connexion : variable retiree apres la session"
+Assert-Null (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login jamais cache pour un compte connecte"
+Assert-Null $env:DISABLE_LOGIN_COMMAND "connexion : variable absente apres la session"
 $dupCredFile = Join-Path (Get-AccountPath $dupA) ".credentials.json"
 $dupNowMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 [IO.File]::WriteAllText($dupCredFile, ('{"claudeAiOauth":{"accessToken":"x","expiresAt":' + ($dupNowMs + 3600000) + '}}'))
-Assert-Equal "1" (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login cache pour un jeton valable"
+Assert-Null (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login jamais cache pour un jeton valable"
+Save-UsageEntry "dupa" ([PSCustomObject]@{ Pct5 = 5; Reset5 = $null; Pct7 = 6; Reset7 = $null })
+Assert-Null (Get-AccountUsage $dupA 600).Error "affichage : jeton valable, pas d'erreur"
 [IO.File]::WriteAllText($dupCredFile, ('{"claudeAiOauth":{"accessToken":"x","expiresAt":' + ($dupNowMs - 1000) + '}}'))
-Assert-Null (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login laisse pour un jeton expire"
+Assert-Null (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login jamais cache pour un jeton expire"
+Assert-Equal (Get-ClmText "ui.usage.tokenExpired") (Get-AccountUsage $dupA 600).Error "affichage : jeton expire montre comme expire"
 [IO.File]::WriteAllText($dupCredFile, '{"claudeAiOauth":{"accessToken":"x"}}')
 $dupKept = @{}
 foreach ($n in @("Invoke-UsageApi", "Get-ApiPlanName")) { $dupKept[$n] = (Get-Item ("function:" + $n)).ScriptBlock }
@@ -41,18 +43,14 @@ function Invoke-UsageApi {
   throw $e
 }
 Request-AccountUsage (New-UsageRow $dupA) $dupA (Read-AccountCredential $dupA) $null
-Assert-Null (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login laisse pour un jeton refuse (401)"
+Assert-Null (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login jamais cache pour un jeton refuse (401)"
+Assert-Equal (Get-ClmText "ui.usage.tokenRefused") (Get-AccountUsage $dupA 600).Error "affichage : jeton refuse montre comme refuse"
 function Invoke-UsageApi { param([string]$Token) return [PSCustomObject]@{ seven_day = [PSCustomObject]@{ utilization = 1 } } }
 Request-AccountUsage (New-UsageRow $dupA) $dupA (Read-AccountCredential $dupA) $null
-Assert-Equal "1" (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login cache de nouveau apres une lecture reussie"
+Assert-Null (Get-AccountUsage $dupA 600).Error "affichage : lecture reussie, plus d'erreur"
 foreach ($n in $dupKept.Keys) { Set-Item ("function:" + $n) $dupKept[$n] }
 [IO.File]::WriteAllText($dupCredFile, '{"claudeAiOauth":{"refreshToken":"r"}}')
-Assert-Null (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login laisse pour un compte deconnecte"
-[IO.File]::WriteAllText($dupCredFile, '{"claudeAiOauth":{"accessToken":"x"}}')
-$env:CLM_ALLOW_LOGIN = "1"
-$dupSeen = Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }
-Remove-Item Env:CLM_ALLOW_LOGIN
-Assert-Null $dupSeen "connexion : CLM_ALLOW_LOGIN=1 laisse /login"
+Assert-Null (Invoke-InAccountEnv $dupA { $env:DISABLE_LOGIN_COMMAND }) "connexion : /login jamais cache pour un compte deconnecte"
 $dupSeen = Invoke-InAccountEnv $dupB { $env:DISABLE_LOGIN_COMMAND }
 Assert-Null $dupSeen "connexion : /login laisse sans identifiants"
 
