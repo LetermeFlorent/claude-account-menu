@@ -1,5 +1,5 @@
 . Import-ClmModule claude-file-io, claude-platform, claude-json, claude-json-members, claude-seed-hook, claude-lazy-load
-$script:SettingsMachine = @{ Keys = [string[]]@("statusLine"); Seed = $true; Fallback = ".claude/settings.json"; Projects = $false }
+$script:SettingsMachine = @{ Keys = [string[]]@("statusLine", "theme"); Seed = $true; Fallback = ".claude/settings.json"; Projects = $false }
 $script:McpMachineKeys = [string[]]@("mcpServers")
 $script:McpConfigPattern = [regex]'^(\.claude\.json|\.mcp\.json|\.claude[^/]*/\.claude\.json)$'
 $script:Utf8Bom = [byte[]](0xEF, 0xBB, 0xBF)
