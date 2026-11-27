@@ -1,3 +1,4 @@
+. Import-ClmModule claude-usage-cache
 $script:LiveCheckMs = 2000
 
 function Get-StatusStamp {

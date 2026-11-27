@@ -66,7 +66,9 @@ function Get-CompactUsageSegs {
   $T7 = $Request.Tween7
   $Now = [double]$Request.Now
   $Room = [int]$Request.Room
+  if ($Room -le 0) { $Room = $script:ViewWidth - 7 }
   if (-not $U.No5) { $Room = [math]::Floor(($Room - 3) / 2) }
+  $Cells = [math]::Min($Cells, [math]::Max(4, $Room - 29))
   if ($null -eq $View) { $View = Get-UsageView $U }
   if ($null -eq $T5) { $T5 = New-Tween ([double]$U.Pct5) ([double]$U.Pct5) 0 0 }
   if ($null -eq $T7) { $T7 = New-Tween ([double]$U.Pct7) ([double]$U.Pct7) 0 0 }

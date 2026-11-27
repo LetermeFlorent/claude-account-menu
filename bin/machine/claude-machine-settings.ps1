@@ -1,4 +1,4 @@
-. Import-ClmModule claude-platform, claude-json, claude-json-members, claude-seed-hook, claude-lazy-load
+. Import-ClmModule claude-file-io, claude-platform, claude-json, claude-json-members, claude-seed-hook, claude-lazy-load
 $script:SettingsMachine = @{ Keys = [string[]]@("statusLine"); Seed = $true; Fallback = ".claude/settings.json"; Projects = $false }
 $script:McpMachineKeys = [string[]]@("mcpServers")
 $script:McpConfigPattern = [regex]'^(\.claude\.json|\.mcp\.json|\.claude[^/]*/\.claude\.json)$'
@@ -87,7 +87,13 @@ function Read-MachineSettings {
 function Update-MachineSettingsFile {
   param([string]$Path, [string[]]$Members, $Kind = $script:SettingsMachine, $Projects = $null)
   $bytes = Convert-SettingsBytes (Invoke-FileRetry { ,[IO.File]::ReadAllBytes($Path) }) $Members -Local -Kind $Kind -Projects $Projects
-  Invoke-FileRetry { [IO.File]::WriteAllBytes($Path, $bytes) }
+  $tmp = $Path + "." + [guid]::NewGuid().ToString("N") + ".tmp"
+  try {
+    [IO.File]::WriteAllBytes($tmp, $bytes)
+    Move-FileOver $tmp $Path
+  } finally {
+    if ([IO.File]::Exists($tmp)) { [IO.File]::Delete($tmp) }
+  }
 }
 
 function Read-LocalProjectMcp {

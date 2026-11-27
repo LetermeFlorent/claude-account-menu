@@ -1,7 +1,7 @@
 . Import-ClmModule claude-platform
 $script:LockPollMs = 200
 $script:FileRetryAttempts = 3
-$script:FileRetryDelayMs = 250
+$script:FileRetryDelayMs = 1000
 if ($PSVersionTable.PSVersion.Major -lt 6) { Add-Type -AssemblyName Microsoft.VisualBasic }
 
 function Set-PrivateMode {
@@ -33,7 +33,7 @@ function Invoke-FileRetry {
     } catch {
       if ($attempt -ge $script:FileRetryAttempts -or -not (Test-FileBusy $_)) { throw }
     }
-    Start-Sleep -Milliseconds $script:FileRetryDelayMs
+    Start-Sleep -Milliseconds ($script:FileRetryDelayMs * $attempt)
   }
 }
 
