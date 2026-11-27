@@ -32,12 +32,13 @@ function Get-PlanName {
 
 function Get-CredentialStamp {
   param($Acc)
-  if ($script:OsName -eq "MacOS") { return "keychain" }
+  $prefix = ""
+  if ($script:OsName -eq "MacOS") { $prefix = "keychain:" + [math]::Floor([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() / 60) + ":" }
   try {
     $info = New-Object IO.FileInfo (Join-Path (Get-AccountPath $Acc) ".credentials.json")
-    if (-not $info.Exists) { return "none" }
-    return "" + $info.LastWriteTimeUtc.Ticks + ":" + $info.Length
-  } catch { return "none" }
+    if (-not $info.Exists) { return $prefix + "none" }
+    return $prefix + $info.LastWriteTimeUtc.Ticks + ":" + $info.Length
+  } catch { return $prefix + "none" }
 }
 
 function Get-CachedCredentialInfo {

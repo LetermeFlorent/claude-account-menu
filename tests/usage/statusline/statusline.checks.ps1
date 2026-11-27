@@ -46,3 +46,5 @@ Update-StatusState ([PSCustomObject]@{ Label = "compte1"; Dir = ".claude" })
 $statusAge = $null
 $qAt = [long]((@([IO.File]::ReadAllText($statePath).TrimEnd("`n").Split("`n")) -match "^q_at@claude \d+$")[0].Split(" ")[1])
 Assert-True ([math]::Abs([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - 100 - $qAt) -le 2) "q_at recule de l'age du cache : une lecture ancienne ne parait pas neuve"
+
+. (Join-Path $bin "usage/claude-usage.ps1")
